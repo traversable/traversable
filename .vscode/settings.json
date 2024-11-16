@@ -1,0 +1,42 @@
+{
+  "typescript.tsdk": "node_modules/typescript/lib",
+  "typescript.preferences.importModuleSpecifier": "non-relative",
+  "typescript.enablePromptUseWorkspaceTsdk": true,
+  "typescript.updateImportsOnFileMove.enabled": "never",
+  "typescript.tsserver.log": "off",
+  "typescript.suggest.completeFunctionCalls": false,
+  "editor.quickSuggestions": {
+    "other": true,
+    "comments": false,
+    "strings": false
+  },
+  // Auto fix
+  "editor.codeActionsOnSave": {
+    "quickfix.biome": "explicit",
+    "source.organizeImports.biome": "explicit",
+    "source.organizeImports": "never"
+  },
+  "editor.formatOnSave": false,
+  "editor.formatOnSaveMode": "file",
+  "prettier.enable": false,
+  "editor.suggest.snippetsPreventQuickSuggestions": true,
+  "editor.acceptSuggestionOnCommitCharacter": false,
+  "editor.acceptSuggestionOnEnter": "smart",
+  "editor.quickSuggestionsDelay": 10,
+  "editor.suggest.matchOnWordStartOnly": true,
+  "editor.suggestOnTriggerCharacters": true,
+  "editor.suggest.showFiles": true,
+  "editor.tabCompletion": "off",
+  "editor.suggest.localityBonus": true,
+  "editor.suggestSelection": "recentlyUsed",
+  "editor.wordBasedSuggestions": "matchingDocuments",
+  "editor.parameterHints.enabled": true,
+  "files.insertFinalNewline": true,
+  "[json]": { "editor.defaultFormatter": "dbaeumer.vscode-eslint" },
+  "[jsonc]": { "editor.defaultFormatter": "dbaeumer.vscode-eslint" },
+  "[markdown]": { "editor.defaultFormatter": "dbaeumer.vscode-eslint" },
+  "[javascript]": { "editor.defaultFormatter": "dbaeumer.vscode-eslint" },
+  "[javascriptreact]": { "editor.defaultFormatter": "dbaeumer.vscode-eslint" },
+  "[typescript]": { "editor.defaultFormatter": "dbaeumer.vscode-eslint" },
+  "[typescriptreact]": { "editor.defaultFormatter": "dbaeumer.vscode-eslint" },
+}

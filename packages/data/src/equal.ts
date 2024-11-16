@@ -1,0 +1,30 @@
+export {
+	// types
+	type Equal_any as any,
+	type Equal_any as infer,
+	// terms
+	Equal_all as all,
+	Equal_and as and,
+	Equal_array as array,
+	Equal_bigint as bigint,
+	Equal_boolean as boolean,
+	Equal_compose as compose,
+	Equal_date as date,
+	Equal_deep as deep,
+	Equal_every as every,
+	Equal_mapInput as mapInput,
+	Equal_nonemptyArray as nonemptyArray,
+	Equal_noop as noop,
+	Equal_number as number,
+	Equal_object as object,
+	Equal_or as or,
+	Equal_product as product,
+	Equal_shallow as shallow,
+	Equal_some as some,
+	Equal_strict as strict,
+	Equal_string as string,
+	Equal_struct as struct,
+	Equal_symbol as symbol,
+	Equal_tuple as tuple,
+	// namespaces
+} from "./_internal/_equal.js";

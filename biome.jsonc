@@ -1,0 +1,94 @@
+{
+  "$schema": "./node_modules/@biomejs/biome/configuration_schema.json",
+  "files": {
+    "ignoreUnknown": true,
+    "maxSize": 5242880
+  },
+  "organizeImports": {
+    "enabled": true
+  },
+  "vcs": {
+    "enabled": true,
+    "clientKind": "git",
+    "useIgnoreFile": true,
+    "defaultBranch": "main"
+  },
+  "linter": {
+    "ignore": [
+      "**/*.json",
+      "**/node_modules/**",
+      "packages/*/build/**/*",
+      "packages/*/dist/**/*",
+      "packages/*/src/__generated__/**/*",
+      "packages/*/test/__generated__/**/*"
+    ],
+    "enabled": true,
+    "rules": {
+      "recommended": true,
+      "correctness": {
+        "noVoidTypeReturn": "off",
+        "useExhaustiveDependencies": "off"
+      },
+      "complexity": {
+        "useArrowFunction": "off",
+        "noBannedTypes": "off",
+        "noForEach": "off",
+        "useLiteralKeys": "off",
+        "noStaticOnlyClass": "off",
+        "noExtraBooleanCast": "off"
+      },
+      "performance": {
+        "noAccumulatingSpread": "off"
+      },
+      "suspicious": {
+        "noRedeclare": "off",
+        "noThenProperty": "off",
+        "noExplicitAny": "off",
+        "noSelfCompare": "off",
+        "noShadowRestrictedNames": "off",
+        "noConfusingVoidType": "off",
+        "noEmptyInterface": "off",
+        "useValidTypeof": "off",
+        "noAssignInExpressions": "off"
+      },
+      "style": {
+        "noNonNullAssertion": "off",
+        "useConst": "off",
+        "useTemplate": "off",
+        "noUnusedTemplateLiteral": "off",
+        "noUselessElse": "off",
+        "noCommaOperator": "off",
+        "useExportType": "off",
+        "useShorthandFunctionType": "off"
+
+      }
+    }
+  },
+  "formatter": {
+    "ignore": [
+      "**/node_modules/**",
+      "packages/*/build/**/*",
+      "packages/*/dist/**/*",
+      "packages/*/src/__generated__/**/*",
+      "packages/*/test/__generated__/**/*",
+      "packages/bench/**/*",
+      "packages/core/**/*",
+      "packages/data/**/*"
+    ],
+    "include": ["packages/*/src/**/*.ts"],
+    "formatWithErrors": false,
+    "enabled": true,
+    "indentStyle": "space",
+    "indentWidth": 2,
+    "lineWidth": 110
+  },
+  "javascript": {
+    "formatter": {
+      "quoteProperties": "preserve",
+      "semicolons": "asNeeded",
+      "arrowParentheses": "always",
+      "indentWidth": 2,
+      "indentStyle": "space"
+    }
+  }
+}
