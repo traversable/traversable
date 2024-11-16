@@ -1,7 +1,20 @@
-export * as Equal from "./equal.js";
-export { VERSION } from "./version.js";
-
 import type { newtype } from "any-ts";
+
+export * from "./version.js";
+export * as array from "./array.js"
+export * as Equal from "./equal.js";
+export * as fn from "./function.js"
+export * as integer from "./integer.js"
+export * as number from "./number.js"
+export * as string from "./string.js"
+export * as unicode from "./_internal/_unicode.js"
+
+export { boolean } from "./boolean.js"
+export { entry, entries } from "./entry.js"
+export { key, keys } from "./key.js"
+export { map } from "./map.js"
+export { object } from "./object.js"
+export { prop, props } from "./prop.js"
 
 /**
  * ## {@link Predicate `data.Predicate`}

@@ -13,3 +13,7 @@ packages/*/bench/__reports__/*
 !packages/*/bench/*
 packages/*/test/__generated__/*
 !packages/*/test/*
+
+packages/*/build/*
+packages/*/dist/*
+!packages/*/test/*

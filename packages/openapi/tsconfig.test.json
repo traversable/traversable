@@ -9,8 +9,8 @@
 	},
 	"references": [
 		{ "path": "tsconfig.src.json" },
-		{ "path": "../core" },
-		{ "path": "../data" }
+		{ "path": "../data" },
+		{ "path": "../core" }
 	],
 	"include": ["test"]
 }

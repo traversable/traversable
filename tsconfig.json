@@ -4,6 +4,7 @@
     { "path": "packages/bench" },
     { "path": "packages/core" },
     { "path": "packages/data" },
+    { "path": "packages/http" },
     { "path": "packages/openapi" }
   ],
   "include": []

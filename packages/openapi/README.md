@@ -4,4 +4,4 @@
 </pre>
 </h1>
 
-benchmarking and profiling utilities for the @traversable repo.
+utilities for parsing and generating OpenAPI documents.

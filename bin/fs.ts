@@ -45,7 +45,7 @@ export function mkdir<T extends string>(
   if (fs.existsSync(dirpath)) 
     if (is.dir(dirpath)) return void 0;
     else throw globalThis.Error(
-      `${EMOJI.FRIENDLY_ERROR_GUY} < Error!\nDid not attempt to create a directory: The item at path '${
+      `${EMOJI.ERR} < Error!\nDid not attempt to create a directory: The item at path '${
         dirpath
       }' exists, and is not a directory. `
     )

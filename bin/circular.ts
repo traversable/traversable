@@ -19,7 +19,7 @@ madge(
     Print()
     Print(Print.invert(`[❕️] Critical `))
     Print()
-    Print(Print.strong(`Circular dependencies detected (${circular.flat(1).length}) \n${EMOJI.WHY}\n`))
+    Print(Print.strong(`Circular dependencies detected (${circular.flat(1).length}) \n${EMOJI.WOW}\n`))
     Print()
     Print(circular.map((xs) => xs.map((x) => `packages/${x}`)))
     Print()
@@ -27,5 +27,5 @@ madge(
     Print()
     process.exit(1)
   }
-  else { globalThis.console.log(`No circular dependencies found ${EMOJI.GUY}`) }
+  else { globalThis.console.log(`No circular dependencies found ${EMOJI.FACTS}`) }
 }).catch(globalThis.console.error)

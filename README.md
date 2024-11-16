@@ -16,6 +16,7 @@ Visualization:
 
 ```mermaid
 flowchart TD
+    http(@traversable/http)
     bench(@traversable/bench) -.-> bench(@traversable/bench)
     core(@traversable/core) -.-> bench(@traversable/bench)
     data(@traversable/data) -.-> bench(@traversable/bench)
@@ -25,6 +26,7 @@ flowchart TD
 From fewest to most dependencies:
 
 <!-- codegen:start -->
+- [`@traversable/http@0.0.0`](./packages/http) - [CHANGELOG](https://github.com/traversable/shared/blob/main/packages/http/CHANGELOG.md)
 - [`@traversable/bench@0.0.0`](./packages/bench) - [CHANGELOG](https://github.com/traversable/shared/blob/main/packages/bench/CHANGELOG.md)
 - [`@traversable/core@0.0.0`](./packages/core) - [CHANGELOG](https://github.com/traversable/shared/blob/main/packages/core/CHANGELOG.md)
 - [`@traversable/data@0.0.0`](./packages/data) - [CHANGELOG](https://github.com/traversable/shared/blob/main/packages/data/CHANGELOG.md)

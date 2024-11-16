@@ -41,6 +41,13 @@ const command = Command.prompt(
     Effect.sync(() => main({ pkgName, env, localDeps, private: private_ })
 ))
 
+const cleanup = Command.prompt(
+  "Cleanup workspace", 
+  Prompt.all([ pkgName, env, localDeps, visibility ]),
+  ([ pkgName, env, localDeps, private_ ]) => 
+    Effect.sync(() => main.cleanup({ pkgName, env, localDeps, private: private_ })
+))
+
 const cli = Command.run(command, {
   name: "Generate an empty package",
   version: "v0.0.1"
