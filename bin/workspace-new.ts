@@ -24,8 +24,10 @@ const WorkspaceEnv = {
   Node: "node",
 } as const
 
-type Config = { [K in keyof Options]-?: Exclude<Options[K], undefined> }
+type Config = Required<Options>
+type CleanupConfig = Required<CleanupOptions>
 
+export interface CleanupOptions extends globalThis.Pick<Options, "pkgName" | "force"> {}
 export interface Options { 
   pkgName: string, 
   description?: string,
@@ -65,10 +67,10 @@ const PATH = {
   packages: path.join(path.resolve(), "packages"),
   vitestSharedConfig: path.join(path.resolve(), "vitest.shared.ts"),
   workspace: (...segments: string[]) => 
-    (_: Config) => 
+    (_: CleanupConfig) => 
       path.join(PATH.packages, _.pkgName, ...segments),
   root: (...segments: string[]) => 
-    (_: Config) => 
+    (_: CleanupConfig) => 
       path.join(PATH.packages, _.pkgName, ...segments),
 } as const
 
@@ -127,13 +129,13 @@ namespace sort {
 }
 
 export const force
-  : (_: Config) => void
+  : (_: CleanupConfig) => void
   = (_) => (_).force 
     ? fs.rmSync(path.join(PATH.packages, _.pkgName), { force: true, recursive: true }) 
     : void 0
 
 namespace make {
-  void (workspaceDir.cleanup = (_: Config) => pipe(PATH.workspace()(_), fs.rmdirSync))
+  void (workspaceDir.cleanup = (_: CleanupConfig) => pipe(PATH.workspace()(_), fs.rmdirSync))
   export function workspaceDir(_: Config): void {
     return pipe(
       PATH.workspace()(_),
@@ -171,19 +173,19 @@ namespace make {
   }
 
   const filterReference = (tsconfig: HasReferences) => 
-    (_: Config) => tsconfig
+    (_: CleanupConfig) => tsconfig
       .references
       .filter((reference) => reference.path !== _.pkgName)
 
   void (
-    rootReferences.invert = (tsconfig: HasReferences) => (_: Config): HasReferences & any.json => ({
+    rootReferences.invert = (tsconfig: HasReferences) => (_: CleanupConfig): HasReferences & any.json => ({
       ...tsconfig,
       references: filterReference(tsconfig)(_).sort(sort.byPath),
     }) as HasReferences & any.json
   )
-  export function rootReferences(tsconfig: HasReferences): (_: Config) => HasReferences & any.json
+  export function rootReferences(tsconfig: HasReferences): (_: CleanupConfig) => HasReferences & any.json
   export function rootReferences(tsconfig: HasReferences) {
-    return (_: Config) => ({ 
+    return (_: CleanupConfig) => ({ 
       ...tsconfig,
       references: filterReference(tsconfig)(_)
         .concat({ path: `packages/${_.pkgName}` })
@@ -191,13 +193,13 @@ namespace make {
     })
   }
 
-  const filterBasePath = (_: Config) => (paths: Paths) => 
+  const filterBasePath = (_: CleanupConfig) => (paths: Paths) => 
     globalThis.Object
       .entries(paths)
       .filter(([k]) => k !== _.pkgName)
 
   void (
-    rootBasePaths.invert = (tsconfig: HasCompilerOptions) => (_: Config) => ({
+    rootBasePaths.invert = (tsconfig: HasCompilerOptions) => (_: CleanupConfig) => ({
       ...tsconfig,
       compilerOptions: {
         ...tsconfig.compilerOptions,
@@ -211,7 +213,7 @@ namespace make {
     })
   )
   export function rootBasePaths(tsconfig: HasCompilerOptions) {
-    return (_: Config) => ({ 
+    return (_: CleanupConfig) => ({ 
       ...tsconfig,
       compilerOptions: {
         ...tsconfig.compilerOptions,
@@ -354,7 +356,7 @@ namespace write {
       fs.writeJson(path.join(...rootRefsPath)),
     )
   )
-  export function rootRefs(_: Config): void {
+  export function rootRefs(_: CleanupConfig): void {
     return pipe(
       make.rootReferences(tsconfig.root)(_),
       fs.writeJson(path.join(...rootRefsPath)),
@@ -369,7 +371,7 @@ namespace write {
   //     make.rootReferences.invert(tsconfig.build)(_)
   //   }
   // )
-  export function rootBuildRefs(_: Config) {
+  export function rootBuildRefs(_: CleanupConfig) {
     return pipe(
       // TODO: do I need to undo this logic? if so, what's the best way to do it?
       ({ ..._, pkgName: _.pkgName.concat("/tsconfig.build.json") }),
@@ -386,7 +388,7 @@ namespace write {
       fs.writeString(path.join(...rootBaseRefsPath)),
     )
   )
-  export function rootBaseRefs(_: Config): void {
+  export function rootBaseRefs(_: CleanupConfig): void {
     return pipe(
       make.rootBasePaths(tsconfig.base)(_),
       Transform.prettify,
@@ -394,8 +396,8 @@ namespace write {
     )
   }
 
-  const workspacePackageJsonPath = (_: Config) => [PATH.packages, _.pkgName, "package.json"] as const
-  void (workspacePackageJson.cleanup = (_: Config) => fs.rmSync(path.join(...workspacePackageJsonPath(_))))
+  const workspacePackageJsonPath = (_: CleanupConfig) => [PATH.packages, _.pkgName, "package.json"] as const
+  void (workspacePackageJson.cleanup = (_: CleanupConfig) => fs.rmSync(path.join(...workspacePackageJsonPath(_))))
   export function workspacePackageJson(_: Config): void {
     return pipe(
       make.workspacePackageJson(_),
@@ -403,8 +405,8 @@ namespace write {
     )
   }
   
-  const workspaceVitestConfigPath = (_: Config) => [PATH.packages, _.pkgName, "package.json"] as const
-  void (workspaceVitestConfig.cleanup = (_: Config) => fs.rmSync(path.join(...workspaceVitestConfigPath(_))))
+  const workspaceVitestConfigPath = (_: CleanupConfig) => [PATH.packages, _.pkgName, "package.json"] as const
+  void (workspaceVitestConfig.cleanup = (_: CleanupConfig) => fs.rmSync(path.join(...workspaceVitestConfigPath(_))))
   export function workspaceVitestConfig(_: Config): void {
     return pipe(
       make.workspaceVitestConfig(_),
@@ -412,35 +414,35 @@ namespace write {
     )
   }
 
-  const workspaceIndexPath = (_: Config) => [PATH.packages, _.pkgName, "src", "index.ts"] as const
-  void (workspaceIndex.cleanup = (_: Config) => fs.rmSync(path.join(...workspaceIndexPath(_))))
-  export function workspaceIndex(_: Config): void {
+  const workspaceIndexPath = (_: CleanupConfig) => [PATH.packages, _.pkgName, "src", "index.ts"] as const
+  void (workspaceIndex.cleanup = (_: CleanupConfig) => fs.rmSync(path.join(...workspaceIndexPath(_))))
+  export function workspaceIndex(_: CleanupConfig): void {
     return fs.writeFileSync(
       path.join(...workspaceIndexPath(_)),
       make.workspaceIndex,
     )
   }
 
-  const workspaceReadmePath = (_: Config) => [PATH.packages, _.pkgName, "README.md"] as const
-  void (workspaceReadme.cleanup = (_: Config) => fs.rmSync(path.join(...workspaceReadmePath(_))))
-  export function workspaceReadme(_: Config): void {
+  const workspaceReadmePath = (_: CleanupConfig) => [PATH.packages, _.pkgName, "README.md"] as const
+  void (workspaceReadme.cleanup = (_: CleanupConfig) => fs.rmSync(path.join(...workspaceReadmePath(_))))
+  export function workspaceReadme(_: CleanupConfig): void {
     return pipe(
       make.workspaceReadme(_.pkgName),
       fs.writeString(path.join(...workspaceReadmePath(_)))
     )
   }
 
-  const workspaceVersionsSrcPath = (_: Config) => [PATH.packages, _.pkgName, "src", "version.ts"] as const
-  void (workspaceVersionSrc.cleanup = (_: Config) => fs.rmSync(path.join(...workspaceVersionsSrcPath(_))))
-  export function workspaceVersionSrc(_: Config): void {
+  const workspaceVersionsSrcPath = (_: CleanupConfig) => [PATH.packages, _.pkgName, "src", "version.ts"] as const
+  void (workspaceVersionSrc.cleanup = (_: CleanupConfig) => fs.rmSync(path.join(...workspaceVersionsSrcPath(_))))
+  export function workspaceVersionSrc(_: CleanupConfig): void {
     return pipe(
       make.workspaceVersionSrc,
       fs.writeString(path.join(...workspaceReadmePath(_)))
     )
   }
 
-  const workspaceVersionTestPath = (_: Config) => [PATH.packages, _.pkgName, "test", "version.test.ts"] as const
-  void (workspaceVersionTest.cleanup = (_: Config) => fs.rmSync(path.join(...workspaceVersionTestPath(_))))
+  const workspaceVersionTestPath = (_: CleanupConfig) => [PATH.packages, _.pkgName, "test", "version.test.ts"] as const
+  void (workspaceVersionTest.cleanup = (_: CleanupConfig) => fs.rmSync(path.join(...workspaceVersionTestPath(_))))
   export function workspaceVersionTest(_: Config): void {
     return pipe(
       make.workspaceVersionTest(_),
@@ -448,17 +450,17 @@ namespace write {
     )
   }
 
-  const workspaceTSConfigPath = (_: Config) => [PATH.packages, _.pkgName, "tsconfig.json"] as const
-  void (workspaceTSConfig.cleanup = (_: Config) => fs.rmSync(path.join(...workspaceTSConfigPath(_))))
-  export function workspaceTSConfig(_: Config): void {
+  const workspaceTSConfigPath = (_: CleanupConfig) => [PATH.packages, _.pkgName, "tsconfig.json"] as const
+  void (workspaceTSConfig.cleanup = (_: CleanupConfig) => fs.rmSync(path.join(...workspaceTSConfigPath(_))))
+  export function workspaceTSConfig(_: CleanupConfig): void {
     return pipe(
       make.workspaceTSConfig(),
       fs.writeString(path.join(...workspaceTSConfigPath(_)))
     )
   }
 
-  const workspaceTSConfigBuildPath = (_: Config) => [PATH.packages, _.pkgName, "tsconfig.build.json"] as const
-  void (workspaceTSConfigBuild.cleanup = (_: Config) => fs.rmSync(path.join(...workspaceTSConfigBuildPath(_))))
+  const workspaceTSConfigBuildPath = (_: CleanupConfig) => [PATH.packages, _.pkgName, "tsconfig.build.json"] as const
+  void (workspaceTSConfigBuild.cleanup = (_: CleanupConfig) => fs.rmSync(path.join(...workspaceTSConfigBuildPath(_))))
   export function workspaceTSConfigBuild(_: Config): void {
     return pipe(
       make.workspaceTSConfigBuild(_),
@@ -466,8 +468,8 @@ namespace write {
     )
   }
 
-  const workspaceTSConfigSrcPath = (_: Config) => [PATH.packages, _.pkgName, "tsconfig.src.json"] as const
-  void (workspaceTSConfigSrc.cleanup = (_: Config) => fs.rmSync(path.join(...workspaceTSConfigSrcPath(_))))
+  const workspaceTSConfigSrcPath = (_: CleanupConfig) => [PATH.packages, _.pkgName, "tsconfig.src.json"] as const
+  void (workspaceTSConfigSrc.cleanup = (_: CleanupConfig) => fs.rmSync(path.join(...workspaceTSConfigSrcPath(_))))
   export function workspaceTSConfigSrc(_: Config): void {
     return pipe(
       make.workspaceTSConfigSrc(_),
@@ -475,8 +477,8 @@ namespace write {
     )
   }
 
-  const workspaceTSConfigTestPath = (_: Config) => [PATH.packages, _.pkgName, "tsconfig.test.json"] as const
-  void (workspaceTSConfigTest.cleanup = (_: Config) => fs.rmSync(path.join(...workspaceTSConfigTestPath(_))))
+  const workspaceTSConfigTestPath = (_: CleanupConfig) => [PATH.packages, _.pkgName, "tsconfig.test.json"] as const
+  void (workspaceTSConfigTest.cleanup = (_: CleanupConfig) => fs.rmSync(path.join(...workspaceTSConfigTestPath(_))))
   export function workspaceTSConfigTest(_: Config): void {
     return pipe(
       make.workspaceTSConfigTest(_),
