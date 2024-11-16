@@ -1,6 +1,6 @@
 # traversable 🏝️
 
-`traversable` contains projects that belong to the [`@traversable`](https://www.npmjs.com/org/traversable) project.
+packages that belong to the [`@traversable`](https://www.npmjs.com/org/traversable) project.
 
 
 ## getting started
