@@ -36,16 +36,9 @@ const localDeps = Prompt.list({
 
 const command = Command.prompt(
   "New workspace", 
-  Prompt.all([ pkgName, env, localDeps, visibility ]),
+  Prompt.all([pkgName, env, localDeps, visibility]),
   ([ pkgName, env, localDeps, private_ ]) => 
-    Effect.sync(() => main({ pkgName, env, localDeps, private: private_, dryRun: true })
-))
-
-const cleanup = Command.prompt(
-  "Cleanup workspace", 
-  Prompt.all([ pkgName, env, localDeps, visibility ]),
-  ([ pkgName, env, localDeps, private_ ]) => 
-    Effect.sync(() => main.cleanup({ pkgName, env, localDeps, private: private_, dryRun: false })
+    Effect.sync(() => main({ pkgName, env, localDeps, private: private_, dryRun: false })
 ))
 
 const cli = Command.run(command, {

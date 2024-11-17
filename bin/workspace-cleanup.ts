@@ -20,7 +20,7 @@ const cleanup = Command.prompt(
 ))
 
 const cli = Command.run(cleanup, {
-  name: "Generate an empty package",
+  name: "Removes a previously generated workspace",
   version: "v0.0.1"
 })
 
@@ -28,20 +28,3 @@ Effect.suspend(() => cli(globalThis.process.argv)).pipe(
   Effect.provide(NodeContext.layer),
   NodeRuntime.runMain
 )
-
-// const pkgToRm = Prompt.text({
-//   message: `What is the name of your package?`,
-// })
-// const visibility = Prompt.select({
-//   message: `Initialize the package as private (will not auto-publish)?`,
-//   choices: [
-//     { title: "true", value: true },
-//     { title: "false", value: false },
-//   ] as const
-// })
-// const localDeps = Prompt.list({
-//   message: `Which will your workspace depend on?\n\ncomma separated list containing any of: \n\n   ${
-//     [...PACKAGES].sort().map(pkg => pkg.slice("packages/".length)).join(", ")
-//   }\n` ,
-//   delimiter: ", "
-// })

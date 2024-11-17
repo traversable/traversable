@@ -1,10 +1,18 @@
 {
   "extends": "./tsconfig.base.json",
+  "include": [],
   "references": [
-    { "path": "packages/bench/tsconfig.build.json" },
-    { "path": "packages/core/tsconfig.build.json" },
-    { "path": "packages/data/tsconfig.build.json" },
-    { "path": "packages/openapi/tsconfig.build.json" }
-  ],
-  "include": []
+    {
+      "path": "packages/bench/tsconfig.build.json"
+    },
+    {
+      "path": "packages/core/tsconfig.build.json"
+    },
+    {
+      "path": "packages/data/tsconfig.build.json"
+    },
+    {
+      "path": "packages/openapi/tsconfig.build.json"
+    }
+  ]
 }

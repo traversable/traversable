@@ -198,6 +198,8 @@ const unmakeBaseEntries
     unmakeBaseKey$,
     unmakeBaseKey,
   )
+ 
+const filterBaseRefs = ($: Deps) => ([path]: [string, any]) => unmakeBaseKey(path) !== $.pkgName && unmakeBaseKey$(path) !== $.pkgName
 
 namespace make {
   export const _ref = (dep: string) => ({ path: `../${dep}` } as const)
@@ -256,7 +258,7 @@ namespace write {
               : pipe(
                 compilerOptions.paths,
                 globalThis.Object.entries,
-                (xs) => xs.filter(([path]) => unmakeBaseEntries(path) !== $.pkgName),
+                (xs) => xs.filter(filterBaseRefs($)),
                 (xs) => [...xs, ...makeBaseEntries($)],
                 (xs) => xs.sort(order.byKey),
                 globalThis.Object.fromEntries
@@ -282,7 +284,7 @@ namespace write {
               : pipe(
                 ts.compilerOptions.paths,
                 globalThis.Object.entries,
-                (xs) => xs.filter(([path]) => unmakeBaseEntries(path) !== $.pkgName),
+                (xs) => xs.filter(filterBaseRefs($)),
                 globalThis.Object.fromEntries,
               )
             }
@@ -432,12 +434,12 @@ namespace write {
         vitest.configMap[$.env ?? "node"]
       ].join("\n"),
       $.dryRun ? tap("\n\n[CREATE #11]: workspaceVitestConfig\n", globalThis.String) 
-      : fs.writeString(path.join(PATH.packages, $.pkgName, "package.json")),
+      : fs.writeString(path.join(PATH.packages, $.pkgName, "vitest.config.ts")),
     ),
     ($) => 
       $.dryRun 
         ? tap("\n\n[CLEANUP #11]: workspaceVitestConfig\n", globalThis.String) 
-        : fs.rimraf(path.join(PATH.packages, $.pkgName, "package.json")),
+        : fs.rimraf(path.join(PATH.packages, $.pkgName, "vitest.config.ts")),
   )
 
   export const workspaceReadme = defineEffect(

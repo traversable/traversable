@@ -3,21 +3,15 @@
     "incremental": true,
     "composite": true,
     "target": "ES2022",
-    "lib": ["ES2022", "DOM", "DOM.Iterable"],
+    "lib": [
+      "ES2022",
+      "DOM",
+      "DOM.Iterable"
+    ],
     "moduleDetection": "force",
     "baseUrl": ".",
     "module": "NodeNext",
     "moduleResolution": "NodeNext",
-    "paths": {
-      "@traversable/bench": ["packages/bench/src/index.js"],
-      "@traversable/bench/*": ["packages/bench/src/*.js"],
-      "@traversable/core": ["packages/core/src/index.js"],
-      "@traversable/core/*": ["packages/core/src/*.js"],
-      "@traversable/data": ["packages/data/src/index.js"],
-      "@traversable/data/*": ["packages/data/src/*.js"],
-      "@traversable/openapi": ["packages/openapi/src/index.js"],
-      "@traversable/openapi/*": ["packages/openapi/src/*.js"]
-    },
     "resolveJsonModule": true,
     "types": [],
     "allowJs": false,
@@ -36,6 +30,32 @@
     "forceConsistentCasingInFileNames": true,
     "isolatedModules": true,
     "noErrorTruncation": true,
-    "skipLibCheck": true
+    "skipLibCheck": true,
+    "paths": {
+      "@traversable/bench": [
+        "packages/bench/src/index.js"
+      ],
+      "@traversable/bench/*": [
+        "packages/bench/src/*.js"
+      ],
+      "@traversable/core": [
+        "packages/core/src/index.js"
+      ],
+      "@traversable/core/*": [
+        "packages/core/src/*.js"
+      ],
+      "@traversable/data": [
+        "packages/data/src/index.js"
+      ],
+      "@traversable/data/*": [
+        "packages/data/src/*.js"
+      ],
+      "@traversable/openapi": [
+        "packages/openapi/src/index.js"
+      ],
+      "@traversable/openapi/*": [
+        "packages/openapi/src/*.js"
+      ],
+    }
   }
 }

@@ -1,10 +1,18 @@
 {
   "extends": "./tsconfig.base.json",
+  "include": [],
   "references": [
-    { "path": "packages/bench" },
-    { "path": "packages/core" },
-    { "path": "packages/data" },
-    { "path": "packages/openapi" }
-  ],
-  "include": []
+    {
+      "path": "packages/bench"
+    },
+    {
+      "path": "packages/core"
+    },
+    {
+      "path": "packages/data"
+    },
+    {
+      "path": "packages/openapi"
+    }
+  ]
 }

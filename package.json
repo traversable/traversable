@@ -30,7 +30,8 @@
     "reboot": "pnpm clean && pnpm install && pnpm build && pnpm check && pnpm test && pnpm describe && pnpm build:dist && pnpm bench",
     "test": "vitest run -- --skipTypes",
     "test:watch": "vitest watch",
-    "workspace:new": "./bin/workspace-cli.ts"
+    "workspace:new": "./bin/workspace-create.ts",
+    "workspace:rm": "./bin/workspace-cleanup.ts"
   },
   "devDependencies": {
     "@babel/cli": "^7.25.9",
