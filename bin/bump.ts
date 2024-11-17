@@ -1,14 +1,13 @@
 #!/usr/bin/env pnpm dlx tsx
-import * as FS from "node:fs"
-import * as Path from "node:path"
-
+import * as path from "node:path"
 import * as fs from "./fs.js"
-import { Print, Transform, tap } from "./util.js"
+import { Print, Transform } from "./util.js"
 import { PACKAGES } from "./metadata.js"
+import { pipe } from "effect"
 
 const ABSOLUTE_PATH = {
-  RepoMetadata: Path.join(Path.resolve(), "__generated__"),
-  RepoPackages: Path.join(Path.resolve(), "__generated__", "package-list.ts"),
+  RepoMetadata: path.join(path.resolve(), "__generated__"),
+  RepoPackages: path.join(path.resolve(), "__generated__", "package-list.ts"),
 }
 
 const RELATIVE_PATH = {
@@ -38,7 +37,7 @@ function main(): void {
   void Print(Print.task(`[bin/bump.ts] Writing changelogs to '${ABSOLUTE_PATH.RepoPackages}'`))
   void Print()
   void fs.mkdir(ABSOLUTE_PATH.RepoMetadata)
-  void FS.writeFileSync(ABSOLUTE_PATH.RepoPackages, serialize(PACKAGES)) 
+  void fs.writeFileSync(ABSOLUTE_PATH.RepoPackages, serialize(PACKAGES))
   void PACKAGES
     .sort()
     .map((pkg): [string, string] => [`${pkg}/${RELATIVE_PATH.PackageJson}`, `${pkg}/${RELATIVE_PATH.PackageFile}`])

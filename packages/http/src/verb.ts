@@ -1,13 +1,7 @@
 import { is } from "@traversable/core"
 import { array, object } from "@traversable/data"
 
-export { 
-  type AnyVerb as any, 
-  Verbs as all, 
-  Verb as enum, 
-  isAnyVerb as isAny, 
-  isSpecificVerb as is,
-}
+export { type AnyVerb as any, Verbs as all, Verb as enum, isAnyVerb as isAny, isSpecificVerb as is }
 
 const Verbs = array.of("delete", "get", "patch", "post", "put")
 //    ^?
