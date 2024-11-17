@@ -1,26 +1,20 @@
 export default {
-  "name": "@traversable/openapi",
+  "name": "@traversable/http",
   "type": "module",
   "version": "0.0.0",
-  "description": "Utilities for parsing and generating OpenAPI documents",
+  "private": true,
+  "description": "",
   "repository": {
     "type": "git",
-    "url": "https://github.com/traversable/traversable",
-    "directory": "packages/openapi"
+    "url": "https://github.com/traversable/traversable.git",
+    "directory": "packages/http"
   },
   "@traversable": {
-    "generateExports": {
-      "include": ["**/*.ts"]
-    },
-    "generateIndex": {
-      "include": ["**/*.ts"]
-    }
+    "generateExports": { "include": ["**/*.ts"] },
+    "generateIndex": { "include": ["**/*.ts"] }
   },
-  "publishConfig": {
-    "directory": "dist"
-  },
+  "publishConfig": { "directory": "dist" },
   "scripts": {
-    "bench": "echo NOTHING TO BENCH",
     "build": "pnpm build:esm && pnpm build:cjs && pnpm build:annotate",
     "build:esm": "tsc -b tsconfig.build.json",
     "build:cjs": "babel build/esm --plugins @babel/transform-export-namespace-from --plugins @babel/transform-modules-commonjs --out-dir build/cjs --source-maps",
@@ -31,17 +25,16 @@ export default {
     "clean:deps": "rm -rf node_modules",
     "test": "vitest"
   },
+  "devDependencies": {
+    "@traversable/core": "workspace:^",
+    "@traversable/data": "workspace:^"
+  },
   "peerDependencies": {
     "@traversable/core": "workspace:^",
-    "@traversable/data": "workspace:^",
-    "any-ts": "0.48.0"
+    "@traversable/data": "workspace:^"
   },
   "peerDependenciesMeta": {
-    "@traversable/data": { "optional": false },
     "@traversable/core": { "optional": false },
-    "any-ts": { "optional": false }
-  },
-  "devDependencies": {
-    "@traversable/bench": "workspace:^"
+    "@traversable/data": { "optional": false }
   }
 } as const

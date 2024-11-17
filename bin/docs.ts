@@ -82,9 +82,6 @@ const writeChangelogs: (list: string) => SideEffect = flow(
   apply(PATH.RootReadme),
 )
 
-const logTask: SideEffect = () => 
-  Print(Print.task(`[bin/docs.ts] Writing dependency graph to '${README}'`))
-
 /**
  * {@link writeToReadme `writeToReadme`} creates a text-based diagram of the
  * project's dependency graph and writes it to the root `README.md` file.
@@ -120,7 +117,7 @@ const logTask: SideEffect = () =>
 const writeChartToReadme: SideEffect = flow(
   topological,
   Draw.relation,
-  tap(logTask),
+  tap(Print(Print.task(`[bin/docs.ts] Writing dependency graph to '${README}'`))),
   writeChart,
   apply(void 0),
 )

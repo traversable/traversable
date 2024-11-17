@@ -92,6 +92,20 @@ export function indexBy<const K extends keyof any>(index: K) {
     array.reduce((acc, x) => ({ ...acc, [x[index]]: x }), {})
 }
 
+/** 
+ * ## {@link localTime `localTime`}
+ * @example
+ *  const now = localTime()
+ * 
+ *  console.log(now) 
+ *  // => 
+ */
+export const localTime = () => {
+  const d = new globalThis.Date()
+  const ts = d.toLocaleTimeString()
+  return ts.slice(0, -3) + "." + `${Math.round(d.getMilliseconds() / 10)}`.padStart(2, "0").concat(ts.slice(-2))
+}
+
 const throw_
   : (x: unknown) => never
   = (x) => { throw x }
@@ -119,7 +133,11 @@ export declare namespace Print {
   }
 }
 
-export function Print(...args: Parameters<typeof globalThis.console.log>) { return void globalThis.console.log(...args) }
+export function Print(...args: Parameters<typeof globalThis.console.log>): void 
+export function Print(...args: Parameters<typeof globalThis.console.log>) {
+  return void globalThis.console.log(...args) 
+}
+
 export namespace Print {
   export const indent = `    `
   export const lightBlue = Print_format(`\x1B[104m`, `\x1B[254m`, `\x1B[0m`)
@@ -183,7 +201,7 @@ export namespace Transform {
 
   export function prettify(input: unknown): string {
     if (typeof input === "string") {
-      try { return prettifySync.format(input, { parser: `json`, printWidth: 100 }) }
+      try { return prettifySync.format(input, { parser: `json`, printWidth: 80 }) }
       catch (e) { return prettifySync.format(input, { parser: `babel` }) }
     }
     else {
@@ -320,8 +338,9 @@ export const topological
   }
 
 export function tap<T>(msg?: string): (x: T) => T 
+export function tap<T>(msg?: string | void): (x: T) => T 
 export function tap<T>(msg?: string, toString?: (x: T) => string): (x: T) => T 
-export function tap<T>(msg: string = "", toString: (x: T) => string = (x: T) => JSON.stringify(x, null, 2)): (x: T) => T {
+export function tap<T>(msg: string | void = "", toString: (x: T) => string = (x: T) => JSON.stringify(x, null, 2)): (x: T) => T {
   return (x: T) => (
     console.debug(msg, toString(x)),
     x

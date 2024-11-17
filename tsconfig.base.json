@@ -34,6 +34,8 @@
       "@traversable/core/*": ["packages/core/src/*.js"],
       "@traversable/data": ["packages/data/src/index.js"],
       "@traversable/data/*": ["packages/data/src/*.js"],
+      "@traversable/http": ["packages/http/src/index.js"],
+      "@traversable/http/*": ["packages/http/*.js"],
       "@traversable/openapi": ["packages/openapi/src/index.js"],
       "@traversable/openapi/*": ["packages/openapi/src/*.js"]
     }

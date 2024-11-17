@@ -5,7 +5,7 @@ export * from "./version.js";
 export * as zip from "./zip.js"
 
 export type { JSON } from "./json.js"
-export { fc, std } from "./arbitrary/index.js"
+export { fc } from "./arbitrary/index.js"
 export { 
   and, 
   has, 

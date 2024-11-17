@@ -1,7 +1,6 @@
 {
 	"extends": "../../tsconfig.base.json",
 	"compilerOptions": {
-		"allowSyntheticDefaultImports": true,
 		"tsBuildInfoFile": ".tsbuildinfo/test.tsbuildinfo",
 		"rootDir": "test",
 		"types": ["node"],
