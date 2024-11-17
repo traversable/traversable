@@ -29,10 +29,10 @@ From fewest to most dependencies:
 
 <!-- codegen:start -->
 - [`@traversable/bench@0.0.0`](./packages/bench) - [CHANGELOG](https://github.com/traversable/shared/blob/main/packages/bench/CHANGELOG.md)
-- [`@traversable/data@0.0.0`](./packages/data) - [CHANGELOG](https://github.com/traversable/shared/blob/main/packages/data/CHANGELOG.md)
-- [`@traversable/openapi@0.0.0`](./packages/openapi) - [CHANGELOG](https://github.com/traversable/shared/blob/main/packages/openapi/CHANGELOG.md)
-- [`@traversable/core@0.0.0`](./packages/core) - [CHANGELOG](https://github.com/traversable/shared/blob/main/packages/core/CHANGELOG.md)
-- [`@traversable/http@0.0.0`](./packages/http) - [CHANGELOG](https://github.com/traversable/shared/blob/main/packages/http/CHANGELOG.md)
+- [`@traversable/data@0.0.1`](./packages/data) - [CHANGELOG](https://github.com/traversable/shared/blob/main/packages/data/CHANGELOG.md)
+- [`@traversable/openapi@0.0.1`](./packages/openapi) - [CHANGELOG](https://github.com/traversable/shared/blob/main/packages/openapi/CHANGELOG.md)
+- [`@traversable/core@0.0.1`](./packages/core) - [CHANGELOG](https://github.com/traversable/shared/blob/main/packages/core/CHANGELOG.md)
+- [`@traversable/http@0.0.1`](./packages/http) - [CHANGELOG](https://github.com/traversable/shared/blob/main/packages/http/CHANGELOG.md)
 <!-- codegen:end -->
 
 
