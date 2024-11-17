@@ -17,7 +17,8 @@
 		}
 	},
 	"publishConfig": {
-		"directory": "dist"
+  	"directory": "dist",
+		"registry": "https://npm.pkg.github.com"
 	},
 	"scripts": {
 		"bench": "echo NOTHING TO BENCH # ./bench/index.ts",
