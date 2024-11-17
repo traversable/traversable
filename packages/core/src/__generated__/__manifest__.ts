@@ -1,7 +1,7 @@
 export default {
   "name": "@traversable/core",
   "type": "module",
-  "version": "0.0.0",
+  "version": "0.0.1",
   "description": "a small, focused set of libraries that solve a particular problem or have a specific use case",
   "repository": {
     "type": "git",
@@ -36,8 +36,12 @@ export default {
     "any-ts": "0.48.0"
   },
   "peerDependenciesMeta": {
-    "@traversable/data": { "optional": false },
-    "any-ts": { "optional": false }
+    "@traversable/data": {
+      "optional": false
+    },
+    "any-ts": {
+      "optional": false
+    }
   },
   "devDependencies": {
     "@traversable/data": "workspace:^",
