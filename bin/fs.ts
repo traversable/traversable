@@ -1,10 +1,14 @@
 import * as fs from "node:fs"
 import * as Glob from "glob"
+import * as Effect from "effect/Effect"
+import * as S from "effect/Schema"
+import { pipe } from "effect/Function"
+import { type ParseError } from "effect/ParseResult"
 
 import type { any } from "any-ts"
 import { flow } from "effect"
-import { Transform } from "./util.js"
-import { EMOJI } from "bin/metadata.js"
+import { tap, Transform } from "./util.js"
+import { EMOJI } from "./metadata.js"
 
 export * from "node:fs"
 
@@ -64,7 +68,10 @@ export function writeString(pathspec: string) {
     )
 }
 
-export function writeJson(pathspec: string): (json: any.json) => void 
+export function writeJson(pathspec: string): {
+  (json: any.json): void 
+  (json: {}): void 
+}
 export function writeJson(pathspec: string) {
   return flow(
     globalThis.JSON.stringify,
@@ -73,6 +80,34 @@ export function writeJson(pathspec: string) {
   )
 }
 
+export declare namespace writeFileSync {
+  type pathspec = Parameters<typeof fs.writeFileSync>[0]
+  type data = Parameters<typeof fs.writeFileSync>[1]
+  type unary = never | [pathspec: writeFileSync.pathspec]
+  type binary = never | [pathspec: writeFileSync.pathspec, data: writeFileSync.data]
+}
+
+export function writeFileSync(pathspec: writeFileSync.pathspec): (data: writeFileSync.data) => void
+export function writeFileSync(...args: writeFileSync.binary): void
+export function writeFileSync(
+  ...args: 
+    | writeFileSync.unary 
+    | writeFileSync.binary
+  ) {
+  if (args.length === 1) 
+    return (data: writeFileSync.data) => 
+      writeFileSync(...args, data)
+  else return fs.writeFileSync(...args)
+}
+
+export const rimraf
+  : (pathspec: string) => void
+  = (pathspec: string) => fs.rmSync(pathspec, { recursive: true, force: true })
+
+export const touch
+  : (pathspec: fs.PathOrFileDescriptor) => void
+  = (pathspec) => fs.writeFileSync(pathspec, "")
+  
 export function glob(
   pattern: string | any.array<string>,
   options: config.glob.options = config.glob.defaults,
@@ -111,4 +146,119 @@ export function rmAndCopy(
     rmdir(target, config.rmdir.defaults),
     copy(source, target)
   )
+}
+
+/** 
+ * ## {@link map `fs.map`} 
+ * 
+ * Given a schema describing the JSON you expect to parse out of a file,
+ * and a function to run on the parsed JSON, {@link file.map `file.map`}
+ * returns a function a single argument, which is the path to the file
+ * you want to apply the function to.
+ * 
+ * Note that unlike {@link writer `fs.writer`}, 
+ * {@link file.map `file.map`} is pure.
+ * 
+ * **Note:** if the file at `pathspec` fails to parse with the provided
+ * schema, by default, an error will be thrown. If you'd like to configure
+ * 
+ * 
+ * - When **1 argument is provided**, the mapping function will be applied to
+ * the file at `pathspec`'s contents, the output is stringified, and `pathspec`
+ * is overwritten.
+ * 
+ * - When **2 arguments are provided**, the mapping function will be applied to
+ * the file at `sourcePath`'s contents, and the output will be stringified and 
+ * written to `targetPath`.
+ */
+export function map<T, U>(schema: S.Schema<T>, fn: (t: T) => U): (pathspec: string) => U
+export function map<T, U, E = never>(schema: S.Schema<T>, fn: (t: T) => U, options: map.Options<T, E>): (pathspec: string) => U
+export function map<T, U, E = never>(schema: S.Schema<T>, fn: (t: T) => U, options?: map.Options<T, E>): (pathspec: string) => U
+/// impl.
+export function map<T, U, E>(
+  schema: S.Schema<T>, 
+  fn: (t: T) => U, {
+    deserialize = map.defaults.deserialize,
+    handleFileNotFound = map.defaults.handleFileNotFound,
+    handleParseError = map.defaults.handleParseError,
+  }: map.Options<T, E> = map.defaults
+): (pathspec: string) => U {
+  return (pathspec: string) => pipe(
+    Effect.try({
+      try: () => fs.readFileSync(pathspec).toString("utf8"),
+      catch: () => handleFileNotFound(pathspec),
+    }),
+    Effect.flatMap(
+      flow(
+        deserialize,
+        S.decode(schema, { onExcessProperty: "preserve" }),
+        Effect.mapError(handleParseError),
+      )
+    ),
+    Effect.map(fn),
+    Effect.runSync,
+  )
+}
+
+export declare namespace map {
+  interface Options<T, E> {
+    handleFileNotFound?(pathspec: string): E
+    handleParseError?(e: ParseError): E
+    deserialize?(content: string): T
+  }
+}
+export namespace map {
+  export const defaults = {
+    handleFileNotFound(e) { throw globalThis.Error("File not found:" + JSON.stringify(e, null, 2)) },
+    handleParseError(e) { throw globalThis.Error("Parse error:" + JSON.stringify(e, null, 2)) },
+    deserialize: globalThis.JSON.parse,
+  } satisfies Required<map.Options<any, any>>
+}
+
+
+/** 
+ * ## {@link file.writer `file.writer`} 
+ * 
+ * Given a schema describing the JSON you expect to parse out of a file,
+ * and a function to run on the parsed JSON, {@link file.writer `file.writer`}
+ * returns a function that expects 1 or 2 arguments.
+ * 
+ * - When **1 argument is provided**, the mapping function will be applied to
+ * the file at `pathspec`'s contents, the output is stringified, and `pathspec`
+ * is overwritten.
+ * 
+ * - When **2 arguments are provided**, the mapping function will be applied to
+ * the file at `sourcePath`'s contents, and the output will be stringified and 
+ * written to `targetPath`.
+ */
+export function writer<T, U>(schema: S.Schema<T>, fn: (t: T) => U): {
+  (pathspec: string): () => void
+  (sourcePath: string, targetPath: string): () => void
+}
+export function writer<T, U, E>(schema: S.Schema<T>, fn: (t: T) => U, options: writer.Options<T, U, E>): {
+  (pathspec: string): () => void
+  (sourcePath: string, targetPath: string): () => void
+}
+/// impl.
+export function writer<T, U, E>(schema: S.Schema<T>, fn: (t: T) => U, options?: writer.Options<T, U, E>) {
+  return (source: string, target: string = source) => {
+    pipe(
+      source,
+      map(schema, fn, options),
+      options?.serialize ?? writer.defaults.serialize,
+      writeString(target),
+    )
+  }
+}
+
+export declare namespace writer {
+  interface withSerializer<U> { serialize?(content: U): string }
+  interface Options<T, U, E> extends 
+    map.Options<T, E>, 
+    writer.withSerializer<U> {}
+}
+export namespace writer {
+  export const defaults = {
+    serialize(content) { return globalThis.JSON.stringify(content, null, 2) },
+  } satisfies Required<writer.withSerializer<any>>
 }

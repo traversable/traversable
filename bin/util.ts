@@ -104,10 +104,6 @@ export const log
   : (...args: globalThis.Parameters<typeof globalThis.console.log>) => void
   = (...args) => () => globalThis.console.log(...args)
 
-export const tap
-  : <T, U>(fn: (t: T) => U) => (t: T) => T
-  = (fn) => (t) => (fn(t), t)
-
 const reset 
   : (string: string) => string
   = (string) => `\x1B[0m${string}\x1B[0m`
@@ -170,15 +166,23 @@ export namespace Transform {
 
   export const toMetadata 
     : (_: readonly [readPath: string, writePath: string]) => void
-    = ([readPath, writePath]) => fs.writeFileSync(
-      writePath, 
-      Ends.before.concat(
-        Transform.prettify(
-          fs.readFileSync(readPath)
-            .toString(`utf8`))
-            .trim()
-            .concat(Ends.after),
-      )
+    = (args) => pipe(
+      (console.log("ARGS", Array.isArray(args)), args),
+      x=>x,
+      tap("toMetadata"),
+
+      ([readPath, writePath]) => {
+        fs.writeFileSync(
+          writePath, 
+          Ends.before.concat(
+            Transform.prettify(
+              fs.readFileSync(readPath)
+                .toString(`utf8`))
+                .trim()
+                .concat(Ends.after),
+          )
+        )
+      }
     )
 
   export const toCamelCase
@@ -322,3 +326,16 @@ export const topological
 
     return graph
   }
+
+export function tap<T>(msg?: string): (x: T) => T 
+export function tap<T>(msg?: string, toString?: (x: T) => string): (x: T) => T 
+export function tap<T>(msg: string = "", toString: (x: T) => string = (x: T) => JSON.stringify(x, null, 2)): (x: T) => T {
+  return (x: T) => (
+    console.debug(msg, toString(x)),
+    x
+  )
+}
+
+// export const tap 
+//   : <T, U>(fn: (t: T) => U) => (t: T) => T
+//   = (fn) => (t) => (fn(t), t)

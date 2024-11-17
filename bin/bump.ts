@@ -1,7 +1,6 @@
 #!/usr/bin/env pnpm dlx tsx
 import * as FS from "node:fs"
 import * as Path from "node:path"
-import { Array as array, flow, pipe } from "effect"
 
 import * as fs from "./fs.js"
 import { Print, Transform, tap } from "./util.js"
@@ -17,11 +16,14 @@ const RELATIVE_PATH = {
   PackageJson: "package.json",
 } as const
 
-const logWriteTask = (target: string) =>
-  Print(`[bin/bump.ts] Writing \`${target.split(`/`)[1]}\` workspace metadata to:\n\t\t📁 ${target}`)
-
-const logWritePackagesTask = () =>
-  Print(Print.task(`[bin/bump.ts] Writing changelogs to '${ABSOLUTE_PATH.RepoPackages}'`))
+const serialize = (packages: readonly string[]) => {
+  return [
+    `export const PACKAGES = [`,
+    [...packages].map((pkg) => `\t"${pkg}"`).sort().join(",\n"),
+    `] as const`,
+    `export type PACKAGES = typeof PACKAGES`
+  ].join("\n")
+}
 
 /**
  * TODO:
@@ -29,31 +31,17 @@ const logWritePackagesTask = () =>
  * - short-circuit if the version number hasn't changed since the previous run
  */
 function main(): void {
-  return void pipe(
-    PACKAGES,
-    tap(() => Print(Print.task(`Writing workspace metadata...`))),
-    tap(() => Print()),
-    tap(() => logWritePackagesTask()),
-    tap(() => Print()),
-    tap(() => fs.mkdir(ABSOLUTE_PATH.RepoMetadata)),
-    tap((pkgs) => FS.writeFileSync(
-      ABSOLUTE_PATH.RepoPackages, 
-      `export const PACKAGES = `
-      .concat(globalThis.JSON.stringify([...pkgs].sort(), null, 2)
-      .concat(` as const; \nexport type PACKAGES = typeof PACKAGES;`)) 
-    )),
-    array.map(
-      flow(
-        pkg => [
-          `${pkg}/${RELATIVE_PATH.PackageJson}`,
-          `${pkg}/${RELATIVE_PATH.PackageFile}`,
-        ] as const,
-        tap(([, target]) => logWriteTask(target)),
-        tap(Transform.toMetadata),
-      ),
-    ),
-    tap(() => Print()),
-  )
+  void Print(Print.task(`Writing workspace metadata...`))
+  void Print()
+  void Print(Print.task(`[bin/bump.ts] Writing changelogs to '${ABSOLUTE_PATH.RepoPackages}'`))
+  void Print()
+  void fs.mkdir(ABSOLUTE_PATH.RepoMetadata)
+  void FS.writeFileSync(ABSOLUTE_PATH.RepoPackages, serialize(PACKAGES)) 
+  void PACKAGES.forEach((pkg) => Print(`[bin/bump.ts] Writing \`${pkg.split(`/`)[1]}′ workspace metadata to:\n\t\t📁 ${pkg}`))
+  void PACKAGES
+    .map((pkg): [string, string] => [`${pkg}/${RELATIVE_PATH.PackageJson}`, `${pkg}/${RELATIVE_PATH.PackageFile}`])
+    .map(([s, t]): [string, string] => (Print(`[bin/bump.ts] Writing \`${s.split(`/`)[1]}′ workspace metadata to:\n\t\t📁 ${t}`), [s, t]))
+    .map((xs) => Transform.toMetadata(xs))
 }
 
-main()
+void main()

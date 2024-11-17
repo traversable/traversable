@@ -2,7 +2,7 @@ import * as process from "node:process"
 import * as glob from "glob"
 import madge from "madge"
 import { Print } from "./util.js"
-import { EMOJI } from "bin/metadata.js"
+import { EMOJI } from "./metadata.js"
 
 madge(
   glob.globSync(`packages/*/src/**/*.ts`),

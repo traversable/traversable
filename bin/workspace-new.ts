@@ -1,31 +1,53 @@
 import * as process from "node:child_process"
 import * as path from "node:path"
-import type { any, inline } from "any-ts"
-import { flow, pipe } from "effect"
+import type { any } from "any-ts"
+import { flow, identity, pipe, Effect } from "effect"
 
-import * as fs from "bin/fs.js"
-import { default as tsconfigBase } from "../tsconfig.base.json"
-import { default as tsconfigBuild } from "../tsconfig.build.json"
-import { default as tsconfigRoot } from "../tsconfig.json"
+import * as fs from "./fs.js"
 import { template } from "./assets/index.js"
-import { Print, Transform } from "./util.js"
+import { Print, tap, Transform } from "./util.js"
+import { PACKAGES } from "./metadata.js"
+import * as S from "effect/Schema"
 
-const $ = (command: string) => process.execSync(command, { stdio: "inherit" })
+const $$ = (command: string) => process.execSync(command, { stdio: "inherit" })
 
-interface Paths { [x: string]: string[] }
-interface HasPaths extends inline<{ paths: Paths }> { [x: string]: unknown }
-interface HasCompilerOptions extends inline<{ compilerOptions: HasPaths }> { [x: string]: unknown }
-interface HasPath extends inline<{ path: string }> { [x: string]: unknown }
-interface HasReferences extends inline<{ references: HasPath[] }> { [x:string]: unknown }
+const PATH = {
+  packages: path.join(path.resolve(), "packages"),
+  vitestSharedConfig: path.join(path.resolve(), "vitest.shared.ts"),
+  rootTsConfig: path.join(path.resolve(), "tsconfig.json"),
+  rootTsConfigBase: path.join(path.resolve(), "tsconfig.base.json"),
+  rootTsConfigBuild: path.join(path.resolve(), "tsconfig.build.json"),
+} as const
+
+const TEMPLATE = {
+  RootKey: "packages/",
+  BuildKey: { pre: "packages/", post: "/tsconfig.build.json" },
+  BaseKey: "@traversable/",
+  BaseKey$: { pre: "@traversable/", post: "/*" },
+  BaseValue: { pre: "packages/", post: "/src/index.js" },
+  BaseValue$: { pre: "packages/", post: "/*.js" },
+} as const
+
+interface Reference extends S.Schema.Type<typeof Reference> {}
+const Reference = S.Struct({ path: S.String })
+
+interface Paths extends S.Schema.Type<typeof Paths> {}
+const Paths = S.Record({ key: S.String, value: S.Array(S.String) })
+
+interface CompilerOptions extends S.Schema.Type<typeof CompilerOptions> {}
+const CompilerOptions = S.Struct({ paths: S.optional(Paths) })
+
+interface TsConfig extends S.Schema.Type<typeof TsConfig> {}
+const TsConfig = S.Struct({
+  references: S.optional(S.Array(Reference)),
+  compilerOptions: S.optional(CompilerOptions),
+})
 
 type WorkspaceEnv = typeof WorkspaceEnv[keyof typeof WorkspaceEnv]
 const WorkspaceEnv = {
   React: "react",
   Node: "node",
 } as const
-
-type Config = Required<Options>
-type CleanupConfig = Required<CleanupOptions>
 
 export interface CleanupOptions extends globalThis.Pick<Options, "pkgName" | "force"> {}
 export interface Options { 
@@ -36,24 +58,25 @@ export interface Options {
   force?: boolean
   debug?: boolean
   private?: boolean
+  dryRun?: boolean
 }
 
 export namespace Config {
-  export const defaults
-    : globalThis.Omit<Config, "pkgName"> 
-    = { 
-      env: WorkspaceEnv.Node, 
-      localDeps: [],
-      description: "",
-      force: false, 
-      debug: false,
-      private: true,
-    }
+  export const defaults = {
+    tsconfig: {},
+    env: WorkspaceEnv.Node, 
+    localDeps: [],
+    description: "",
+    force: false, 
+    debug: false,
+    private: true,
+    dryRun: false,
+  } satisfies Required<Omit<Deps, "pkgName">>
 
   const isNonEmptyString = <T extends string>(string: T): string is globalThis.Exclude<T, ""> => string.length > 0
 
   export const fromOptions 
-    : (userProvided: Options) => Config
+    : (userProvided: Options) => Required<Options> & Deps
     = (userProvided) => ({
       ...defaults,
       ...userProvided,
@@ -61,23 +84,6 @@ export namespace Config {
       userProvided.localDeps === undefined ? [] 
       : userProvided.localDeps.filter(isNonEmptyString),
     })
-}
-
-const PATH = {
-  packages: path.join(path.resolve(), "packages"),
-  vitestSharedConfig: path.join(path.resolve(), "vitest.shared.ts"),
-  workspace: (...segments: string[]) => 
-    (_: CleanupConfig) => 
-      path.join(PATH.packages, _.pkgName, ...segments),
-  root: (...segments: string[]) => 
-    (_: CleanupConfig) => 
-      path.join(PATH.packages, _.pkgName, ...segments),
-} as const
-
-namespace tsconfig {
-  export const root = tsconfigRoot
-  export const base = tsconfigBase
-  export const build = tsconfigBuild
 }
 
 namespace vitest {
@@ -112,456 +118,545 @@ namespace vitest {
   } as const
 }
 
-namespace sort {
-  export const byPath = (
-    { path: left }: HasPath, 
-    { path: right }: HasPath
-  ) => left > right ? 1 
-    : right > left ? -1 
+namespace order {
+  export const lexicographically = (
+    left: string, 
+    right: string
+  ) => left.toLowerCase() > right.toLowerCase() ? 1 
+    : right.toLowerCase() > left.toLowerCase() ? -1 
+    : left > right ? 1
+    : right > left ? -1
     : 0
-
+    ;
+  export const byReference = (
+    { path: left }: Reference, 
+    { path: right }: Reference
+  ) =>  order.lexicographically(left, right)
   export const byKey = (
     [left]: [string, ...any], 
     [right]: [string, ...any]
-  ) => left > right ? 1 
-    : right > left ? -1 
-    : 0
+  ) => order.lexicographically(left, right)
 }
 
 export const force
-  : (_: CleanupConfig) => void
+  : (_: Deps) => void
   = (_) => (_).force 
-    ? fs.rmSync(path.join(PATH.packages, _.pkgName), { force: true, recursive: true }) 
+    ? fs.rimraf(path.join(PATH.packages, _.pkgName))
     : void 0
 
+interface Deps {
+  tsconfig: TsConfig
+  pkgName: string
+  description?: string
+  localDeps?: readonly string[]
+  env?: WorkspaceEnv
+  force?: boolean
+  debug?: boolean
+  private?: boolean
+  dryRun?: boolean
+}
+
+interface Effect {
+  create: (deps: Required<Deps>) => void,
+  cleanup: (deps: Required<Deps>) => void,
+}
+
+const defineEffect 
+  : (create: Effect["create"], cleanup: Effect["cleanup"]) => Effect
+  = (create, cleanup) => ({ create, cleanup })
+
+const makeRootKey = ($: Deps) => `${TEMPLATE.RootKey}${$.pkgName}`
+const unmakeRootKey = (k: string) => 
+  !k.startsWith(TEMPLATE.RootKey) ? k
+  : k.slice(TEMPLATE.RootKey.length) 
+
+const makeBuildKey = ($: Deps) => `${TEMPLATE.BuildKey.pre}${$.pkgName}${TEMPLATE.BuildKey.post}`
+const unmakeBuildKey = (k: string) => 
+  k.startsWith(TEMPLATE.BuildKey.pre) && k.endsWith(TEMPLATE.BuildKey.post) 
+  ? k.slice(TEMPLATE.BuildKey.pre.length, -(TEMPLATE.BuildKey.post).length)
+  : k
+
+const makeBaseKey =  ($: Deps) => `${TEMPLATE.BaseKey}${$.pkgName}`
+const unmakeBaseKey = (k: string) => 
+  !k.startsWith(TEMPLATE.BaseKey) ? k
+  : k.slice(0, -(TEMPLATE.BaseKey).length)
+
+const makeBaseKey$ =  ($: Deps) => `${TEMPLATE.BaseKey$.pre}${$.pkgName}/*`
+const unmakeBaseKey$ = (k: string) => 
+  k.startsWith(TEMPLATE.BaseKey$.pre) && k.endsWith(TEMPLATE.BaseKey$.post) 
+  ? k.slice(TEMPLATE.BaseKey$.pre.length, -(TEMPLATE.BaseKey$.post).length)
+  : k
+
+const makeBaseEntries = ($: Deps) => [
+  [makeBaseKey($), [`${TEMPLATE.BaseValue.pre}${$.pkgName}${TEMPLATE.BaseValue.post}`]],
+  [makeBaseKey$($), [`${TEMPLATE.BaseValue$.pre}${$.pkgName}${TEMPLATE.BaseValue$.post}`]],
+] as [string, string[]][]
+
+const unmakeBaseEntries
+  : (k: string) => string
+  = flow(
+    unmakeBaseKey$,
+    unmakeBaseKey,
+  )
+
 namespace make {
-  void (workspaceDir.cleanup = (_: CleanupConfig) => pipe(PATH.workspace()(_), fs.rmdirSync))
-  export function workspaceDir(_: Config): void {
-    return pipe(
-      PATH.workspace()(_),
-      fs.mkdir,
-    )
-  }
-
-  void (workspaceSrcDir.cleanup = flow(PATH.workspace("src"), fs.rmdirSync))
-  export function workspaceSrcDir(_: Config): void {
-    return pipe(
-      PATH.workspace("src")(_),
-      fs.mkdir
-    )
-  }
-
-  void (workspaceTestDir.cleanup = flow(PATH.workspace("test"), fs.rmdirSync))
-  export function workspaceTestDir(_: Config): void {
-    return pipe(
-      PATH.workspace("test")(_),
-      fs.mkdir,
-    )
-  }
-
-  void (workspaceGeneratedDir.cleanup = flow(PATH.workspace("src", "__generated__"), fs.rmdirSync))
-  export function workspaceGeneratedDir(_: Config): void {
-    return pipe(
-      PATH.workspace("src", "__generated__")(_),
-      fs.mkdir,
-    )
-  }
-
-  void (workspaceGeneratedManifest.cleanup = flow(PATH.workspace("src", "__generated__", "__manifest__.ts"), fs.rmSync))
-  export function workspaceGeneratedManifest(_: Config): void { 
-    return fs.writeFileSync(PATH.workspace("src", "__generated__", "__manifest__.ts")(_), "")
-  }
-
-  const filterReference = (tsconfig: HasReferences) => 
-    (_: CleanupConfig) => tsconfig
-      .references
-      .filter((reference) => reference.path !== _.pkgName)
-
-  void (
-    rootReferences.invert = (tsconfig: HasReferences) => (_: CleanupConfig): HasReferences & any.json => ({
-      ...tsconfig,
-      references: filterReference(tsconfig)(_).sort(sort.byPath),
-    }) as HasReferences & any.json
-  )
-  export function rootReferences(tsconfig: HasReferences): (_: CleanupConfig) => HasReferences & any.json
-  export function rootReferences(tsconfig: HasReferences) {
-    return (_: CleanupConfig) => ({ 
-      ...tsconfig,
-      references: filterReference(tsconfig)(_)
-        .concat({ path: `packages/${_.pkgName}` })
-        .sort(sort.byPath),
-    })
-  }
-
-  const filterBasePath = (_: CleanupConfig) => (paths: Paths) => 
-    globalThis.Object
-      .entries(paths)
-      .filter(([k]) => k !== _.pkgName)
-
-  void (
-    rootBasePaths.invert = (tsconfig: HasCompilerOptions) => (_: CleanupConfig) => ({
-      ...tsconfig,
-      compilerOptions: {
-        ...tsconfig.compilerOptions,
-        paths: pipe(
-          tsconfig.compilerOptions.paths,
-          filterBasePath(_),
-          (xs) => xs.sort(sort.byKey),
-          globalThis.Object.fromEntries,
-        )
-      }
-    })
-  )
-  export function rootBasePaths(tsconfig: HasCompilerOptions) {
-    return (_: CleanupConfig) => ({ 
-      ...tsconfig,
-      compilerOptions: {
-        ...tsconfig.compilerOptions,
-        paths: pipe(
-          tsconfig.compilerOptions.paths,
-          filterBasePath(_),
-          (xs) => [...xs, [`@traversable/${_.pkgName}`, [`packages/${_.pkgName}/src/index.js`]] as [string, string[]]],
-          (xs) => [...xs, [`@traversable/${_.pkgName}/*`, [`packages/${_.pkgName}/src/*.js`]] as [string, string[]]],
-          (xs) => xs.sort(sort.byKey),
-          globalThis.Object.fromEntries
-        )
-      }
-    })
-  }
-
-  export const rootVitestConfig = (_: string) => vitest.sharedConfig
-  // export const rootRefs = make.rootReferences(tsconfig.root)
-  // export const rootBuildRefs = make.rootReferences(tsconfig.build)
-
-  /////////////////
-  /// WORKSPACE
-  export const tsConfigRef = (dep: string) => ({ path: `../${dep}` } as const)
-  export const localDep = (dep: string) => ([`@traversable/${dep}`, "workspace:^" ] as const)
-  export const workspaceReadme = (pkgName: string) => `# @traversable/${pkgName}`
-
-  export function workspacePackageJson(_: Config): typeof template {
-    const pkg = globalThis.structuredClone(template)
-    const devDependencies = 
-      _.localDeps.length === 0 
-        ? pkg.devDependencies 
-        : globalThis.Object.fromEntries(_.localDeps.map(make.localDep))
-    const peerDependencies = devDependencies
-    return {
-      ...pkg,
-      name: pkg.name.concat(_.pkgName),
-      private: _.private,
-      description: _.description,
-      repository: {
-        ...pkg.repository,
-        directory: pkg.repository.directory.concat(_.pkgName),
-      },
-      devDependencies: pipe(
-        pkg.devDependencies,
-        globalThis.Object.entries,
-        (xs) => [...xs, devDependencies] as [string, string][],
-        (xs) => xs.sort(sort.byKey),
-        globalThis.Object.fromEntries,
-      ),
-      peerDependencies: pipe(
-        pkg.peerDependencies,
-        globalThis.Object.entries,
-        (xs) => [...xs, peerDependencies] as [string, string][],
-        (xs) => xs.sort(sort.byKey),
-        globalThis.Object.fromEntries,
-      )
-    }
-  } 
-
-  export const workspaceVitestConfig = (_: Config) => vitest.configMap[_.env]
-
-  export const workspaceTSConfigBuild 
-    = (_: Config) => ({
-      extends: "./tsconfig.src.json",
-      compilerOptions: {
-        tsBuildInfoFile: ".tsbuildinfo/build.tsbuildinfo",
-        types: ["node"],
-        declarationDir: "build/dts",
-        outDir: "build/esm",
-        stripInternal: true,
-      },
-      references: _.localDeps.map(make.tsConfigRef),
-    })
-
-  export const workspaceTSConfig = () => `{
-    "extends": "../../tsconfig.base.json",
-    "references": [
-      { "path": "tsconfig.src.json" }, 
-      { "path": "tsconfig.test.json" }
-    ],
-    "include": []
-  }` as const
-
-  export const workspaceTSConfigSrc = (_: Config) => ({
-    extends: "../../tsconfig.base.json",
-    compilerOptions: {
-      tsBuildInfoFile: ".tsbuildinfo/src.tsbuildinfo",
-      rootDir: "src",
-      types: ["node"],
-      outDir: "build/src"
-    },
-    references: _.localDeps.map(make.tsConfigRef),
-    include: ["src"]
-  })
-
-  export const workspaceTSConfigTest = (_: Config) => ({
-    extends: "../../tsconfig.base.json",
-    compilerOptions: {
-      tsBuildInfoFile: ".tsbuildinfo/test.tsbuildinfo",
-      rootDir: "test",
-      types: ["node"],
-      // types: ["node", "vitest/jsdom"],
-      noEmit: true,
-    },
-    references: [
-      { path: "tsconfig.src.json" }, 
-      ..._.localDeps.map(make.tsConfigRef),
-    ],
-    include: ["test"],
-  })
-
-  export const workspaceIndex = ([
-    'export * from "./version.js"',
-  ]).join("\n")
-
-  export const workspaceVersionSrc = ([
-    'import Package from "./__generated__/__manifest__.js"',
-    'export const VERSION = `${Package.name}@${Package.version}` as const',
-    'export type VERSION = typeof VERSION',
-  ]).join("\n")
-
-  export const workspaceVersionTest = (_: Config) => ([
-    `import * as ${Transform.toCamelCase(_.pkgName)} from "@traversable/${_.pkgName}"`,
-    'import * as vi from "vitest"',
-    'import Manifest from "../package.json"',
-    '',
-    `vi.describe("${_.pkgName}", () => {`,
-    `  vi.it("${_.pkgName}.VERSION", () => {`,
-    '    const expected = `${Manifest.name}@${Manifest.version}`',
-    `    vi.assert.equal(${Transform.toCamelCase(_.pkgName)}.VERSION, expected)`,
-    '  })',
-    '})',
-  ]).join("\n")
+  export const _ref = (dep: string) => ({ path: `../${dep}` } as const)
+  export const _dep = (dep: string) => ([`@traversable/${dep}`, "workspace:^" ] as const)
+  export const refs = ($: Deps) => ([...$.localDeps ?? []]).sort(order.lexicographically).map(make._ref)
+  export const deps = ($: Deps) => ([...$.localDeps ?? []]).sort(order.lexicographically).map(make._dep)
 }
 
 namespace write {
-  const rootRefsPath = [path.resolve(), "tsconfig.json"] as const
-  void (
-    rootRefs.cleanup = flow(
-      make.rootReferences.invert(tsconfig.root),
-      fs.writeJson(path.join(...rootRefsPath)),
+  export const updateRootReferences = defineEffect(
+    ($) => pipe(
+      PATH.rootTsConfig,
+      (($.dryRun ? fs.map : fs.writer) as typeof fs.writer)(
+        TsConfig,
+        ({ references, ...ts }) => ({
+          ...ts,
+          references
+          : !references ? [] 
+          : pipe(
+            references.filter((x) => unmakeRootKey(x.path) !== $.pkgName),
+            (xs) => xs.concat({ path: makeRootKey($) }),
+            (xs) => xs.sort(order.byReference),
+          )
+        })
+      ),
+      $.dryRun ? tap("\n\n[CREATE #1]: update references in root tsconfig.json\n") : identity
+    ),
+    ($) => pipe(
+      PATH.rootTsConfig,
+      (($.dryRun ? fs.map : fs.writer) as typeof fs.writer)(
+        TsConfig,
+        (x) => ({
+          ...x,
+          references
+          : !x.references ? [] 
+          : x.references.filter(({ path }) => unmakeRootKey(path) !== $.pkgName),
+        })
+      ),
+      $.dryRun ? tap("\n\n[CLEANUP #1]: update references in root tsconfig.json\n") : identity
     )
   )
-  export function rootRefs(_: CleanupConfig): void {
-    return pipe(
-      make.rootReferences(tsconfig.root)(_),
-      fs.writeJson(path.join(...rootRefsPath)),
-    )
-  }
 
-  const rootBuildRefsPath = [path.resolve(), "tsconfig.build.json"] as const
-  // TODO: vvv
-  // void (
-  //   rootBuildRefs.cleanup = (_: Config) => {
-  //     // TODO: do I need to undo the logic below?
-  //     make.rootReferences.invert(tsconfig.build)(_)
-  //   }
-  // )
-  export function rootBuildRefs(_: CleanupConfig) {
-    return pipe(
-      // TODO: do I need to undo this logic? if so, what's the best way to do it?
-      ({ ..._, pkgName: _.pkgName.concat("/tsconfig.build.json") }),
-      make.rootReferences(tsconfig.build),
-      fs.writeJson(path.join(...rootBuildRefsPath)),
-    )
-  }
-
-  const rootBaseRefsPath = [path.resolve(), "tsconfig.base.json"] as const
-  void (
-    rootBaseRefs.cleanup = flow(
-      make.rootBasePaths.invert(tsconfig.base),
-      Transform.prettify,
-      fs.writeString(path.join(...rootBaseRefsPath)),
+  export const updateBaseReferences = defineEffect(
+    ($) => pipe(
+      PATH.rootTsConfigBase,
+      (($.dryRun ? fs.map : fs.writer) as typeof fs.writer)(
+        TsConfig,
+        ({ compilerOptions, ...ts }) => pipe(
+          {
+            ...ts,
+            compilerOptions
+            : !compilerOptions ? {} : {
+              ...compilerOptions,
+              paths
+              : !compilerOptions?.paths ? {} 
+              : pipe(
+                compilerOptions.paths,
+                globalThis.Object.entries,
+                (xs) => xs.filter(([path]) => unmakeBaseEntries(path) !== $.pkgName),
+                (xs) => [...xs, ...makeBaseEntries($)],
+                (xs) => xs.sort(order.byKey),
+                globalThis.Object.fromEntries
+              )
+            }
+          },
+        )
+      ),
+      $.dryRun ? tap("\n\n[CREATE #2]: update references in root tsconfig.base.json\n") : identity
+    ),
+    ($) => pipe(
+      PATH.rootTsConfigBase,
+      (($.dryRun ? fs.map : fs.writer) as typeof fs.writer)(
+        TsConfig,
+        ({ references, ...ts }) => pipe(
+          {
+            ...ts,
+            compilerOptions
+            : !ts.compilerOptions ? {} : {
+              ...ts.compilerOptions,
+              paths
+              : !ts.compilerOptions?.paths ? {}
+              : pipe(
+                ts.compilerOptions.paths,
+                globalThis.Object.entries,
+                (xs) => xs.filter(([path]) => unmakeBaseEntries(path) !== $.pkgName),
+                globalThis.Object.fromEntries,
+              )
+            }
+          },
+        )
+      ),
+      $.dryRun ? tap("\n\n[CLEANUP #2]: update references in root tsconfig.base.json\n") : identity
     )
   )
-  export function rootBaseRefs(_: CleanupConfig): void {
-    return pipe(
-      make.rootBasePaths(tsconfig.base)(_),
-      Transform.prettify,
-      fs.writeString(path.join(...rootBaseRefsPath)),
-    )
-  }
 
-  const workspacePackageJsonPath = (_: CleanupConfig) => [PATH.packages, _.pkgName, "package.json"] as const
-  void (workspacePackageJson.cleanup = (_: CleanupConfig) => fs.rmSync(path.join(...workspacePackageJsonPath(_))))
-  export function workspacePackageJson(_: Config): void {
-    return pipe(
-      make.workspacePackageJson(_),
-      fs.writeJson(path.join(...workspacePackageJsonPath(_))),
-    )
-  }
-  
-  const workspaceVitestConfigPath = (_: CleanupConfig) => [PATH.packages, _.pkgName, "package.json"] as const
-  void (workspaceVitestConfig.cleanup = (_: CleanupConfig) => fs.rmSync(path.join(...workspaceVitestConfigPath(_))))
-  export function workspaceVitestConfig(_: Config): void {
-    return pipe(
-      make.workspaceVitestConfig(_),
-      fs.writeString(path.join(...workspaceVitestConfigPath(_))),
-    )
-  }
+  export const updateBuildReferences = defineEffect(
+    ($) => pipe(
+      PATH.rootTsConfigBuild,
+      (($.dryRun ? fs.map : fs.writer) as typeof fs.writer)(
+        TsConfig,
+        ({ references, ...ts }) => ({
+          ...ts,
+          references
+          : !references ? [] 
+          : pipe(
+            references.filter(({ path }) => unmakeBuildKey(path) !== $.pkgName),
+            (xs) => [...xs, { path: makeBuildKey($) }],
+            (xs) => xs.sort(order.byReference),
+          )
+        })
+      ),
+      $.dryRun ? tap("\n\n[CREATE #3]: update references in root tsconfig.build.json\n") : identity
+    ),
+    ($) => pipe(
+      PATH.rootTsConfigBuild,
+      (($.dryRun ? fs.map : fs.writer) as typeof fs.map)(
+        TsConfig,
+        ({ references, ...ts }) => ({
+          ...ts,
+          references
+          : !references ? [] 
+          : references.filter(({ path }) => unmakeBuildKey(path) !== $.pkgName),
+        })
+      ),
+      $.dryRun ? tap("\n\n[CLEANUP #3]: update references in root tsconfig.build.json\n") : identity
+    ),
+  )
 
-  const workspaceIndexPath = (_: CleanupConfig) => [PATH.packages, _.pkgName, "src", "index.ts"] as const
-  void (workspaceIndex.cleanup = (_: CleanupConfig) => fs.rmSync(path.join(...workspaceIndexPath(_))))
-  export function workspaceIndex(_: CleanupConfig): void {
-    return fs.writeFileSync(
-      path.join(...workspaceIndexPath(_)),
-      make.workspaceIndex,
-    )
-  }
+  export const workspaceDir = defineEffect(
+    ($) => pipe(
+      path.join(PATH.packages, $.pkgName),
+      $.dryRun ? tap("\n\n[CREATE #4]: workspaceDir") : fs.mkdir,
+    ),
+    ($) => pipe(
+      path.join(PATH.packages, $.pkgName),
+      $.dryRun ? tap("\n\n[CLEANUP #4]: workspaceDir") : fs.rimraf,
+    ),
+  )
 
-  const workspaceReadmePath = (_: CleanupConfig) => [PATH.packages, _.pkgName, "README.md"] as const
-  void (workspaceReadme.cleanup = (_: CleanupConfig) => fs.rmSync(path.join(...workspaceReadmePath(_))))
-  export function workspaceReadme(_: CleanupConfig): void {
-    return pipe(
-      make.workspaceReadme(_.pkgName),
-      fs.writeString(path.join(...workspaceReadmePath(_)))
+  export const workspaceSrcDir = defineEffect(
+    ($) => pipe(
+      path.join(PATH.packages, $.pkgName, "src"),
+      $.dryRun ? tap("\n\n[CREATE #5], workspaceSrcDir") : fs.mkdir,
+    ),
+    ($) => pipe(
+      path.join(PATH.packages, $.pkgName, "src"),
+      $.dryRun ? tap("\n\n[CLEANUP #5]: workspaceSrcDir") : fs.rimraf,
     )
-  }
+  )
 
-  const workspaceVersionsSrcPath = (_: CleanupConfig) => [PATH.packages, _.pkgName, "src", "version.ts"] as const
-  void (workspaceVersionSrc.cleanup = (_: CleanupConfig) => fs.rmSync(path.join(...workspaceVersionsSrcPath(_))))
-  export function workspaceVersionSrc(_: CleanupConfig): void {
-    return pipe(
-      make.workspaceVersionSrc,
-      fs.writeString(path.join(...workspaceReadmePath(_)))
+  export const workspaceTestDir = defineEffect(
+    ($) => pipe(
+      path.join(PATH.packages, $.pkgName, "test"),
+      $.dryRun ? tap("\n\n[CREATE #6]: workspaceTestDir") : fs.mkdir,
+    ),
+    ($) => pipe(
+      path.join(PATH.packages, $.pkgName, "test"),
+      $.dryRun ? tap("\n\n[CLEANUP #6]: workspaceTestDir") : fs.rimraf,
     )
-  }
+  )
 
-  const workspaceVersionTestPath = (_: CleanupConfig) => [PATH.packages, _.pkgName, "test", "version.test.ts"] as const
-  void (workspaceVersionTest.cleanup = (_: CleanupConfig) => fs.rmSync(path.join(...workspaceVersionTestPath(_))))
-  export function workspaceVersionTest(_: Config): void {
-    return pipe(
-      make.workspaceVersionTest(_),
-      fs.writeString(path.join(...workspaceVersionTestPath(_))),
+  export const workspaceGeneratedDir = defineEffect(
+    ($) => pipe(
+      path.join(PATH.packages, $.pkgName, "src", "__generated__"),
+      $.dryRun ? tap("\n\n[CREATE #7]: workspaceGeneratedDir") : fs.mkdir,
+    ),
+    ($) => pipe(
+      path.join(PATH.packages, $.pkgName, "src", "__generated__"),
+      $.dryRun ? tap("\n\n[CLEANUP #7]: workspaceGeneratedDir") : fs.rimraf,
     )
-  }
+  )
 
-  const workspaceTSConfigPath = (_: CleanupConfig) => [PATH.packages, _.pkgName, "tsconfig.json"] as const
-  void (workspaceTSConfig.cleanup = (_: CleanupConfig) => fs.rmSync(path.join(...workspaceTSConfigPath(_))))
-  export function workspaceTSConfig(_: CleanupConfig): void {
-    return pipe(
-      make.workspaceTSConfig(),
-      fs.writeString(path.join(...workspaceTSConfigPath(_)))
-    )
-  }
+  export const workspaceGeneratedManifest = defineEffect(
+    ($) => pipe(
+      path.join(PATH.packages, $.pkgName, "src", "__generated__", "__manifest__.ts"),
+      $.dryRun ? tap("\n\n[CREATE #8]: workspaceGeneratedManifest") : fs.touch,
+    ),
+    ($) => pipe(
+      path.join(PATH.packages, $.pkgName, "src", "__generated__", "__manifest__.ts"),
+      $.dryRun ? tap("\n\n[CLEANUP #8]: workspaceGeneratedManifest") : fs.rimraf,
+    ),
+  )
 
-  const workspaceTSConfigBuildPath = (_: CleanupConfig) => [PATH.packages, _.pkgName, "tsconfig.build.json"] as const
-  void (workspaceTSConfigBuild.cleanup = (_: CleanupConfig) => fs.rmSync(path.join(...workspaceTSConfigBuildPath(_))))
-  export function workspaceTSConfigBuild(_: Config): void {
-    return pipe(
-      make.workspaceTSConfigBuild(_),
-      fs.writeJson(path.join(...workspaceTSConfigBuildPath(_))),
-    )
-  }
+  export const workspacePackageJson = defineEffect(
+    ($) => {
+      const pkg = globalThis.structuredClone(template)
+      const devDependencies = pipe(
+        globalThis.Object.entries(pkg.devDependencies),
+        (xs) => [...xs, ...make.deps($)] as [string, string][],
+        (xs) => xs.sort(order.byKey),
+      )
+      return pipe(
+        {
+          ...pkg,
+          name: pkg.name.concat($.pkgName),
+          private: $.private ?? true,
+          description: $.description ?? "",
+          repository: {
+            ...pkg.repository,
+            directory: pkg.repository.directory + $.pkgName,
+          },
+          devDependencies: globalThis.Object.fromEntries(devDependencies),
+          peerDependencies: globalThis.Object.fromEntries(devDependencies)
+        },
+        $.dryRun ? tap("\n\n[CREATE #9]: workspacePackageJson\n") 
+        : fs.writeJson(path.join(PATH.packages, $.pkgName, "package.json")),
+      )
+    },
+    ($) => 
+      $.dryRun 
+        ? tap("\n\n[CLEANUP #9]: workspacePackageJson\n") 
+        : fs.rimraf(path.join(PATH.packages, $.pkgName, "package.json")),
+  )
 
-  const workspaceTSConfigSrcPath = (_: CleanupConfig) => [PATH.packages, _.pkgName, "tsconfig.src.json"] as const
-  void (workspaceTSConfigSrc.cleanup = (_: CleanupConfig) => fs.rmSync(path.join(...workspaceTSConfigSrcPath(_))))
-  export function workspaceTSConfigSrc(_: Config): void {
-    return pipe(
-      make.workspaceTSConfigSrc(_),
-      fs.writeJson(path.join(...workspaceTSConfigSrcPath(_))),
-    )
-  }
+  export const workspaceSrcIndex = defineEffect(
+    ($) => pipe(
+      [
+        `export * from "./version.js"`,
+      ].join("\n"),
+      $.dryRun ? tap("\n\n[CREATE #10]: workspaceIndex\n", globalThis.String) 
+      : fs.writeString(path.join(PATH.packages, $.pkgName, "src", "index.ts")),
+    ),
+    ($) => 
+      $.dryRun 
+        ? tap("\n\n[CLEANUP #10]: workspaceIndex\n", globalThis.String) 
+        : fs.rimraf(path.join(PATH.packages, $.pkgName, "src", "index.ts")),
+  )
 
-  const workspaceTSConfigTestPath = (_: CleanupConfig) => [PATH.packages, _.pkgName, "tsconfig.test.json"] as const
-  void (workspaceTSConfigTest.cleanup = (_: CleanupConfig) => fs.rmSync(path.join(...workspaceTSConfigTestPath(_))))
-  export function workspaceTSConfigTest(_: Config): void {
-    return pipe(
-      make.workspaceTSConfigTest(_),
-      fs.writeJson(path.join(...workspaceTSConfigTestPath(_))),
-    )
-  }
+  export const workspaceVitestConfig = defineEffect(
+    ($) => pipe(
+      [
+        vitest.configMap[$.env ?? "node"]
+      ].join("\n"),
+      $.dryRun ? tap("\n\n[CREATE #11]: workspaceVitestConfig\n", globalThis.String) 
+      : fs.writeString(path.join(PATH.packages, $.pkgName, "package.json")),
+    ),
+    ($) => 
+      $.dryRun 
+        ? tap("\n\n[CLEANUP #11]: workspaceVitestConfig\n", globalThis.String) 
+        : fs.rimraf(path.join(PATH.packages, $.pkgName, "package.json")),
+  )
+
+  export const workspaceReadme = defineEffect(
+    ($) => pipe(
+      [
+        `# @traversable/${$.pkgName}`
+      ].join("\n"),
+      $.dryRun ? tap("\n\n[CREATE #12]: workspaceReadme\n", globalThis.String)
+      : fs.writeString(path.join(PATH.packages, $.pkgName, "README.md")),
+    ),
+    ($) => 
+      $.dryRun 
+        ? tap("\n\n[CLEANUP #12]: workspaceReadme\n", globalThis.String)
+        : fs.rimraf(path.join(PATH.packages, $.pkgName, "README.md")),
+  )
+
+  export const workspaceSrcVersion = defineEffect(
+    ($) => pipe(
+      [
+        `import pkg from "./__generated__/__manifest__.js"`,
+        `export const VERSION = \`\${pkg.name}@\${pkg.version}\` as const`,
+        `export type VERSION = typeof VERSION`,
+      ].join("\n"),
+      $.dryRun ? tap("\n\n[CREATE #13]: workspaceVersionSrc\n", globalThis.String) 
+      : fs.writeString(path.join(PATH.packages, $.pkgName, "src", "version.ts")),
+    ),
+    ($) => 
+      $.dryRun 
+        ? tap("\n\n[CLEANUP #13]: workspaceVersionSrc\n") 
+        : fs.rimraf(path.join(PATH.packages, $.pkgName, "src", "version.ts")),
+  )
+
+  export const workspaceTestVersion = defineEffect(
+    ($) => pipe(
+      ([
+        `import { ${Transform.toCamelCase($.pkgName)} } from "@traversable/${$.pkgName}"`,
+        `import * as vi from "vitest"`,
+        `import pkg from "../package.json"`,
+        ``,
+        `vi.describe("${$.pkgName}", () => {`,
+        `  vi.it("${Transform.toCamelCase($.pkgName)}.VERSION", () => {`,
+        `    const expected = \`\${pkg.name}@\${pkg.version}\``,
+        `    vi.assert.equal(${Transform.toCamelCase($.pkgName)}.VERSION, expected)`,
+        `  })`,
+        `})`,
+      ]).join("\n"),
+      $.dryRun ? tap("\n\n[CREATE #14]: workspaceVersionTest\n", globalThis.String)
+      : fs.writeString(path.join(PATH.packages, $.pkgName, "test", "version.test.ts")),
+    ),
+    ($) => 
+      $.dryRun 
+        ? tap("\n\n[CLEANUP #14]: workspaceVersionTest\n", globalThis.String) 
+        : fs.rimraf(path.join(PATH.packages, $.pkgName, "test", "version.test.ts")),
+  )
+
+  export const workspaceTsConfig = defineEffect(
+    ($) => pipe(
+      {
+        "extends": "../../tsconfig.base.json",
+        "include": [],
+        "references": [ 
+          { "path": "tsconfig.src.json" },
+          { "path": "tsconfig.test.json" },
+        ],
+      },
+      $.dryRun ? tap("\n\n[CREATE #15]: workspaceTsConfig\n") 
+      : fs.writeJson(path.join(PATH.packages, $.pkgName, "tsconfig.json")),
+    ),
+    ($) => 
+      $.dryRun 
+        ? tap("\n\n[CLEANUP #15]: workspaceTsConfig\n") 
+        : fs.rimraf(path.join(PATH.packages, $.pkgName, "tsconfig.json")),
+  )
+
+  export const workspaceTsConfigBuild = defineEffect(
+    ($) => pipe(
+      {
+        "extends": "./tsconfig.src.json",
+        "compilerOptions": {
+          "tsBuildInfoFile": ".tsbuildinfo/build.tsbuildinfo",
+          "types": ["node"],
+          "declarationDir": "build/dts",
+          "outDir": "build/esm",
+          "stripInternal": true,
+        },
+        "references": make.refs($),
+      },
+      $.dryRun 
+        ? tap("\n\n[CREATE #16]: workspaceTsConfigBuild\n") 
+        : fs.writeJson(path.join(PATH.packages, $.pkgName, "tsconfig.build.json")),
+    ),
+    ($) => 
+      $.dryRun 
+        ? tap("\n\n[CLEANUP #16]: workspaceTsConfigBuild\n") 
+        : fs.rimraf(path.join(PATH.packages, $.pkgName, "tsconfig.build.json")),
+  )
+
+  export const workspaceTsConfigSrc = defineEffect(
+    ($) => pipe(
+      {
+        "extends": "../../tsconfig.base.json",
+        "compilerOptions": {
+          "tsBuildInfoFile": ".tsbuildinfo/src.tsbuildinfo",
+          "rootDir": "src",
+          "types": ["node"],
+          "outDir": "build/src"
+        },
+        "references": [
+          { "path": "../data" }
+        ],
+        "include": ["src"]
+      },
+      $.dryRun 
+        ? tap("\n\n[CREATE #17]: workspaceTsConfigSrc\n") 
+        : fs.writeJson(path.join(PATH.packages, $.pkgName, "tsconfig.src.json")),
+    ),
+    ($) => 
+      $.dryRun 
+        ? tap("\n\n[CLEANUP #17]: workspaceTsConfigSrc\n") 
+        : fs.rimraf(path.join(PATH.packages, $.pkgName, "tsconfig.src.json")),
+  )
+
+  export const workspaceTsConfigTest = defineEffect(
+    ($) => pipe(
+      {
+        "extends": "../../tsconfig.base.json",
+        "compilerOptions": {
+          "tsBuildInfoFile": ".tsbuildinfo/test.tsbuildinfo",
+          "rootDir": "test",
+          "types": ["node"],
+          "noEmit": true,
+        },
+        "references": [
+          { "path": "tsconfig.src.json" }, 
+          ...make.refs($),
+        ],
+        "include": ["test"],
+      },
+      $.dryRun 
+        ? tap("\n\n[CREATE #18]: workspaceTsConfigTest\n") 
+        : fs.writeJson(path.join(PATH.packages, $.pkgName, "tsconfig.test.json")),
+    ),
+    ($) => 
+      $.dryRun 
+        ? tap("\n\n[CLEANUP #18]: workspaceTsConfigTest\n") 
+        : fs.rimraf(path.join(PATH.packages, $.pkgName, "tsconfig.test.json")),
+  )
 }
 
 export function main(opts: Options) {
-  const _ = Config.fromOptions(opts)
-  const rootTasks = () => [
-    write.rootRefs(_),
-    write.rootBaseRefs(_),
-    write.rootBuildRefs(_),
-  ]
-
-  const workspaceTasks = () => [
-    force(_),
-    make.workspaceDir(_),
-    make.workspaceSrcDir(_),
-    make.workspaceTestDir(_),
-    make.workspaceGeneratedDir(_),
-    make.workspaceGeneratedManifest(_),
-    write.workspacePackageJson(_),
-    write.workspaceIndex(_),
-    write.workspaceVitestConfig(_),
-    write.workspaceReadme(_),
-    write.workspaceVersionSrc(_),
-    write.workspaceVersionTest(_),
-    write.workspaceTSConfig(_),
-    write.workspaceTSConfigBuild(_),
-    write.workspaceTSConfigSrc(_),
-    write.workspaceTSConfigTest(_),
-  ]
+  const $ = Config.fromOptions(opts)
+  const rootTasks = (): void => {
+    void write.updateRootReferences.create($)
+    void write.updateBaseReferences.create($)
+    void write.updateBuildReferences.create($)
+  }
+  const workspaceTasks = (): void => {
+    void force($)
+    void write.workspaceDir.create($)
+    void write.workspaceSrcDir.create($)
+    void write.workspaceTestDir.create($)
+    void write.workspaceGeneratedDir.create($)
+    void write.workspaceGeneratedManifest.create($)
+    void write.workspacePackageJson.create($)
+    void write.workspaceSrcIndex.create($)
+    void write.workspaceVitestConfig.create($)
+    void write.workspaceReadme.create($)
+    void write.workspaceSrcVersion.create($)
+    void write.workspaceTestVersion.create($)
+    void write.workspaceTsConfig.create($)
+    void write.workspaceTsConfigBuild.create($)
+    void write.workspaceTsConfigSrc.create($)
+    void write.workspaceTsConfigTest.create($)
+  }
 
   void rootTasks()
   void workspaceTasks()
-  void $(`pnpm dlx tsx ./bin/bump.ts`)
-  void $(`pnpm reboot`)
+  void $$(`pnpm dlx tsx ./bin/bump.ts`)
+  // void $$(`pnpm reboot`)
   void Print(Print.task(`Workspace '${
-    _.pkgName
+    $.pkgName
   }' created at 'packages/${
-    _.pkgName
+    $.pkgName
   }'`))
 }
 
 main.cleanup = (opts: Options) => {
-  const _ = Config.fromOptions(opts)
-  const rootCleanup = () => [
-    write.rootRefs.cleanup(_),
-    write.rootBaseRefs.cleanup(_),
-    // TODO: turn this on when other TODO above is resolved
-    // write.rootBuildRefs.cleanup(_),
-  ]
-
-  // const workspaceCleanup = force(_)
-  const workspaceCleanup = () => [
-    make.workspaceDir.cleanup(_),
-    make.workspaceSrcDir.cleanup(_),
-    make.workspaceTestDir.cleanup(_),
-    make.workspaceGeneratedDir.cleanup(_),
-    make.workspaceGeneratedManifest.cleanup(_),
-    write.workspacePackageJson.cleanup(_),
-    write.workspaceIndex.cleanup(_),
-    write.workspaceVitestConfig.cleanup(_),
-    write.workspaceReadme.cleanup(_),
-    write.workspaceVersionSrc.cleanup(_),
-    write.workspaceVersionTest.cleanup(_),
-    write.workspaceTSConfig.cleanup(_),
-    write.workspaceTSConfigBuild.cleanup(_),
-    write.workspaceTSConfigSrc.cleanup(_),
-    write.workspaceTSConfigTest.cleanup(_),
-  ]
+  const $ = Config.fromOptions(opts)
+  const rootCleanup = () => {
+    void write.updateRootReferences.cleanup($)
+    void write.updateBaseReferences.cleanup($)
+    void write.updateBuildReferences.cleanup($)
+  }
+  const workspaceCleanup = () => {
+    void force($)
+    void write.workspaceDir.cleanup($)
+    void write.workspaceSrcDir.cleanup($)
+    void write.workspaceTestDir.cleanup($)
+    void write.workspaceGeneratedDir.cleanup($)
+    void write.workspaceGeneratedManifest.cleanup($)
+    void write.workspacePackageJson.cleanup($)
+    void write.workspaceSrcIndex.cleanup($)
+    void write.workspaceVitestConfig.cleanup($)
+    void write.workspaceReadme.cleanup($)
+    void write.workspaceSrcVersion.cleanup($)
+    void write.workspaceTestVersion.cleanup($)
+    void write.workspaceTsConfig.cleanup($)
+    void write.workspaceTsConfigBuild.cleanup($)
+    void write.workspaceTsConfigSrc.cleanup($)
+    void write.workspaceTsConfigTest.cleanup($)
+  }
 
   void rootCleanup()
   void workspaceCleanup()
-
   void Print(Print.task(`Workspace '${
-    _.pkgName
+    $.pkgName
   }' cleaned up from 'packages/${
-    _.pkgName
+    $.pkgName
   }'`))
 
-  void $(`pnpm reboot`)
+  void $$(`pnpm reboot`)
 }
-

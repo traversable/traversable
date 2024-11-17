@@ -1,5 +1,5 @@
 #!/usr/bin/env pnpm dlx tsx
-import { Print, deriveShortView, topological } from "bin/util.js"
+import { Print, deriveShortView, topological } from "./util.js"
 
 function main(effect: (description: string) => void): void {
   const indent = `   `

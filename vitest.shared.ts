@@ -1,6 +1,6 @@
 import * as path from "node:path"
 import { defineConfig } from "vitest/config"
-import { PACKAGES } from "./__generated__/packages"
+import { PACKAGES } from "./__generated__/package-list"
 import { default as REPO } from "./__generated__/repo.json"
 
 function createAlias(pkgName: string) {

@@ -1,5 +1,5 @@
 #!/usr/bin/env pnpm dlx tsx
-import { Print, rimraf } from "bin/util.js"
+import { Print, rimraf } from "./util.js"
 import { BUILD_ARTIFACTS, EMOJI, GRAPH } from "./metadata.js"
 
 Print(Print.task(`Cleaning build artifacts... ${EMOJI.WELL}`))
