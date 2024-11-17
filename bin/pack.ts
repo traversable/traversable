@@ -7,7 +7,7 @@ import * as object from "effect/Record"
 import { flow, pipe, Schema as S } from "effect"
 
 import * as fs from "./fs.js"
-import { Print, tap } from "./util.js"
+import { localTime, Print, tap } from "./util.js"
 import { PACKAGES } from "./metadata.js"
 import { PackageJson } from "./schema.js"
 
@@ -94,7 +94,7 @@ const getModules = (pkgName: string) => {
   )
 }
 
-export const tasks 
+export const workspaceTasks 
   : (pkgName: string) => IO
   = (pkgName) => {
     const extractModuleName = (path: string) => path.slice(path.lastIndexOf(`/`) + 1, path.lastIndexOf(`.`))
@@ -217,30 +217,11 @@ export const tasks
   return () => tasks.forEach(ios => ios.forEach((io) => io()))
 }
 
-const localTime = () => {
-  const d = new globalThis.Date()
-  const ts = d.toLocaleTimeString()
-  return ts.slice(0, -3) + ":" + `${Math.round(d.getMilliseconds() / 10)}`.padStart(2, "0").concat(ts.slice(-2))
-}
 
 function main(): void {
-  return void pipe(
-    PACKAGES,
-    tap(Print(Print.task(`[bin/build/pack]: Building \`dist\` folders`))),
-    tap(Print()),
-    array.map(
-      flow(
-        // tap(pkg => Print(Print.hush(
-        //   Print.hush(`❲${localTime()}❳           Building dist for workspace: `) + `${
-        //     Print.with.reset(Print.with.underline(pkg))
-        //   }`,
-        // ))),
-        tasks,
-      ),
-    ),
-    (tasks) => tasks.map((task) => task()),
-    // tap(Print()),
-  )
+  void Print(Print.task(`[bin/build/pack]: Building \`dist\` folders`))
+  void Print()
+  void PACKAGES.forEach((pkg) => workspaceTasks(pkg)())
 }
 
 void main()
