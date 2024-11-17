@@ -616,6 +616,7 @@ export function main(opts: Options) {
     void write.workspaceGeneratedManifest.create($)
     void write.workspacePackageJson.create($)
     void write.workspaceSrcIndex.create($)
+    void write.workspaceSrcExports.create($)
     void write.workspaceVitestConfig.create($)
     void write.workspaceReadme.create($)
     void write.workspaceSrcVersion.create($)
@@ -635,6 +636,7 @@ export function main(opts: Options) {
   }' created at 'packages/${
     $.pkgName
   }'`))
+  void $$(`pnpm reboot`)
 }
 
 main.cleanup = (opts: Options) => {
@@ -653,6 +655,7 @@ main.cleanup = (opts: Options) => {
     void write.workspaceGeneratedManifest.cleanup($)
     void write.workspacePackageJson.cleanup($)
     void write.workspaceSrcIndex.cleanup($)
+    void write.workspaceSrcExports.cleanup($)
     void write.workspaceVitestConfig.cleanup($)
     void write.workspaceReadme.cleanup($)
     void write.workspaceSrcVersion.cleanup($)
