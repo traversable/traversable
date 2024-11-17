@@ -184,16 +184,33 @@ export namespace Transform {
 
   export const toMetadata 
     : (_: readonly [readPath: string, writePath: string]) => void
-    = ([readPath, writePath]) => fs.writeFileSync(
-      writePath, 
-      Ends.before.concat(
-        Transform.prettify(
-          fs.readFileSync(readPath)
-            .toString(`utf8`))
-            .trim()
-            .concat(Ends.after),
+    = ([source, target]) => pipe(
+      [source, target] as const,
+      ([source, target]) => [
+        pipe(
+          fs.readFileSync(source).toString("utf8").trim(), 
+          Transform.prettify,
+          (contents) => Ends.before + contents + Ends.after,
+          (x) => (console.log("x in toMetadata", x), x),
+        ),
+        target
+      ],
+      ([contents, target]) =>
+      fs.writeFileSync(
+        target, 
+        contents,
       )
     )
+
+    /* 
+            Ends.before.concat(
+          Transform.prettify(
+            fs.readFileSync(source)
+              .toString(`utf8`))
+              .trim()
+              .concat(Ends.after),
+        )
+    */
 
   export const toCamelCase
     : (s: string) => string
