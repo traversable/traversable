@@ -4,7 +4,7 @@ import { NodeContext, NodeRuntime } from "@effect/platform-node"
 import { Effect } from "effect"
 
 import { PACKAGES } from "./metadata.js"
-import { main } from "./workspace-new.js"
+import { main } from "./workspace.js"
 
 const pkgName = Prompt.text({
   message: `What is the name of your package?`,

@@ -1,5 +1,4 @@
 import type { fc } from "@traversable/core"
-import { http } from "@traversable/http"
 import type { any } from "any-ts"
 
 import type { parameter } from "./parameter.js"
@@ -142,40 +141,82 @@ openapi.is = {
   request: (u: openapi.requestBody): u is openapi.request => !("$ref" in u),
 }
 
+namespace http {
+  export const Verb = {
+    get: "get",
+    post: "post",
+    put: "put",
+  } as const
+
+  export const MediaType = {
+    applicationJSON: "application/json",
+    applicationFormURLEncoded: "application/x-www-form-urlencoded",
+    applicationJavascript: "application/javascript",
+    applicationOctetStream: "application/octet-stream",
+    applicationXML: "application/xml",
+    imageGIF: "image/gif",
+    imageJPEG: "image/jpeg",
+    imagePNG: "image/png",
+    multipartFormData: "multipart/form-data",
+    textCSV: "text/csv",
+    textHTML: "text/html",
+    textPlain: "text/plain",
+    textXML: "text/xml",
+  } as const
+}
+
+export declare namespace openapi {
+  export { parameter }
+}
 export declare namespace openapi {
   const document: document.meta & {
-    openapi: "3.0.1" | "3.0.1"
+    openapi: "3.0.1"
     schemas: openapi.schemas
     paths: { ["/api/v2/example/{id}"]?: openapi.pathitem } & {
       [path: string]: {
         // TODO: add TRACE, HEAD, etc.
-        [http.Verb.enum.get]?: openapi.operation
-        [http.Verb.enum.post]?: openapi.operation
-        [http.Verb.enum.put]?: openapi.operation
-        [http.Verb.enum.delete]?: openapi.operation
-        [http.Verb.enum.patch]?: {
+        [http.Verb.get]?: openapi.operation
+        [http.Verb.put]?: openapi.operation
+        [http.Verb.post]?: {
+          // [http.Verb.enum.get]?: openapi.operation
+          // [http.Verb.enum.post]?: openapi.operation
+          // [http.Verb.enum.put]?: openapi.operation
+          // [http.Verb.enum.delete]?: openapi.operation
+          // [http.Verb.enum.patch]?: {
           parameters?: readonly openapi.parameter[]
           responses?: {
-            [200]?: openapi.response
-            [500]?: openapi.response
+            200?: openapi.response
+            500?: openapi.response
           } & {
             /**
              * ### [HTTP status code](https://developer.mozilla.org/en-US/docs/Web/HTTP/Status)
              */
             [status: number]: {
               content?: {
-                [http.MediaType.enum.applicationJSON]?: openapi.mediatype
-                [http.MediaType.enum.applicationFormURLEncoded]?: openapi.mediatype
-                [http.MediaType.enum.applicationOctetStream]?: openapi.mediatype
-                [http.MediaType.enum.applicationXML]?: openapi.mediatype
-                [http.MediaType.enum.imageGIF]?: openapi.mediatype
-                [http.MediaType.enum.imageJPEG]?: openapi.mediatype
-                [http.MediaType.enum.imagePNG]?: openapi.mediatype
-                [http.MediaType.enum.multipartFormData]?: openapi.mediatype
-                [http.MediaType.enum.textCSV]?: openapi.mediatype
-                [http.MediaType.enum.textHTML]?: openapi.mediatype
-                [http.MediaType.enum.textPlain]?: openapi.mediatype
-                [http.MediaType.enum.textXML]?: openapi.mediatype
+                [http.MediaType.applicationJSON]?: openapi.mediatype
+                [http.MediaType.applicationJavascript]?: openapi.mediatype
+                [http.MediaType.applicationOctetStream]?: openapi.mediatype
+                [http.MediaType.applicationXML]?: openapi.mediatype
+                [http.MediaType.imageGIF]?: openapi.mediatype
+                [http.MediaType.imageJPEG]?: openapi.mediatype
+                [http.MediaType.imagePNG]?: openapi.mediatype
+                [http.MediaType.multipartFormData]?: openapi.mediatype
+                [http.MediaType.textCSV]?: openapi.mediatype
+                [http.MediaType.textHTML]?: openapi.mediatype
+                [http.MediaType.textPlain]?: openapi.mediatype
+                [http.MediaType.textXML]?: openapi.mediatype
+                // [http.MediaType.enum.applicationJSON]?: openapi.mediatype
+                // [http.MediaType.enum.applicationFormURLEncoded]?: openapi.mediatype
+                // [http.MediaType.enum.applicationOctetStream]?: openapi.mediatype
+                // [http.MediaType.enum.applicationXML]?: openapi.mediatype
+                // [http.MediaType.enum.imageGIF]?: openapi.mediatype
+                // [http.MediaType.enum.imageJPEG]?: openapi.mediatype
+                // [http.MediaType.enum.imagePNG]?: openapi.mediatype
+                // [http.MediaType.enum.multipartFormData]?: openapi.mediatype
+                // [http.MediaType.enum.textCSV]?: openapi.mediatype
+                // [http.MediaType.enum.textHTML]?: openapi.mediatype
+                // [http.MediaType.enum.textPlain]?: openapi.mediatype
+                // [http.MediaType.enum.textXML]?: openapi.mediatype
               }
               headers?: openapi.headers
             }
@@ -235,12 +276,12 @@ export declare namespace openapi {
   namespace pathitem {
     /** TODO: implement trace, head, options */
     interface verbs {
-      [http.Verb.enum.get]?: openapi.operation
-      [http.Verb.enum.get]?: openapi.operation
-      [http.Verb.enum.post]?: openapi.operation
-      [http.Verb.enum.put]?: openapi.operation
-      [http.Verb.enum.delete]?: openapi.operation
-      [http.Verb.enum.patch]?: openapi.operation
+      [http.Verb.get]?: openapi.operation
+      [http.Verb.get]?: openapi.operation
+      [http.Verb.post]?: openapi.operation
+      [http.Verb.put]?: openapi.operation
+      // [http.Verb.delete]?: openapi.operation
+      // [http.Verb.patch]?: openapi.operation
     }
     interface meta {
       servers?: openapi.meta.servers
@@ -297,19 +338,19 @@ export declare namespace openapi {
       inline<{ [x: `5${number}`]: openapi.response }> {}
 
   interface content {
-    [http.MediaType.enum.applicationJSON]?: openapi.mediatype
-    [http.MediaType.enum.applicationFormURLEncoded]?: openapi.mediatype
-    [http.MediaType.enum.applicationOctetStream]?: openapi.mediatype
-    [http.MediaType.enum.applicationXML]?: openapi.mediatype
-    [http.MediaType.enum.applicationJavascript]?: openapi.mediatype
-    [http.MediaType.enum.imageGIF]?: openapi.mediatype
-    [http.MediaType.enum.imageJPEG]?: openapi.mediatype
-    [http.MediaType.enum.imagePNG]?: openapi.mediatype
-    [http.MediaType.enum.multipartFormData]?: openapi.mediatype
-    [http.MediaType.enum.textCSV]?: openapi.mediatype
-    [http.MediaType.enum.textHTML]?: openapi.mediatype
-    [http.MediaType.enum.textPlain]?: openapi.mediatype
-    [http.MediaType.enum.textXML]?: openapi.mediatype
+    [http.MediaType.applicationJSON]?: openapi.mediatype
+    [http.MediaType.applicationFormURLEncoded]?: openapi.mediatype
+    [http.MediaType.applicationOctetStream]?: openapi.mediatype
+    [http.MediaType.applicationXML]?: openapi.mediatype
+    [http.MediaType.applicationJavascript]?: openapi.mediatype
+    [http.MediaType.imageGIF]?: openapi.mediatype
+    [http.MediaType.imageJPEG]?: openapi.mediatype
+    [http.MediaType.imagePNG]?: openapi.mediatype
+    [http.MediaType.multipartFormData]?: openapi.mediatype
+    [http.MediaType.textCSV]?: openapi.mediatype
+    [http.MediaType.textHTML]?: openapi.mediatype
+    [http.MediaType.textPlain]?: openapi.mediatype
+    [http.MediaType.textXML]?: openapi.mediatype
   }
 
   type header = openapi.header.any
@@ -334,9 +375,6 @@ export declare namespace openapi {
     explode?: boolean
     allowReserved?: boolean
   }
-}
-export declare namespace openapi {
-  export { parameter }
 }
 
 export const style = {

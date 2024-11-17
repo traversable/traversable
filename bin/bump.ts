@@ -25,6 +25,8 @@ const serialize = (packages: readonly string[]) => {
   ].join("\n")
 }
 
+const writingMetadataLog = (s: string, t: string) => Print(`[bin/bump.ts] ${Print.strong(s.split(`/`)[1])} writing metadata to:\n\t\t📁 ${Print.with.underline(Print.hush(t))}`)
+
 /**
  * TODO:
  * - for each workspace, cache the most recent version number
@@ -37,10 +39,10 @@ function main(): void {
   void Print()
   void fs.mkdir(ABSOLUTE_PATH.RepoMetadata)
   void FS.writeFileSync(ABSOLUTE_PATH.RepoPackages, serialize(PACKAGES)) 
-  void PACKAGES.forEach((pkg) => Print(`[bin/bump.ts] Writing \`${pkg.split(`/`)[1]}′ workspace metadata to:\n\t\t📁 ${pkg}`))
   void PACKAGES
+    .sort()
     .map((pkg): [string, string] => [`${pkg}/${RELATIVE_PATH.PackageJson}`, `${pkg}/${RELATIVE_PATH.PackageFile}`])
-    .map(([s, t]): [string, string] => (Print(`[bin/bump.ts] Writing \`${s.split(`/`)[1]}′ workspace metadata to:\n\t\t📁 ${t}`), [s, t]))
+    .map(([s, t]): [string, string] => (writingMetadataLog(s, t), [s, t]))
     .map((xs) => Transform.toMetadata(xs))
 }
 

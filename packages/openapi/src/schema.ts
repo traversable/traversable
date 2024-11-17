@@ -3,8 +3,7 @@ import { array, type keys, object } from "@traversable/data"
 
 import * as fc_ from "fast-check"
 
-import type { arbitrary, openapi } from "./document.js"
-import { type Arbitrary, lit } from "./types.js"
+import { type Arbitrary, type arbitrary, lit, type openapi } from "./types.js"
 
 export interface HasType<T extends DataTypes[number] = DataTypes[number]> {
   type: T

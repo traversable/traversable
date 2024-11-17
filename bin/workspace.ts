@@ -6,7 +6,6 @@ import { flow, identity, pipe, Effect } from "effect"
 import * as fs from "./fs.js"
 import { template } from "./assets/index.js"
 import { Print, tap, Transform } from "./util.js"
-import { PACKAGES } from "./metadata.js"
 import * as S from "effect/Schema"
 
 const $$ = (command: string) => process.execSync(command, { stdio: "inherit" })
@@ -189,7 +188,7 @@ const unmakeBaseKey$ = (k: string) =>
 
 const makeBaseEntries = ($: Deps) => [
   [makeBaseKey($), [`${TEMPLATE.BaseValue.pre}${$.pkgName}${TEMPLATE.BaseValue.post}`]],
-  [makeBaseKey$($), [`${TEMPLATE.BaseValue$.pre}${$.pkgName}${TEMPLATE.BaseValue$.post}`]],
+  [makeBaseKey$($), [`${TEMPLATE.BaseValue$.pre}${$.pkgName}${TEMPLATE.BaseValue$.post}`]]
 ] as [string, string[]][]
 
 const unmakeBaseEntries
@@ -417,7 +416,8 @@ namespace write {
   export const workspaceSrcIndex = defineEffect(
     ($) => pipe(
       [
-        `export * from "./version.js"`,
+        `export * from "./exports.js"`,
+         `export * as ${Transform.toCamelCase($.pkgName)} from "./exports.js"`,
       ].join("\n"),
       $.dryRun ? tap("\n\n[CREATE #10]: workspaceIndex\n", globalThis.String) 
       : fs.writeString(path.join(PATH.packages, $.pkgName, "src", "index.ts")),
@@ -428,17 +428,32 @@ namespace write {
         : fs.rimraf(path.join(PATH.packages, $.pkgName, "src", "index.ts")),
   )
 
+  export const workspaceSrcExports = defineEffect(
+    ($) => pipe(
+      [
+        `export * from "./version.js"`,
+      ].join("\n"),
+      $.dryRun ? tap("\n\n[CREATE #11]: workspaceSrcExports\n", globalThis.String) 
+      : fs.writeString(path.join(PATH.packages, $.pkgName, "src", "exports.ts")),
+    ),
+    ($) => 
+      $.dryRun 
+        ? tap("\n\n[CLEANUP #11]: workspaceSrcExports\n", globalThis.String) 
+        : fs.rimraf(path.join(PATH.packages, $.pkgName, "src", "exports.ts")),
+  )
+
+
   export const workspaceVitestConfig = defineEffect(
     ($) => pipe(
       [
         vitest.configMap[$.env ?? "node"]
       ].join("\n"),
-      $.dryRun ? tap("\n\n[CREATE #11]: workspaceVitestConfig\n", globalThis.String) 
+      $.dryRun ? tap("\n\n[CREATE #12]: workspaceVitestConfig\n", globalThis.String) 
       : fs.writeString(path.join(PATH.packages, $.pkgName, "vitest.config.ts")),
     ),
     ($) => 
       $.dryRun 
-        ? tap("\n\n[CLEANUP #11]: workspaceVitestConfig\n", globalThis.String) 
+        ? tap("\n\n[CLEANUP #12]: workspaceVitestConfig\n", globalThis.String) 
         : fs.rimraf(path.join(PATH.packages, $.pkgName, "vitest.config.ts")),
   )
 
@@ -447,12 +462,12 @@ namespace write {
       [
         `# @traversable/${$.pkgName}`
       ].join("\n"),
-      $.dryRun ? tap("\n\n[CREATE #12]: workspaceReadme\n", globalThis.String)
+      $.dryRun ? tap("\n\n[CREATE #13]: workspaceReadme\n", globalThis.String)
       : fs.writeString(path.join(PATH.packages, $.pkgName, "README.md")),
     ),
     ($) => 
       $.dryRun 
-        ? tap("\n\n[CLEANUP #12]: workspaceReadme\n", globalThis.String)
+        ? tap("\n\n[CLEANUP #13]: workspaceReadme\n", globalThis.String)
         : fs.rimraf(path.join(PATH.packages, $.pkgName, "README.md")),
   )
 
@@ -463,12 +478,12 @@ namespace write {
         `export const VERSION = \`\${pkg.name}@\${pkg.version}\` as const`,
         `export type VERSION = typeof VERSION`,
       ].join("\n"),
-      $.dryRun ? tap("\n\n[CREATE #13]: workspaceVersionSrc\n", globalThis.String) 
+      $.dryRun ? tap("\n\n[CREATE #14]: workspaceVersionSrc\n", globalThis.String) 
       : fs.writeString(path.join(PATH.packages, $.pkgName, "src", "version.ts")),
     ),
     ($) => 
       $.dryRun 
-        ? tap("\n\n[CLEANUP #13]: workspaceVersionSrc\n") 
+        ? tap("\n\n[CLEANUP #14]: workspaceVersionSrc\n") 
         : fs.rimraf(path.join(PATH.packages, $.pkgName, "src", "version.ts")),
   )
 
@@ -486,12 +501,12 @@ namespace write {
         `  })`,
         `})`,
       ]).join("\n"),
-      $.dryRun ? tap("\n\n[CREATE #14]: workspaceVersionTest\n", globalThis.String)
+      $.dryRun ? tap("\n\n[CREATE #15]: workspaceVersionTest\n", globalThis.String)
       : fs.writeString(path.join(PATH.packages, $.pkgName, "test", "version.test.ts")),
     ),
     ($) => 
       $.dryRun 
-        ? tap("\n\n[CLEANUP #14]: workspaceVersionTest\n", globalThis.String) 
+        ? tap("\n\n[CLEANUP #15]: workspaceVersionTest\n", globalThis.String) 
         : fs.rimraf(path.join(PATH.packages, $.pkgName, "test", "version.test.ts")),
   )
 
@@ -505,12 +520,12 @@ namespace write {
           { "path": "tsconfig.test.json" },
         ],
       },
-      $.dryRun ? tap("\n\n[CREATE #15]: workspaceTsConfig\n") 
+      $.dryRun ? tap("\n\n[CREATE #16]: workspaceTsConfig\n") 
       : fs.writeJson(path.join(PATH.packages, $.pkgName, "tsconfig.json")),
     ),
     ($) => 
       $.dryRun 
-        ? tap("\n\n[CLEANUP #15]: workspaceTsConfig\n") 
+        ? tap("\n\n[CLEANUP #16]: workspaceTsConfig\n") 
         : fs.rimraf(path.join(PATH.packages, $.pkgName, "tsconfig.json")),
   )
 
@@ -528,12 +543,12 @@ namespace write {
         "references": make.refs($),
       },
       $.dryRun 
-        ? tap("\n\n[CREATE #16]: workspaceTsConfigBuild\n") 
+        ? tap("\n\n[CREATE #17]: workspaceTsConfigBuild\n") 
         : fs.writeJson(path.join(PATH.packages, $.pkgName, "tsconfig.build.json")),
     ),
     ($) => 
       $.dryRun 
-        ? tap("\n\n[CLEANUP #16]: workspaceTsConfigBuild\n") 
+        ? tap("\n\n[CLEANUP #17]: workspaceTsConfigBuild\n") 
         : fs.rimraf(path.join(PATH.packages, $.pkgName, "tsconfig.build.json")),
   )
 
@@ -553,12 +568,12 @@ namespace write {
         "include": ["src"]
       },
       $.dryRun 
-        ? tap("\n\n[CREATE #17]: workspaceTsConfigSrc\n") 
+        ? tap("\n\n[CREATE #18]: workspaceTsConfigSrc\n") 
         : fs.writeJson(path.join(PATH.packages, $.pkgName, "tsconfig.src.json")),
     ),
     ($) => 
       $.dryRun 
-        ? tap("\n\n[CLEANUP #17]: workspaceTsConfigSrc\n") 
+        ? tap("\n\n[CLEANUP #18]: workspaceTsConfigSrc\n") 
         : fs.rimraf(path.join(PATH.packages, $.pkgName, "tsconfig.src.json")),
   )
 
@@ -579,12 +594,12 @@ namespace write {
         "include": ["test"],
       },
       $.dryRun 
-        ? tap("\n\n[CREATE #18]: workspaceTsConfigTest\n") 
+        ? tap("\n\n[CREATE #19]: workspaceTsConfigTest\n") 
         : fs.writeJson(path.join(PATH.packages, $.pkgName, "tsconfig.test.json")),
     ),
     ($) => 
       $.dryRun 
-        ? tap("\n\n[CLEANUP #18]: workspaceTsConfigTest\n") 
+        ? tap("\n\n[CLEANUP #19]: workspaceTsConfigTest\n") 
         : fs.rimraf(path.join(PATH.packages, $.pkgName, "tsconfig.test.json")),
   )
 }

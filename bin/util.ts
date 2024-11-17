@@ -166,23 +166,15 @@ export namespace Transform {
 
   export const toMetadata 
     : (_: readonly [readPath: string, writePath: string]) => void
-    = (args) => pipe(
-      (console.log("ARGS", Array.isArray(args)), args),
-      x=>x,
-      tap("toMetadata"),
-
-      ([readPath, writePath]) => {
-        fs.writeFileSync(
-          writePath, 
-          Ends.before.concat(
-            Transform.prettify(
-              fs.readFileSync(readPath)
-                .toString(`utf8`))
-                .trim()
-                .concat(Ends.after),
-          )
-        )
-      }
+    = ([readPath, writePath]) => fs.writeFileSync(
+      writePath, 
+      Ends.before.concat(
+        Transform.prettify(
+          fs.readFileSync(readPath)
+            .toString(`utf8`))
+            .trim()
+            .concat(Ends.after),
+      )
     )
 
   export const toCamelCase

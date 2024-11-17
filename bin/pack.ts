@@ -12,7 +12,6 @@ import { PACKAGES } from "./metadata.js"
 import { PackageJson } from "./schema.js"
 
 interface IO { (): void }
-
 const PATH = {
   dist: "dist",
   build: "build",
@@ -227,20 +226,20 @@ const localTime = () => {
 function main(): void {
   return void pipe(
     PACKAGES,
-    tap(() => Print(Print.task(`[bin/build/pack]: Building \`dist\` folders`))),
-    tap(() => Print()),
+    tap(Print(Print.task(`[bin/build/pack]: Building \`dist\` folders`))),
+    tap(Print()),
     array.map(
       flow(
-        tap(pkg => Print(Print.hush(
-          Print.hush(`❲${localTime()}❳           Building dist for workspace: `) + `${
-            Print.with.reset(Print.with.underline(pkg))
-          }`,
-        ))),
+        // tap(pkg => Print(Print.hush(
+        //   Print.hush(`❲${localTime()}❳           Building dist for workspace: `) + `${
+        //     Print.with.reset(Print.with.underline(pkg))
+        //   }`,
+        // ))),
         tasks,
       ),
     ),
     (tasks) => tasks.map((task) => task()),
-    tap(() => Print()),
+    tap(Print()),
   )
 }
 

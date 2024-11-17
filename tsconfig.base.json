@@ -55,7 +55,7 @@
       ],
       "@traversable/openapi/*": [
         "packages/openapi/src/*.js"
-      ],
+      ]
     }
   }
 }
