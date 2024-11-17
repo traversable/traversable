@@ -25,12 +25,16 @@ export default {
     "clean:deps": "rm -rf node_modules",
     "test": "vitest"
   },
+  "devDependencies": {
+    "@traversable/core": "workspace:^",
+    "@traversable/data": "workspace:^"
+  },
   "peerDependencies": {
     "@traversable/core": "workspace:^",
     "@traversable/data": "workspace:^"
   },
-  "devDependencies": {
-    "@traversable/core": "workspace:^",
-    "@traversable/data": "workspace:^"
+  "peerDependenciesMeta": {
+    "@traversable/core": { "optional": false },
+    "@traversable/data": { "optional": false }
   }
 } as const

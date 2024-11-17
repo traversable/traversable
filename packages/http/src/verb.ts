@@ -6,7 +6,7 @@ export {
   Verbs as all, 
   Verb as enum, 
   isAnyVerb as isAny, 
-  isSpecificVerb as is 
+  isSpecificVerb as is,
 }
 
 const Verbs = array.of("delete", "get", "patch", "post", "put")
