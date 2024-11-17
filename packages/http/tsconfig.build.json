@@ -7,5 +7,8 @@
     "outDir": "build/esm",
     "stripInternal": true
   },
-  "references": [{ "path": "../core" }, { "path": "../data" }]
+  "references": [
+    { "path": "../core" }, 
+    { "path": "../data" }
+  ]
 }

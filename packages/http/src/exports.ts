@@ -37,4 +37,3 @@ export * as Verb from "./verb.js"
  * Type alias for {@link Verb.any `http.Verb`}
  */
 export type Method = import("./verb.js").any
-

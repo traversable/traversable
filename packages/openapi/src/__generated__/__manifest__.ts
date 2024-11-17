@@ -20,7 +20,7 @@ export default {
     "directory": "dist"
   },
   "scripts": {
-    "bench": "echo NOTHING TO BENCH # ./bench/index.ts",
+    "bench": "echo NOTHING TO BENCH",
     "build": "pnpm build:esm && pnpm build:cjs && pnpm build:annotate",
     "build:esm": "tsc -b tsconfig.build.json",
     "build:cjs": "babel build/esm --plugins @babel/transform-export-namespace-from --plugins @babel/transform-modules-commonjs --out-dir build/cjs --source-maps",

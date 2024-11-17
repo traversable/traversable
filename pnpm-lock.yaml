@@ -98,9 +98,6 @@ importers:
 
   packages/core:
     dependencies:
-      '@traversable/data':
-        specifier: workspace:^
-        version: link:../data/dist
       any-ts:
         specifier: 0.48.0
         version: 0.48.0
@@ -108,6 +105,9 @@ importers:
       '@traversable/bench':
         specifier: workspace:^
         version: link:../bench/dist
+      '@traversable/data':
+        specifier: workspace:^
+        version: link:../data/dist
     publishDirectory: dist
 
   packages/data:

@@ -9,10 +9,10 @@ export * from "fast-check"
  *   - [source](https://url.spec.whatwg.org/#query-percent-encode-set)
  */
 
-import { is } from "@traversable/core"
 import { array, fn, map, object } from "@traversable/data"
 import * as fc from "fast-check"
 
+import * as is from "../is.js"
 import { std } from "./data.js"
 import Country = std.Country
 import Currency = std.Currency

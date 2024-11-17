@@ -6,7 +6,7 @@ export {
   Verbs as all, 
   Verb as enum, 
   isAnyVerb as isAny, 
-  isSpecificVerb as is,
+  isSpecificVerb as is 
 }
 
 const Verbs = array.of("delete", "get", "patch", "post", "put")
@@ -21,4 +21,3 @@ const Verb = object.fromKeys(Verbs)
 //    ^?
 
 type AnyVerb = (typeof Verbs)[number]
-
