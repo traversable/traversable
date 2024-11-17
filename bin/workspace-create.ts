@@ -8,6 +8,7 @@ import { main } from "./workspace.js"
 
 const pkgName = Prompt.text({
   message: `What is the name of your package?`,
+  validate: (pkgName) => pkgName.length > 0 ? Effect.succeed(pkgName) : Effect.fail(pkgName)
 })
 
 const env = Prompt.select({

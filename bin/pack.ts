@@ -239,7 +239,7 @@ function main(): void {
       ),
     ),
     (tasks) => tasks.map((task) => task()),
-    tap(Print()),
+    // tap(Print()),
   )
 }
 

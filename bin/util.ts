@@ -183,7 +183,7 @@ export namespace Transform {
 
   export function prettify(input: unknown): string {
     if (typeof input === "string") {
-      try { return prettifySync.format(input, { parser: `json` }) }
+      try { return prettifySync.format(input, { parser: `json`, printWidth: 100 }) }
       catch (e) { return prettifySync.format(input, { parser: `babel` }) }
     }
     else {

@@ -178,7 +178,7 @@ const unmakeBuildKey = (k: string) =>
 const makeBaseKey =  ($: Deps) => `${TEMPLATE.BaseKey}${$.pkgName}`
 const unmakeBaseKey = (k: string) => 
   !k.startsWith(TEMPLATE.BaseKey) ? k
-  : k.slice(0, -(TEMPLATE.BaseKey).length)
+  : k.slice(TEMPLATE.BaseKey.length)
 
 const makeBaseKey$ =  ($: Deps) => `${TEMPLATE.BaseKey$.pre}${$.pkgName}/*`
 const unmakeBaseKey$ = (k: string) => 
@@ -191,14 +191,8 @@ const makeBaseEntries = ($: Deps) => [
   [makeBaseKey$($), [`${TEMPLATE.BaseValue$.pre}${$.pkgName}${TEMPLATE.BaseValue$.post}`]]
 ] as [string, string[]][]
 
-const unmakeBaseEntries
-  : (k: string) => string
-  = flow(
-    unmakeBaseKey$,
-    unmakeBaseKey,
-  )
- 
-const filterBaseRefs = ($: Deps) => ([path]: [string, any]) => unmakeBaseKey(path) !== $.pkgName && unmakeBaseKey$(path) !== $.pkgName
+const filterBaseRefs = ($: Deps) => ([path]: [string, any]) => 
+  unmakeBaseKey(path) !== $.pkgName && unmakeBaseKey$(path) !== $.pkgName
 
 namespace make {
   export const _ref = (dep: string) => ({ path: `../${dep}` } as const)
@@ -218,11 +212,13 @@ namespace write {
           references
           : !references ? [] 
           : pipe(
-            references.filter((x) => unmakeRootKey(x.path) !== $.pkgName),
+            references,
+            (xs) => xs.filter((x) => unmakeRootKey(x.path) !== $.pkgName),
             (xs) => xs.concat({ path: makeRootKey($) }),
             (xs) => xs.sort(order.byReference),
           )
-        })
+        }),
+        { serialize: Transform.prettify },
       ),
       $.dryRun ? tap("\n\n[CREATE #1]: update references in root tsconfig.json\n") : identity
     ),
@@ -235,7 +231,8 @@ namespace write {
           references
           : !x.references ? [] 
           : x.references.filter(({ path }) => unmakeRootKey(path) !== $.pkgName),
-        })
+        }),
+        { serialize: Transform.prettify },
       ),
       $.dryRun ? tap("\n\n[CLEANUP #1]: update references in root tsconfig.json\n") : identity
     )
@@ -264,7 +261,8 @@ namespace write {
               )
             }
           },
-        )
+        ),
+        { serialize: Transform.prettify },
       ),
       $.dryRun ? tap("\n\n[CREATE #2]: update references in root tsconfig.base.json\n") : identity
     ),
@@ -272,23 +270,19 @@ namespace write {
       PATH.rootTsConfigBase,
       (($.dryRun ? fs.map : fs.writer) as typeof fs.writer)(
         TsConfig,
-        ({ references, ...ts }) => pipe(
-          {
-            ...ts,
-            compilerOptions
-            : !ts.compilerOptions ? {} : {
-              ...ts.compilerOptions,
-              paths
-              : !ts.compilerOptions?.paths ? {}
-              : pipe(
-                ts.compilerOptions.paths,
-                globalThis.Object.entries,
-                (xs) => xs.filter(filterBaseRefs($)),
-                globalThis.Object.fromEntries,
-              )
-            }
-          },
-        )
+        ({ references, ...ts }) => ({
+          ...ts,
+          compilerOptions: !ts.compilerOptions ? {} : {
+            ...ts.compilerOptions,
+            paths: !ts.compilerOptions?.paths ? {} : pipe(
+              ts.compilerOptions.paths,
+              globalThis.Object.entries,
+              (xs) => xs.filter(filterBaseRefs($)),
+              globalThis.Object.fromEntries,
+            )
+          }
+        }),
+        { serialize: Transform.prettify },
       ),
       $.dryRun ? tap("\n\n[CLEANUP #2]: update references in root tsconfig.base.json\n") : identity
     )
@@ -308,20 +302,22 @@ namespace write {
             (xs) => [...xs, { path: makeBuildKey($) }],
             (xs) => xs.sort(order.byReference),
           )
-        })
+        }),
+        { serialize: Transform.prettify },
       ),
       $.dryRun ? tap("\n\n[CREATE #3]: update references in root tsconfig.build.json\n") : identity
     ),
     ($) => pipe(
       PATH.rootTsConfigBuild,
-      (($.dryRun ? fs.map : fs.writer) as typeof fs.map)(
+      (($.dryRun ? fs.map : fs.writer) as typeof fs.writer)(
         TsConfig,
         ({ references, ...ts }) => ({
           ...ts,
           references
           : !references ? [] 
           : references.filter(({ path }) => unmakeBuildKey(path) !== $.pkgName),
-        })
+        }),
+        { serialize: Transform.prettify },
       ),
       $.dryRun ? tap("\n\n[CLEANUP #3]: update references in root tsconfig.build.json\n") : identity
     ),

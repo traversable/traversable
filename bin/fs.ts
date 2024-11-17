@@ -156,12 +156,11 @@ export function rmAndCopy(
  * returns a function a single argument, which is the path to the file
  * you want to apply the function to.
  * 
- * Note that unlike {@link writer `fs.writer`}, 
- * {@link file.map `file.map`} is pure.
+ * **Note:** unlike {@link writer `fs.writer`}, {@link map `fs.map`} is pure.
  * 
  * **Note:** if the file at `pathspec` fails to parse with the provided
- * schema, by default, an error will be thrown. If you'd like to configure
- * 
+ * schema, by default, an error will be thrown. Error handling is configurable
+ * via {@link map.Options `fs.map.Options`}.
  * 
  * - When **1 argument is provided**, the mapping function will be applied to
  * the file at `pathspec`'s contents, the output is stringified, and `pathspec`
@@ -217,10 +216,10 @@ export namespace map {
 
 
 /** 
- * ## {@link file.writer `file.writer`} 
+ * ## {@link writer `file.writer`} 
  * 
  * Given a schema describing the JSON you expect to parse out of a file,
- * and a function to run on the parsed JSON, {@link file.writer `file.writer`}
+ * and a function to run on the parsed JSON, {@link writer `file.writer`}
  * returns a function that expects 1 or 2 arguments.
  * 
  * - When **1 argument is provided**, the mapping function will be applied to
