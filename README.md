@@ -19,7 +19,9 @@ flowchart TD
     bench(@traversable/bench) -.-> bench(@traversable/bench)
     core(@traversable/core) -.-> bench(@traversable/bench)
     data(@traversable/data) -.-> bench(@traversable/bench)
-    openapi(@traversable/openapi) -.depends on.-> bench(@traversable/bench)
+    openapi(@traversable/openapi) -.-> bench(@traversable/bench)
+    http(@traversable/http) -.-> core(@traversable/core)
+    http(@traversable/http) -.depends on.-> data(@traversable/data)
 ```
 
 From fewest to most dependencies:
@@ -29,6 +31,7 @@ From fewest to most dependencies:
 - [`@traversable/core@0.0.0`](./packages/core) - [CHANGELOG](https://github.com/traversable/shared/blob/main/packages/core/CHANGELOG.md)
 - [`@traversable/data@0.0.0`](./packages/data) - [CHANGELOG](https://github.com/traversable/shared/blob/main/packages/data/CHANGELOG.md)
 - [`@traversable/openapi@0.0.0`](./packages/openapi) - [CHANGELOG](https://github.com/traversable/shared/blob/main/packages/openapi/CHANGELOG.md)
+- [`@traversable/http@0.0.0`](./packages/http) - [CHANGELOG](https://github.com/traversable/shared/blob/main/packages/http/CHANGELOG.md)
 <!-- codegen:end -->
 
 

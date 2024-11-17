@@ -121,6 +121,16 @@ importers:
         version: link:../bench/dist
     publishDirectory: dist
 
+  packages/http:
+    devDependencies:
+      '@traversable/core':
+        specifier: workspace:^
+        version: link:../core/dist
+      '@traversable/data':
+        specifier: workspace:^
+        version: link:../data/dist
+    publishDirectory: dist
+
   packages/openapi:
     dependencies:
       '@traversable/core':
