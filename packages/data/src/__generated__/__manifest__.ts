@@ -1,7 +1,7 @@
 export default {
   "name": "@traversable/data",
   "type": "module",
-  "version": "0.0.0",
+  "version": "0.0.1",
   "description": "A standard library, organized by data structure",
   "repository": {
     "type": "git",

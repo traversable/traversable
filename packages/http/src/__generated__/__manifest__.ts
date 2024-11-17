@@ -1,7 +1,7 @@
 export default {
   "name": "@traversable/http",
   "type": "module",
-  "version": "0.0.0",
+  "version": "0.0.1",
   "private": true,
   "description": "",
   "repository": {
@@ -10,10 +10,16 @@ export default {
     "directory": "packages/http"
   },
   "@traversable": {
-    "generateExports": { "include": ["**/*.ts"] },
-    "generateIndex": { "include": ["**/*.ts"] }
+    "generateExports": {
+      "include": ["**/*.ts"]
+    },
+    "generateIndex": {
+      "include": ["**/*.ts"]
+    }
   },
-  "publishConfig": { "directory": "dist" },
+  "publishConfig": {
+    "directory": "dist"
+  },
   "scripts": {
     "build": "pnpm build:esm && pnpm build:cjs && pnpm build:annotate",
     "build:esm": "tsc -b tsconfig.build.json",
@@ -34,7 +40,11 @@ export default {
     "@traversable/data": "workspace:^"
   },
   "peerDependenciesMeta": {
-    "@traversable/core": { "optional": false },
-    "@traversable/data": { "optional": false }
+    "@traversable/core": {
+      "optional": false
+    },
+    "@traversable/data": {
+      "optional": false
+    }
   }
 } as const

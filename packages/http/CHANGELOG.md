@@ -1,4 +1,4 @@
-# @traversable/core
+# @traversable/http
 
 ## 0.0.1
 
@@ -14,4 +14,5 @@
   - http -openapi
 
 - Updated dependencies [[`b2bcc9c`](https://github.com/traversable/traversable/commit/b2bcc9c676d775e4189c5c0fdd7e152e45d18bf8)]:
+  - @traversable/core@0.0.1
   - @traversable/data@0.0.1

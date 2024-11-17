@@ -1,7 +1,7 @@
 export default {
   "name": "@traversable/openapi",
   "type": "module",
-  "version": "0.0.0",
+  "version": "0.0.1",
   "description": "Utilities for parsing and generating OpenAPI documents",
   "repository": {
     "type": "git",
@@ -37,9 +37,15 @@ export default {
     "any-ts": "0.48.0"
   },
   "peerDependenciesMeta": {
-    "@traversable/data": { "optional": false },
-    "@traversable/core": { "optional": false },
-    "any-ts": { "optional": false }
+    "@traversable/data": {
+      "optional": false
+    },
+    "@traversable/core": {
+      "optional": false
+    },
+    "any-ts": {
+      "optional": false
+    }
   },
   "devDependencies": {
     "@traversable/bench": "workspace:^"
