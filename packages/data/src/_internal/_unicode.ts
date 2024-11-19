@@ -17,6 +17,15 @@ export declare const emoji: {
   roundtrip: `🌐`,
 }
 
+export type gitmoji = typeof gitmoji
+export declare const gitmoji: {
+  feat: "✨"
+  fix: "🐛"
+  docs: "📝"
+  types: "️🏷️"
+  perf: "⚡️"
+}
+
 export type math = typeof math
 export declare const math: {
   integer: "ℤ"
