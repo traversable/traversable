@@ -231,9 +231,9 @@ const tuple
  *  const min = tupled(Math.min)
  *  //    ^? const min: (a: number[]) => number
  */
-function tupled<I extends arguments, O>(fn: (...args: I) => O): (args: I) => O
-function tupled<I extends mut.array, O>(fn: (...args: I) => O): (args: I) => O
-function tupled<I extends arguments, const O>(fn: (...args: I) => O): (args: I) => O {
+function tupled<I extends arguments, O>(fn: (...args: [...I]) => O): (args: I) => O
+function tupled<I extends mut.array, O>(fn: (...args: [...I]) => O): (args: I) => O
+function tupled<I extends arguments, const O>(fn: (...args: [...I]) => O): (args: I) => O {
   return (args) => fn(...args)
 }
 
