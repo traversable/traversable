@@ -17,7 +17,8 @@ export default {
     }
   },
   "publishConfig": {
-    "directory": "dist"
+    "directory": "dist",
+    "registry": "https://npm.pkg.github.com"
   },
   "scripts": {
     "bench": "echo NOTHING TO BENCH",
@@ -33,7 +34,7 @@ export default {
   },
   "peerDependencies": {
     "@traversable/data": "workspace:^",
-    "any-ts": "0.48.0"
+    "any-ts": "0.48.1"
   },
   "peerDependenciesMeta": {
     "@traversable/data": {

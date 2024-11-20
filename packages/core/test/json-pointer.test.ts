@@ -1,6 +1,6 @@
 import * as vi from "vitest"
 
-import { core, fc, test, Property } from "@traversable/core"
+import { Property, core, fc, test } from "@traversable/core"
 
 const stripTargetChars = (component: string) => component.replace(/[~\/01]/g, "")
 
@@ -105,7 +105,7 @@ vi.describe("@traversable/core/json-pointer [examples]", () => {
 /** 
  * PROPERTY-BASED TEST SUITE
  */
-vi.describe("@traversable/core/json-pointer [properties]", () => {
+vi.describe("🧪 @traversable/core/json-pointer [properties]", () => {
   void test.prop([unescaped])("〖🌿〗:: JsonPointer.escape", (_) => 
     vi.assert.equal(
       stripTargetChars(_),

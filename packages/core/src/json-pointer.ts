@@ -1,4 +1,4 @@
-import { type nonempty, type number, type prop, type props, type string } from "@traversable/data"
+import type { nonempty, number, prop, props, string } from "@traversable/data"
 
 // TODO: move this to a dedicated place
 /** 
@@ -10,10 +10,9 @@ import { type nonempty, type number, type prop, type props, type string } from "
 function JsonPointer_unescape<T extends prop.any>(component: T): JsonPointer.unescape<T>
 function JsonPointer_unescape<T extends prop.any>(component: T, str = `${component}`) {
   if (str.indexOf("~") === -1) return str
-  let 
-    out = "",
-    char: string,
-    next: string
+  let out = ""
+  let char: string
+  let next: string
   for (let ix = 0, len = str.length; ix < len; ix++) {
     char = str[ix]
     next = str[ix + 1] ?? ""
@@ -38,9 +37,8 @@ function JsonPointer_escape(component: string | number): `${number}`
 function JsonPointer_escape(component: prop.any) {
   const chars = [...`${component}`]
   if (chars.indexOf("~") === -1 && chars.indexOf("/") === -1) return `${component}`
-  let 
-    out = "",
-    char: string | undefined
+  let out = ""
+  let char: string | undefined
 
   while (
     char = chars.shift(), 
