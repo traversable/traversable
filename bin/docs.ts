@@ -5,11 +5,16 @@ import { flow } from "effect"
 import { apply, pipe } from "effect/Function"
 import { Draw, Print, tap, topological } from "./util.js"
 
-interface SideEffect { (): void }
+
+interface SideEffect<T = void> { (): T }
 interface Matcher {
   needle: string | globalThis.RegExp
   replacement: string
 }
+
+const run 
+  : <T>(eff: SideEffect<T>) => T
+  = (eff) => eff()
 
 const README = `README.md`
 
@@ -119,14 +124,14 @@ const writeChartToReadme: SideEffect = flow(
   Draw.relation,
   tap(Print(Print.task(`[bin/docs.ts] Writing dependency graph to '${README}'`))),
   writeChart,
-  apply(void 0),
+  run,
 )
 
 const writeChangelogsToRootReadme: SideEffect = flow(
   topological,
   Draw.changelogLink,
   writeChangelogs,
-  apply(void 0),
+  run,
 )
 
 // const writeApiPackageOptionsType

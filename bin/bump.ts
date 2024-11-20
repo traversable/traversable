@@ -24,7 +24,13 @@ const serialize = (packages: readonly string[]) => {
   ].join("\n")
 }
 
-const writingMetadataLog = (s: string, t: string) => Print(`[bin/bump.ts] ${Print.strong(s.split(`/`)[1])} writing metadata to:\n\t\t📁 ${Print.with.underline(Print.hush(t))}`)
+const writingMetadataLog = (s: string, t: string) => Print(
+  `[bin/bump.ts] ${
+    Print.strong(s.split(`/`)[1])
+  } writing metadata to:\n\t\t📁 ${
+    Print.with.underline(Print.hush(t))
+  }`
+)
 
 /**
  * TODO:
@@ -32,10 +38,8 @@ const writingMetadataLog = (s: string, t: string) => Print(`[bin/bump.ts] ${Prin
  * - short-circuit if the version number hasn't changed since the previous run
  */
 function main(): void {
-  void Print(Print.task(`Writing workspace metadata...`))
-  void Print()
-  void Print(Print.task(`[bin/bump.ts] Writing changelogs to '${ABSOLUTE_PATH.RepoPackages}'`))
-  void Print()
+  void Print.task(`[bin/bump.ts] Writing workspace metadata...`)
+  void Print.task(`[bin/bump.ts] Writing changelogs to '${ABSOLUTE_PATH.RepoPackages}'`)
   void fs.mkdir(ABSOLUTE_PATH.RepoMetadata)
   void fs.writeFileSync(ABSOLUTE_PATH.RepoPackages, serialize(PACKAGES))
   void PACKAGES

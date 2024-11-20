@@ -23,7 +23,7 @@ import State = std.State
 const PATTERN = {
   alphanumeric: /^[a-zA-Z][a-zA-Z0-9]+$/,
   identifier: /^[$_a-zA-Z][$_a-zA-Z0-9]*$/,
-  identifier_: /^[a-z$_][a-z$_0-9]*$/,
+  identifier_legacy: /^[a-z$_][a-z$_0-9]*$/,
   pathnameEZ: /^[_a-zA-Z][_a-zA-Z0-9]+$/,
   pathname: /^[a-zA-Z0-9._-]+$/,
 } as const
@@ -242,14 +242,6 @@ export function keysof<T extends {}>(object: T) {
     : fc.uniqueArray(fc.constantFrom(...globalThis.Object.keys(object)))
 }
 
-function treeFrom(value: unknown, ...path: (string | number)[]): {}
-function treeFrom(value: unknown, ...path: (string | number)[]) {
-  let out = value
-  let k: string | number | undefined
-  while ((k = path.pop()) !== undefined) out = { [k]: out }
-  return out
-}
-
 export type needle = typeof needle
 export const needle = Symbol.for("needle")
 
@@ -283,21 +275,11 @@ export function needleInAHaystack() {
     ([path, $1, $2, $3, $4, $5]) => {
       const [k1, k2, k3, k4, k5] = path
       let out: unknown = needle
-      if (k5 !== undefined) {
-        out = { ...$5, [k5]: out }
-      }
-      if (k4 !== undefined) {
-        out = { ...$4, [k4]: out }
-      }
-      if (k3 !== undefined) {
-        out = { ...$3, [k3]: out }
-      }
-      if (k2 !== undefined) {
-        out = { ...$2, [k2]: out }
-      }
-      if (k1 !== undefined) {
-        out = { ...$1, [k1]: out }
-      }
+      k5 !== undefined && void (out = { ...$5, [k5]: out })
+      k4 !== undefined && void (out = { ...$4, [k4]: out })
+      k3 !== undefined && void (out = { ...$3, [k3]: out })
+      k2 !== undefined && void (out = { ...$2, [k2]: out })
+      k1 !== undefined && void (out = { ...$1, [k1]: out })
       return [
         out as Tree,
         path,
@@ -305,11 +287,6 @@ export function needleInAHaystack() {
     }
   )
 }
-
-    //   [
-    //   { ...tree, ...treeFrom(leaf, ...path) },
-    //   path, 
-    // ] as const
 
 // export declare function pathOf<
 //   const T extends { [K in K1]+?: { [K in K2]+?: { [K in K3]+?: { [K in K4]+?: { [K in K5]+?: any.primitive } } } } },
@@ -786,7 +763,7 @@ export function stringNumeric(constraints?: fc.FloatConstraints) {
  */
 export function identifier(constraints?: fc.StringMatchingConstraints): fc.Arbitrary<string>
 export function identifier(constraints?: fc.StringMatchingConstraints) {
-  return fc.stringMatching(PATTERN.identifier_, constraints)
+  return fc.stringMatching(PATTERN.identifier_legacy, constraints)
 }
 
 /**
