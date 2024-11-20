@@ -142,6 +142,7 @@ export namespace Print {
   export const indent = `    `
   export const lightBlue = Print_format(`\x1B[104m`, `\x1B[254m`, `\x1B[0m`)
   export const task = (text: string) => Print(`\n\n${Print.hush(`❲🌳❳`)} ${text}\n`)
+  export const subtask = (text: string) => Print(`\n\n${Print.hush(`❲🌳❳`)} ${text}\n`)
   // export const task = (text: string) => lightBlue(`𝜟  ${text}`)
   export const hush = Print_format(`\x1B[2m`, `\x1B[22m`)
   export const strong = Print_format(`\x1B[1m`, `\x1B[22m`, `\x1B[22m\x1B[0m`)

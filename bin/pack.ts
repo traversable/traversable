@@ -219,7 +219,7 @@ export const workspaceTasks
 
 
 function main(): void {
-  void Print(Print.task(`[bin/build/pack]: Building \`dist\` folders`))
+  void Print.task(`[bin/build/pack]: Building \`dist\` folders`)
   void Print()
   void PACKAGES.forEach((pkg) => workspaceTasks(pkg)())
 }
