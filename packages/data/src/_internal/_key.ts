@@ -33,7 +33,6 @@ const isSymbol = (u: unknown): u is symbol => typeof u === "symbol"
 /** @internal */
 const isProp = (u: unknown): u is string | number => typeof u === "string" || typeof u === "number"
 /** @internal */
-/** @internal */
 const SIGNED_INFINITY = globalThis.Number.NEGATIVE_INFINITY
 /** @internal */
 const isSignedZero = (n: number): n is -0 => n === 0 && 1 / n === SIGNED_INFINITY
@@ -611,11 +610,15 @@ export namespace key {
   /** 
    * ## {@link asAccessor `key.asAccessor`} 
    * 
-   * Normalizes a key as a property accessor. 
+   * Normalizes a key as a stringified property-accessor. 
    * 
    * Useful when you're generating code and need to
    * access support arbitrary property access, and don't have control
    * over the input (usually because it's user-provided).
+   * 
+   * **Note:** Since the use case for {@link asAccessor `key.asAccessor`} 
+   * is generating code, it does not support symbols, and will throw an
+   * exception at runtime if given one.
    * 
    * @example
    *  import { key } from "@traversable/data"
@@ -625,9 +628,9 @@ export namespace key {
    *  key.asAccessor("oh_hi_mark") // => .oh_hi_mark
    *  key.asAccessor(9000.1)       // => ["9000.1"]
    *  key.asAccessor(-0)           // => ["-0"]
-   *  key.asAccessor()
+   *  key.asAccessor(Symbol())     // => TypeError(...)
    */
-  export function asAccessor<K extends key.any>(k: K): string | symbol {
+  export function asAccessor<K extends key.any>(k: K): string {
     const name: string = key.as(k) as string
     return typeof k === "symbol" ? asAccessor.handleSymbol(k)
       : name.startsWith("[") || isQuoted(name) ? name : `.${name}`
