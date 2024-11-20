@@ -1,6 +1,7 @@
-import type { any, nonempty, some } from "any-ts"
+import type { any, nonempty } from "any-ts"
 
-import { type Escapables, escapeChar } from "./_char.js"
+import type { Predicate } from "@traversable/data/exports"
+import { escapeChar, isEscapable, startsWithEscapable } from "./_char.js"
 
 /**
  * ### {@link finite `string.finite`}
@@ -48,12 +49,16 @@ export type finite<T> = string extends T ? never : [T] extends [string] ? string
  */
 export type nonfinite<T> = string extends T ? string : never
 
-const PATTERN = {
+export const PATTERN = {
   between: /(?<=\{).+?(?=\})/g,
-  identifier: /^[a-z$_][a-z$_0-9]*$/i,
   doubleQuoted: /(?<=^").+?(?="$)/,
   singleQuoted: /(?<=^').+?(?='$)/,
   graveQuoted: /(?<=^`).+?(?=`$)/,
+  /**
+   * [source](https://util.unicode.org/UnicodeJsps/list-unicodeset.jsp?a=%5Cp%7BID_Start%7D)
+   */
+  identifier: /^[$_\p{ID_Start}][$\u200c\u200d\p{ID_Continue}]*$/u,
+  // identifier: /^[a-z$_][a-z$_0-9]*$/i,
 }
 
 export type replace<
@@ -80,9 +85,9 @@ export function replace(find: string, replace: string) {
 export type behead<T extends string> = string extends T
   ? [head: string, tail: string]
   : T extends nonempty.string<infer Head, infer Tail>
-    ? [head: Head, tail: Tail]
-    : [head: ``, tail: ``]
-
+  ? [head: Head, tail: Tail]
+  : [head: ``, tail: ``]
+  ;
 export function behead<T extends string>(text: T): behead<T>
 export function behead(text: string) { return [text.charAt(0), text.substring(1)] }
 
@@ -104,14 +109,14 @@ export const isQuoted
   }
 
 /** ### {@link isValidIdentifier `string.isValidIdentifier`} */
-export const isValidIdentifier = (name: keyof any): boolean =>
-  // TODO: bug (fixed?)
-  typeof name === "symbol" ? true : isQuoted(name) || PATTERN.identifier.test(`${name}`)
+export const isValidIdentifier
+  : Predicate<keyof any> 
+  = (name) => typeof name === "symbol" ? true : isQuoted(name) || PATTERN.identifier.test(`${name}`)
 
-/** ### {@link isValidPropertyName `string.isValidPropertyName`} */
-export const isValidPropertyName
-  : some.predicate<any.primitive>
-  = (name) => typeof name === "symbol" ? true : PATTERN.identifier.test(`${name}`)
+// /** ### {@link isValidPropertyName `string.isValidPropertyName`} */
+// export const isValidPropertyName
+//   : some.predicate<any.primitive>
+//   = (name) => typeof name === "symbol" ? true : PATTERN.identifier.test(`${name}`)
 
 /**
  * ### {@link surroundedBy `string.surroundedBy`}
@@ -162,10 +167,33 @@ export function surroundIfUnsurrounded(
  * For more info, refer to the 
  * [MDN docs](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/String#utf-16_characters_unicode_code_points_and_grapheme_clusters).
  */
-export function escape(text: string) {
-  const todo = [...text]
-  let out = ""
-  while (todo.length > 0) 
-    void (out += escapeChar(todo.shift()))
-  return out
+export const escape 
+  : (text: string) => string
+  = (text: string) => {
+    let todo = [...text]
+    let out = ""
+    while (todo.length > 0) 
+      void (out += escapeChar(todo.shift()))
+    return out
+  }
+
+const nextChar = (chars: string): [offset: number, out: string] => {
+  if (startsWithEscapable(chars)) return [1, chars.charAt(1)]
+  else if (chars.startsWith("-0")) return [1, ("-0")]
+  else return [0, chars.charAt(0)]
 }
+
+export const unescape 
+  : (chars: string) => string
+  = (chars: string) => {
+    if (chars.indexOf("\\") === -1) return chars
+    else {
+      let out = ""
+      for (let ix = 0; ix < chars.length; ix++) {
+        const [offset, next] = nextChar(chars.substring(ix))
+        void (offset > 0 && void (ix = ix + offset))
+        void (next && void (out += next))
+      }
+      return out
+    }
+  }

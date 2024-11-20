@@ -21,7 +21,6 @@ import {
   object_fromKeys as fromKeys,
   object_fromPairs as fromPairs,
   fromPath,
-  fromPaths,
   object_get as get,
   has,
   object_includes as includes,
@@ -32,9 +31,9 @@ import {
   type object_invertible as invertible,
 
   object_is as is,
+  isComposite,
   object_isKeyOf as isKeyOf,
   object_isNonEmpty as isNonEmpty,
-  isNonPrimitiveObject,
   isRecord,
   kebab,
   keys,
@@ -66,7 +65,6 @@ import {
   titlecase,
   object_titlecaseValues as titlecaseValues,
   object_toLower as toLower,
-  toPaths,
   object_toUpper as toUpper,
   object_transform as transform,
   object_uncapitalize as uncapitalize,
@@ -91,10 +89,8 @@ export declare namespace object {
     requiredKeys,
     keys,
     fromPath,
-    fromPaths,
-    toPaths,
     isRecord,
-    isNonPrimitiveObject,
+    isComposite,
     has,
 
     object_let as let,
@@ -178,10 +174,8 @@ export function object() {}
 export namespace object{
   object.keys = keys
   object.fromPath = fromPath
-  object.fromPaths = fromPaths
-  object.toPaths = toPaths
   object.isRecord = isRecord
-  object.isNonPrimitiveObject = isNonPrimitiveObject
+  object.isComposite = isComposite
   object.has = has
   object.bind = bind
   object.titlecase = titlecase

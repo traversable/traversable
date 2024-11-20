@@ -3,10 +3,14 @@ export declare namespace prop {
   export type prop_any<T extends string | number = string | number> = T
   export type from<T> = globalThis.Extract<T, prop.any>
   export type and<T> = T & prop.any
+  export type Poisonable = typeof poisonables[number]
 }
+
 
 export namespace prop {
   export const is = (u: unknown): u is prop.any => ["number", "string"].includes(typeof u)
+  export const poisonables = ["__proto__", "toString"] as const
+  export const isPoisonable = (name: string): name is Poisonable => poisonables.includes(name as never)
 }
 
 export declare namespace props {

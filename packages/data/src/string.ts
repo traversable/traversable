@@ -1,15 +1,15 @@
 export { 
-  type nonfinite,
   type finite,
-  toString,
+  type nonfinite,
   behead,
+  escape,
   isQuoted,
   isValidIdentifier,
-  isValidPropertyName,
-  escape,
-  surroundIfUnsurrounded,
-  surroundedBy,
   replace,
+  surroundedBy,
+  surroundIfUnsurrounded,
+  toString,
+  unescape,
 } from "./_internal/_string.js"
 export { Equal_string as equals } from "./_internal/_equal.js"
 
@@ -734,3 +734,35 @@ export function rmChars<T extends readonly string[]>(...rm: T) {
     return out
   }
 }
+
+let count = 0
+
+    // let
+    //   todo = [...text],
+    //   out = "",
+    //   ix = 0
+    //   // char: string | undefined
+    // console.log()
+    //   console.group(`RUN ${count++}, text: `, text)
+    // while ((ix < len)) {
+    //   const cursor = text.substring(ix)
+    //   if (cursor.startsWith("\\")) {
+    //     let j = 0
+    //     while (cursor.charAt(++j) === "\\") {}
+    //       // void (j++)
+    //     console.log("\n\n\n\nj AFTER:\n", j, "\n\n\n\n", )
+    //     const next = cursor.substring(j)
+    //     console.log("next char: ", next)
+    //     if (next && next in Escapable) {
+    //       console.log("HIT")
+    //     }
+    //   }
+    //   const [offset, parsed] = unescapeToken(cursor)
+    //   offset > 0 && void (ix = ix + offset)
+    //   parsed !== null && void (out += parsed)
+    //   console.log("offset: ", offset, " parsed: ", parsed, " out: ", out, " ix: ", ix)
+    // }
+    // console.log("DONE", out)
+    // console.log()
+    // console.groupEnd()
+    // return out

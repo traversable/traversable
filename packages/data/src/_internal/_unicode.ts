@@ -41,6 +41,7 @@ export declare const math: {
   meet: "∧"
   top: "⊤"
   bottom: "⊥"
+  adjoint: ""
 }
 
 export declare const property: {
