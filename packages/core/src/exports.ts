@@ -11,7 +11,6 @@ export * as tree from "./tree.js"
 export { symbol } from "./symbol.js"
 export { 
   and, 
-  // has, 
   not, 
   or,
 } from "./guard.js"
