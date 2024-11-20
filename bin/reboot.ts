@@ -1,54 +1,65 @@
 #!/usr/bin/env pnpm dlx tsx
-import { $, shell } from "./process.js"
+import { identity, pipe } from "effect"
+import { $ } from "./process.js"
 
 import { Print } from "./util.js"
 
-export const CMD = {
-  clean: `pnpm run clean`,
-  install: `pnpm install`,
-  check: `pnpm run check`,
-  test: `pnpm run test`,
-  describe: `pnpm run describe`,
-  bench: `pnpm run bench`,
-  build: `pnpm run build`,
-  build_dist: `pnpm run build:dist`,
-} as const
+type ShellCommand = readonly [name: string, $: () => void]
+type ShellCommands = readonly ShellCommand[]
 
-function timeScript(scriptName: keyof typeof CMD) {
-  return (
-    void globalThis.console.time(Print.hush(CMD[scriptName])),
-    void globalThis.console.timeLog(Print.hush(CMD[scriptName])),
-    void $(CMD[scriptName]),
-    void globalThis.console.timeLog(Print.hush(CMD[scriptName])),
-    void globalThis.console.timeEnd(Print.hush(CMD[scriptName]))
+export const inputs = [
+  ["clean", "pnpm run clean"],
+  ["install", "pnpm i"],
+  ["check", "pnpm run check"],
+  ["test", "pnpm run test"],
+  ["describe", "pnpm run describe"],
+  ["bench", "pnpm run bench"],
+  ["build", "pnpm run build"],
+  ["build_dist", "pnpm run build:dist"],
+] as const satisfies [name: string, stdio: string][]
+
+const logCommand 
+  : (cmd: ShellCommand) => ShellCommand
+  = ([name, run]: ShellCommand) => [
+    name,
+    () => (
+      void Print.task(`${Print.hush("Running")} ${Print.with.bold(name)}`), 
+      void run()
+    )
+  ]
+
+const timeCommand 
+  : (cmd: ShellCommand) => ShellCommand
+  = ([name, run]: ShellCommand) => [
+    name,
+    () => (
+      void globalThis.console.time(Print.hush(name)),
+      // void globalThis.console.timeLog(Print.hush(name)),
+      void run(),
+      void globalThis.console.timeLog(Print.hush(name)),
+      void globalThis.console.timeEnd(Print.hush(name))
+    )
+  ]
+
+const withLogging 
+  : (cmds: ShellCommands) => ShellCommands
+  = (cmds) => cmds.map(logCommand)
+
+const withTiming
+  : (cmds: ShellCommands) => ShellCommands
+  = (cmds) => cmds.map(timeCommand)
+  
+const commands = inputs.map(
+  ([name, stdio]) => [name, () => $(stdio)]
+) satisfies ShellCommands
+
+function main(commands: ShellCommands, logExecutionTime: boolean = true): void {
+  return pipe(
+    commands,
+    withLogging,
+    logExecutionTime ? withTiming : identity,
+    (cmds) => cmds.forEach(([, run]) => run()),
   )
 }
 
-function main(time?: boolean): void {
-  if (time) return timeMain()
-  else return (
-    void $(CMD.clean),
-    void $(CMD.install),
-    void $(CMD.build),
-    void $(CMD.check),
-    void $(CMD.test),
-    void $(CMD.describe),
-    void $(CMD.build_dist),
-    void $(CMD.bench)
-  )
-}
-
-function timeMain(): void {
-  return (
-    void timeScript("clean"),
-    void timeScript("install"),
-    void timeScript("build"),
-    void timeScript("check"),
-    void timeScript("test"),
-    void timeScript("describe"),
-    void timeScript("build_dist"),
-    void timeScript("bench")
-  )
-}
-
-void timeMain()
+void main(commands)
