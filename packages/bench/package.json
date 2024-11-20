@@ -1,7 +1,7 @@
 {
 	"name": "@traversable/bench",
 	"type": "module",
-	"version": "0.0.0",
+	"version": "0.0.1",
 	"description": "benchmarking and profiling utilities for the @traversable repo",
 	"repository": {
 		"type": "git",
@@ -10,14 +10,18 @@
 	},
 	"@traversable": {
 		"generateExports": {
-			"include": ["**/*.ts"]
+			"include": [
+				"**/*.ts"
+			]
 		},
 		"generateIndex": {
-			"include": ["**/*.ts"]
+			"include": [
+				"**/*.ts"
+			]
 		}
 	},
 	"publishConfig": {
-  	"directory": "dist",
+		"directory": "dist",
 		"registry": "https://npm.pkg.github.com"
 	},
 	"scripts": {

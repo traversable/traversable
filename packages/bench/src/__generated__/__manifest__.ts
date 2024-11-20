@@ -1,7 +1,7 @@
 export default {
   "name": "@traversable/bench",
   "type": "module",
-  "version": "0.0.0",
+  "version": "0.0.1",
   "description": "benchmarking and profiling utilities for the @traversable repo",
   "repository": {
     "type": "git",
