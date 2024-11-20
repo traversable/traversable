@@ -96,10 +96,6 @@ importers:
       any-ts:
         specifier: 0.48.1
         version: 0.48.1
-    devDependencies:
-      '@traversable/bench':
-        specifier: workspace:^
-        version: link:dist
     publishDirectory: dist
 
   packages/core:
