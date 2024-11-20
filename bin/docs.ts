@@ -122,7 +122,7 @@ const writeChangelogs: (list: string) => SideEffect = flow(
 const writeChartToReadme: SideEffect = flow(
   topological,
   Draw.relation,
-  tap(Print(Print.task(`[bin/docs.ts] Writing dependency graph to '${README}'`))),
+  tap(Print.task(`[bin/docs.ts] Writing dependency graph to '${README}'`)),
   writeChart,
   run,
 )
