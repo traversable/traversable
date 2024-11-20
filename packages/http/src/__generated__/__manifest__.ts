@@ -18,7 +18,8 @@ export default {
     }
   },
   "publishConfig": {
-    "directory": "dist"
+    "directory": "dist",
+    "registry": "https://npm.pkg.github.com"
   },
   "scripts": {
     "build": "pnpm build:esm && pnpm build:cjs && pnpm build:annotate",

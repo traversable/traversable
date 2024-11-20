@@ -1,4 +1,4 @@
-import { has, is } from "@traversable/core"
+import { is, tree } from "@traversable/core"
 import { array, fn, object } from "@traversable/data"
 import type { any } from "any-ts"
 
@@ -340,8 +340,8 @@ const isSpecificStatusCode: {
  * A type-guard that narrows its argument to be an object with a `"status"` property whose value
  * is a member of the set of {@link AnyStatusCode `http.Status`} codes.
  */
-const hasAnyStatusCode: (u: unknown) => u is globalThis.Record<"status", AnyStatusCode> = has(
-  "status",
+const hasAnyStatusCode: (u: unknown) => u is globalThis.Record<"status", AnyStatusCode> = tree.has(
+  ["status"],
   isAnyStatusCode,
 )
 
@@ -357,4 +357,4 @@ const hasSpecificStatusCode: {
   <Status extends AnyStatusCode>(
     ...statuses: readonly Status[]
   ): (u: unknown) => u is globalThis.Record<"status", Status>
-} = fn.flow(isSpecificStatusCode, (guard) => has("status", guard))
+} = fn.flow(isSpecificStatusCode, (guard) => tree.has(["status"], guard))
