@@ -27,6 +27,6 @@
 <!-- * 📝 Documentation additions/revisions -->
 <!-- * ✅ Test additions/revisions -->
 <!-- * 🐛 Bug fixes -->
-<!-- * 🏷️ Type-level additions/revisions -->
+<!-- * 🧙 Type-level additions/revisions -->
 <!-- * ⚡️ Performance improvements/optimizations -->
 <!-- * _Other(s):_ ... -->
