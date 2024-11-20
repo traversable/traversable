@@ -39,7 +39,7 @@
   "peerDependencies": {
     "@traversable/core": "workspace:^",
     "@traversable/data": "workspace:^",
-    "any-ts": "0.48.0"
+    "any-ts": "0.48.1"
   },
   "peerDependenciesMeta": {
     "@traversable/data": {

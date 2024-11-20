@@ -23,6 +23,14 @@ export namespace nonempty {
   }
 }
 
+export function and<L, R>(left: any.guard<L>, right: any.guard<R>): any.typeguard<unknown, L & R> {
+  return (u): u is never => left(u) && right(u)
+}
+
+export function or<L, R>(left: any.guard<L>, right: any.guard<R>): any.typeguard<unknown, L | R> {
+  return (u): u is never => left(u) || right(u)
+}
+
 export declare namespace empty {
   export type object_<T> = Extract<T, { [K in keyof T]?: never }>
   export { object_ as object }

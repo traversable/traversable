@@ -1,6 +1,5 @@
 import type { Universal, mutable as mut, newtype, nonempty, some } from "any-ts"
 
-// hard dependencies
 import * as fn from "./_function.js"
 import { key } from "./_key.js"
 import { map } from "./_map.js"
@@ -8,21 +7,11 @@ import { escape, isQuoted, isValidIdentifier, toString } from "./_string.js"
 
 import type * as array from "../array.js"
 import type { entries } from "../entry.js"
-// type-level dependencies
 import type { object } from "../exports.js"
 import type { any } from "./_any.js"
 import type { prop, props } from "./_prop.js"
 import type { to } from "./_to.js"
 import type { jsdoc } from "./_unicode.js"
-
-export namespace URI {
-  export const Leaf = "@traversable/data/object/fromPaths::Leaf"
-  export type Leaf = typeof Leaf
-}
-export namespace symbol {
-  export const Leaf = Symbol.for(URI.Leaf)
-  export type Leaf = typeof symbol.Leaf
-}
 
 type Mutable<T> = never | { -readonly [K in keyof T]: T[K] }
 /** @internal */
@@ -73,10 +62,6 @@ const isShowable = (u: unknown): u is any.showable =>
 /** @internal */
 const isPrimitive = (u: unknown): u is any.primitive => 
   u == null || ["boolean", "number", "bigint", "string", "symbol"].includes(typeof u)
-/** @internal */
-const isProp = (u: unknown): u is prop.any => ["number", "string"].includes(typeof u)
-/** @internal */
-const isProps = (u: unknown): u is props.any => isArray(u) && u.every(isProp)
 /** @internal */
 function getEmpty<T extends {}>(_: T): any.indexedBy<keyof T | number>
 function getEmpty(_: {}) { return globalThis.Array.isArray(_) ? [] : {} }
@@ -144,7 +129,7 @@ export function has(...[head, ...tail]: has.allArgs) {
     let out: unknown = u
     let k: prop.any | undefined
     while (k = path.shift()) {
-      if (!isNonPrimitiveObject(out)) return false
+      if (!isComposite(out)) return false
       out = out[k]
     }
     return guard(out)
@@ -771,9 +756,8 @@ export type object_invert<T extends object_invertible>
   : never | { -readonly [K in keyof T as T[K]]: K }
   ;
 
-
 /** 
- * ### {@link isNonPrimitiveObject `object.isNonPrimitiveObject`} 
+ * ### {@link isComposite `object.isComposite`} 
  * #### ｛ {@link jsdoc.guard ` 🦺 ` } ｝
  * 
  * Targets any non-primitive JavaScript object
@@ -781,10 +765,10 @@ export type object_invert<T extends object_invertible>
  * See also:
  * - {@link isRecord `object.isRecord`}
  */
-export const isNonPrimitiveObject = (u: unknown): u is { [x: prop.any]: unknown } => 
+export const isComposite = <T>(u: unknown): u is { [x: string]: T } => 
   typeof u === "object" && u !== null
 
-/** 
+/**
  * ### {@link isRecord `object.isRecord`} 
  * #### ｛ {@link jsdoc.guard ` 🦺 ` } ｝
  *
@@ -1473,7 +1457,6 @@ object_intersect.defer = object_intersect_defer
 export const object_fromEntries: {
   <const T extends readonly [string, unknown]>(entries: readonly T[]): { [E in T as E[0]]: E[1] }
 } = globalThis.Object.fromEntries
-
 // export declare function object_fromEntries<const T extends readonly [string, unknown]>(entries: readonly T[]): { [E in T as E[0]]: E[1] }
 // export function object_fromEntries<V, const T extends readonly (readonly [number, V])[]>(entries: T): object_fromEntries<T>
 // export function object_fromEntries<V, const T extends readonly (readonly [number, V])[]>(entries: T) { return globalThis.Object.entries(entries) }
@@ -1738,7 +1721,6 @@ export function object_transform<T extends any.indexedBy<keyof XF>, XF>
     let out = getEmpty(object)
     for (const ix of keys(object, { symbols: "keep" }))
       out[ix] = object_isKeyOf(ix, transformers) ? transformers[ix](object[ix]) : object[ix]
-
     return out
   }
 
@@ -1807,510 +1789,6 @@ export function object_some<V>(predicate: (value: V) => boolean) {
   }
 }
 
-export type fromPaths<T extends fromPaths.Path> = fromPaths.loop<T>
-
-export declare namespace fromPaths {
-  interface Leaf<V = unknown> { readonly [symbol.Leaf]: URI.Leaf, value: V }
-  type Path<V = unknown> = [prop.any[], V]
-  type Paths<V = unknown> = Path<V>[]
-  type Node = 
-    | Leaf 
-    | [prop.any[], Leaf][]
-
-  type Nodes = { [x: string]: Node }
-
-  type nextFrom<
-    T extends fromPaths.Path, 
-    U extends T 
-    | T extends [nonempty.mut.path<any, infer V>, infer W] ? [V, W] : never
-    = T extends [nonempty.mut.path<any, infer V>, infer W] ? [V, W] : never
-  > = U
-
-  type loop<T extends fromPaths.Path> 
-    = never | [T] extends [[[], any]] ? T[1]
-    : { -readonly [E in T as E[0][0]]: fromPaths.loop<fromPaths.nextFrom<E>> }
-
-  type roundtrip<T extends [prop.any[], unknown]> 
-    = never | [T] extends [[[], any]] ? Leaf<T[1]>
-    : { -readonly [E in T as E[0][0]]: fromPaths.roundtrip<fromPaths.nextFrom<E>> }
-}
-
-/** 
- * ### {@link fromPaths `object.fromPaths`}
- * #### ｛ {@link jsdoc.mapping ` 🌈 `} ｝
- * 
- * Dual of {@link toPaths `object.toPaths`}
- * See also:
- * - {@link toPaths `object.toPaths`}
- * - {@link fromPath `object.fromPath`}
- */
-
-export function fromPaths<const T extends [path: prop.any[], leaf: unknown]>(paths: T[]): fromPaths<T> 
-export function fromPaths<const T extends [path: prop.any[], leaf: unknown]>(paths: T[], opts: fromPaths.Options<{ roundtrip: true }>): fromPaths.roundtrip<T> 
-export function fromPaths<const T extends [path: prop.any[], leaf: unknown]>(paths: T[], opts?: fromPaths.Options): fromPaths<T> 
-export function fromPaths<const T extends [path: prop.any[], leaf: unknown]>(paths: T[], opts: fromPaths.Options = fromPaths.defaults) {
-  const loop = fromPaths.loop(fromPaths.configFromOptions(opts))
-  const marked = fromPaths.markAll(paths)
-  return loop(marked)
-}
-
-export namespace fromPaths {
-  type Partial<T> = never | { [K in keyof T]+?: T[K] }
-  export interface Options<T extends Partial<Config> = Partial<Config>> extends newtype<T> {}
-  export interface Config { roundtrip: boolean }
-  export const defaults = { roundtrip: false } as const satisfies Config
-  export function configFromOptions (opts: fromPaths.Options): fromPaths.Config
-  export function configFromOptions (opts: fromPaths.Options) {
-    return {
-      ...fromPaths.defaults,
-      ...opts,
-    }
-  }
-  /**
-   * ### {@link group `fromPaths.group`}
-   * 
-   * @example
-   *  import * as vi from "vitest"
-   *  import { object } from "@traversable/data"
-   *  const { leaf } = object.fromPaths
-   * 
-   *  vi.assert.deepEqual(
-   *    object.fromPaths.group([
-   *      [ [ 'a', 0 ], leaf(null) ],
-   *      [ [ 'b', 0, 0 ], leaf(100) ],
-   *      [ [ 'b', 1 ], leaf(200) ],
-   *      [ [ 'c', 'h', 0, 0, 0 ], leaf(300) ],
-   *      [ [ 'c', 'h', 1, 0, 1 ], leaf(400) ],
-   *      [ [ 'c', 'h', 2, 1, 'i' ], leaf(500) ],
-   *      [ [ 'd' ], leaf([]) ],
-   *      [ [ 'e' ], leaf({}) ],
-   *      [ [ 'f' ], leaf(null) ],
-   *      [ [ 'g' ], leaf(undefined) ]
-   *    ]),
-   *    {
-   *      a: [ 
-   *        [ [ 0 ], leaf(null) ],
-   *      ],
-   *      b: [ 
-   *        [ [ 0, 0 ], leaf(100) ], 
-   *        [ [ 1 ], leaf(200) ],
-   *      ],
-   *      c: [
-   *        [ [ "h", 0, 0, 0 ], leaf(300) ],
-   *        [ [ "h", 1, 0, 1 ], leaf(400) ],
-   *        [ [ "h", 2, 1, "i" ], leaf(500) ],
-   *      ],
-   *      d: leaf([]),
-   *      e: leaf({}),
-   *      f: leaf(null),
-   *      g: leaf(undefined),
-   *    }
-   *  )
-   */
-  // export function group(paths: [props.any, Leaf][]): Nodes
-  // export function group(paths: [props.any, Leaf][])
-
-  export function group(paths: [prop.any[], Leaf][]): Leaf[] | Nodes //Leaf[] | [(string | number)[], Leaf][][]
-  export function group(paths: [prop.any[], Leaf][]) {
-    function reducer(prev: { [x: keyof any]: unknown }, [path, leaf]: [prop.any[], Leaf]) {
-      switch (true) {
-        case path.length === 0: return prev
-        case path.length === 1: return (prev[path[0]] = leaf, prev)
-        default: {
-          const [k, ...ks] = path
-          const v = prev[k]
-          if (globalThis.Array.isArray(v)) return (v.push([ks, leaf]), prev)
-          else return (prev[k] = [[ks, leaf]], prev)
-        }
-      }
-    }
-    return paths.reduce(
-      reducer,
-      (isGroupedArray(paths) ? [] : {}) as { [x: number]: unknown }
-    )
-  }
-  group.init = (): { [x: string]: unknown } => ({})
-
-  /**
-   * ### {@link isLeaf `fromPaths.isLeaf`}
-   */
-  export const isLeaf = <T>(u: unknown): u is Leaf<T> => 
-    isRecord(u) && symbol.Leaf in u && u[symbol.Leaf] === URI.Leaf
-
-  const pathsAllHaveNumericKeys
-    : (pairs: [(keyof any)[], unknown][]) => pairs is [[number, ...prop.any[]], unknown][]
-    = (pairs): pairs is never => pairs.every(([k]) => k && typeof k[0] === "number")
-
-  /** 
-   * ### {@link isContiguous `object.fromPaths.isContiguous`}
-   * @example
-   *  const inputs = {
-   *    PASS: [ 
-   *      //   🡳🡳 this column determines contiguity
-   *      [ [ [ 0 ],       "" ],   // ✅ 0, 1, 2 is contiguous 
-   *        [ [ 1, "a" ],  "" ],   // becomes `[ "", { a: "" }, { b: { c: "" } } ]`
-   *        [ [ 2, "b" ],  "" ] ], 
-   *      [ [ [ 0, 0 ],    "" ],   // ✅ 0, 0, 1 is contiguous
-   *        [ [ 0, 1 ],    "" ],   // becomes `[ [ "", "" ], "" ]`
-   *        [ [ 1, 0 ],    "" ] ],
-   *      [ [ [ 0, 0 ],    "" ],   // ✅ 0, 1, 2, 3 is contiguous
-   *        [ [ 1, 0 ],    "" ],   // becomes `[ [ "" ], [ [ "", [ "" ] ] ], [ "" ] ]`
-   *        [ [ 2, 0, 0 ], "" ],
-   *        [ [ 3, 1, 0 ], "" ] ],
-   *    ],
-   *    FAIL: [
-   *      [ [ [ 0 ],       "" ],    // 🚫 0, 2, 3 is not contiguous
-   *        [ [ 2 ],       "" ],    // becomes `{ 0: "", 2: "", 3: "" }`
-   *        [ [ 3 ],       "" ] ],
-   *      [ [ [ 0 ],       "" ],    // 🚫 0, 1, "a" is not contiguous
-   *        [ [ 1 ],       "" ],    // becomes `{ 0: "", 1: "", a: "" }`
-   *        [ ["a"],       "" ] ], *    ] *  } *
-   *  vi.assert.isTrue(inputs.PASS.every(object.fromPaths.isContiguous))
-   *  vi.assert.isFalse(inputs.FAIL.every(object.fromPaths.isContiguous))
-   */
-  export const isContiguous 
-    : (pairs: [(keyof any)[], unknown][]) => boolean
-    = (pairs) => 
-      pathsAllHaveNumericKeys(pairs) 
-      && checkContiguous(...pairs.map(getZeroZero))
-    
-  const getZeroZero 
-    : <T>(xss: readonly [[T, ...any], ...any]) => T
-    = (xss) => xss[0][0]
-
-  const ascending = (x: number, y: number) => x > y ? 1 : y > x ? -1 : 0
-  export const checkContiguous 
-    : (...unsorted: number[]) => boolean
-    = (...unsorted) => {
-      const todo = unsorted.sort(ascending)
-      let prev = 0
-      let next: number | undefined
-      while ((next = todo.shift()) !== undefined) {
-        if (next === prev || next === ++prev) continue
-        else return false
-      }
-      return true
-    }
-
-  export const isPathArray = <K extends (keyof any)[], V>(u: unknown): u is [K, V][] => 
-    isArray(u)
-    && u.every(isArray) 
-
-  export const isGroupedArray = (u: unknown): u is [path: prop.any[], leaf: unknown][] =>
-    isPathArray(u) 
-    && isContiguous(u)
-
-  /**
-   * ### {@link wrap `fromPaths.wrap`}
-   * Dual of {@link unwrap `fromPaths.unwrap`}
-   */
-  export const wrap
-    : <const T>(value: T) => Leaf<T>
-    = (value) => ({ [symbol.Leaf]: URI.Leaf, value })
-  /**
-   * ### {@link unwrap `fromPaths.unwrap`}
-   * Dual of {@link wrap `fromPaths.wrap`}
-   */
-  export const unwrap 
-    : <T>(leaf: Leaf<T>) => T
-    = (leaf) => leaf.value
-  /**
-   * ### {@link markOne `fromPaths.markOne`}
-   * Dual of {@link unmarkOne `fromPaths.unmarkOne`}
-   */
-  export const markOne
-    : <V>(pair: [prop.any[], V]) => [prop.any[], Leaf<V>]
-    = (pair) => [pair[0], wrap(pair[1])] as const
-  export type markOne<T extends [prop.any[], unknown]> = never | [Mutable<T[0]>, Leaf<T[1]>]
-  /**
-   * ### {@link unmarkOne `fromPaths.unmarkOne`}
-   * Dual of {@link markOne `fromPaths.markOne`}
-   */
-  export const unmarkOne
-    : <V>(pair: [prop.any[], Leaf<V>]) => [prop.any[], V]
-    = (pair) => [pair[0], unwrap(pair[1])]
-  export type unmarkOne<T extends [prop.any[], Leaf]> = never | [T[0], T[1]["value"]]
-  /**
-   * ### {@link markAll `fromPaths.markAll`}
-   * Dual of {@link unmarkAll `fromPaths.unmarkAll`}
-   */
-  export function markAll<const T extends [prop.any[], unknown][]>(pairs: T): fromPaths.markAll<T>
-  export function markAll(pairs: [prop.any[], unknown][]) { return pairs.map(markOne) }
-  export type markAll<T extends [prop.any[], unknown][]> = never | { -readonly [x in keyof T]: fromPaths.markOne<T[x]> }
-  /**
-   * ### {@link unmarkAll `fromPaths.unmarkAll`}
-   * Dual of {@link markAll `fromPaths.markAll`}
-   */
-  export function unmarkAll<const T extends [prop.any[], Leaf][]>(pairs: T): fromPaths.unmarkAll<T>
-  export function unmarkAll(pairs: [prop.any[], Leaf][]) { return pairs.map(unmarkOne) }
-  export type unmarkAll<T extends [prop.any[], Leaf][]> = never | { -readonly [x in keyof T]: fromPaths.unmarkOne<T[x]> }
-
-  /**
-   * ### {@link loop `object.fromPaths.loop`}
-   * 
-   * Where recursion happens.
-   * 
-   * {@link loop `object.fromPaths.loop`} is responsible for 
-   * {@link group `grouping`} the {@link markAll `marked`}
-   * paths together, then, mapping over the record's values.
-   * If it encounters a {@link Leaf `Leaf`}, it returns the leaf's
-   * value, otherwise it recurses.
-   * 
-   * The real trick to getting {@link fromPaths `object.fromPaths`}
-   * to work was to handle the basecase _inside_ the mapping function.
-   * 
-   * My intuition tells me that there's probably a more elegant 
-   * breadth-first solution, but I'm satisfied with this algorithm
-   * as-is for now.
-   */
-  export const loop = (opts: fromPaths.Config) => {
-    return fn.loop<
-      [prop.any[], Leaf][], // [prop.any[], Leaf][],
-       unknown[] | object.any
-    >((paths, loop) => {
-      return fn.pipe(
-        paths,
-        fromPaths.group,
-        map((v) => isLeaf(v) ? opts.roundtrip ? v : v.value : loop(v as never))
-      )
-    })
-  }
-}
-
-/** 
- * ### {@link toPaths `object.toPaths`}
- * #### {@link jsdoc.mapping ` 🌈 ` } ｝
- * 
- * Dual of {@link fromPaths `object.fromPaths`}
- * See also:
- * - {@link fromPaths `object.fromPaths`}
- */
-export function toPaths<const T extends any.json>(json: T): [path: prop.any[], leaf: unknown][] 
-export function toPaths<const T>(json: T, opts: toPaths.Options & { roundtrip: true }): [path: prop.any[], leaf: unknown][] 
-export function toPaths<const T extends any.json>(json: T, opts?: toPaths.Options): [path: prop.any[], leaf: unknown][] 
-export function toPaths<const T extends any.json>(json: T, opts: toPaths.Options = toPaths.defaults) { 
-  const config = toPaths.configFromOptions(opts)
-
-  return toPaths.isBaseCase(json, config) 
-    ? toPaths.done(json, config) 
-    : toPaths.go(config)(json)
-}
-
-export declare namespace toPaths {
-  type Path<T = any.json> = readonly [path: prop.any[], leaf: T]
-  type Paths<T = any.json> = readonly Path<T>[]
-  type Stream<T = any.json> = { prev: props.any, next: T }
-  type BaseCase = undefined | null | any.json.scalar | []
-}
-export namespace toPaths {
-  export interface Options { roundtrip?: boolean }
-  export interface Config extends globalThis.Required<Options> {}
-  export const defaults = { roundtrip: false } satisfies toPaths.Config
-  export const configFromOptions 
-    : (opts: toPaths.Options) => toPaths.Config
-    = (opts) => ({ ...toPaths.defaults, ...opts })
-
-  export function done<T extends any.json>(json: T, config: toPaths.Config & { roundtrip: true }): [path: props.any, leaf: T][]
-  export function done<T extends any.json>(json: T, config: toPaths.Config): [path: props.any, leaf: T][]
-  export function done<T extends any.json>(json: T, config: toPaths.Config) { return config.roundtrip ? json : [[[], json]] }
-
-  export const isLeaf = (u: any.json, config: toPaths.Config) =>
-    config.roundtrip 
-    ? fromPaths.isLeaf(u) 
-    : isPrimitive(u)
-
-  export const isEmpty = (u: any.json) =>
-    isNonPrimitiveObject(u) 
-    && globalThis.Object.values(u).length === 0
-
-  export const isBaseCase = (u: any.json, config: toPaths.Config): u is toPaths.BaseCase => 
-    toPaths.isLeaf(u, config)
-    || toPaths.isEmpty(u)
-
-  export const isPath = (u: any.json): u is toPaths.Path => isArray(u) && u.length === 2 && isProps(u[0])
-  export const isPaths = (u: any.json): u is toPaths.Paths => isArray(u) && u.every(isPath)
-
-  export const loop = (config: toPaths.Config) => fn.loop<toPaths.Stream, toPaths.Stream | toPaths.Stream[]>
-    (({ prev, next }, loop) => {
-      switch (true) {
-        case toPaths.isBaseCase(next, config): return { prev, next }
-        case isArray(next): return next.flatMap(
-          fn.flow(
-            (x, ix) => ({ prev: [...prev, ix], next: x }),
-            loop,
-          )
-        )
-        case isRecord(next): return globalThis.Object.keys(next).flatMap(
-          fn.flow(
-            (k) => ({ prev: [...prev, k], next: next[k] }),
-            loop,
-          )
-        )
-        default: throw fn.exhaustive<never>(next)
-      }
-    })
-
-  /** 
-   * ### {@link impl `object.toPaths.go`} 
-   * 
-   * {@link impl `object.toPaths.go`} is responsible for wiring up the recursive
-   * call ({@link loop `object.toPaths.loop`}), and destructing the intermediate
-   * representation into the final output type.
-   */
-  export function go(config: toPaths.Config): <const T extends any.json>(json: T) => [path: props.any, leaf: T][]
-  export function go(config: toPaths.Config) {
-    return <const T extends any.json>(json: T) => fn.pipe(
-      json,
-      empty,
-      toPaths.loop(config),
-      (xs) => isArray(xs) ? xs.map(destruct(config)) : destruct(config)(xs),
-    )
-  }
-
-  /** 
-   * ### {@link construct `object.toPaths.construct`} 
-   * Dual of {@link destruct `object.toPaths.destruct`}
-   */
-  export const construct = <T extends any.json>([prev, next]: [props.any, next: T]) => ({ prev, next })
-  /** 
-   * ### {@link destruct `object.toPaths.destruct`} 
-   * Dual of {@link construct `object.toPaths.construct`}
-   */
-  export function destruct(config: toPaths.Config & { roundTrip: true }): <V>(stream: toPaths.Stream<fromPaths.Leaf<V>>) => [props.any, V]
-  export function destruct(config: toPaths.Config & { roundTrip: false }): <V>(stream: toPaths.Stream<V>) => readonly [props.any, V]
-  export function destruct(config: toPaths.Config): <V>(stream: toPaths.Stream<V | fromPaths.Leaf<V>>) => readonly [props.any, V]
-  export function destruct(config: toPaths.Config) { 
-    return <V>({ prev, next }: toPaths.Stream<V | fromPaths.Leaf<V>>) => {
-      return [
-        prev, 
-        fromPaths.isLeaf(next) 
-          ? config.roundtrip ? fromPaths.unwrap(next) 
-          : next
-        : next
-      ] as [props.any, V]
-    }
-  }
-
-  /** 
-   * ### {@link empty `object.toPaths.empty`} 
-   * Greatest lower bound of {@link construct `object.toPaths`}
-   */
-  export const empty = <T extends any.json>(init: T) => construct([[], init])
-}
-
-// declare function get<const KS extends props.any>(...path: [...KS]): <const T extends has<[...KS]>>(object: T) => get<T, [...KS]>
-// declare function get<const T extends [string] extends [T] ? never : [number] extends [T] ? never : unknown>(object: T): {
-//   (...path: []): T
-//   <K0 extends keyof T>(...path: [K0]): T[K0]
-//   <
-//     K0 extends keyof T, 
-//     K1 extends keyof T[K0]
-//   >(...[k_0, k_1]: [K0, K1]): T[K0][K1]
-//   <
-//     K0 extends keyof T, 
-//     K1 extends keyof T[K0], 
-//     K2 extends keyof T[K0][K1],
-//   >(...[k_0, k_1, k_2]: [K0, K1, K2]): 
-//     T[K0][K1][K2]
-//   <
-//     K0 extends keyof T, 
-//     K1 extends keyof T[K0], 
-//     K2 extends keyof T[K0][K1],
-//     K3 extends keyof T[K0][K1][K2],
-//   >(...[k_0, k_1, k_2, k_3]: [K0, K1, K2, K3]): 
-//     T[K0][K1][K2][K3]
-//   <
-//     K0 extends keyof T, 
-//     K1 extends keyof T[K0], 
-//     K2 extends keyof T[K0][K1],
-//     K3 extends keyof T[K0][K1][K2],
-//     K4 extends keyof T[K0][K1][K2][K3],
-//   >(...[k_0, k_1, k_2, k_3, k_4]: [K0, K1, K2, K3, K4]): 
-//     T[K0][K1][K2][K3][K4]
-//   <
-//     K0 extends keyof T, 
-//     K1 extends keyof T[K0], 
-//     K2 extends keyof T[K0][K1],
-//     K3 extends keyof T[K0][K1][K2],
-//     K4 extends keyof T[K0][K1][K2][K3],
-//     K5 extends keyof T[K0][K1][K2][K3][K4],
-//   >(...[k_0, k_1, k_2, k_3, k_4, k_5]: [K0, K1, K2, K3, K4, K5]): 
-//     T[K0][K1][K2][K3][K4][K5]
-//   <
-//     K0 extends keyof T, 
-//     K1 extends keyof T[K0], 
-//     K2 extends keyof T[K0][K1],
-//     K3 extends keyof T[K0][K1][K2],
-//     K4 extends keyof T[K0][K1][K2][K3],
-//     K5 extends keyof T[K0][K1][K2][K3][K4],
-//     K6 extends keyof T[K0][K1][K2][K3][K4][K5],
-//   >(...[k_0, k_1, k_2, k_3, k_4, k_5, k_6]: [K0, K1, K2, K3, K4, K5, K6]): 
-//     T[K0][K1][K2][K3][K4][K5][K6]
-//   <
-//     K0 extends keyof T, 
-//     K1 extends keyof T[K0], 
-//     K2 extends keyof T[K0][K1],
-//     K3 extends keyof T[K0][K1][K2],
-//     K4 extends keyof T[K0][K1][K2][K3],
-//     K5 extends keyof T[K0][K1][K2][K3][K4],
-//     K6 extends keyof T[K0][K1][K2][K3][K4][K5],
-//     K7 extends keyof T[K0][K1][K2][K3][K4][K5][K6],
-//   >(...[k_0, k_1, k_2, k_3, k_4, k_5, k_6, k_7]: [K0, K1, K2, K3, K4, K5, K6, K7]): 
-//     T[K0][K1][K2][K3][K4][K5][K6][K7]
-//   <
-//     K0 extends keyof T, 
-//     K1 extends keyof T[K0], 
-//     K2 extends keyof T[K0][K1],
-//     K3 extends keyof T[K0][K1][K2],
-//     K4 extends keyof T[K0][K1][K2][K3],
-//     K5 extends keyof T[K0][K1][K2][K3][K4],
-//     K6 extends keyof T[K0][K1][K2][K3][K4][K5],
-//     K7 extends keyof T[K0][K1][K2][K3][K4][K5][K6],
-//     K8 extends keyof T[K0][K1][K2][K3][K4][K5][K6][K7],
-//   >(...[k_0, k_1, k_2, k_3, k_4, k_5, k_6, k_7, k_8]: [K0, K1, K2, K3, K4, K5, K6, K7, K8]): 
-//     T[K0][K1][K2][K3][K4][K5][K6][K7][K8]
-//   <
-//     K0 extends keyof T, 
-//     K1 extends keyof T[K0], 
-//     K2 extends keyof T[K0][K1],
-//     K3 extends keyof T[K0][K1][K2],
-//     K4 extends keyof T[K0][K1][K2][K3],
-//     K5 extends keyof T[K0][K1][K2][K3][K4],
-//     K6 extends keyof T[K0][K1][K2][K3][K4][K5],
-//     K7 extends keyof T[K0][K1][K2][K3][K4][K5][K6],
-//     K8 extends keyof T[K0][K1][K2][K3][K4][K5][K6][K7],
-//     K9 extends keyof T[K0][K1][K2][K3][K4][K5][K6][K7][K8],
-//   >(...[k_0, k_1, k_2, k_3, k_4, k_5, k_6, k_7, k_8, k_9]: [K0, K1, K2, K3, K4, K5, K6, K7, K8, K9]): 
-//     T[K0][K1][K2][K3][K4][K5][K6][K7][K8][K9]
-// }
-
-
-// type get<T, KS extends (prop.any)[]>
-//   = [KS] extends [nonempty.array<infer K extends keyof T, infer Todo extends prop.any[]>] ? get<T[K], Todo> : T
-
-
-// const nxt = get({ a: { b: [1] }, c: 1, d: { e: { f: 3, g: 4 }} })
-
-// const ex_01 = nxt("a")
-// const ex_02 = nxt("d", "e", "f")
-// const ex_03 = get("a", "b")
-// const ex_04 = get("a")
-// type ex_04 = has<["a"]>
-
-// nxt("c")
-
-// type 
-  // = T extends nonempty.pathLeft<infer Todo, infer Last>
-  // ? GO<[Todo, 
-  // ;
-
-
-
-// class PathCodec {
-//   static toPaths<const T extends object.any>(object: T): toPaths<T> {
-//     return toPaths(object)
-//   }
-// }
 
 /** 
  * ### {@link object_flatten `object.flatten`} 

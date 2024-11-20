@@ -1,15 +1,15 @@
 export { 
-  type nonfinite,
   type finite,
-  toString,
+  type nonfinite,
   behead,
+  escape,
   isQuoted,
   isValidIdentifier,
-  isValidPropertyName,
-  escape,
-  surroundIfUnsurrounded,
-  surroundedBy,
   replace,
+  surroundedBy,
+  surroundIfUnsurrounded,
+  toString,
+  unescape,
 } from "./_internal/_string.js"
 export { Equal_string as equals } from "./_internal/_equal.js"
 

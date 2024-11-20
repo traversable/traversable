@@ -33,7 +33,7 @@
 		"test": "vitest"
 	},
 	"peerDependencies": {
-		"any-ts": "0.48.0"
+		"any-ts": "0.48.1"
 	},
 	"peerDependenciesMeta": {
 		"any-ts": {

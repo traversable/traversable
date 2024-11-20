@@ -1,5 +1,8 @@
 import type { newtype } from "any-ts"
+
 import * as fn from "./_function.js"
+import { prop } from "./_prop.js"
+import { PATTERN, escape as escapeString, isQuoted } from "./_string.js"
 
 /** @internal */
 type matchUppercaseAlpha<T extends string> = key.toUpper<T> extends T ? key.toLower<T> extends T ? never : T : never
@@ -24,10 +27,15 @@ type takeLowercaseChars<T extends string, Out extends string = never>
     : [match: Out, nonmatch: never]
   ;
 
+
 /** @internal */
 const isSymbol = (u: unknown): u is symbol => typeof u === "symbol"
 /** @internal */
-const isProp = (u: unknown): u is string | number => ["number", "string"].includes(typeof u)
+const isProp = (u: unknown): u is string | number => typeof u === "string" || typeof u === "number"
+/** @internal */
+const SIGNED_INFINITY = globalThis.Number.NEGATIVE_INFINITY
+/** @internal */
+const isSignedZero = (n: number): n is -0 => n === 0 && 1 / n === SIGNED_INFINITY
 
 namespace char {
   export const Alphabet = [
@@ -42,6 +50,7 @@ namespace char {
   export const isAlphaNumeric = (c: string) => isAlpha(c) || isDigit(c)
   export const isNonAlphaNumeric = (c: string) => !isAlpha(c) && !isDigit(c)
 }
+
 
 export declare namespace key {
   export {
@@ -87,6 +96,12 @@ export declare namespace key {
    * //   ^? type Nvr = never
    */
   export type from<T, K extends key.any = T extends key.any ? T : never> = K
+
+  export type fromNumber<T extends number, U extends `${T}` = `${T}`> = U extends `${infer V extends -0}` ? "-0" : U
+  export type fromString<T extends string> = T extends prop.Poisonable ? `["${T}"]` : T
+
+  export { asKey as as }
+  export type asKey<T, K = T extends symbol ? T : T extends -0 ? "-0" : `${T & (string | number)}`> = K
  
   /**
    * ### {@link and `key.and`}
@@ -133,7 +148,6 @@ export declare namespace key {
   }
 }
 
-
 export namespace key {
   /** 
    * ### {@link is `key.is`} 
@@ -141,6 +155,65 @@ export namespace key {
    * Narrow a value from `unknown` to `string | number | symbol`
    */
   export const is = (u: unknown): u is key.any => isSymbol(u) || isProp(u)
+
+  /** 
+   * ### {@link fromNumber `key.fromNumber`} 
+   * 
+   * Converts a number into string-key form.
+   * 
+   * **Note:** {@link fromNumber `key.fromNumber`}'s coersion preserves
+   * property-access semantics, which means `-0` becomes `"-0"`, not `"0"`.
+   */
+  export function fromNumber<N extends number>(x: N): key.as<N>
+  export function fromNumber<N extends number>(x: N) { return isSignedZero(x) ? `"-0"` : x + "" }
+
+  /** 
+   * ### {@link fromString `key.fromString`} 
+   * 
+   * Converts a string into string-key form. Useful when you're generating
+   * code, used internally by {@link key.as `key.as`}.
+   * 
+   * Handles escaping and surrounding the property name with brackets if 
+   * the property would otherwise be vulnerable to prototype poisoning.
+   */
+  export function fromString<S extends string>(s: S): key.fromString<S>
+  export function fromString<S extends string>(s: S): string {
+    const escaped = escapeString(s)
+    const quoted = isQuoted(s) ? escaped : `"${escaped}"`
+    return prop.isPoisonable(s) || !PATTERN.identifier.test(s) ? `[${quoted}]` : quoted
+  }
+
+  export const fromSymbol 
+    : <T extends symbol>(sym: T) => T
+    = fn.identity
+
+  /** 
+   * ### {@link as `key.as`} 
+   * 
+   * Converts its argument into string-key form.
+   * 
+   * @example
+   *  import { key } from "@traversable/data"
+   * 
+   *  const lossy = String(-0)
+   *  //     ^?    const lossy: string  -_-;;
+   *  console.log(lossy)    // =>  "0"  -_-;;
+   * 
+   *  const lossless = key.as(-0)
+   *  //     ^?   const lossless: "-0"  (^.^
+   *  console.log(lossless) // => "-0"  (^.^
+   */
+  export function as<K extends key.any>(key: K): key.as<K>
+  export function as<K extends key.any>(key: K, toString: (k: K) => string): key.as<K>
+  export function as<K extends key.any>(key: K, toString?: (k: K) => string): key.as<K>
+  export function as(k: key.any, toString: (k: key.any) => string = globalThis.String) {
+    switch (true) {
+      case typeof k === "string": return key.fromString(k)
+      case typeof k === "number": return key.fromNumber(k)
+      case typeof k === "symbol": return key.fromSymbol(k)
+      default: return toString(k)
+    }
+  }
 
   /** 
    * ### {@link toUpper `key.toUpper`} 
@@ -477,10 +550,10 @@ export namespace key {
    * - `symbol`: return the symbol
    */
   export function capitalize<K extends key.any>(k: K): key.capitalize<K>
-  export function capitalize(k: key.any) { return isSymbol(k) ? k : `${k}`.substring(0, 1).toUpperCase().concat(`${k}`.slice(1)) }
+  export function capitalize(k: key.any) { return isSymbol(k) ? k : `${k}`.charAt(0).toUpperCase().concat(`${k}`.substring(1)) }
   export type capitalize<K extends key.any> = never | K extends symbol ? K : globalThis.Capitalize<`${K & (string | number)}`>
 
-  /** 
+  /**
    * ### {@link uncapitalize `key.uncapitalize`} 
    *
    * If {@link uncapitalize `key.uncapitalize`} receives a:
@@ -490,7 +563,7 @@ export namespace key {
    * - `symbol`: return the symbol
    */
   export function uncapitalize<K extends key.any>(k: K): key.uncapitalize<K>
-  export function uncapitalize(k: key.any) { return isSymbol(k) ? k : `${k}`.substring(0, 1).toLowerCase().concat(`${k}`.slice(1)) }
+  export function uncapitalize(k: key.any) { return isSymbol(k) ? k : `${k}`.charAt(0).toLowerCase().concat(`${k}`.substring(1)) }
   export type uncapitalize<K extends key.any> = never | K extends symbol ? K : globalThis.Uncapitalize<`${K & (string | number)}`>
 
   /** 
@@ -533,6 +606,38 @@ export namespace key {
   export function of(object: { [x: number]: unknown }) {
     return (key: key.any): key is never => globalThis.Object.prototype.hasOwnProperty.call(object, key)
   }
+
+  /** 
+   * ## {@link asAccessor `key.asAccessor`} 
+   * 
+   * Normalizes a key as a stringified property-accessor. 
+   * 
+   * Useful when you're generating code and need to
+   * access support arbitrary property access, and don't have control
+   * over the input (usually because it's user-provided).
+   * 
+   * **Note:** Since the use case for {@link asAccessor `key.asAccessor`} 
+   * is generating code, it does not support symbols, and will throw an
+   * exception at runtime if given one.
+   * 
+   * @example
+   *  import { key } from "@traversable/data"
+   * 
+   *  key.asAccessor("hey")        // => .hey
+   *  key.asAccessor("oh hi mark") // => ["oh hi mark"]
+   *  key.asAccessor("oh_hi_mark") // => .oh_hi_mark
+   *  key.asAccessor(9000.1)       // => ["9000.1"]
+   *  key.asAccessor(-0)           // => ["-0"]
+   *  key.asAccessor(Symbol())     // => TypeError(...)
+   */
+  export function asAccessor<K extends key.any>(k: K): string {
+    const name: string = key.as(k) as string
+    return typeof k === "symbol" ? asAccessor.handleSymbol(k)
+      : name.startsWith("[") || isQuoted(name) ? name : `.${name}`
+  }
+  void (asAccessor.handleSymbol = (k: symbol) => {
+    throw globalThis.Error("'key.normalize' does not support symbols, got: " + globalThis.String(key))
+  })
 }
 
 export declare namespace keys {

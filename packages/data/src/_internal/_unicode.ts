@@ -14,6 +14,16 @@ export declare const emoji: {
   optimization: `🔥`
   preserves_reference: `🧩`
   preserves_structure: `🌿`
+  roundtrip: `🌐`,
+}
+
+export type gitmoji = typeof gitmoji
+export declare const gitmoji: {
+  feat: "✨"
+  fix: "🐛"
+  docs: "📝"
+  types: "️🏷️"
+  perf: "⚡️"
 }
 
 export type math = typeof math
@@ -23,7 +33,7 @@ export declare const math: {
   real: "ℝ"
   nullary: "𝟘"
   unary: "𝟙"
-  binary: "️𝟚"
+  binary: "𝟚"
   ternary: "𝟛"
   union: "∪"
   intersection: "∩"
@@ -31,6 +41,11 @@ export declare const math: {
   meet: "∧"
   top: "⊤"
   bottom: "⊥"
+  adjoint: ""
+}
+
+export declare const property: {
+  roundtrip: `〖${typeof emoji.roundtrip}〗`
 }
 
 export type jsdoc = typeof jsdoc

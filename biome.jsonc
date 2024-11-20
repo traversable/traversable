@@ -40,6 +40,9 @@
       "performance": {
         "noAccumulatingSpread": "off"
       },
+      "security": {
+        "noGlobalEval": "off"
+      },
       "suspicious": {
         "noRedeclare": "off",
         "noThenProperty": "off",
@@ -49,7 +52,8 @@
         "noConfusingVoidType": "off",
         "noEmptyInterface": "off",
         "useValidTypeof": "off",
-        "noAssignInExpressions": "off"
+        "noAssignInExpressions": "off",
+        "noMisleadingCharacterClass": "off"
       },
       "style": {
         "noNonNullAssertion": "off",
@@ -59,8 +63,8 @@
         "noUselessElse": "off",
         "noCommaOperator": "off",
         "useExportType": "off",
-        "useShorthandFunctionType": "off"
-
+        "useShorthandFunctionType": "off",
+        "useSingleVarDeclarator": "off"
       }
     }
   },

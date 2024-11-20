@@ -1,4 +1,4 @@
-import { core, fc } from "@traversable/core"
+import { core, fc, tree } from "@traversable/core"
 import { array, type keys, object } from "@traversable/data"
 
 import * as fc_ from "fast-check"
@@ -142,7 +142,7 @@ function isConst(u: Schema.any): u is never {
   return Schema.is.scalar(u) && has.const(core.is.scalar)(u)
 }
 /** @internal */
-const hasConst = <T extends {}>(guard: (u: unknown) => u is T) => core.has("const", guard)
+const hasConst = <T extends {}>(guard: (u: unknown) => u is T) => tree.has(["const"], guard)
 
 type typeOf<T, K extends keyof T = keyof T> = T extends { type: infer U extends Schema.datatype["type"] }
   ? U
@@ -176,12 +176,12 @@ export declare namespace has {
 export namespace has {
   void (has.const = hasConst)
   ///
-  export const items = core.has("items")
-  export const itemsSetToFalse = core.has("items", core.is.literally(false))
-  export const prefixItems = core.has("prefixItems", core.is.array)
-  export const properties = core.has("properties", core.is.object)
-  export const additionalProperties = core.has(
-    "additionalProperties",
+  export const items = tree.has("items")
+  export const itemsSetToFalse = tree.has(["items"], core.is.literally(false))
+  export const prefixItems = tree.has(["prefixItems"], core.is.array)
+  export const properties = tree.has(["properties"], core.is.object)
+  export const additionalProperties = tree.has(
+    ["additionalProperties"],
     core.or(core.is.boolean, core.is.object),
   )
   export const atLeastOneProperty: (u: { properties?: {} }) => boolean = (u: { properties?: {} }) =>
@@ -192,7 +192,7 @@ export declare namespace is {
   export { isConst as const, isNull as null }
 }
 export function is(u: unknown): u is Schema.any {
-  return core.or(core.has("type", core.is.string), core.has("$ref", core.is.string))(u)
+  return core.or(tree.has(["type"], core.is.string), tree.has(["$ref"], core.is.string))(u)
 }
 
 export namespace is {
@@ -247,11 +247,11 @@ export namespace is {
   } = (u: unknown): u is Schema.ObjectNode =>
     u !== null && typeof u === "object" && "type" in u && u.type === "object"
 
-  export const oneOf = (u: unknown): u is Schema.OneOf => core.has("oneOf", core.is.array)(u)
+  export const oneOf = (u: unknown): u is Schema.OneOf => tree.has(["oneOf"], core.is.array)(u)
 
-  export const anyOf = (u: unknown): u is Schema.AnyOf => core.has("anyOf", core.is.array)(u)
+  export const anyOf = (u: unknown): u is Schema.AnyOf => tree.has(["anyOf"], core.is.array)(u)
 
-  export const allOf = (u: unknown): u is Schema.AllOf => core.has("allOf", core.is.array)(u)
+  export const allOf = (u: unknown): u is Schema.AllOf => tree.has(["allOf"], core.is.array)(u)
 
   export const scalar: {
     (u: Schema.any | NullNode | openapi.$ref): u is Schema.Scalar
@@ -265,7 +265,7 @@ export namespace is {
   export const hasType = <T extends DataTypes[number] = DataTypes[number]>(
     u: unknown,
     type?: T,
-  ): u is { type: T } => core.has("type", type ? core.is.literally(type) : includes_(DataTypes))(u)
+  ): u is { type: T } => tree.has(["type"], type ? core.is.literally(type) : includes_(DataTypes))(u)
 
   export const booleanLiteral = (
     u: Schema.any | NullNode | openapi.$ref,
@@ -281,7 +281,7 @@ export namespace is {
   } = (u: unknown): u is Schema.NumberNode & { const: number } =>
     Schema.is.number(u) && has.const(core.is.number)(u)
 
-  export const ref = <T extends string>(u: unknown): u is openapi.$ref<T> => core.has("$ref")(u)
+  export const ref = <T extends string>(u: unknown): u is openapi.$ref<T> => tree.has("$ref")(u)
   // : (u: unknown) => u is Ref.typedef
   export const stringLiteral = (
     u: Schema.any | NullNode | openapi.$ref,

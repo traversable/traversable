@@ -1,5 +1,7 @@
 import type { newtype } from "any-ts";
 
+export type { nonempty } from "./nonempty.js"
+
 export * from "./version.js";
 export * as array from "./array.js"
 export * as Equal from "./equal.js";
