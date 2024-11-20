@@ -1,7 +1,7 @@
 export default {
   "name": "@traversable/core",
   "type": "module",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "description": "a small, focused set of libraries that solve a particular problem or have a specific use case",
   "repository": {
     "type": "git",
