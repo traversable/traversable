@@ -39,8 +39,5 @@ export default {
     "any-ts": {
       "optional": false
     }
-  },
-  "devDependencies": {
-    "@traversable/bench": "workspace:^"
   }
 } as const
