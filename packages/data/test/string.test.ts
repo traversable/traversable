@@ -12,7 +12,7 @@ vi.describe("〖🧪〗 @traversable/data/string", () => {
         ["}"], ["("], [")"], ["/"], ["\""], ["-0"], ["-0-0"],
       ],
     }
-  )("〖🌐〗 string.escape -> string.unescape", (text) => 
+  )("〖🪃〗 string.escape -> string.unescape", (text) => 
     vi.assert.equal(
       string.unescape(string.escape(text)), 
       text
