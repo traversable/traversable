@@ -1,4 +1,3 @@
-
 import * as vi from "vitest"
 
 import { Property, fc, test, tree } from "@traversable/core"

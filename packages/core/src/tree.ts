@@ -464,8 +464,8 @@ export interface has<T extends {}> extends newtype<T> {}
  */
 export function has<KS extends props.any>(...path: [...KS]): (u: unknown) => u is has.path<KS>
 export function has<KS extends keys.any>(...path: [...KS]): (u: unknown) => u is has.path<KS>
-export function has<V, const KS extends props.any>(path: KS, guard: (u: unknown) => u is V): (u: unknown) => u is has.path<KS, V>
-export function has<V, const KS extends keys.any>(path: KS, guard: (u: unknown) => u is V): (u: unknown) => u is has.path<KS, V>
+export function has<const KS extends props.any, V>(path: KS, guard: (u: unknown) => u is V): (u: unknown) => u is has.path<KS, V>
+export function has<const KS extends keys.any, V>(path: KS, guard: (u: unknown) => u is V): (u: unknown) => u is has.path<KS, V>
 export function has(
   ...args:
     | [path: keys.any, guard: (u: unknown) => u is typeof u]
