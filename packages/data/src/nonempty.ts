@@ -9,6 +9,17 @@ export declare namespace nonempty {
 
 export declare namespace nonempty {
   type nonempty_string<H extends string, T extends string = string> = `${H}${T}`
+  type array<
+    T = unknown, 
+    U extends readonly unknown[] = readonly T[]
+  > = readonly [head: T, ...tail: U]
+
+  type arrayOf<
+    Invariant,
+    T extends Invariant = Invariant, 
+    U extends readonly Invariant[] = readonly Invariant[]
+  > = readonly [head: T, ...tail: U]
+
   type props<
     T extends prop.any = prop.any, 
     U extends props.any = array_of<T>
