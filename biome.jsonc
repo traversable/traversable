@@ -75,9 +75,11 @@
       "packages/*/dist/**/*",
       "packages/*/src/__generated__/**/*",
       "packages/*/test/__generated__/**/*",
-      "packages/bench/**/*",
+      // "packages/bench/**/*",
       "packages/core/**/*",
-      "packages/data/**/*"
+      "packages/data/**/*",
+      "packages/http/**/*",
+      "packages/openapi/**/*"
     ],
     "include": ["packages/*/src/**/*.ts"],
     "formatWithErrors": false,

@@ -141,6 +141,9 @@ importers:
       '@traversable/data':
         specifier: workspace:^
         version: link:../data/dist
+      '@traversable/http':
+        specifier: workspace:^
+        version: link:../http/dist
       any-ts:
         specifier: 0.48.1
         version: 0.48.1

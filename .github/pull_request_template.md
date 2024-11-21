@@ -28,5 +28,8 @@
 <!-- * ✅ Test additions/revisions -->
 <!-- * 🐛 Bug fixes -->
 <!-- * 🧙 Type-level additions/revisions -->
+<!-- * 💥️ Breaking changes -->
+<!-- * 🧱 Infrastructre / build-related changes >
+<!-- * ♻️ Refactor -->
 <!-- * ⚡️ Performance improvements/optimizations -->
 <!-- * _Other(s):_ ... -->

@@ -16,7 +16,7 @@ Visualization:
 
 ```mermaid
 flowchart TD
-    bench(@traversable/bench) -.-> bench(@traversable/bench)
+    bench(@traversable/bench)
     data(@traversable/data) -.-> bench(@traversable/bench)
     openapi(@traversable/openapi) -.-> bench(@traversable/bench)
     core(@traversable/core) -.-> data(@traversable/data)
