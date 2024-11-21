@@ -334,6 +334,37 @@ export function recordOf(object: { [x: string]: unknown }, valuesArbitrary: fc.A
   )
 }
 
+declare namespace record {
+  type Keep<T, K extends keyof T> = never | { [P in K]: T[P] }
+  type Part<T, K extends keyof T = keyof T> = never | { [P in K]+?: T[P] }
+  type Forget<T> = never | { [K in keyof T]: T[K] }
+  type Require<T, K extends keyof T = never> = [K] extends [never] ? T : Forget<
+    & Keep<T, K>
+    & Part<T, globalThis.Exclude<keyof T, K>>
+  >
+}
+
+export function record<T>(model: { [K in keyof T]: fc.Arbitrary<T[K]> }): fc.Arbitrary<T>
+export function record<T, K extends keyof T>(
+  model: { [K in keyof T]: fc.Arbitrary<T[K]> }, 
+  constraints: { requiredKeys?: K[] }
+): fc.Arbitrary<record.Require<T, K>>
+
+export function record<T, K extends keyof T>(
+  model: { [K in keyof T]: fc.Arbitrary<T[K]> }, 
+  constraints: { withDeletedKeys?: boolean, requiredKeys?: never }
+): fc.Arbitrary<record.Require<T, K>>
+
+export function record<T, K extends keyof T>(
+  model: { [K in keyof T]: fc.Arbitrary<T[K]> }, 
+  constraints: { withDeletedKeys: never, requiredKeys: never }
+): fc.Arbitrary<record.Require<T, K>>
+
+export function record(
+  model: { [x: string]: fc.Arbitrary<unknown> }, 
+  constraints = {}
+) { return fc.record(model, constraints) }
+
 export declare namespace key {
   /** 
    * ### {@link Constraints `fc.key.Constraints`}
