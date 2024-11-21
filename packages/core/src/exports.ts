@@ -10,7 +10,12 @@ export { fc, Property } from "./arbitrary/index.js"
 export * as tree from "./tree.js"
 export { symbol } from "./symbol.js"
 export { 
+  allOf,
+  oneOf,
   and, 
+  anyOf,
+  array,
+  object,
   not, 
   or,
 } from "./guard.js"

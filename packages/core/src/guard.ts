@@ -1,16 +1,42 @@
-import { array, fn, object, props, string } from "@traversable/data"
-import type { Ext, Extensible as Guard, Negate, Tree, any, never, newtype, some } from "any-ts"
+import { array as array_, fn, type nonempty, object as object_, string } from "@traversable/data"
+import type { Ext, Extensible as Guard, Negate, Tree, any, inline, never, newtype, some } from "any-ts"
+import { hasOwn } from "./tree.js"
 
-export const symbol_not_found = Symbol.for("@core/guard/symbol::NotFound") 
-export type symbol_not_found = typeof symbol_not_found
+export { optional_ as optional }
 
+export const uri_not_found = "@core/guard/symbol::NotFound" as const
+export const uri_optional = "@core/guard/symbol::Optional" as const
+export const uri_unit = "@core/guard/uri::Unit" as const
+declare namespace uri {
+  export {
+    uri_not_found as not_found,
+    uri_optional as optional,
+    uri_unit as unit,
+  }
+}
+namespace uri {
+  uri.not_found = uri_not_found
+  uri.optional = uri_optional
+  uri.unit = uri_unit
+}
+
+export const symbol_not_found = Symbol.for(uri.not_found) 
+export const symbol_optional = Symbol.for(uri.optional)
+export const symbol_unit = Symbol.for(uri.unit)
 export declare namespace symbol {
-  export { symbol_not_found as not_found }
+  export { 
+    symbol_not_found as not_found,
+    symbol_optional as optional,
+    symbol_unit as unit,
+  }
 }
 export namespace symbol {
   void (symbol.not_found = symbol_not_found)
-  export const isNotNotFound = <T>(u: T): u is Exclude<T, symbol> => u !== symbol.not_found
-  export const isNotFound = (u: unknown): u is symbol.not_found => u === symbol.not_found
+  void (symbol.optional = symbol_optional)
+  void (symbol.unit = symbol_unit)
+  export const isNotNotFound = <T>(u: T): u is Exclude<T, symbol> => u !== symbol_not_found
+  // export const isNotFound = (u: unknown): u is symbol.not_found => u === symbol_not_found
+  // export const isOptional = (u: unknown): u is symbol.optional => u === symbol_optional
 }
 
 /** @internal */
@@ -77,15 +103,40 @@ export namespace integer {
     }
 }
 
-export const isArray = array.is
-export const isArrayOf
-  : <T>(guard: any.guard<T>) => any.guard<any.array<T>>
+declare namespace trap {
+  export { trap_any as any }
+  /** @internal */
+  export type trap_any<
+    t, 
+    invariant = unknown
+  > = [t] extends [infer type] 
+  ? [1] extends [type & 0] 
+  ? invariant : never : never
+}
+
+export interface array_of<T> extends globalThis.ReadonlyArray<T> {}
+export const array_of
+  : <T>(guard: any.guard<T>) => any.guard<array_of<T>>
   = (guard) => (u: unknown): u is never => globalThis.Array.isArray(u) && u.every(guard)
+
+
+export declare namespace array { export { array_of as of } }
+
+export function array<T extends trap.any<T>>(u: T): u is globalThis.Extract<any.array, T>
+export function array(u: unknown): u is array_.any
+export function array(u: unknown): u is array_.any {
+  return array_.is(u)
+}
+
+export namespace array {
+  array.of = array_of
+
+}
+
 
 export type inferTarget<T extends any.guard> = [T] extends [(u: any) => u is infer target] ? target : never
 export type inferSource<T extends any.guard> = [T] extends [(u: infer source) => u is any] ? source : never
 
-export const isObject = object.is
 export const isPartial
   : <const T extends any.dict<any.guard>>(guards: T) => any.typeguard<unknown, { [K in keyof T]+?: inferTarget<T[K]> }>
   = (guards) => (u): u is never => {
@@ -99,13 +150,15 @@ export const isPartial
       return true
     }
   }
-export const isRecord = object.isRecord
 
 export const isRecordOf
   : <T>(guard: (u: unknown) => u is T) => (u: unknown) => u is { [x: string]: T }
   = (guard) => (u): u is never => {
     return isRecord(u) && globalThis.Object.values(u).every(guard)
   }
+
+export function isRecord(u: unknown): u is { [x: string]: unknown } { return object_.isRecord(u) }
+isRecord.of = isRecordOf
 
 export const isFunction = fn.is
 export const isString = string.is
@@ -136,8 +189,8 @@ export function isKeyOf<const type extends any.object>(object: type) {
   return (key: any.key): key is keyof type & any.key => key in object
 }
 
-export function isLiterally<T extends boolean | number | string | bigint>(value: T): any.guard<T> 
-export function isLiterally<T extends boolean | number | string | bigint>(...values: T[]): any.guard<T> 
+export function isLiterally<T extends boolean | number | string | bigint>(value: T): (u: unknown) => u is T
+export function isLiterally<T extends boolean | number | string | bigint>(...values: T[]): (u: unknown) => u is T
 export function isLiterally(...vs: (boolean | number | string | bigint)[]) {
   return (u: unknown): u is never => isLiteral(u) && vs.includes(u)
 }
@@ -161,7 +214,7 @@ export function has(pathspec: any.key | any.path, guard: any.guard<{}> = notNull
     }
     else {
       const out = pathspec.reduce(
-        (acc, k) => (isObject(acc) && k in acc ? acc[k as string] : null),
+        (acc, k) => (object_.is(acc) && k in acc ? acc[k as string] : null),
         u as any.struct,
       )
       return guard(out) && symbol.isNotNotFound(out)
@@ -169,12 +222,44 @@ export function has(pathspec: any.key | any.path, guard: any.guard<{}> = notNull
   }
 }
 
-export function and<L, R>(left: any.guard<L>, right: any.guard<R>): any.typeguard<unknown, L & R> {
+export function and<L, R>(
+  left: (u: unknown) => u is L, 
+  right: (u: unknown) => u is R
+): (u: unknown) => u is L & R {
   return (u): u is never => left(u) && right(u)
 }
 
-export function or<L, R>(left: any.guard<L>, right: any.guard<R>): any.typeguard<unknown, L | R> {
+export function or<L, R>(
+  left: (u: unknown) => u is L, 
+  right: (u: unknown) => u is R
+): (u: unknown) => u is L | R {
   return (u): u is never => left(u) || right(u)
+}
+
+export function anyOf<const TS extends readonly unknown[]>(
+  ...guards: { [x in keyof TS]: (u: unknown) => u is TS[x] }
+): (u: unknown) => u is TS[number] { 
+  return (u: unknown): u is never => guards.some((fn) => fn(u)) 
+}
+
+export type allOf<TS extends readonly unknown[], Out = unknown>
+  = TS extends nonempty.array<infer H, infer T>
+  ? allOf<T, Out & H>
+  : Out
+  ;
+
+export function allOf<const TS extends readonly unknown[]>(
+  ...guards: { [x in keyof TS]: (u: unknown) => u is TS[x] }
+): (u: unknown) => u is allOf<TS> { 
+  return (u: unknown): u is never => guards.some((fn) => fn(u))
+} 
+
+export declare function oneOf<Name extends keyof any>(discriminantName: Name): {
+  <const T extends readonly ({ [K in Name]: keyof any })[], U extends T[number] = T[number]>(
+    ...guards: { [K in keyof T]: (u: unknown) => u is T[K] }
+  ): {
+    [K in T[number][Name]]: (u: unknown) => u is globalThis.Extract<U, { [P in Name]: K }>
+  }
 }
 
 export const isPrimitive: any.guard<any.primitive> = (u): u is never =>
@@ -300,3 +385,112 @@ export function createFromFactories<_ extends any.key>(_tag: _, withPrefixes?: "
 
 export const fromFactories = createFromFactories("_tag")
 export const withPrefixes = createFromFactories("_tag", "withPrefixes")
+
+interface optional_<T> extends 
+  inline<(u: unknown) => u is T> 
+  { [symbol.optional]?: true }
+
+/**
+ * ## {@link optional `is.optional`}
+ */
+function optional_<T>(guard: (u: unknown) => u is T): optional_<T> {
+  function optional(src: unknown): src is T { return src === undefined || guard(src) }
+  return globalThis.Object.assign(
+    optional, 
+    optional_.proto
+  ) 
+}
+optional_.proto = { [symbol.optional]: true } as const
+
+/** 
+ * ### {@link optional.is `is.optional.is`}
+ */
+optional_.is = <T>(u: unknown): u is optional_<T> =>
+  u !== null 
+  && typeof u === "function" 
+  && globalThis.Object.prototype.hasOwnProperty.call(u, symbol.optional)
+
+export declare namespace object {
+  type Target<T> = T extends (u: any) => u is infer U ? U : never
+  type Pick<T, K extends keyof T> = never | { [P in K]: Target<T[P]> }
+  type Part<T, K extends keyof T> = never | { [P in K]+?: Target<T[P]> }
+  type OptionalKeys<T, K extends keyof T = keyof T> 
+    = K extends K 
+    ? T[K] extends { [symbol.optional]?: true } ? K
+    : never : never
+  type Optional<T, K extends OptionalKeys<T> = OptionalKeys<T>> = never | Part<T, K>
+  type Required<T> = never | Pick<T, Exclude<keyof T, OptionalKeys<T>>>
+  type Forget<T> = never | { -readonly [K in keyof T]: T[K] }
+  type from<T> = never | Forget<
+    & Optional<T>
+    & Required<T>
+  >
+}
+
+/** 
+ * ## {@link object `is.object`} 
+ */
+export function object(u: unknown): u is object_.any { return object_.is(u) }
+export declare namespace object { 
+  export { object_of as of } 
+  export interface Options {
+    exactOptionalPropertyTypes?: boolean
+  }
+}
+export namespace object { 
+  void (object.of = object_of) 
+  export const defaults = {
+    exactOptionalPropertyTypes: false,
+  } satisfies globalThis.Required<object.Options>
+}
+
+function isInvalidWithEOPTApplied(
+  options: object.Options,
+  optionals: (keyof any)[],
+  key: string,
+  object: { [x: string]: unknown },
+) {
+  return options.exactOptionalPropertyTypes 
+    && hasOwn(object, key) 
+    && object[key] === undefined 
+    && optionals.includes(key) 
+}
+
+/**
+ * ## {@link object_of `is.object.of`} 
+ */
+interface object_of<T extends {}> extends newtype<T> {}
+function object_of<
+  const T extends { [x: string]: (u: any) => u is unknown }, 
+  S extends object.from<T>
+> (shape: T, options?: object.Options): (u: unknown) => u is object_of<S>
+function object_of<T extends { [x: string]: (u: any) => u is unknown }>(
+  shape: T, _: object.Options = object.defaults,
+) {
+  const keys: (keyof T)[] = globalThis.Object.keys(shape) as never
+  const opt = keys.filter((k) => optional_.is(shape[k]))
+  return (u: unknown): u is never => {
+    if (!object_.isRecord(u)) return false
+    else {
+      for (const k in shape) {
+        const p = shape[k]
+        switch (true) {
+          // case: EOPT is on, k in u, u[k] === undefined, and k is marked as optional:
+          case isInvalidWithEOPTApplied(_, opt, k, u): return false
+          // case: k in object; object[k] passes validation -- continue
+          case hasOwn(u, k) && p(u[k]): continue
+          // case: k in object, but object[k] !pass validation -- fail
+          case hasOwn(u, k) && !p(u[k]): return false
+          // case: k is not in object, but its fine bc k is optional; continue
+          case !hasOwn(u, k) && opt.includes(k): continue
+          // case: k is not in object, but required in schema -- fail
+          case !hasOwn(u, k) && !opt.includes(k): return false
+          default: {
+            throw globalThis.Error("should be unreachable")
+          }
+        }
+      }
+      return true
+    }
+  }
+}

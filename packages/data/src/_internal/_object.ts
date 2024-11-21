@@ -2076,8 +2076,6 @@ export namespace object_serialize {
 
     const loop = fn.loop<[next: any.json | fn.any, indent: number], string>(
       ([next, indent], loop) => {
-        console.log("next: START", next)
-
         if(object_is(next)) {
           if(seen.has(next)) return `[Circular ${typeof next}]`
           else seen.add(next)
