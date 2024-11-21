@@ -373,7 +373,7 @@ vi.describe(`object`, () => {
     )
 
     vi.assert.deepEqual(
-      object.capitalizeValues(object.kebab.values({
+      object.capitalize.values(object.kebab.values({
         oneWay: "oneWay",
         roundTrip: "roundTrip",
         multiCity: "multiCity",
