@@ -101,6 +101,6 @@ namespace integer_ {
       : globalThis.Number.isFinite(parsed) ? some(parsed) : none()
   }
 
-  export function isOdd(x: integer): boolean { return !!(+x % 2) }
-  export function isEven(x: integer): boolean { return !isOdd(x) }
+  export function isOdd(x: integer): boolean { return (+x & 1) === 1 }
+  export function isEven(x: integer): boolean { return (+x & 1) === 0 }
 }
