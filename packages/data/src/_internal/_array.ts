@@ -661,10 +661,52 @@ export function array_indexBy<K extends string | number>(index: K) {
   }
 }
 
-/** ### {@link array_find `array.find`} */
+/** 
+ * ### {@link array_find `array.find`} 
+ */
 export function array_find<S, T>(guard: any.typeguard<S, T>): (xs: any.array<S>) => T | undefined
 export function array_find<T>(pred: some.predicate<T>): (xs: any.array<T>) => T | undefined
 export function array_find<T>(pred: some.predicate<T>) { return (xs: any.array<T>) => xs.find(pred) }
+
+/** 
+ * ### {@link array_findLast `array.findLast`} 
+ */
+export function array_findLast<T>(predicate: (u: T) => boolean): (xs: readonly T[]) => number
+export function array_findLast<T>(predicate: (u: T) => boolean) {
+  return (xs: readonly T[]): T | undefined => {
+    for (let ix = xs.length - 1; ix >= 0; ix--)
+      if (predicate(xs[ix])) return xs[ix]
+    return undefined
+  }
+} 
+
+/** 
+ * ### {@link array_indexOf `array.indexOf`} 
+ */
+export function array_indexOf<T>(predicate: (x: T) => boolean): (xs: readonly T[]) => number
+export function array_indexOf<T>(needle: T): (xs: readonly T[]) => number
+export function array_indexOf<T>(_: ((x: T) => boolean) | T) {
+  const predicate = typeof _ === "function" ? _ as never : (x: T) => x === _
+  return (xs: readonly T[]) => {
+    for (let ix = 0, len = xs.length; ix < len; ix++)
+      if (predicate(xs[ix])) return ix
+    return -1
+  }
+}
+
+/** 
+ * ### {@link array_lastIndexOf `array.lastIndexOf`} 
+ */
+export function array_lastIndexOf<T>(predicate: (x: T) => boolean): (xs: readonly T[]) => number
+export function array_lastIndexOf<T>(needle: T): (xs: readonly T[]) => number
+export function array_lastIndexOf<T>(_: ((x: T) => boolean) | T) {
+  const predicate = typeof _ === "function" ? _ as never : (x: T) => x === _
+  return (xs: readonly T[]): number => {
+    for (let ix = xs.length - 1; ix >= 0; ix--)
+      if (predicate(xs[ix])) return ix
+    return -1
+  }
+} 
 
 /** ### {@link array_getConcattable `array.getConcattable`} */
 export const array_getConcattable = <T = never>(): Concattable<any.array<T>> => ({
