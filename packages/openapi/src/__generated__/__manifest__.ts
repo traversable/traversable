@@ -35,18 +35,14 @@ export default {
   "peerDependencies": {
     "@traversable/core": "workspace:^",
     "@traversable/data": "workspace:^",
+    "@traversable/http": "workspace:^",
     "any-ts": "0.48.1"
   },
   "peerDependenciesMeta": {
-    "@traversable/data": {
-      "optional": false
-    },
-    "@traversable/core": {
-      "optional": false
-    },
-    "any-ts": {
-      "optional": false
-    }
+    "@traversable/data": { "optional": false },
+    "@traversable/core": { "optional": false },
+    "@traversable/http": { "optional": false },
+    "any-ts": { "optional": false }
   },
   "devDependencies": {
     "@traversable/bench": "workspace:^"

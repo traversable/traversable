@@ -10,6 +10,7 @@
 	"references": [
 		{ "path": "tsconfig.src.json" },
 		{ "path": "../data" },
+		{ "path": "../http" },
 		{ "path": "../core" }
 	],
 	"include": ["test"]

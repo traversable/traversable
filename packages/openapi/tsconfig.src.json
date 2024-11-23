@@ -8,6 +8,7 @@
 	},
 	"references": [
     { "path": "../core" },
+    { "path": "../http" },
     { "path": "../data" }
   ],
 	"include": ["src"]
