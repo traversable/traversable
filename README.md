@@ -17,6 +17,7 @@ Visualization:
 ```mermaid
 flowchart TD
     bench(@traversable/bench)
+    registry(@traversable/registry)
     data(@traversable/data) -.-> bench(@traversable/bench)
     openapi(@traversable/openapi) -.-> bench(@traversable/bench)
     core(@traversable/core) -.-> data(@traversable/data)
@@ -29,6 +30,7 @@ From fewest to most dependencies:
 
 <!-- codegen:start -->
 - [`@traversable/bench@0.0.1`](./packages/bench) - [CHANGELOG](https://github.com/traversable/shared/blob/main/packages/bench/CHANGELOG.md)
+- [`@traversable/registry@0.0.0`](./packages/registry) - [CHANGELOG](https://github.com/traversable/shared/blob/main/packages/registry/CHANGELOG.md)
 - [`@traversable/data@0.0.2`](./packages/data) - [CHANGELOG](https://github.com/traversable/shared/blob/main/packages/data/CHANGELOG.md)
 - [`@traversable/openapi@0.0.2`](./packages/openapi) - [CHANGELOG](https://github.com/traversable/shared/blob/main/packages/openapi/CHANGELOG.md)
 - [`@traversable/core@0.0.2`](./packages/core) - [CHANGELOG](https://github.com/traversable/shared/blob/main/packages/core/CHANGELOG.md)

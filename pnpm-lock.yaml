@@ -114,6 +114,9 @@ importers:
 
   packages/data:
     dependencies:
+      '@traversable/registry':
+        specifier: workspace:^
+        version: link:../registry/dist
       any-ts:
         specifier: 0.48.1
         version: 0.48.1
@@ -151,6 +154,9 @@ importers:
       '@traversable/bench':
         specifier: workspace:^
         version: link:../bench/dist
+    publishDirectory: dist
+
+  packages/registry:
     publishDirectory: dist
 
 packages:
