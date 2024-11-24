@@ -27,6 +27,10 @@ export declare const gitmoji: {
   break: "💥"
   refactor: "♻️"
   infra: "🧱"
+  add: "➕"
+  rm: "➖"
+  up: "⬆️"
+  down: "⬇️"
 }
 
 export type math = typeof math

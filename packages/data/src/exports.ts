@@ -1,4 +1,6 @@
 import type { newtype } from "any-ts";
+import { jsdoc } from "./_internal/_unicode.js"
+import { URI } from "@traversable/data/_internal/_uri";
 
 export type { nonempty } from "./nonempty.js"
 
@@ -10,6 +12,7 @@ export * as integer from "./integer.js"
 export * as number from "./number.js"
 export * as string from "./string.js"
 export * as unicode from "./_internal/_unicode.js"
+export * as Option from "./option.js"
 
 export { boolean } from "./boolean.js"
 export { entry, entries } from "./entry.js"
@@ -17,6 +20,7 @@ export { key, keys } from "./key.js"
 export { map } from "./map.js"
 export { object } from "./object.js"
 export { prop, props } from "./prop.js"
+export { record } from "./record.js"
 
 /**
  * ## {@link Predicate `data.Predicate`}
@@ -95,6 +99,48 @@ export type Pick<T, K extends keyof T> = never | { -readonly [x in K]: T[x] };
 export type Omit<T, K extends keyof any> = never | Pick<T, Exclude<keyof T, K>>;
 
 /**
+ * ### {@link Force `data.Force`}
+ *
+ * There are a few use cases for the {@link Force `data.Force`} operation:
+ *
+ * - forcing evaluation
+ * - "forgetting" the differences between intersections, by merging them into a single type
+ * - to break an interface open so you can see the properties it contains
+ */
+export type Force<T> = never | { [K in keyof T]: T[K] }
+
+/**
+ * ### {@link Spread `Spread`}
+ *
+ * Preserves JSDoc annotations. If a property is has JSDoc annotations in both
+ * {@link T `T`} and {@link U `U`}, the docs for the property in {@link U `U`}
+ * are concatenated onto the end of the docs for the property in {@link T `T`}.
+ */
+export type Spread<T, U, _K extends keyof (T | U) = keyof (T | U)> =
+	| never
+	| (Pick<T | U, _K> & Omit<T, _K> & Omit<U, _K>)
+
+/**
+ * ### {@link Merge `Merge`}
+ *
+ * Preserves JSDoc annotations. If a property is has JSDoc annotations in both
+ * {@link T `T`} and {@link U `U`}, the docs for the property in {@link U `U`}
+ * are concatenated onto the end of the docs for the property in {@link T `T`}.
+ */
+export type Merge<T, U> = never | Force<Spread<T, U>>
+
+export type Part<T, K extends keyof T = never> = [K] extends [never]
+	? Optional<T>
+	: Force<Omit<T, K> & Optional<T, K>>
+
+export type Require<T, K extends keyof T = never> = [K] extends [never]
+	? Optional<T>
+	: Force<Pick<T, K> & Optional<T, Exclude<keyof T, K>>>
+
+export type Optional<T, K extends keyof T = keyof T> = never | 
+  { [P in K]+?: T[P] }
+
+/**
  * ## {@link Sort `data.Sort`}
  *
  * If {@link Compare `data.Compare`} describes the relationship between
@@ -160,14 +206,9 @@ export declare namespace MapSort {
  * - the Wikipedia page for the
  * [option type](https://en.wikipedia.org/wiki/Option_type)
  */
-export type Option<T> = None | Some<T>;
-export interface None {
-	_tag: "@traversable/data/Option::None";
-}
-export interface Some<T> {
-	_tag: "@traversable/data/Option::Some";
-	value: T;
-}
+export type Option<T> = None | Some<T>
+export interface None { _tag: URI.None }
+export interface Some<T> { _tag: URI.Some, value: T }
 
 /**
  * ## {@link Result `data.Result`}
@@ -187,15 +228,9 @@ export interface Some<T> {
  * - {@link Option `data.Option`}
  * - Rust's docs on [`Result`](https://doc.rust-lang.org/std/result/)
  */
-export type Result<T, E = never> = Ok<T> | Err<E>;
-export interface Ok<T> {
-	_tag: `@traversable/data/Result::Ok`;
-	ok: T;
-}
-export interface Err<T> {
-	_tag: `@traversable/data/Result::Err`;
-	err: T;
-}
+export type Result<T, E = never> = Ok<T> | Err<E>
+export interface Ok<T> { _tag: URI.Ok, ok: T }
+export interface Err<T> { _tag: URI.Err, err: T }
 
 /**
  * ## {@link Concattable `data.Concattable`}
@@ -207,7 +242,7 @@ export interface Err<T> {
  * - the Wikipedia page on [semigroups](https://en.wikipedia.org/wiki/Semigroup)
  */
 export interface Concattable<in out T> {
-	concat(left: T, right: T): T;
+	concat(left: T, right: T): T
 }
 
 /**
@@ -219,52 +254,7 @@ export interface Concattable<in out T> {
  * - {@link Concattable `data.Concattable`}
  * - the Wikipedia page on [monoids](https://en.wikipedia.org/wiki/Monoid)
  */
-export interface Foldable<in out T> extends Concattable<T> {
-	empty: T;
-}
-
-/**
- * ### {@link Force `data.Force`}
- *
- * There are a few use cases for the {@link Force `data.Force`} operation:
- *
- * - forcing evaluation
- * - "forgetting" the differences between intersections, by merging them into a single type
- * - to break an interface open so you can see the properties it contains
- */
-export type Force<T> = never | { [K in keyof T]: T[K] };
-
-/**
- * ### {@link Spread `Spread`}
- *
- * Preserves JSDoc annotations. If a property is has JSDoc annotations in both
- * {@link T `T`} and {@link U `U`}, the docs for the property in {@link U `U`}
- * are concatenated onto the end of the docs for the property in {@link T `T`}.
- */
-export type Spread<T, U, _K extends keyof (T | U) = keyof (T | U)> =
-	| never
-	| (Pick<T | U, _K> & Omit<T, _K> & Omit<U, _K>);
-
-/**
- * ### {@link Merge `Merge`}
- *
- * Preserves JSDoc annotations. If a property is has JSDoc annotations in both
- * {@link T `T`} and {@link U `U`}, the docs for the property in {@link U `U`}
- * are concatenated onto the end of the docs for the property in {@link T `T`}.
- */
-export type Merge<T, U> = never | Force<Spread<T, U>>;
-
-export type Part<T, K extends keyof T = never> = [K] extends [never]
-	? Optional<T>
-	: Force<Omit<T, K> & Optional<T, K>>;
-
-export type Require<T, K extends keyof T = never> = [K] extends [never]
-	? Optional<T>
-	: Force<Pick<T, K> & Optional<T, Exclude<keyof T, K>>>;
-
-export type Optional<T, K extends keyof T = keyof T> =
-	| never
-	| { [P in K]+?: T[P] };
+export interface Foldable<in out T> extends Concattable<T> { empty: T }
 
 /**
  * ### {@link integer `number.integer`}
@@ -275,7 +265,7 @@ export type Optional<T, K extends keyof T = keyof T> =
  *
  * A signed, 64-bit number representation.
  *
- * > **Note:** to convert a {@link integer `number.integer`} to a regular TypeScript number, use the
+ * > **Note:** to convert an {@link integer `integer`} to a TypeScript number, you can use the
  *   [unary plus](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Operators/Unary_plus)
  *   operator (e.g., `+ myInteger`).
  *
@@ -328,4 +318,3 @@ export type Optional<T, K extends keyof T = keyof T> =
  *  //    ^? const ex_05: number
  */
 export interface integer extends newtype<number> {}
-

@@ -7,8 +7,8 @@
 		"types": ["node"],
 		"noEmit": true
 	},
+	"include": ["test"],
 	"references": [
 		{ "path": "tsconfig.src.json" }
 	],
-	"include": ["test"]
 }

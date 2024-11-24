@@ -11,8 +11,8 @@ export {
   apply,
   call,
   exhaustive,
-  fanout,
-  fansout,
+  distribute,
+  distributes,
   flow,
   free,
   hasOwn,
@@ -412,52 +412,37 @@ function flow(
 }
 
 /**
- * ### {@link fanout `fn.fanout`}
+ * ### {@link distribute `fn.distribute`}
  * 
- * {@link globalThis.Array.prototype.map `Array.prototype.map`} solves for when
- * you have a __single function__ to apply to __many inputs__ (0+).
- * 
- * {@link fanout `fn.fanout`} solves for when you have __many functions__ (0+)
- * that you need to apply to a __single input__.
- * 
- * At their core, both problems are about preserving structure:
- * 
- * - {@link globalThis.Array.prototype.map `Array.prototype.map`} takes a function
- *   accepting a single input, and returns a function capable of handling many inputs, 
- *   and _preserves their structure_: if you give the function an array of 3 elements,
- *   you will get an array of 3 elements back.
- * 
- * - {@link fanout `fn.fanout`} takes some structure (such as an array or object) whose
- *   elements are all functions waiting for a single input, and returns a function that
- *   is capable of applying its argument [across](https://en.wikipedia.org/wiki/Fan-out_(software)) 
- *   those functions, _preserving their structure_.
+ * Distributes an argument to many (0 or more) functions.
  */
-function fanout<const T extends { [x: number]: fn.any }>(fns: T): 
+function distribute<const T extends { [x: number]: fn.any }>(fns: T): 
   (param: fn.param<T[number]>) => { -readonly [K in keyof T]: fn.return<T[K]> }
-function fanout<const T extends { [x: string]: fn.any }>(fns: T): 
+function distribute<const T extends { [x: string]: fn.any }>(fns: T): 
   (param: fn.param<T[keyof T]>) => { -readonly [K in keyof T]: fn.return<T[K]> }
 /// impl.
-function fanout<T extends { [x: string]: fn.any }>(fns: T) {
-  return (arg: fn.param<T[keyof T]>) => {
+function distribute<T extends { [x: string]: fn.any }>(fns: T) {
+  return (...arg: [fn.param<T[keyof T]>]) => {
     if (globalThis.Array.isArray(fns)) {
       let out: unknown[] = []
-      for (const fn of fns) out.push(fn(arg))
+      for (let ix = 0, len = fns.length; ix < len; ix++) 
+        out.push(fns[ix](...arg))
       return out
     }
     else {
       let out: { [x: string]: unknown } = {}
-      for (const k in fns) out[k] = fns[k](arg)
+      for (const k in fns) out[k] = fns[k](...arg)
       return out
     }
   }
 } 
 
-function fansout<const T extends { [x: string]: fn.any }>(fns: T): 
+function distributes<const T extends { [x: string]: fn.any }>(fns: T): 
   (...params: fn.params<T[keyof T]>) => { -readonly [K in keyof T]: fn.return<T[K]> }
-function fansout<const T extends { [x: number]: fn.any }>(fns: T): 
+function distributes<const T extends { [x: number]: fn.any }>(fns: T): 
   (...params: fn.params<T[number]>) => { -readonly [K in keyof T]: fn.return<T[K]> }
 /// impl.
-function fansout<T extends { [x: string]: fn.any }>(fns: T) {
+function distributes<T extends { [x: string]: fn.any }>(fns: T) {
   return (...args: fn.params<T[keyof T]>) => {
     if (globalThis.Array.isArray(fns)) {
       let out: unknown[] = []
