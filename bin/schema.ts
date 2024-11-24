@@ -1,5 +1,5 @@
 import { Schema as S } from "effect"
-import { SCOPE, defaults } from "./metadata.js"
+import { SCOPE, defaults } from "./constants.js"
 
 interface Config extends S.Schema.Type<typeof Config> {}
 const Config = S.Struct({

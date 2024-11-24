@@ -5,39 +5,30 @@ import { graphSequencer } from '@pnpm/deps.graph-sequencer'
 import prettifySync from "@prettier/sync"
 import type { any } from "any-ts"
 import { Effect, Order, Array as array, flow, Record as object, pipe } from "effect"
+
+import { PackageJson } from "./schema.js"
 import { 
-  type Graph,
-  type Node,
-  type Workspace,
   PACKAGES,
   REPO,
-} from "./metadata.js"
-import { PackageJson } from "./schema.js"
-
-export const PATTERN = {
-  FlattenOnce: { open: `(.*)../`, close: `(.*)` },
-} as const
-
-export const REG_EXP = {
-  Semver: /(\d)+\.(\d)+\.(\d)+/g,
-  Target: /<>/,
-  WordBoundary: /([-_][a-z])/gi,
-  FlattenOnce: (dirPath: string) => 
-    new globalThis.RegExp(`${PATTERN.FlattenOnce.open}${dirPath}${PATTERN.FlattenOnce.close}`, "gm"),
-} as const
+  REG_EXP,
+} from "./constants.js"
+import type { 
+  Graph,
+  Node,
+  SideEffect,
+  Workspace,
+} from "./types.js"
 
 export const PACKAGE_JSONS
-  // : () => PackageJson[] 
+  : () => PackageJson[] 
   = () => PACKAGES.map(
     flow(
-      (_) => path.join(_, `package.json`),
+      (dirpath) => path.join(dirpath, `package.json`),
       (file) => fs.readFileSync(file),
       (buffer) => buffer.toString(`utf8`),
       (string) => globalThis.JSON.parse(string),
-      S.decodeUnknown(PackageJson),
-      Effect.runSync,
-      // (json) => PackageJson(json),
-      // Effect.runSync,
+      (unknown) => S.decodeUnknown(PackageJson)(unknown),
+      (effect) => Effect.runSync(effect),
     )
   )
 
@@ -85,12 +76,18 @@ export namespace Tree {
 }
 
 export type indexBy<K extends any.index, T extends { [P in K]: keyof any }> = never | { [U in T as U[K]]: U }
+
 export function indexBy<const K extends keyof any>(index: K):
   <const T extends readonly ({ [P in K]: keyof any })[]>(array: T) => { [U in T[number] as U[K]]: U }
 export function indexBy<const K extends keyof any>(index: K) {
   return (array: readonly ({ [P in K]: keyof any })[]) => 
     array.reduce((acc, x) => ({ ...acc, [x[index]]: x }), {})
 }
+
+export const run 
+  : <T>(eff: SideEffect<T>) => T
+  = (eff) => eff()
+
 
 /** 
  * ## {@link localTime `localTime`}
@@ -225,8 +222,8 @@ const prefix = `${REPO.scope}/`
 /**
  * @example
  *  assert.equal(
- *    withoutPrefix(`@traversable/core`),
- *    `core`,
+ *    withoutPrefix("@traversable/core"),
+ *    "core",
  *  )
  */
 const withoutPrefix = (name: string) => name.substring(prefix.length)
@@ -234,8 +231,8 @@ const withoutPrefix = (name: string) => name.substring(prefix.length)
 /**
  * @example
  *  assert.equal(
- *    wrap(`@traversable/core`),
- *    `core(@traversable/core)`,
+ *    wrap("@traversable/core"),
+ *    "core(@traversable/core)",
  *  )
  */
 const wrap = (name: string) => withoutPrefix(name).concat(`(${name})`)
@@ -243,8 +240,8 @@ const wrap = (name: string) => withoutPrefix(name).concat(`(${name})`)
 /**
  * @example
  *  assert.equal(
- *    bracket(`@traversable/core`),
- *    `[@traversable/core](./packages/core)`,
+ *    bracket("@traversable/core"),
+ *    "[@traversable/core](./packages/core)",
  *  )
  */
 const bracket = (name: string, version: string): `[${string}](./packages/${string})` => 
@@ -253,16 +250,19 @@ const bracket = (name: string, version: string): `[${string}](./packages/${strin
 /**
  * @example
  *  assert.equal(
- *    drawRelation({ name: `@traversable/core` })(`@traversable/data`),
- *    `core(@traversable/core) -.-> data(@traversable/data)`,
+ *    drawRelation({ name: "@traversable/core" })("@traversable/data"),
+ *    "core(@traversable/core) -.-> data(@traversable/data)",
  *  )
  */
 const drawRelation
   : (pkg: Node) => (dep: string) => string
   = (pkg) => (dep) => wrap(pkg.name).concat(` -.-> `).concat(wrap(dep))
 
-export const drawChangelogLineItem = (pkg: { name: string, version: string }) => 
-  `${bracket(pkg.name, pkg.version)} - [CHANGELOG](${`https://github.com/traversable/shared/blob/main/packages/${withoutPrefix(pkg.name)}/CHANGELOG.md`})`
+export const drawChangelogLineItem = (pkg: { name: string, version: string }) => `${
+  bracket(pkg.name, pkg.version)
+} - [CHANGELOG](${
+  `https://github.com/traversable/shared/blob/main/packages/${withoutPrefix(pkg.name)}/CHANGELOG.md`
+})`
 
 export namespace Draw {
   export const relation

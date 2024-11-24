@@ -1,52 +1,10 @@
 #!/usr/bin/env pnpm dlx tsx
-import * as FS from "node:fs"
-import * as Path from "node:path"
+import * as fs from "node:fs"
 import { flow } from "effect"
 import { apply, pipe } from "effect/Function"
-import { Draw, Print, tap, topological } from "./util.js"
-
-
-interface SideEffect<T = void> { (): T }
-interface Matcher {
-  needle: string | globalThis.RegExp
-  replacement: string
-}
-
-const run 
-  : <T>(eff: SideEffect<T>) => T
-  = (eff) => eff()
-
-const README = `README.md`
-
-const PATH = {
-  ApiPackageOptionsSource: Path.join(Path.resolve(), "packages", "api", "src", "options.ts"),
-  ApiPackageOptionsTarget: Path.join(Path.resolve(), "packages", "api", "options.d.ts"),
-  RootReadme: Path.resolve(README),
-} as const
-
-const MARKER = {
-  Start: `\`\`\`mermaid`,
-  End: `\`\`\``,
-} as const
-
-const PKG_LIST = {
-  Start: `<\!-- codegen:start -->`,
-  End: `<\!-- codegen:end -->`,
-} as const
-
-const PATTERN = {
-  NonWhitespace: `\\w`,
-  DependencyGraph: `${MARKER.Start}([^]*?)${MARKER.End}`,
-  PackageList: `${PKG_LIST.Start}([^]*?)${PKG_LIST.End}`,
-  ChartReplacement: (chart: string) => `${MARKER.Start}\n${chart}\n${MARKER.End}`,
-  ListReplacement: (list: string) => `${PKG_LIST.Start}\n${list}\n${PKG_LIST.End}`,
-} as const
-
-const REG_EXP = {
-  NonWhitespace: new globalThis.RegExp(PATTERN.NonWhitespace, "g"),
-  DependencyGraph: new globalThis.RegExp(PATTERN.DependencyGraph, `g`),
-  PackageList: new globalThis.RegExp(PATTERN.PackageList, `g`),
-} as const
+import { Draw, Print, run, tap, topological } from "./util.js"
+import { PATH, PATTERN, REG_EXP, RELATIVE_PATH } from "./constants.js"
+import type { SideEffect, Matcher } from "./types.js"
 
 const createChartMatcher
   : (chart: string) => Matcher
@@ -65,9 +23,9 @@ const createChangelogsMatcher
 const mapFile
   : (fn: (file: string) => string) => (filepath: string) => SideEffect
   = (fn) => (filepath) => () => pipe(
-    FS.readFileSync(filepath).toString("utf8"),
+    fs.readFileSync(filepath).toString("utf8"),
     fn,
-    (content) => FS.writeFileSync(filepath, content),
+    (content) => fs.writeFileSync(filepath, content),
   )
 
 const write
@@ -78,13 +36,13 @@ const write
 const writeChart: (chart: string) => SideEffect = flow(
   createChartMatcher,
   write,
-  apply(PATH.RootReadme),
+  apply(PATH.readme),
 )
 
 const writeChangelogs: (list: string) => SideEffect = flow(
   createChangelogsMatcher,
   write,
-  apply(PATH.RootReadme),
+  apply(PATH.readme),
 )
 
 /**
@@ -122,7 +80,7 @@ const writeChangelogs: (list: string) => SideEffect = flow(
 const writeChartToReadme: SideEffect = flow(
   topological,
   Draw.relation,
-  tap(Print.task(`[bin/docs.ts] Writing dependency graph to '${README}'`)),
+  tap(Print.task(`[bin/docs.ts] Writing dependency graph to '${RELATIVE_PATH.readme}'`)),
   writeChart,
   run,
 )
@@ -134,17 +92,20 @@ const writeChangelogsToRootReadme: SideEffect = flow(
   run,
 )
 
+function docs() {
+  return (
+    void writeChartToReadme(),
+    void writeChangelogsToRootReadme()
+  )
+}
+
+const main = docs
+
+void main()
+
 // const writeApiPackageOptionsType
 //   : () => string[]
 //   = () => pipe(
-//     FS.readFileSync(PATH.ApiPackageOptionsSource).toString("utf8"),
+//     FS.readFileSync(PATH.api__options_ts).toString("utf8"),
 //     (content) => content.split(/\/\/ <!-- codegen:.+ -->/g),
 //   )
-
-const main: SideEffect = () => {
-  void writeChartToReadme()
-  void writeChangelogsToRootReadme()
-  // void writeApiPackageOptionsType()
-}
-
-void main()

@@ -1,7 +1,7 @@
 #!/usr/bin/env pnpm dlx tsx
 import { Print, deriveShortView, topological } from "./util.js"
 
-function main(effect: (description: string) => void): void {
+function describe(effect: (description: string) => void): void {
   const indent = `   `
   const ordered = topological()
   const shortTree = [
@@ -37,4 +37,6 @@ function main(effect: (description: string) => void): void {
   return void effect(description)
 }
 
-main(globalThis.console.log)
+const main = () => describe(globalThis.console.log)
+
+void main()

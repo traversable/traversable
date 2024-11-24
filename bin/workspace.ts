@@ -27,6 +27,24 @@ const TEMPLATE = {
   BaseValue$: { pre: "packages/", post: "/*.js" },
 } as const
 
+interface Deps {
+  tsconfig: TsConfig
+  pkgName: string
+  description?: string
+  localDeps?: readonly string[]
+  env?: WorkspaceEnv
+  force?: boolean
+  debug?: boolean
+  private?: boolean
+  dryRun?: boolean
+}
+
+interface Effect {
+  create: (deps: Required<Deps>) => void,
+  cleanup: (deps: Required<Deps>) => void,
+}
+
+
 interface Reference extends S.Schema.Type<typeof Reference> {}
 const Reference = S.Struct({ path: S.String })
 
@@ -118,7 +136,7 @@ namespace vitest {
 }
 
 namespace order {
-  export const lexicographically = (
+  export const lexico = (
     left: string, 
     right: string
   ) => left.toLowerCase() > right.toLowerCase() ? 1 
@@ -130,35 +148,18 @@ namespace order {
   export const byReference = (
     { path: left }: Reference, 
     { path: right }: Reference
-  ) =>  order.lexicographically(left, right)
+  ) =>  order.lexico(left, right)
   export const byKey = (
     [left]: [string, ...any], 
     [right]: [string, ...any]
-  ) => order.lexicographically(left, right)
+  ) => order.lexico(left, right)
 }
 
 export const force
-  : (_: Deps) => void
-  = (_) => (_).force 
-    ? fs.rimraf(path.join(PATH.packages, _.pkgName))
+  : ($: Deps) => void
+  = ($) => ($).force 
+    ? fs.rimraf(path.join(PATH.packages, $.pkgName))
     : void 0
-
-interface Deps {
-  tsconfig: TsConfig
-  pkgName: string
-  description?: string
-  localDeps?: readonly string[]
-  env?: WorkspaceEnv
-  force?: boolean
-  debug?: boolean
-  private?: boolean
-  dryRun?: boolean
-}
-
-interface Effect {
-  create: (deps: Required<Deps>) => void,
-  cleanup: (deps: Required<Deps>) => void,
-}
 
 const defineEffect 
   : (create: Effect["create"], cleanup: Effect["cleanup"]) => Effect
@@ -197,8 +198,8 @@ const filterBaseRefs = ($: Deps) => ([path]: [string, any]) =>
 namespace make {
   export const _ref = (dep: string) => ({ path: `../${dep}` } as const)
   export const _dep = (dep: string) => ([`@traversable/${dep}`, "workspace:^" ] as const)
-  export const refs = ($: Deps) => ([...$.localDeps ?? []]).sort(order.lexicographically).map(make._ref)
-  export const deps = ($: Deps) => ([...$.localDeps ?? []]).sort(order.lexicographically).map(make._dep)
+  export const refs = ($: Deps) => ([...$.localDeps ?? []]).sort(order.lexico).map(make._ref)
+  export const deps = ($: Deps) => ([...$.localDeps ?? []]).sort(order.lexico).map(make._dep)
 }
 
 namespace write {

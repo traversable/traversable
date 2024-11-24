@@ -1,19 +1,7 @@
 #!/usr/bin/env pnpm dlx tsx
-import * as path from "node:path"
 import * as fs from "./fs.js"
 import { Print, Transform } from "./util.js"
-import { PACKAGES } from "./metadata.js"
-import { pipe } from "effect"
-
-const ABSOLUTE_PATH = {
-  RepoMetadata: path.join(path.resolve(), "__generated__"),
-  RepoPackages: path.join(path.resolve(), "__generated__", "package-list.ts"),
-}
-
-const RELATIVE_PATH = {
-  PackageFile: "src/__generated__/__manifest__.ts",
-  PackageJson: "package.json",
-} as const
+import { PACKAGES, PATH, RELATIVE_PATH } from "./constants.js"
 
 const serialize = (packages: readonly string[]) => {
   return [
@@ -32,21 +20,26 @@ const writingMetadataLog = (s: string, t: string) => Print(
   }`
 )
 
+function bump(): void {
+  void Print.task(`[bin/bump.ts] Writing workspace metadata...`)
+  void Print.task(`[bin/bump.ts] Writing changelogs to '${PATH.generated_package_list}'`)
+  void fs.mkdir(PATH.generated)
+  void fs.writeFileSync(PATH.generated_package_list, serialize(PACKAGES))
+  void PACKAGES
+    .sort()
+    .map((pkg): [string, string] => [
+      `${pkg}/${RELATIVE_PATH.package_json}`, 
+      `${pkg}/${RELATIVE_PATH.generated_package_json}`
+    ])
+    .map(([s, t]): [string, string] => (writingMetadataLog(s, t), [s, t]))
+    .map((xs) => Transform.toMetadata(xs))
+}
+
 /**
  * TODO:
  * - for each workspace, cache the most recent version number
  * - short-circuit if the version number hasn't changed since the previous run
  */
-function main(): void {
-  void Print.task(`[bin/bump.ts] Writing workspace metadata...`)
-  void Print.task(`[bin/bump.ts] Writing changelogs to '${ABSOLUTE_PATH.RepoPackages}'`)
-  void fs.mkdir(ABSOLUTE_PATH.RepoMetadata)
-  void fs.writeFileSync(ABSOLUTE_PATH.RepoPackages, serialize(PACKAGES))
-  void PACKAGES
-    .sort()
-    .map((pkg): [string, string] => [`${pkg}/${RELATIVE_PATH.PackageJson}`, `${pkg}/${RELATIVE_PATH.PackageFile}`])
-    .map(([s, t]): [string, string] => (writingMetadataLog(s, t), [s, t]))
-    .map((xs) => Transform.toMetadata(xs))
-}
+const main = bump
 
 void main()

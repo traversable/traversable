@@ -1,13 +1,10 @@
 #!/usr/bin/env pnpm dlx tsx
-import { identity, pipe } from "effect"
+import { flow, identity, pipe } from "effect"
 import { $ } from "./process.js"
-
+import type { ShellCommand, ShellCommands } from "./types.js"
 import { Print } from "./util.js"
 
-type ShellCommand = readonly [name: string, $: () => void]
-type ShellCommands = readonly ShellCommand[]
-
-export const inputs = [
+export const stdins = [
   ["clean", "pnpm run clean"],
   ["install", "pnpm i"],
   ["check", "pnpm run check"],
@@ -18,7 +15,7 @@ export const inputs = [
   ["build_dist", "pnpm run build:dist"],
 ] as const satisfies [name: string, stdio: string][]
 
-const logCommand 
+const logExec 
   : (cmd: ShellCommand) => ShellCommand
   = ([name, run]: ShellCommand) => [
     name,
@@ -28,38 +25,46 @@ const logCommand
     )
   ]
 
-const timeCommand 
-  : (cmd: ShellCommand) => ShellCommand
-  = ([name, run]: ShellCommand) => [
-    name,
+const time
+  : (logName: string, run: () => void) => () => void
+  = (logName: string, run) => 
     () => (
-      void globalThis.console.time(Print.hush(name)),
-      // void globalThis.console.timeLog(Print.hush(name)),
+      void globalThis.console.time(Print.hush(logName)),
       void run(),
-      void globalThis.console.timeLog(Print.hush(name)),
-      void globalThis.console.timeEnd(Print.hush(name))
+      void globalThis.console.timeLog(Print.hush(logName)),
+      void globalThis.console.timeEnd(Print.hush(logName))
     )
-  ]
 
-const withLogging 
-  : (cmds: ShellCommands) => ShellCommands
-  = (cmds) => cmds.map(logCommand)
+const timeCmd 
+  : (cmd: ShellCommand) => ShellCommand
+  = ([name, run]) => [name, time(name, run)]
 
-const withTiming
+const withLog
   : (cmds: ShellCommands) => ShellCommands
-  = (cmds) => cmds.map(timeCommand)
+  = (cmds) => cmds.map(logExec)
+
+const withTime
+  : (cmds: ShellCommands) => ShellCommands
+  = (cmds) => cmds.map(timeCmd)
   
-const commands = inputs.map(
-  ([name, stdio]) => [name, () => $(stdio)]
+const commands = stdins.map(
+  ([name, stdin]) => [name, () => $(stdin)]
 ) satisfies ShellCommands
 
-function main(commands: ShellCommands, logExecutionTime: boolean = true): void {
-  return pipe(
+function reboot(commands: ShellCommands): void {
+  return void pipe(
     commands,
-    withLogging,
-    logExecutionTime ? withTiming : identity,
-    (cmds) => cmds.forEach(([, run]) => run()),
+    withLog,
+    withTime,
+    (cmds) => cmds.map(
+      flow(
+        ([, run]) => run,
+        (run) => run()
+      )
+    ),
   )
 }
+
+const main = reboot
 
 void main(commands)

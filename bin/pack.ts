@@ -4,44 +4,13 @@ import * as array from "effect/Array"
 import * as Effect from "effect/Effect"
 import * as Order from "effect/Order"
 import * as object from "effect/Record"
-import { flow, pipe, Schema as S } from "effect"
+import { pipe, Schema as S } from "effect"
 
 import * as fs from "./fs.js"
-import { localTime, Print, tap } from "./util.js"
-import { PACKAGES } from "./metadata.js"
+import { Print, run } from "./util.js"
+import { PACKAGES, RELATIVE_PATH } from "./constants.js"
 import { PackageJson } from "./schema.js"
-
-interface IO { (): void }
-const PATH = {
-  dist: "dist",
-  build: "build",
-  src: "src",
-  readme: "README.md",
-  packageJson: "package.json",
-  build_cjs: "build/cjs",
-  build_dts: "build/dts",
-  build_esm: "build/esm",
-  build_cjs_index: "build/cjs/index.js",
-  build_esm_index: "build/esm/index.js",
-  dist_cjs: "dist/cjs",
-  dist_dts: "dist/dts",
-  dist_esm: "dist/esm",
-  dist_src: "dist/src",
-  dist_readme: "dist/README.md",
-  dist_packageJson: "dist/package.json",
-  dist_cjs_index: "dist/cjs/index.js",
-  dist_esm_index: "dist/esm/index.js",
-  dist_dts_index: "dist/dts/index.d.ts",
-  proxy_cjs: "dist/dist/cjs",
-  proxy_dts: "dist/dist/dts",
-  proxy_esm: "dist/dist/esm",
-  proxy_esm_packageJson: "dist/dist/esm/package.json",
-  ignoreGlobs: [
-    "**/_internal/**",
-    "**/__generated__/**",
-    "**/index.ts",
-  ],
-} as const
+import type { SideEffect as IO } from "./types.js"
 
 function make(pkgName: string) {
   const ws = path.resolve(pkgName)
@@ -80,7 +49,7 @@ const getModules = (pkgName: string) => {
         // cwd: `${ws}/src`,
         ignore: [
           ...exclude.map(_ => `${ws}/${_}`),
-          ...PATH.ignoreGlobs.map((ignore) => `${ws}/${ignore}`),
+          ...RELATIVE_PATH.ignoreGlobs.map((ignore) => `${ws}/${ignore}`),
         ],
       }
     ),
@@ -184,8 +153,9 @@ export const workspaceTasks
     fs.writeString(`${ws}/dist/package.json`),
   )
 
-  const remakeDist = (): void => void fs.rmAndMkdir(`${ws}/dist`)
-  const copyReadme = (): void => void fs.copy(`${ws}/README.md`, `${ws}/dist/README.md`)
+  const remakeDist: IO = () => void fs.rmAndMkdir(`${ws}/dist`)
+  const copyReadme: IO = () => void fs.copy(`${ws}/README.md`, `${ws}/dist/README.md`)
+
   const copyEsm = (): void => void (
     ctx.hasEsm && (
       fs.rmAndCopy(`${ws}/build/esm`, `${ws}/dist/dist/esm`),
@@ -196,32 +166,41 @@ export const workspaceTasks
     )
   )
 
-  const copyCjs: IO = () => void (ctx.hasCjs && fs.rmAndCopy(`${ws}/build/cjs`, `${ws}/dist/dist/cjs`))
-  const copyDts: IO = (): void => void (ctx.hasDts && fs.rmAndCopy(`${ws}/build/dts`, `${ws}/dist/dist/dts`))
-
-  const copySrc = () => ctx.hasSrc && void (
-    fs.copy(`${ws}/${PATH.src}`, `${ws}/${PATH.dist_src}`)
+  const copyCjs: IO = () => void (
+    ctx.hasCjs && fs.rmAndCopy(`${ws}/build/cjs`, `${ws}/dist/dist/cjs`)
   )
 
-  const tasks: IO[][] = 
-    [ [ remakeDist ]
-    , [ writePackageJson
-      , copyReadme
-      , copyEsm
-      , copyCjs
-      , copyDts
-      , copySrc
-      , createProxies
-      , ] 
-    ]
-  return () => tasks.forEach(ios => ios.forEach((io) => io()))
+  const copyDts: IO = () => void (
+    ctx.hasDts && fs.rmAndCopy(`${ws}/build/dts`, `${ws}/dist/dist/dts`)
+  )
+
+  const copySrc: IO = () => ctx.hasSrc && void (
+    fs.copy(`${ws}/${RELATIVE_PATH.src}`, `${ws}/${RELATIVE_PATH.dist_src}`)
+  )
+
+  const tasks: IO[][] = [ 
+    [remakeDist],
+    [
+      writePackageJson, 
+      copyReadme, 
+      copyEsm, 
+      copyCjs, 
+      copyDts, 
+      copySrc, 
+      createProxies, 
+    ] 
+  ]
+
+  return () => tasks.forEach(ios => ios.forEach(run))
 }
 
-
-function main(): void {
-  void Print.task(`[bin/build/pack]: Building \`dist\` folders`)
-  void Print()
-  void PACKAGES.forEach((pkg) => workspaceTasks(pkg)())
+function pack(): void {
+  return (
+    void Print.task(`[bin/build/pack]: Building \`dist\` folders`),
+    void PACKAGES.forEach((pkg) => workspaceTasks(pkg)())
+  )
 }
+
+const main = pack
 
 void main()
