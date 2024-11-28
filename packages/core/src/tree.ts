@@ -57,12 +57,12 @@ const isPrimitive = (u: unknown): u is null | undefined | boolean | number | str
  * - {@link has `tree.has`}
  * - {@link set `tree.set`} (as a transitive dependency)
  */
-function get_(x: {}, ks: [...keys.any]) {
-  let out: unknown = x
+function get_(x: unknown, ks: [...keys.any]) {
+  let out = x
   let k: key.any | undefined
   while ((k = ks.shift()) !== undefined) {
-    if (k === "") continue
     if (hasOwn(out, k)) void (out = out[k])
+    else if (k === "") continue
     else return symbol.not_found
   }
   return out
@@ -296,7 +296,7 @@ export function get<
 >(shape: T, ...keys: [K0]): undefined | T[K0]
 
 export function get<const T extends {}>(shape: T, ...keys: []): T
-export function get(shape: {}, ...keys: [...props.any]): unknown
+export function get<T>(shape: Inductive.index<T>, ...keys: [...props.any]): T | undefined
 /// impl.
 export function get(t: {}, ...k: [...props.any]) { return get_(t, k) }
 
@@ -378,19 +378,33 @@ export interface has<T extends {}> extends newtype<T> {}
  * the provided path. If provided, the target of the type-guard
  * will be applied at the target node of the tree.
  */
-export function has<KS extends props.any>(...path: [...KS]): (u: unknown) => u is has.path<KS>
-export function has<KS extends keys.any>(...path: [...KS]): (u: unknown) => u is has.path<KS>
-export function has<const KS extends props.any, V>(path: KS, guard: (u: unknown) => u is V): (u: unknown) => u is has.path<KS, V>
-export function has<const KS extends keys.any, V>(path: KS, guard: (u: unknown) => u is V): (u: unknown) => u is has.path<KS, V>
+
+function separatePath(ks: keys.any | [...keys.any, (u: any) => u is any]): 
+  [path: key.any[], check: (u: any) => u is any]
+function separatePath(_: keys.any | [...keys.any, (u: any) => u is any]) { 
+  return keys.is(_) 
+  ? [_, (_: any) => _ != null] 
+  : [_.slice(0, -1), _[_.length - 1]] 
+}
+
+export function has<KS extends keys.any>
+  (...params: [...KS]):
+  (u: unknown) => u is has.path<KS>
+
+export function has<const KS extends keys.any, T>
+  (...params: [...KS, (u: any) => u is T]):
+  (u: unknown) => u is has.path<KS, T>
+
+/// impl.
 export function has(
-  ...args:
-    | [path: keys.any, guard: (u: unknown) => u is typeof u]
-    | [...keys.any]
+  ...params:
+    | [...path: keys.any] 
+    | [...path: keys.any, guard: (u: any) => u is any]
 ) {
-  return (u: {}) => {
-    const guard = keys.is(args) ? ((_: any): _ is any => true) : args[1]
-    const got = get_(u, keys.is(args) ? args : args[0] as [...typeof args[0]])
-    return got !== symbol.not_found && guard(got)
+  return (u: unknown) => {
+    const [path, check] = separatePath(params)
+    const got = get_(u, path)
+    return got !== symbol.not_found && check(got)
   }
 }
 
@@ -486,7 +500,7 @@ export function set(
     while((k = path.shift()) !== undefined) {
       void (last = k)
       void (prev = cursor)
-      if (has([k], isComposite)(cursor))
+      if (has(k, isComposite)(cursor))
         void (cursor = cursor[k])
     }
     return <V>(next: V) => {
@@ -653,7 +667,7 @@ export namespace fromPaths {
    */
   export const isLeaf
     : <T>(u: unknown) => u is Leaf<T> 
-    = (u): u is never => has([symbol.leaf], (v): v is URI.leaf => v === URI.leaf)(u)
+    = (u): u is never => has(symbol.leaf, (v): v is URI.leaf => v === URI.leaf)(u)
 
   const pathsAllHaveNumericKeys
     : (pairs: readonly [keys.any, unknown][]) => pairs is readonly [readonly [number, ...props.any], unknown][]
@@ -1067,4 +1081,37 @@ export namespace flatten {
     */
    preserveReferences: true as boolean,
  } as const
+}
+
+/** 
+ * ## {@link tree `data.tree`}
+ * 
+ * A fun example of how you can use induction and get a completely
+ * different performance profile.
+ * 
+ * Since these are _constraints_, they flow _upwards_. This allows
+
+ * 
+ * re-use the work TypeScript already did to type-check our
+ * input
+ * 
+ * which flow from the leaf nodes
+ * upward, rather than 
+ * 
+ * 
+ * This namespace applies a bottom-up (or "inductive")
+ */
+declare namespace Inductive {
+  type numericIndex<T> =
+    | T
+    | { [x: number]: Inductive.numericIndex<T> }
+  type stringIndex<T> =
+    | T
+    | { [x: string]: Inductive.stringIndex<T> }
+  type matrices<T> =
+    | T
+    | readonly Inductive.matrices<T>[]
+  type index<T> =
+    | T
+    | { [x: keyof any]: Inductive.index<T> }
 }

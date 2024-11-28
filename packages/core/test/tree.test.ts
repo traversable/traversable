@@ -406,8 +406,11 @@ vi.describe("〖️🚑〗‹‹‹ @traversable/core/tree", () => {
 vi.describe("〖⛳️〗‹‹‹ ❲@traversable/core/tree❳", () => {
   test.prop([fc.needleInAHaystack()])(
     "〖⛳️〗‹ ❲tree.get❳", 
-    ([haystack, path]) => 
+    ([haystack, path]) => {
+  const axa = tree.get(haystack, ...path)
+   
       void vi.assert.isTrue(tree.get(haystack, ...path) === fc.needle)
+    }
   )
 
   test.prop([fc.needleInAHaystack()])(
@@ -494,6 +497,7 @@ vi.describe("〖⛳️〗‹‹‹ ❲@traversable/core/tree❳", () => {
 vi.describe("〖🧙〗‹‹‹ @traversable/core/tree", () => {
     vi.it("〖🧙〗‹ tree.get", () => {
       type input_01 = typeof input_01
+
       const input_01 = { 
         a: { 
           ...Math.random() > 0.5 &&
@@ -578,7 +582,7 @@ vi.describe("〖🧙〗‹‹‹ @traversable/core/tree", () => {
           }
         }
       >(tree.get(input_01, "a", "b"))
-  
+
       vi.assertType<
         undefined |
         { 
