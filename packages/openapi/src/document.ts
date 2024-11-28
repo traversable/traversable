@@ -328,15 +328,6 @@ export function arbitrary(_: arbitrary.Constraints = defaults): fc.Arbitrary<{}>
   })
 }
 
-interface JsonSchema {
-  type?: "null" | "boolean" | "number" | "string" | "array" | "object"
-  $ref?: `#/${string}`
-  [x: `x-${string}`]: any
-  // [x: string]: boolean
-  // hey: false
-  // ho: 2
-}
-
 type AppliedConstraints = { [K in keyof arbitrary.Constraints]-?: Required<arbitrary.Constraints[K]> }
 
 const applyConstraints 

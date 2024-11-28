@@ -163,8 +163,8 @@ const isNull: {
   (u: Schema.any | NullNode | openapi.$ref): u is NullNode
   (u: unknown): u is NullNode
 } = core.anyOf(
-  tree.has(["enum"], core.is.array(core.is.literally(null))),
-  tree.has(["type"], core.is.literally("null")),
+  tree.has("enum", core.is.array(core.is.literally(null))),
+  tree.has("type", core.is.literally("null")),
 ) as never
 
 console.log(isNull({ enum: []}))
@@ -180,7 +180,7 @@ function isConst(u: Schema.any): u is never {
   return Schema.is.scalar(u) && has.const(core.is.scalar)(u)
 }
 /** @internal */
-const hasConst = <T extends {}>(guard: (u: unknown) => u is T) => tree.has(["const"], guard)
+const hasConst = <T extends {}>(guard: (u: unknown) => u is T) => tree.has("const", guard)
 
 export declare namespace has {
   export { hasConst as const }
@@ -189,11 +189,11 @@ export namespace has {
   void (has.const = hasConst)
   ///
   export const items = tree.has("items")
-  export const itemsSetToFalse = tree.has(["items"], core.is.literally(false))
-  export const prefixItems = tree.has(["prefixItems"], core.is.array.any)
-  export const properties = tree.has(["properties"], core.is.object.any)
+  export const itemsSetToFalse = tree.has("items", core.is.literally(false))
+  export const prefixItems = tree.has("prefixItems", core.is.array.any)
+  export const properties = tree.has("properties", core.is.object.any)
   export const additionalProperties = tree.has(
-    ["additionalProperties"],
+    "additionalProperties",
     core.or(core.is.boolean, core.is.object.any),
   )
   export const atLeastOneProperty
@@ -207,12 +207,12 @@ export declare namespace isOpenApiSchema {
 
 function schemaSchema() {
   return core.anyOf(
-    tree.has(["$ref"], core.is.string),
-    tree.has(["allOf"], core.is.array.any),
-    tree.has(["anyOf"], core.is.array.any), // schemaSchemas()),
-    tree.has(["oneOf"], core.is.array.any),
+    tree.has("$ref", core.is.string),
+    tree.has("allOf", core.is.array.any),
+    tree.has("anyOf", core.is.array.any),
+    tree.has("oneOf", core.is.array.any),
     tree.has(
-      ["type"], core.anyOf(
+      "type", core.anyOf(
         core.is.literally("boolean"),
         core.is.literally("integer"),
         core.is.literally("number"),
@@ -225,7 +225,7 @@ function schemaSchema() {
 }
 
 declare namespace node {
-  type node_zzzany = 
+  type node_any = 
     | node.node_boolean
     | node.node_integer
     | node.node_number
@@ -233,39 +233,21 @@ declare namespace node {
     | node.node_object
     | node.node_array
 
-  interface node_null extends 
-    required<{ type: "null" }> 
-    { }
-  interface node_boolean extends 
-    required<{ type: "boolean" }> 
-    { }
-  interface node_string extends 
-    required<{ type: "string" }> 
-    { }
-  interface node_integer extends 
-    required<{ type: "integer" }> 
-    { }
-  interface node_number extends 
-    required<{ type: "number" }> 
-    { }
-  interface node_array extends 
-    required<{ type: "array" }> 
-    { }
-  interface node_object extends 
-    required<{ type: "object" }> 
-    { }
+  interface node_null extends required<{ type: "null" }> {}
+  interface node_boolean extends required<{ type: "boolean" }> {}
+  interface node_string extends required<{ type: "string" }> {}
+  interface node_integer extends required<{ type: "integer" }> {}
+  interface node_number extends required<{ type: "number" }> {}
+  interface node_array extends required<{ type: "array" }> {}
+  interface node_object extends required<{ type: "object" }> {}
 }
-
-function schemaSchemas() { return core.is.array(schemaSchema()) }
-
-declare const u: unknown
 
 const isSchemaRecord = core.is.record.of(isOpenApiSchema)
 
 const isObjectNode = core.is.object({
   type: core.is.literally("object"),
   properties: core.is.record.of(isOpenApiSchema),
-  additionalProperties: core.is.optional(core.is.literally("test"))
+  // additionalProperties: core.is.optional(core.is.literally("test"))
 })
 
 const isArrayNode = core.is.object({
@@ -295,14 +277,31 @@ const isStringNode = core.is.object({
 //   */
 // }
 
+const isAnySchema 
+  : (u: unknown) => u is Schema.any
+  = core.anyOf(
+    tree.has("$ref", core.is.string),
+    tree.has("allOf", core.is.array.any),
+    tree.has("anyOf", core.is.array.any),
+    tree.has("oneOf", core.is.array.any),
+    tree.has(
+      "type", core.anyOf(
+      core.is.literally("boolean"),
+      core.is.literally("integer"),
+      core.is.literally("number"),
+      core.is.literally("string"),
+      core.is.literally("object"),
+      core.is.literally("array"),
+    ))) as never
+
 export function isOpenApiSchema(u: unknown): u is Schema.any {
   return core.anyOf(
-    tree.has(["$ref"], core.is.string),
-    tree.has(["allOf"], core.is.array.any),
-    tree.has(["anyOf"], core.is.array.any),
-    tree.has(["oneOf"], core.is.array.any),
+    tree.has("$ref", core.is.string),
+    tree.has("allOf", core.is.array.any),
+    tree.has("anyOf", core.is.array.any),
+    tree.has("oneOf", core.is.array.any),
     tree.has(
-      ["type"], core.anyOf(
+      "type", core.anyOf(
         core.is.literally("boolean"),
         core.is.literally("integer"),
         core.is.literally("number"),
@@ -312,7 +311,6 @@ export function isOpenApiSchema(u: unknown): u is Schema.any {
       )
     ),
   )(u)
-  // core.or(tree.has(["type"], core.is.string), tree.has(["$ref"], core.is.string))(u)
 }
 
 export namespace isOpenApiSchema {
@@ -355,6 +353,12 @@ export namespace isOpenApiSchema {
     (u: unknown): u is Schema.ArrayNode
   } = (u: unknown): u is never => u !== null && typeof u === "object" && "type" in u && u.type === "array"
 
+  export type AnyArray = { type: "array", items: false, prefixItems?: never }
+  export const anyArray = (u: Schema.any | NullNode | openapi.$ref | AnyArray): u is AnyArray => 
+    tree.has("type", core.is.literally("array"))(u)
+    && tree.has("items", core.is.false)(u)
+    && !(tree.has("prefixItems")(u))
+
   export const tuple: {
     (u: Schema.any | NullNode | openapi.$ref): u is Schema.TupleNode
     (u: unknown): u is Schema.TupleNode
@@ -367,11 +371,11 @@ export namespace isOpenApiSchema {
   } = (u: unknown): u is Schema.ObjectNode =>
     u !== null && typeof u === "object" && "type" in u && u.type === "object"
 
-  export const oneOf = (u: unknown): u is Schema.OneOf => tree.has(["oneOf"], core.is.array.any)(u)
+  export const oneOf = (u: unknown): u is Schema.OneOf => tree.has("oneOf", core.is.array.any)(u)
 
-  export const anyOf = (u: unknown): u is Schema.AnyOf => tree.has(["anyOf"], core.is.array.any)(u)
+  export const anyOf = (u: unknown): u is Schema.AnyOf => tree.has("anyOf", core.is.array.any)(u)
 
-  export const allOf = (u: unknown): u is Schema.AllOf => tree.has(["allOf"], core.is.array.any)(u)
+  export const allOf = (u: unknown): u is Schema.AllOf => tree.has("allOf", core.is.array.any)(u)
 
   export const scalar: {
     (u: Schema.any | NullNode | openapi.$ref): u is Schema.Scalar
@@ -385,7 +389,7 @@ export namespace isOpenApiSchema {
   export const hasType = <T extends DataTypes[number] = DataTypes[number]>(
     u: unknown,
     type?: T,
-  ): u is { type: T } => tree.has(["type"], type ? core.is.literally(type) : includes_(DataTypes))(u)
+  ): u is { type: T } => tree.has("type", type ? core.is.literally(type) : includes_(DataTypes))(u)
 
   export const booleanLiteral = (
     u: Schema.any | NullNode | openapi.$ref,
@@ -987,7 +991,7 @@ export interface ArrayNode<T extends Schema.any = Schema.any> extends
   required<{
     type: "array"
     items: T
-    prefixItems?: never
+    prefixItems?: false
   }> { }
 
 /** ### {@link ArrayNode `openapi.ArrayNode`} */
@@ -1004,7 +1008,7 @@ export function ArrayNode(
   constraints: Schema.Constraints = Schema.defaults,
 ): {} {
   return fc.record({
-    type: fc.constant(lit("array")),
+    type: fc.constant("array"),
     items,
     ...Schema_base({ ...constraints, empty: [] }),
     maxItems: fc.nat(),
@@ -1012,6 +1016,32 @@ export function ArrayNode(
     uniqueItems: fc.boolean(), // default: false
   }, { requiredKeys: ["type", "items"] })
 }
+
+export interface RecordNode<T extends Schema.any = Schema.any> extends 
+  optional<Schema_Base<globalThis.Record<string, T>>>,
+  required<{ additionalProperties: T }> { }
+
+export function RecordNode<T extends Schema.any = Schema.any>(
+  additionalProperties: fc.Arbitrary<T>,
+  constraints?: Schema.Constraints,
+): fc.Arbitrary<RecordNode<T>>
+
+export function RecordNode<T extends Schema.any = Schema.any>(
+  additionalProperties: fc.Arbitrary<T>,
+  constraints: Schema.Constraints = Schema.defaults,
+): {} {
+  return fc.record({
+    type: fc.constant("object"),
+    additionalProperties,
+    ...Schema_base({ 
+      empty: {}, 
+      arbitrary: additionalProperties,
+      ...constraints, 
+    }),
+  }, { requiredKeys: ["type", "additionalProperties"] })
+}
+
+
 
 interface ObjectNode_Shape { discriminator: Arbitrary.infer<typeof Discriminator> }
 
@@ -1022,7 +1052,7 @@ interface ObjectNode<T extends { [x: string]: unknown } = { [x: string]: Schema.
     type: "object"
     properties: T
     // additionalProperties?: boolean | Ref.typedef | U
-    required: readonly ({} extends T ? unknown : keyof T & (string | number))[]
+    required: readonly string[] // readonly ({} extends T ? unknown : keyof T & (string | number))[]
   }> { }
 
 /** ### {@link ObjectNode `openapi.ObjectNode`} */

@@ -269,7 +269,7 @@ export declare namespace openapi {
   }
   interface paths extends inline<{ [path: string]: openapi.pathitem }> {}
   interface $ref<T extends string = string> {
-    $ref?: T
+    $ref: T
   }
   interface pathitem extends pathitem.meta, pathitem.verbs {}
 
