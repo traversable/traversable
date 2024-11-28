@@ -1,7 +1,4 @@
-export {
-  symbol_ as symbol,
-  URI,
-}
+export { symbol_ as symbol, URI }
 
 const ns = "@traversable/registry/URI" as const
 
@@ -40,7 +37,7 @@ const symbol_object = Symbol.for(URI_object)
 type symbol_object = typeof symbol_object
 
 declare namespace URI {
-  export { 
+  export {
     URI_null as null,
     URI_undefined as undefined,
     URI_boolean as boolean,
@@ -125,7 +122,7 @@ void (URI.string = URI_string)
 void (URI.object = URI_object)
 
 declare namespace symbol_ {
-  export { 
+  export {
     symbol_null as null,
     symbol_undefined as undefined,
     symbol_boolean as boolean,
