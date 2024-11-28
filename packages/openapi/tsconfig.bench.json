@@ -8,7 +8,11 @@
 	},
 	"references": [
 		{ "path": "tsconfig.src.json" },
-		{ "path": "../bench" }
+		{ "path": "../bench" },
+		{ "path": "../core" },
+		{ "path": "../data" },
+		{ "path": "../http" },
+		{ "path": "../registry" }
 	],
 	"include": ["bench"]
 }

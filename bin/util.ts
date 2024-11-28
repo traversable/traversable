@@ -338,6 +338,9 @@ export const topological
     return graph
   }
 
+// export const tap 
+//   : <T, U>(fn: (t: T) => U) => (t: T) => T
+//   = (fn) => (t) => (fn(t), t)
 export function tap<T>(msg?: string): (x: T) => T 
 export function tap<T>(msg?: string | void): (x: T) => T 
 export function tap<T>(msg?: string, toString?: (x: T) => string): (x: T) => T 
@@ -348,6 +351,81 @@ export function tap<T>(msg: string | void = "", toString: (x: T) => string = (x:
   )
 }
 
-// export const tap 
-//   : <T, U>(fn: (t: T) => U) => (t: T) => T
-//   = (fn) => (t) => (fn(t), t)
+export const toMilli 
+  : (nano: number) => number
+  = (n) => n / 1e6
+
+export const fromMilli 
+  : (milli: number) => number
+  = (m) => m * 1e6
+
+export const toSeconds
+  : (milli: number) => number
+  = (m) => m / 1e3
+
+export const fromSeconds
+  : (seconds: number) => number
+  = (s) => s * 1e3
+
+export const fromNumber
+  : (n: number) => bigint
+  = globalThis.BigInt
+ 
+export const toNumber
+  : (n: bigint) => number
+  = globalThis.Number
+
+/** 
+ * ## {@link Big `bin/Big`}
+ * 
+ * Represents the natural isomorphism between
+ * `number` and `bigint`.
+ */
+export const Big = {
+  toNumber,
+  fromNumber,
+}
+
+/** 
+ * ## {@link Nano `bin/Nano`}
+ * 
+ * Natural isomorphism between milliseconds <> nanoseconds
+ */
+export const Nano = {
+  toMilli,
+  fromMilli,
+}
+
+/** 
+ * ## {@link Milli `bin/Milli`}
+ * 
+ * Natural isomorphism between milliseconds <> seconds
+ */
+export const Milli = {
+  toSeconds,
+  fromSeconds,
+}
+
+/** 
+ * ## {@link Fix `bin/Fix`}
+ * 
+ * Adjunction between floating point numbers and
+ * their fixpoint, given a number of fractional digits.
+ */
+export const Fix = {
+  toFixed: (digits: number) => (float: number): string => float.toFixed(digits),
+  fromFixed: (fixed: string): number => globalThis.Number.parseFloat(fixed),
+}
+
+/** 
+ * ## {@link diff `bin/diff`}
+ * 
+ * Converts a bigint to a human-readable format. Useful when used
+ * with, for example, {@link process.hrtime.bigint `process.hrtime.bigint`}.
+ */
+export const diff = flow(
+  Big.toNumber,
+  Nano.toMilli,
+  Milli.toSeconds,
+  Fix.toFixed(3),
+)

@@ -93,6 +93,9 @@ importers:
 
   packages/bench:
     dependencies:
+      '@traversable/registry':
+        specifier: workspace:^
+        version: link:../registry/dist
       any-ts:
         specifier: 0.48.1
         version: 0.48.1
@@ -100,6 +103,9 @@ importers:
 
   packages/core:
     dependencies:
+      '@traversable/registry':
+        specifier: workspace:^
+        version: link:../registry/dist
       any-ts:
         specifier: 0.48.1
         version: 0.48.1
@@ -127,6 +133,10 @@ importers:
     publishDirectory: dist
 
   packages/http:
+    dependencies:
+      '@traversable/registry':
+        specifier: workspace:^
+        version: link:../registry/dist
     devDependencies:
       '@traversable/core':
         specifier: workspace:^
@@ -147,6 +157,9 @@ importers:
       '@traversable/http':
         specifier: workspace:^
         version: link:../http/dist
+      '@traversable/registry':
+        specifier: workspace:^
+        version: link:../registry/dist
       any-ts:
         specifier: 0.48.1
         version: 0.48.1

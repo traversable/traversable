@@ -2,8 +2,7 @@ import type * as cp from "node:child_process"
 
 export interface SideEffect<T = void> { (): T }
 
-export type ShellCommand = readonly [name: string, $: () => void]
-export type ShellCommands = readonly ShellCommand[]
+export type ShellCommand = readonly [name: string, $: SideEffect]
 export type ShellOptions = Omit<cp.ExecSyncOptions, "stdio"> & {
 	env?: Record<string, string | undefined>
 }

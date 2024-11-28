@@ -1,8 +1,10 @@
 #!/usr/bin/env pnpm dlx tsx
 import { flow, identity, pipe } from "effect"
 import { $ } from "./process.js"
-import type { ShellCommand, ShellCommands } from "./types.js"
-import { Print } from "./util.js"
+import type { ShellCommand, SideEffect } from "./types.js"
+import { Print, diff } from "./util.js"
+
+type StdIn = [name: string, stdio: string]
 
 export const stdins = [
   ["clean", "pnpm run clean"],
@@ -13,58 +15,59 @@ export const stdins = [
   ["bench", "pnpm run bench"],
   ["build", "pnpm run build"],
   ["build_dist", "pnpm run build:dist"],
-] as const satisfies [name: string, stdio: string][]
+] as const satisfies StdIn[]
 
-const logExec 
-  : (cmd: ShellCommand) => ShellCommand
-  = ([name, run]: ShellCommand) => [
-    name,
+const log
+  : (...cmd: ShellCommand) => SideEffect
+  = (...[name, run]: ShellCommand) => 
     () => (
       void Print.task(`${Print.hush("Running")} ${Print.with.bold(name)}`), 
       void run()
     )
-  ]
 
-const time
-  : (logName: string, run: () => void) => () => void
-  = (logName: string, run) => 
+const report
+  : (...cmd: ShellCommand) => SideEffect
+  = (...[name, run]) => 
     () => (
-      void globalThis.console.time(Print.hush(logName)),
+      void globalThis.console.time(Print.hush(name)),
       void run(),
-      void globalThis.console.timeLog(Print.hush(logName)),
-      void globalThis.console.timeEnd(Print.hush(logName))
+      void globalThis.console.timeLog(Print.hush(name)),
+      void globalThis.console.timeEnd(Print.hush(name))
     )
 
-const timeCmd 
+const time 
+  : (name: string) => (run: SideEffect) => SideEffect
+  = (name) => (run) => () => {
+    const START = process.hrtime.bigint()
+    run()
+    const END = process.hrtime.bigint()
+    return (
+      void Print(Print.hush(`${name}: `) + `${diff(END - START)}s`)
+    )
+  }
+
+const withLogging
   : (cmd: ShellCommand) => ShellCommand
-  = ([name, run]) => [name, time(name, run)]
+  = ([name, run]) => [name, log(name, run)]
 
-const withLog
-  : (cmds: ShellCommands) => ShellCommands
-  = (cmds) => cmds.map(logExec)
-
-const withTime
-  : (cmds: ShellCommands) => ShellCommands
-  = (cmds) => cmds.map(timeCmd)
+const sequence
+  : (sequenceName: string) => (cmds: ShellCommand[]) => SideEffect
+  = (sequenceName) => (cmds) => {
+    return time(sequenceName)(
+      () => cmds.forEach(([name, run]) => void time(name)(run)())
+    )
+  }
   
-const commands = stdins.map(
-  ([name, stdin]) => [name, () => $(stdin)]
-) satisfies ShellCommands
-
-function reboot(commands: ShellCommands): void {
-  return void pipe(
-    commands,
-    withLog,
-    withTime,
-    (cmds) => cmds.map(
-      flow(
-        ([, run]) => run,
-        (run) => run()
-      )
-    ),
+function reboot(stdins: StdIn[]): SideEffect {
+  return () => void pipe(
+    stdins.map(([k, stdin]) => [k, () => $(stdin)] satisfies ShellCommand),
+    (cmds) => cmds.map(withLogging),
+    sequence("reboot"),
+    (run) => run(),
+    () => console.log(""),
   )
 }
 
-const main = reboot
+const main = reboot(stdins)
 
-void main(commands)
+void main()

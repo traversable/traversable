@@ -14,25 +14,24 @@ const OPTIONS = {
 }
 
 function circular(): void {
-  return void madge(
-    glob.globSync(GLOB.all_packages_src),
-    OPTIONS,
-  ).then((res) => {
-    const circular = res.circular()
-    if (circular.length) {
-      Print()
-      Print(Print.invert(`[❕️] Critical `))
-      Print()
-      Print(Print.strong(`Circular dependencies detected (${circular.flat(1).length}) \n${EMOJI.WOW}\n`))
-      Print()
-      Print(circular.map((xs) => xs.map((x) => `packages/${x}`)))
-      Print()
-      Print(`Please fix them and re-build from scratch by running ` + Print.strong(`pnpm reboot`) + `.`)
-      Print()
+  return void madge(glob.globSync(GLOB.all_packages_src), OPTIONS)
+  .then((res) => res.circular())
+  .then((circular) => circular.length === 0 
+    ? Print(`No circular dependencies found ${EMOJI.FACTS}`) 
+    : (
+      Print(),
+      Print(Print.invert(`[❕️] Critical `)),
+      Print(),
+      Print(Print.strong(`Circular dependencies detected (${circular.flat(1).length}) \n${EMOJI.WOW}\n`)),
+      Print(),
+      Print(circular.map((xs) => xs.map((x) => `packages/${x}`))),
+      Print(),
+      Print(`Please fix them and re-build from scratch by running ` + Print.strong(`pnpm reboot`) + `.`),
+      Print(),
       process.exit(1)
-    }
-    else { globalThis.console.log(`No circular dependencies found ${EMOJI.FACTS}`) }
-  }).catch(globalThis.console.error)
+    ) 
+  )
+  .catch(globalThis.console.error)
 }
 
 const main = circular

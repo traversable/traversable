@@ -11,7 +11,8 @@
 		{ "path": "tsconfig.src.json" },
 		{ "path": "../data" },
 		{ "path": "../http" },
-		{ "path": "../core" }
+		{ "path": "../core" },
+		{ "path": "../registry" }
 	],
 	"include": ["test"]
 }

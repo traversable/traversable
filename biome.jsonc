@@ -65,6 +65,7 @@
         "noCommaOperator": "off",
         "useExportType": "off",
         "useShorthandFunctionType": "off",
+        "useImportType": "info",
         "useSingleVarDeclarator": "off"
       }
     }

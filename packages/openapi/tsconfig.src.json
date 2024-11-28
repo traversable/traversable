@@ -8,8 +8,9 @@
 	},
 	"references": [
     { "path": "../core" },
-    { "path": "../http" },
-    { "path": "../data" }
+		{ "path": "../data" }, 
+		{ "path": "../http" }, 
+		{ "path": "../registry" }
   ],
 	"include": ["src"]
 }

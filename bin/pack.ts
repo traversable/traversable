@@ -8,7 +8,7 @@ import { pipe, Schema as S } from "effect"
 
 import * as fs from "./fs.js"
 import { Print, run } from "./util.js"
-import { PACKAGES, RELATIVE_PATH } from "./constants.js"
+import { PACKAGES, RELATIVE_PATH, SCOPE } from "./constants.js"
 import { PackageJson } from "./schema.js"
 import type { SideEffect as IO } from "./types.js"
 
@@ -39,8 +39,8 @@ const getModules = (pkgName: string) => {
   const ctx = make(pkgName)
   return () => pipe(
     {
-      include: ctx.packageJson["@traversable"]?.generateExports?.include ?? [],
-      exclude: ctx.packageJson["@traversable"]?.generateExports?.exclude ?? [],
+      include: ctx.packageJson[SCOPE]?.generateExports?.include ?? [],
+      exclude: ctx.packageJson[SCOPE]?.generateExports?.exclude ?? [],
     },
     ({ include, exclude }) => fs.glob(
       include.map((_) => `${ws}/src/${_}`),
@@ -121,7 +121,7 @@ export const workspaceTasks
             "*": object.fromEntries(
               modules
                 .map(extractModuleName)
-                .map(_ => [_, [`./dist/dts/${_}.d.ts`]]),
+                .map((_) => [_, [`./dist/dts/${_}.d.ts`]]),
             )
           }
         )

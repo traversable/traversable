@@ -8,8 +8,9 @@
 		"stripInternal": true
 	},
 	"references": [
+    { "path": "../core" },
 		{ "path": "../data" }, 
 		{ "path": "../http" }, 
-    { "path": "../core" }
+		{ "path": "../registry" }
 	]
 }

@@ -25,11 +25,8 @@ export const shell
   : (cmd: string, options?: ShellOptions) => string
   = (cmd, { env, ...rest } = {}) => cp.execSync(
     cmd, { 
-      env: { 
-        ...process.env, 
-        ...env 
-      },
+      env: { ...process.env, ...env },
       ...rest, 
       stdio: "pipe" 
     }
-  )!.toString()
+  ).toString("utf8")

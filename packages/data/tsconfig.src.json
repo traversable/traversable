@@ -6,5 +6,8 @@
 		"types": ["node"],
 		"outDir": "build/src"
 	},
-	"include": ["src"]
+	"include": ["src"],
+	"references": [
+    { "path": "../registry" }
+  ],
 }

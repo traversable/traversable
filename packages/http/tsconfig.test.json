@@ -8,8 +8,9 @@
   },
   "references": [
     { "path": "tsconfig.src.json" }, 
-    { "path": "../core" }, 
-    { "path": "../data" }
+    { "path": "../core" },
+    { "path": "../data" },
+    { "path": "../registry" }
   ],
   "include": ["test"]
 }
