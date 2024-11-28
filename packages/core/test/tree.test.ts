@@ -4,6 +4,7 @@ import { Property, fc, test, tree } from "@traversable/core"
 import type { props } from "@traversable/data"
 
 import fromPaths = tree.fromPaths
+import { URI, symbol } from "@traversable/registry"
 const { wrap } = fromPaths
 
 const head
@@ -28,8 +29,9 @@ const withIndex = <K, V>(xss: readonly [readonly K[], V][]): readonly [readonly 
  * The actual tests (the ones that give us the most confidence) 
  * are located in the `describe` block directly below this one.
  */
-vi.describe("〖🩹〗 @traversable/core/tree", () => {
-  vi.it("〖🩹〗 tree.set: applies the patch when both the source and target are composite types", () => {
+
+vi.describe("〖️🚑〗‹‹‹ @traversable/core/tree", () => {
+  vi.it("〖️🚑〗‹ ❲tree.set❳: applies the patch when both the source and target are composite types", () => {
     const patch = { X: { Y: { Z: 9000 }} }
     const ex_01 = tree.set
       ("a", "b", "c")
@@ -42,7 +44,7 @@ vi.describe("〖🩹〗 @traversable/core/tree", () => {
     )
   })
 
-  vi.it("〖🩹〗 tree.set: applies the patch when both the source and target are primitive types", () => {
+  vi.it("〖️🚑〗‹ ❲tree.set❳: applies the patch when both the source and target are primitive types", () => {
     const ex_01 = tree.set
       ("a", "b", "c")
       ({ a: { b: { c: 3 } } })
@@ -54,7 +56,7 @@ vi.describe("〖🩹〗 @traversable/core/tree", () => {
     )
   })
 
-  vi.it("〖🩹〗 tree.set: applies the patch when source is primitive and the target is composite", () => {
+  vi.it("〖️🚑〗‹ ❲tree.set❳: applies the patch when source is primitive and the target is composite", () => {
     const ex_01 = tree.set
       ("a", "b", "c")
       ({ a: { b: { c: 4 } } })
@@ -66,7 +68,7 @@ vi.describe("〖🩹〗 @traversable/core/tree", () => {
     )
   })
 
-  vi.it("〖🩹〗 applies the patch when source is composite and the target is primitive", () => {
+  vi.it("〖️🚑〗‹ ❲tree.set❳: applies the patch when source is composite and the target is primitive", () => {
     const ex_01 = tree.set
       ("a", "b", "c")
       ({ a: { b: { c: [1, 2, 3] } } })
@@ -78,12 +80,13 @@ vi.describe("〖🩹〗 @traversable/core/tree", () => {
     )
   })
 
-  vi.it("〖🩹〗 tree.set: mutates its argument", () => {
-    const input_01 = { "$": { "_": { "0": { "_": { "A": {} } } } } }
+  vi.it.only("〖️🚑〗‹ ❲tree.set❳: mutates its argument", () => {
+    const input_01 = { "$": { "_": { 0: { "_": { "A": {} } } } } }
     void tree.set
       ("$", "_", 0, "_", "A")
       (input_01)
       ([])
+
     void vi.assert.deepEqual(
       // TODO: fix tree.set's types so you can remove these type assertions
       tree.get(input_01 as never, "$", "_", 0, "_", "A"),
@@ -91,7 +94,7 @@ vi.describe("〖🩹〗 @traversable/core/tree", () => {
     )
   })
 
-  vi.it("〖🩹〗 tree.toPaths", () => {
+  vi.it("〖️🚑〗‹ ❲tree.toPaths❳", () => {
     void vi.assert.deepEqual(tree.toPaths("hey"), [[[], "hey"]])
     void vi.assert.deepEqual(tree.toPaths(null), [[[], null]])
     void vi.assert.deepEqual(tree.toPaths([1]), [[[0], 1]])
@@ -120,7 +123,7 @@ vi.describe("〖🩹〗 @traversable/core/tree", () => {
     )
   })
 
-  vi.it("〖🩹〗 tree.fromPaths", () => {
+  vi.it("〖️🚑〗‹ ❲tree.fromPaths❳", () => {
     const ex_01 = tree.fromPaths([
       [ [ "a", 0 ], "zero" ],
       [ [ "a", 1 ], "one" ],
@@ -158,7 +161,7 @@ vi.describe("〖🩹〗 @traversable/core/tree", () => {
     )
   })
 
-  vi.it("〖🩹〗 tree.fromPaths.ensureContiguous", () => {
+  vi.it("〖️🚑〗‹ ❲tree.fromPaths.ensureContiguous❳", () => {
     void vi.assert.isTrue(
       tree.fromPaths.isContiguous([
       [ [ 0, "c" ], 100 ],
@@ -206,7 +209,7 @@ vi.describe("〖🩹〗 @traversable/core/tree", () => {
     ]))
   })
 
-  vi.it("〖🩹〗 tree.fromPaths.group", () => {
+  vi.it("〖️🚑〗‹ ❲tree.fromPaths.group❳", () => {
     void vi.assert.deepEqual(
       tree.fromPaths.group([
         [ [ "a", 0 ], wrap(null) ],
@@ -251,7 +254,7 @@ vi.describe("〖🩹〗 @traversable/core/tree", () => {
     )
   })
 
-  vi.it("〖🩹〗 tree.fromPaths.isGroupedArray", () => {
+  vi.it("〖️🚑〗‹ ❲tree.fromPaths.isGroupedArray❳", () => {
     void vi.assert.isTrue(
       tree.fromPaths.isGroupedArray([
         [ [ 0 ], wrap([ 400, 4_000, 40_000 ]) ],
@@ -273,7 +276,7 @@ vi.describe("〖🩹〗 @traversable/core/tree", () => {
     )
   })
 
-  vi.it("〖🩹〗 tree.fromPaths.markAll", () => {
+  vi.it("〖️🚑〗‹ ❲tree.fromPaths.markAll❳", () => {
     void vi.assert.deepEqual(
       tree.fromPaths.markAll([
         [ [ "a", 0 ], null ],
@@ -307,6 +310,49 @@ vi.describe("〖🩹〗 @traversable/core/tree", () => {
       ]
     )
   })
+
+  vi.it(`〖️🚑〗‹ ❲tree.flatten❳ typical use`, () => {
+    vi.assert.equal(tree.flatten(1), 1)
+    vi.assert.deepEqual(
+      tree.flatten({ a: 1, b: [2] }),
+      { a: 1, "b.0": 2 },
+    )
+    vi.assert.deepEqual(
+      tree.flatten([{ a: 1, b: [2] }, 3]),
+      { "0.a": 1, "0.b.0": 2, 1: 3 },
+    )
+  })
+
+  vi.it(`〖️🚑〗‹ ❲tree.flatten❳: pathological cases`, () => {
+    const ex_01 = { a: { b: void 0 as never as { d: 2, e: { f: unknown } } }, c: 1 as const }
+    const ex_02 = { d: 2 as const, e: { f: void 0 as never as { a: { b: unknown }, c: 1 } } }
+    void (ex_01.a.b = ex_02)
+    void (ex_02.e.f = ex_01)
+
+    vi.assert.deepEqual(
+      tree.flatten({ abc: ex_01 }), 
+      {
+        ["abc.a.b.d"]: 2,
+        ["abc.a.b.e.f"]: `[Circular *[Symbol(${URI.ref})[1]]`,
+        ["abc.c"]: 1,
+        [symbol.ref]: { [1]: [ "abc" ] }
+      }
+    )
+
+    vi.assert.deepEqual(
+      tree.flatten({ LEFT: ex_01, RIGHT: ex_02 }), {
+        ["LEFT.a.b.d"]: 2,
+        ["LEFT.a.b.e.f"]: `[Circular *[Symbol(${URI.ref})[1]]`,
+        ["LEFT.c"]: 1,
+        ["RIGHT"]: `[Circular *[Symbol(${URI.ref})[2]]`,
+        [symbol.ref]: { 
+          [1]: ["LEFT"], 
+          [2]: ["LEFT", "a", "b"],
+        }
+      }
+    )
+  })
+
 })
 
 /** 
@@ -334,21 +380,38 @@ vi.describe("〖🩹〗 @traversable/core/tree", () => {
  * one might be the most useful. Because of it, I write programs that 
  * are more testable.
  * 
- * Plus, humans are terrible at thinking of corner cases. And believe me,
- * *fast-check will find them*.
+ * Plus besides, humans are terrible at thinking of corner cases. And
+ * that's okay -- we can let the computer do that part.
  * 
- * A lot of them. Like, _way more_ than you'd think.
+ * But just because we haven't thought of the corner cases, doesn't mean
+ * that they don't exist.
+ * 
+ * If I've learned anything from using fast-check, it's that I now have
+ * a choice at all times. I can either:
+ * 
+ * 1. iterate a few extra times now, and get rid of my program's bugs 
+ * 2. write a test that identifies my program's bugs, and create a ticket
+ *    to knock them out later
+ * 
+ * It really just depends on my current workload / state of mind.
+ * 
+ * Sometimes I choose #1, and then spend the next year fixing those bugs
+ * slowly, one at a time, the hard way, after the bug has broken somebody's
+ * workflow. 
+ * 
+ * Usually I end up regretting doing #1, but there have been cases 
+ * where something truly was more important. Perfect being the enemy of 
+ * good, sorta deal.
  */
-
-vi.describe("〖🧪〗 @traversable/core/tree", () => {
+vi.describe("〖⛳️〗‹‹‹ ❲@traversable/core/tree❳", () => {
   test.prop([fc.needleInAHaystack()])(
-    "〖🧪〗 tree.get", 
+    "〖⛳️〗‹ ❲tree.get❳", 
     ([haystack, path]) => 
       void vi.assert.isTrue(tree.get(haystack, ...path) === fc.needle)
   )
 
   test.prop([fc.needleInAHaystack()])(
-    "〖🧪〗 tree.has", 
+    "〖⛳️〗‹ ❲tree.has❳", 
     ([haystack, path]) => (
       void vi.assert.isTrue(tree.has(...path as [])(haystack)),
       /** 
@@ -363,7 +426,7 @@ vi.describe("〖🧪〗 @traversable/core/tree", () => {
     fc.needleInAHaystack(),
     fc.dictionary(fc.identifier(), fc.jsonValue()),
   ])(
-    "〖🧪〗 tree.set", 
+    "〖⛳️〗‹ ❲tree.set❳", 
     ([haystack, path], patch) => {
       // TODO: fix tree.set's types so you can remove these type assertions
       const modified: {} = tree.set(...path as [])(haystack)(patch) as never
@@ -373,6 +436,22 @@ vi.describe("〖🧪〗 @traversable/core/tree", () => {
       )
     }
   )
+
+  vi.it("〖⛳️〗‹ ❲tree.toPaths❳", () =>
+    fc.assert(
+      fc.property(
+        fc.dictionary(fc.identifier(), fc.jsonValue()),
+        (json) => tree.toPaths(json)
+          .forEach(([path]) => void vi.assert.isTrue(tree.has(...path)(json)))
+      ),
+    )
+  )
+
+  /** 
+   * TODO: figure out how to make this roundtrip
+   */
+  vi.it.todo("〖️🌍〗‹ ❲tree.toPaths::tree.fromPaths❳", () => {
+  })
 
   const constraints = { 
     selector: head, 
@@ -405,21 +484,6 @@ vi.describe("〖🧪〗 @traversable/core/tree", () => {
     from: toPaths,
   })()
 
-  vi.it("〖🧪〗 tree.toPaths", () =>
-    fc.assert(
-      fc.property(
-        fc.dictionary(fc.identifier(), fc.jsonValue()),
-        (json) => tree.toPaths(json)
-          .forEach(([path]) => void vi.assert.isTrue(tree.has(...path)(json)))
-      ),
-    )
-  )
-
-  /** 
-   * TODO: figure out how to make this roundtrip
-   */
-  vi.it.todo("〖🧪〗 tree.toPaths <-> tree.fromPaths", () => {
-  })
 })
 
 /** 
@@ -427,8 +491,8 @@ vi.describe("〖🧪〗 @traversable/core/tree", () => {
  *    TYPE-LEVEL TESTS
  * ======================
  */
-vi.describe("〖🧙〗 @traversable/core/tree", () => {
-    vi.it("〖🧙〗 tree.get", () => {
+vi.describe("〖🧙〗‹‹‹ @traversable/core/tree", () => {
+    vi.it("〖🧙〗‹ tree.get", () => {
       type input_01 = typeof input_01
       const input_01 = { 
         a: { 

@@ -3,11 +3,9 @@ import * as vi from "vitest"
 import { Property, core, fc, test } from "@traversable/core"
 
 const stripTargetChars = (component: string) => component.replace(/[~\/01]/g, "")
-
 const unescapedChar = fc.constantFrom("/", "~")
 const escapedChar = fc.constantFrom("~1", "~0")
 const noEscapableChars = fc.alphanumeric().filter((x) => !x.includes("~") && !x.includes("/"))
-
 const unescapedTokens = fc.tuple(
   fc.array(fc.alphanumeric()).map((xs) => xs.join("/")),
   fc.array(unescapedChar),
@@ -79,22 +77,23 @@ const pointer = fc.array(noEscapableChars).map((xs) => "/" + xs.join("/"))
  * the test suite that gives us the most confidence is the one
  * directly below this `describe` block.
  */
-vi.describe("@traversable/core/json-pointer [examples]", () => {
-  void test("JsonPointer.escape examples", () => {
+
+vi.describe("〖️🚑〗‹‹‹ ❲@traversable/core/json-pointer❳", () => {
+  void vi.it("〖🚑〗‹ ❲JsonPointer.escape❳", () => {
     vi.assert.equal(core.JsonPointer.escape(""), "")
     vi.assert.equal(core.JsonPointer.escape("foo"), "foo")
     vi.assert.equal(core.JsonPointer.escape("foo~/"), "foo~0~1")
     vi.assert.equal(core.JsonPointer.escape("fo/o"), "fo~1o")
     vi.assert.equal(core.JsonPointer.escape("fo~o"), "fo~0o")
   })
-  void test("JsonPointer.unescape examples", () => {
+  void vi.it("〖🚑〗‹ ❲JsonPointer.unescape❳", () => {
     vi.assert.equal(core.JsonPointer.unescape(""), "")
     vi.assert.equal(core.JsonPointer.unescape("foo"), "foo")
     vi.assert.equal(core.JsonPointer.unescape("foo~0~1"), "foo~/")
     vi.assert.equal(core.JsonPointer.unescape("fo~1o"), "fo/o")
     vi.assert.equal(core.JsonPointer.unescape("fo~0o"), "fo~o")
   })
-  void test("JsonPointer.toPath examples", () => {
+  void vi.it("〖🚑〗‹ ❲JsonPointer.toPath❳", () => {
     vi.assert.deepEqual(core.JsonPointer.toPath(""), [])
     vi.assert.deepEqual(core.JsonPointer.toPath("/"), [""])
     vi.assert.throws(() => core.JsonPointer.toPath("does not start with fwd slash"))
@@ -105,15 +104,15 @@ vi.describe("@traversable/core/json-pointer [examples]", () => {
 /** 
  * PROPERTY-BASED TEST SUITE
  */
-vi.describe("🧪 @traversable/core/json-pointer [properties]", () => {
-  void test.prop([unescaped])("〖🌿〗:: JsonPointer.escape", (_) => 
+vi.describe("〖⛳️〗‹‹‹ ❲@traversable/core/json-pointer❳", () => {
+  void test.prop([unescaped])("〖⛳️️〗‹ ❲JsonPointer.escape❳", (_) => 
     vi.assert.equal(
       stripTargetChars(_),
       stripTargetChars(core.JsonPointer.escape(_))
     )
   )
 
-  void test.prop([escaped])("〖🌿〗:: JsonPointer.unescape", (_) => 
+  void test.prop([escaped])("〖️⛳️〗‹ ❲JsonPointer.unescape❳", (_) => 
     vi.assert.deepEqual(
       stripTargetChars(core.JsonPointer.unescape(_)),
       stripTargetChars(_),

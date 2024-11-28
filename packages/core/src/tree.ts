@@ -1,10 +1,10 @@
 import type { inline, newtype, some } from "any-ts";
 
-import type { key, nonempty, prop, unicode } from "@traversable/data"
+import type { any, array, key, nonempty, prop, unicode } from "@traversable/data"
 import { fn, keys, map, object, props } from "@traversable/data"
 
+import { Invariant, URI, symbol } from "@traversable/registry";
 import type { JSON } from "./json.js"
-import { URI, symbol } from "./symbol.js"
 
 /** 
  * @internal 
@@ -15,9 +15,13 @@ const hasOwnProperty = globalThis.Object.prototype.hasOwnProperty
 /** @internal */
 const isComposite = object.isComposite
 /** @internal */
+const Object_values = globalThis.Object.values
+/** @internal */
 const Object_keys = globalThis.Object.keys
 /** @internal */
-const Object_values = globalThis.Object.values
+const nonNullable 
+  : <T>(u: T) => u is Exclude<T, null | undefined>
+  = (u): u is never => !u == null
 
 /** @internal */
 const Array_isArray 
@@ -41,7 +45,6 @@ const isPrimitive = (u: unknown): u is null | undefined | boolean | number | str
 
 /** 
  * @internal 
- * 
  * This is the runtime implementation for accessing a
  * deeply nested property. It is optimized for performance
  * (although, there's some juice we could still squeeze out
@@ -58,6 +61,7 @@ function get_(x: {}, ks: [...keys.any]) {
   let out: unknown = x
   let k: key.any | undefined
   while ((k = ks.shift()) !== undefined) {
+    if (k === "") continue
     if (hasOwn(out, k)) void (out = out[k])
     else return symbol.not_found
   }
@@ -98,94 +102,6 @@ export declare namespace get {
     : KS extends readonly [] ? T
     : unknown
 }
-
-type $1<T, A extends keyof T> = (T & {})[A]
-type $2<
-  T, 
-  A extends keyof T, 
-  B extends keyof (T[A] & {}),
-> = ((T & {})[A] & {})[B]
-type $3<
-  T, 
-  A extends keyof T, 
-  B extends keyof (T[A] & {}),
-  C extends keyof ((T[A] & {})[B] & {}),
-> = (((T & {})[A] & {})[B] & {})[C]
-type $4<
-  T, 
-  A extends keyof T, 
-  B extends keyof (T[A] & {}),
-  C extends keyof ((T[A] & {})[B] & {}),
-  D extends keyof (((T[A] & {})[B] & {})[C] & {}),
-> = ((((T & {})[A] & {})[B] & {})[C] & {})[D]
-type $5<
-  T,
-  A extends keyof T,
-  B extends keyof (T[A] & {}),
-  C extends keyof ((T[A] & {})[B] & {}),
-  D extends keyof (((T[A] & {})[B] & {})[C] & {}),
-  E extends keyof ((((T & {})[A] & {})[B] & {})[C] & {})[D]
-> = (((((T & {})[A] & {})[B] & {})[C] & {})[D] & {})[E]
-type $6<
-  T,
-  A extends keyof T,
-  B extends keyof (T[A] & {}),
-  C extends keyof ((T[A] & {})[B] & {}),
-  D extends keyof (((T[A] & {})[B] & {})[C] & {}),
-  E extends keyof ((((T & {})[A] & {})[B] & {})[C] & {})[D],
-  F extends keyof (((((T & {})[A] & {})[B] & {})[C] & {})[D] & {})[E],
-> = ((((((T & {})[A] & {})[B] & {})[C] & {})[D] & {})[E] & {})[F]
-type $7<
-  T,
-  A extends keyof T,
-  B extends keyof (T[A] & {}),
-  C extends keyof ((T[A] & {})[B] & {}),
-  D extends keyof (((T[A] & {})[B] & {})[C] & {}),
-  E extends keyof ((((T & {})[A] & {})[B] & {})[C] & {})[D],
-  F extends keyof (((((T & {})[A] & {})[B] & {})[C] & {})[D] & {})[E],
-  G extends keyof ((((((T & {})[A] & {})[B] & {})[C] & {})[D] & {})[E] & {})[F]
-> = (((((((T & {})[A] & {})[B] & {})[C] & {})[D] & {})[E] & {})[F] & {})[G]
-type $8<
-  T,
-  A extends keyof T,
-  B extends keyof (T[A] & {}),
-  C extends keyof ((T[A] & {})[B] & {}),
-  D extends keyof (((T[A] & {})[B] & {})[C] & {}),
-  E extends keyof ((((T & {})[A] & {})[B] & {})[C] & {})[D],
-  F extends keyof (((((T & {})[A] & {})[B] & {})[C] & {})[D] & {})[E],
-  G extends keyof ((((((T & {})[A] & {})[B] & {})[C] & {})[D] & {})[E] & {})[F],
-  H extends keyof (((((((T & {})[A] & {})[B] & {})[C] & {})[D] & {})[E] & {})[F] & {})[G]
-> = ((((((((T & {})[A] & {})[B] & {})[C] & {})[D] & {})[E] & {})[F] & {})[G] & {})[H]
-type $9<
-  T,
-  A extends keyof T,
-  B extends keyof (T[A] & {}),
-  C extends keyof ((T[A] & {})[B] & {}),
-  D extends keyof (((T[A] & {})[B] & {})[C] & {}),
-  E extends keyof ((((T & {})[A] & {})[B] & {})[C] & {})[D],
-  F extends keyof (((((T & {})[A] & {})[B] & {})[C] & {})[D] & {})[E],
-  G extends keyof ((((((T & {})[A] & {})[B] & {})[C] & {})[D] & {})[E] & {})[F],
-  H extends keyof (((((((T & {})[A] & {})[B] & {})[C] & {})[D] & {})[E] & {})[F] & {})[G],
-  I extends keyof ((((((((T & {})[A] & {})[B] & {})[C] & {})[D] & {})[E] & {})[F] & {})[G] & {})[H]
-> = (((((((((T & {})[A] & {})[B] & {})[C] & {})[D] & {})[E] & {})[F] & {})[G] & {})[H] & {})[I]
-
-type $10<
-  T,
-  A extends keyof T,
-  B extends keyof (T[A] & {}),
-  C extends keyof ((T[A] & {})[B] & {}),
-  D extends keyof (((T[A] & {})[B] & {})[C] & {}),
-  E extends keyof ((((T & {})[A] & {})[B] & {})[C] & {})[D],
-  F extends keyof (((((T & {})[A] & {})[B] & {})[C] & {})[D] & {})[E],
-  G extends keyof ((((((T & {})[A] & {})[B] & {})[C] & {})[D] & {})[E] & {})[F],
-  H extends keyof (((((((T & {})[A] & {})[B] & {})[C] & {})[D] & {})[E] & {})[F] & {})[G],
-  I extends keyof ((((((((T & {})[A] & {})[B] & {})[C] & {})[D] & {})[E] & {})[F] & {})[G] & {})[H],
-  J extends keyof (((((((((T & {})[A] & {})[B] & {})[C] & {})[D] & {})[E] & {})[F] & {})[G] & {})[H] & {})[I]
-> = ((((((((((T & {})[A] & {})[B] & {})[C] & {})[D] & {})[E] & {})[F] & {})[G] & {})[H] & {})[I] & {})[J]
-
-type __$2__ = $3<{ a?: { b?: { c: 2 } } }, "a", "b", "c">
-//   ^?
-
 
 /** 
  * ## {@link get `tree.get`}
@@ -945,12 +861,13 @@ export namespace toPaths {
             loop,
           )
         )
-        case isJsonObject(next): return Object_keys(next).flatMap(
+        case isJsonObject(next): return object.keys(next).flatMap(
           fn.flow(
             (k) => ({ prev: [...prev, k], next: next[k] }),
             loop,
           )
         )
+        case nonNullable(next): throw fn.throw(next)
         default: throw fn.exhaustive<never>(next)
       }
     })
@@ -1003,3 +920,151 @@ export namespace toPaths {
   export const empty = <T extends JSON>(init: T) => construct([[], init])
 }
 
+
+/** 
+ * ## {@link flatten `tree.flatten`} 
+ * ### ｛ {@link jsdoc.mapping ` 🌈 `} ｝
+ * 
+ * @example
+*  import { tree } from "@traversable/core"
+*  import * as vi from "vitest"
+* 
+*  const ex_01 = tree.flatten({ 
+*    a: 1, 
+*    b: { 
+*      c: [{ d: 2, e: 3 }, { f: 4 }], 
+*      g: 5 
+*    }, 
+*    h: [6], 
+*    i: { j: { k: 7 } } 
+*  })
+*
+*  vi.assert.deepEqual(
+*    ex_01,
+*    {
+*      "a": 1,
+*      "b.c.0.d": 2,
+*      "b.c.0.e": 3,
+*      "b.c.1.f": 4,
+*      "b.g": 5,
+*      "h.0": 6,
+*      "i.j.k": 7,
+*    }
+*  )
+*/
+export function flatten (tree: unknown, options?: flatten.Options): {} 
+export function flatten (tree: unknown, options?: flatten.Options): {} 
+/// impl.
+export function flatten (
+ tree: unknown, {
+   preserveReferences = flatten.defaults.preserveReferences
+ }: flatten.Options = flatten.defaults
+) {
+ if (isPrimitive(tree)) return tree
+ const out: 
+   & { [x: string]: unknown } 
+   & { [symbol.ref]?: { [x: number]: (string | number)[] } }
+   = {}
+
+ let seen = new globalThis.WeakMap()
+ let circular: (string | number)[][] = []
+ let refCount = 0
+
+ const loop = (path: (string | number)[], node: unknown) => {
+   if (isPrimitive(node)) 
+     void (out[path.join(".")] = node)
+   else if (Array_isArray(node)) 
+     void node.forEach((x, ix) => loop([...path, ix], x))
+   else if (object.isRecord(node)) {
+     if (seen.has(node)) {
+       refCount++
+       circular.push(seen.get(node))
+       if (path.length === 0)
+         /** 
+          * If the path is `[]`, the circular reference points to
+          * the root of the tree. Nothing to do here (yet).
+          */
+         {}
+       else {
+         // refCount++
+         void (out[path.join(".")] = `[Circular *[Symbol(${URI.ref})[${refCount}]]`)
+       }
+     }
+     else {
+       void (seen.set(node, path))
+       void Object_keys(node).forEach((k) => loop([...path, k], node[k]))
+     }
+   }
+   else 
+     void Invariant.IllegalState("@traversable/core/tree.flatten") 
+ }
+
+ void loop([], tree)
+ if (preserveReferences) {
+   circular.forEach((cycle, ix) => (
+     void (out[symbol.ref] ??= {}),
+     void (out[symbol.ref][ix + 1] = cycle)
+   ))
+ }
+
+ return out
+}
+
+export type flatten<T> = flatten.loop<T, "">
+export declare namespace flatten {
+  interface Options extends inline<typeof flatten.defaults> {}
+  type entry = readonly [key: string, value: unknown]
+  type entries = readonly [path: string, leaf: any.primitive] | readonly (readonly [path: string, leaf: any.primitive])[]
+  type loop<T, P extends string>
+    = T extends any.primitive ? [path: P, leaf: T]
+    : T extends array.any 
+    ? (
+      globalThis.Exclude<keyof T & string, "length"> extends infer K 
+      ? K extends keyof T & string
+      ? `${P extends "" ? "" : `${P}.`}${K}` extends infer Q 
+      ? [Q] extends [string] ? flatten.loop<T[K], Q> : never : never
+      : never
+      : never
+    )
+    : (keyof T & string) extends infer K 
+    ? K extends (keyof T & string)
+    ? `${P extends "" ? "" : `${P}.`}${K}` extends infer Q 
+    ? [Q] extends [string] ? flatten.loop<T[K], Q> : never : never
+    : never
+    : never
+    ;
+}
+
+
+
+export namespace flatten {
+ export const defaults = {
+   /** 
+    * ### {@link defaults.preserveReferences `Options.preserveReferences`}
+    * 
+    * Determines how {@link flatten `tree.flatten`} should handle circular
+    * references.
+    * 
+    * If `true`, the output object will include a {@link symbol.ref `symbol.ref`}
+    * property that contains the paths to each of the circularly-referenced
+    * nodes in the tree.
+    * 
+    * The entries in {@link symbol.ref `symbol.ref`} are a mapping from the 
+    * _order_ that the circular reference was discovered, to the array of path
+    * segments that lead to the reference.
+    * 
+    * The _order_ is important, because {@link flatten `tree.flatten`}
+    * doesn't have access to the name of the identifier itself. 
+    * 
+    * There might be a way to get that, not sure -- but barring a way to get
+    * that, the order is used to disambiguate which pointers point to which 
+    * references.
+    * 
+    * If that explanation confused you, take a look at the tests for 
+    * {@link flatten `tree.flatten`} in `core/test/tree.test.ts`.
+    * 
+    * If unspecified, defaults to `true`.
+    */
+   preserveReferences: true as boolean,
+ } as const
+}

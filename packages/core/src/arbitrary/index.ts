@@ -27,7 +27,7 @@ export namespace Property {
     return (): void => void test.prop(
       [arbitrary], 
       params ?? {}
-    )(`〖🪃〗 ${to.name} -> ${from.name}`, (gen) => {
+    )(/** 〖🌐〗 */`〖🌍〗‹ ${to.name} -> ${from.name}`, (gen) => {
       return assert(from(to(gen)), gen)
     })
   }

@@ -1,19 +1,19 @@
 export {
+  anything,
   anyOf,
   allOf,
   oneOf,
-  has,
   array,
-  isBigint as bigint,
+  isBigInt as bigint,
   isBoolean as boolean,
   isFalse as false,
   isTrue as true,
   isDate as date,
-  notUndefined as defined,
+  defined,
   isFunction as function,
   isIndex as index,
-  integer,
-  isPartial as partial,
+  isInteger as integer,
+  partial,
   isKey as key,
   isLiteral as literal,
   isLiterally as literally,
@@ -29,29 +29,15 @@ export {
   isShowable as showable,
   isString as string,
   isSymbol as symbol,
-  symbol as SYMBOL,
   isUndefined as undefined,
-  not,
   nonNullable,
   notNull,
-  notNullable,
-  notUndefined,
   optional,
   or,
+  tuple,
 } from "./guard.js"
 
 import type { empty as Empty, nonempty as NonEmpty, any, has, some } from "any-ts"
-import { 
-  createFromFactories, 
-  fromFactories, 
-  withPrefixes,
-} from "./guard.js"
-
-export const guards = {
-  fromFactories,
-  createFromFactories,
-  withPrefixes,
-} as const
 
 export declare namespace nonempty {
   export type object_<T> = Extract<T, has.oneProperty<T>>
