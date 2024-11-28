@@ -1,9 +1,42 @@
+export { isOpenApiSchema as is }
+
 import { core, fc, tree } from "@traversable/core"
 import { array, type keys, object } from "@traversable/data"
+import type { newtype } from "any-ts"
 
 import * as fc_ from "fast-check"
 
 import { type Arbitrary, type arbitrary, lit, type openapi } from "./types.js"
+
+
+export { typeOf as typeof }
+
+/**
+ * ## {@link typeOf `openapi.typeof`}
+ * 
+ * Get a string that describes and discriminates the type of
+ * OpenAPI node you're inspecting. Works at the term- and
+ * type-level.
+ * 
+ * Useful as an entrypoint into a pattern matching expression.
+ */
+function typeOf<T extends Schema.any>(u: T): typeOf<T>
+function typeOf<T extends Schema.any>(u: T) {
+  switch (true) {
+    case "type" in u: return u.type
+    case "allOf" in u: return "allOf"
+    case "anyOf" in u: return "anyOf"
+    case "oneOf" in u: return "oneOf"
+    default: return "$ref"
+  }
+}
+type typeOf<T, K extends keyof T = keyof T> 
+  = T extends { type: infer U extends Schema.datatype["type"] } ? U
+  : K extends "allOf" ? "allOf"
+  : K extends "anyOf" ? "anyOf"
+  : K extends "oneOf" ? "oneOf"
+  : "$ref"
+
 
 export interface HasType<T extends DataTypes[number] = DataTypes[number]> {
   type: T
@@ -30,7 +63,8 @@ export declare namespace DataType {
 export type Autocomplete<T> = T | (string & {})
 
 /** @internal */
-type inline<T> = T
+interface optional<T extends {}> extends newtype<globalThis.Partial<T>> {}
+interface required<T extends {}> extends newtype<globalThis.Required<T>> {}
 
 namespace Compare {
   /**
@@ -57,25 +91,32 @@ export declare namespace format {
 export namespace format {
   export type KnownIntegerFormat = (typeof KnownIntegerFormats)[number]
   export const KnownIntegerFormats = ["int32", "int64"] as const
+  export const isKnownIntegerFormat = core.is.literally(...KnownIntegerFormats)
 
   export type ExtendedIntegerFormat = (typeof ExtendedIntegerFormats)[number]
   export const ExtendedIntegerFormats = [] as const
+  export const isExtendedIntegerFormat = core.is.literally(...ExtendedIntegerFormats)
 
   export type integer = (typeof IntegerFormats)[number]
   export const IntegerFormats = [...KnownIntegerFormats, ...ExtendedIntegerFormats] as const
+  export const isIntegerFromat = core.is.literally(...IntegerFormats)
 
   export type KnownNumberFormat = (typeof KnownNumberFormats)[number]
   export const KnownNumberFormats = ["float", "double"] as const
+  export const isKnownNumberFormat = core.is.literally(...KnownNumberFormats)
 
-  export type number_ = (typeof ExtendedNumberFormats)[number]
-  export const ExtendedNumberFormats = [] as const
+  export type number_ = (typeof NumberFormats[number])[number]
+  export const ExtendedNumberFormats = core.is.literally(...KnownNumberFormats)
 
   export type NumberFormat = (typeof NumberFormats)[number]
-  export const NumberFormats = [...KnownNumberFormats, ...ExtendedNumberFormats] as const
+  export const NumberFormats = [...KnownNumberFormats] as const
+  export const isNumberFormat = core.is.literally(...KnownNumberFormats)
 
   export type KnownStringFormat = (typeof KnownStringFormats)[number]
   export const KnownStringFormats = ["password"] as const
+  export const isKnownStringFormat = core.is.literally(...KnownStringFormats)
 
+  export type ExtendedStringFormat = (typeof ExtendedStringFormats)[number]
   export const ExtendedStringFormats = [
     "date",
     "datetime",
@@ -86,8 +127,11 @@ export namespace format {
     "uri-reference",
   ] as const
 
+  export const isExtendedStringFormat = core.is.literally(...ExtendedStringFormats)
+
   export type string_ = (typeof StringFormats)[number]
   export const StringFormats = [...ExtendedStringFormats, ...KnownStringFormats] as const
+  export const isStringFormat = core.is.literally(...StringFormats)
 
   export const integerNative = fc_.constantFrom("int32", "int64") /* KnownIntegerFormats */
 
@@ -96,27 +140,16 @@ export namespace format {
   export const stringNative = fc_.constantFrom("password") /* KnownStringFormats */
 
   export const stringExtended = fc_.constantFrom(
-    "date",
-    "datetime",
-    "email",
-    "uuid",
-    "ulid",
-    "uri",
-    "uri-reference",
-  ) /* ExtendedStringFormats */
+    ...KnownStringFormats,
+    ...ExtendedStringFormats,
+  )
 
   export const integer = fc_.constantFrom("int32", "int64") /* IntegerFormats */
   export const number = fc_.constantFrom("float", "double") /* NumberFormats */
   export const string = fc_.constantFrom(
-    "date",
-    "datetime",
-    "email",
-    "uuid",
-    "ulid",
-    "uri",
-    "uri-reference",
-    "password",
-  ) /* StringFormats */
+    ...KnownStringFormats,
+    ...ExtendedStringFormats,
+  )
   export const any = fc.lorem({ mode: "words", maxCount: 1 })
 }
 /// FORMATS
@@ -129,7 +162,12 @@ export namespace format {
 const isNull: {
   (u: Schema.any | NullNode | openapi.$ref): u is NullNode
   (u: unknown): u is NullNode
-} = (u: unknown): u is NullNode => u !== null && typeof u === "object" && "type" in u && u.type === "null"
+} = core.anyOf(
+  tree.has(["enum"], core.is.array(core.is.literally(null))),
+  tree.has(["type"], core.is.literally("null")),
+) as never
+
+console.log(isNull({ enum: []}))
 
 /** @internal */
 const includes_ = array.includes
@@ -144,32 +182,6 @@ function isConst(u: Schema.any): u is never {
 /** @internal */
 const hasConst = <T extends {}>(guard: (u: unknown) => u is T) => tree.has(["const"], guard)
 
-type typeOf<T, K extends keyof T = keyof T> = T extends { type: infer U extends Schema.datatype["type"] }
-  ? U
-  : K extends "allOf"
-    ? "allOf"
-    : K extends "anyOf"
-      ? "anyOf"
-      : K extends "oneOf"
-        ? "oneOf"
-        : "$ref"
-
-function typeOf<T extends Schema.any>(u: T): typeOf<T>
-function typeOf<T extends Schema.any>(u: T) {
-  switch (true) {
-    case "type" in u:
-      return u.type
-    case "allOf" in u:
-      return "allOf"
-    case "anyOf" in u:
-      return "anyOf"
-    case "oneOf" in u:
-      return "oneOf"
-    default:
-      return "$ref"
-  }
-}
-
 export declare namespace has {
   export { hasConst as const }
 }
@@ -178,26 +190,134 @@ export namespace has {
   ///
   export const items = tree.has("items")
   export const itemsSetToFalse = tree.has(["items"], core.is.literally(false))
-  export const prefixItems = tree.has(["prefixItems"], core.is.array)
-  export const properties = tree.has(["properties"], core.is.object)
+  export const prefixItems = tree.has(["prefixItems"], core.is.array.any)
+  export const properties = tree.has(["properties"], core.is.object.any)
   export const additionalProperties = tree.has(
     ["additionalProperties"],
-    core.or(core.is.boolean, core.is.object),
+    core.or(core.is.boolean, core.is.object.any),
   )
-  export const atLeastOneProperty: (u: { properties?: {} }) => boolean = (u: { properties?: {} }) =>
-    has.properties(u) && globalThis.Object.keys(u.properties).length > 0
+  export const atLeastOneProperty
+    : (u: { properties?: {} }) => boolean 
+    = (u) => has.properties(u) && globalThis.Object.keys(u.properties).length > 0
 }
 
-export declare namespace is {
+export declare namespace isOpenApiSchema {
   export { isConst as const, isNull as null }
 }
-export function is(u: unknown): u is Schema.any {
-  return core.or(tree.has(["type"], core.is.string), tree.has(["$ref"], core.is.string))(u)
+
+function schemaSchema() {
+  return core.anyOf(
+    tree.has(["$ref"], core.is.string),
+    tree.has(["allOf"], core.is.array.any),
+    tree.has(["anyOf"], core.is.array.any), // schemaSchemas()),
+    tree.has(["oneOf"], core.is.array.any),
+    tree.has(
+      ["type"], core.anyOf(
+        core.is.literally("boolean"),
+        core.is.literally("integer"),
+        core.is.literally("number"),
+        core.is.literally("string"),
+        core.is.literally("object"),
+        core.is.literally("array"),
+      )
+    )
+  )
 }
 
-export namespace is {
-  void (is.null = isNull)
-  void (is.const = isConst)
+declare namespace node {
+  type node_zzzany = 
+    | node.node_boolean
+    | node.node_integer
+    | node.node_number
+    | node.node_string
+    | node.node_object
+    | node.node_array
+
+  interface node_null extends 
+    required<{ type: "null" }> 
+    { }
+  interface node_boolean extends 
+    required<{ type: "boolean" }> 
+    { }
+  interface node_string extends 
+    required<{ type: "string" }> 
+    { }
+  interface node_integer extends 
+    required<{ type: "integer" }> 
+    { }
+  interface node_number extends 
+    required<{ type: "number" }> 
+    { }
+  interface node_array extends 
+    required<{ type: "array" }> 
+    { }
+  interface node_object extends 
+    required<{ type: "object" }> 
+    { }
+}
+
+function schemaSchemas() { return core.is.array(schemaSchema()) }
+
+declare const u: unknown
+
+const isSchemaRecord = core.is.record.of(isOpenApiSchema)
+
+const isObjectNode = core.is.object({
+  type: core.is.literally("object"),
+  properties: core.is.record.of(isOpenApiSchema),
+  additionalProperties: core.is.optional(core.is.literally("test"))
+})
+
+const isArrayNode = core.is.object({
+  type: core.is.literally("array"),
+  items: isOpenApiSchema
+})
+
+const isTupleNode = core.is.object({
+  type: core.is.literally("array"),
+  items: core.is.array(isOpenApiSchema),
+})
+
+const isStringNode = core.is.object({
+  type: core.is.literally("string"),
+})
+
+// const isObjectNode = (u: unknown) => {
+//   return core.is.object.of({
+//     type: core.is.literally("object"),
+//     properties: core.is.record.of(is),
+//   })(u)
+//   /* 
+//     type: "object"
+//   properties: T
+//   // additionalProperties?: boolean | Ref.typedef | U
+//   required: readonly ({} extends T ? unknown : keyof T & (string | number))[]
+//   */
+// }
+
+export function isOpenApiSchema(u: unknown): u is Schema.any {
+  return core.anyOf(
+    tree.has(["$ref"], core.is.string),
+    tree.has(["allOf"], core.is.array.any),
+    tree.has(["anyOf"], core.is.array.any),
+    tree.has(["oneOf"], core.is.array.any),
+    tree.has(
+      ["type"], core.anyOf(
+        core.is.literally("boolean"),
+        core.is.literally("integer"),
+        core.is.literally("number"),
+        core.is.literally("string"),
+        core.is.literally("object"),
+        core.is.literally("array"),
+      )
+    ),
+  )(u)
+  // core.or(tree.has(["type"], core.is.string), tree.has(["$ref"], core.is.string))(u)
+}
+
+export namespace isOpenApiSchema {
+  void (isOpenApiSchema.null = isNull)
+  void (isOpenApiSchema.const = isConst)
   ///
 
   export function nonRef<U>(u: U): u is globalThis.Exclude<U, openapi.$ref> {
@@ -247,11 +367,11 @@ export namespace is {
   } = (u: unknown): u is Schema.ObjectNode =>
     u !== null && typeof u === "object" && "type" in u && u.type === "object"
 
-  export const oneOf = (u: unknown): u is Schema.OneOf => tree.has(["oneOf"], core.is.array)(u)
+  export const oneOf = (u: unknown): u is Schema.OneOf => tree.has(["oneOf"], core.is.array.any)(u)
 
-  export const anyOf = (u: unknown): u is Schema.AnyOf => tree.has(["anyOf"], core.is.array)(u)
+  export const anyOf = (u: unknown): u is Schema.AnyOf => tree.has(["anyOf"], core.is.array.any)(u)
 
-  export const allOf = (u: unknown): u is Schema.AllOf => tree.has(["allOf"], core.is.array)(u)
+  export const allOf = (u: unknown): u is Schema.AllOf => tree.has(["allOf"], core.is.array.any)(u)
 
   export const scalar: {
     (u: Schema.any | NullNode | openapi.$ref): u is Schema.Scalar
@@ -302,61 +422,98 @@ export const XML = fc.record(
   { requiredKeys: [] },
 )
 
-export interface ExternalDocumentation extends Arbitrary.infer<ReturnType<typeof ExternalDocumentation>> {}
-export const ExternalDocumentation = (constraints: Schema.Constraints = Schema.defaultConstraints) =>
-  fc.record(
+export interface ExternalDocumentation extends 
+  optional<{ description: string }>, 
+  required<{ url: string }> 
+  { }
+
+export function ExternalDocumentation(constraints: Schema.Constraints): fc.Arbitrary<ExternalDocumentation> 
+export function ExternalDocumentation(_: Schema.Constraints = Schema.defaults): fc.Arbitrary<ExternalDocumentation> {
+  return fc.record(
     {
       url: fc.string(), // format: "uri-reference"
-      ...(constraints.include?.description && { description: fc.lorem() }),
+      ...(_.include?.description && { description: fc.lorem() }),
     },
     { requiredKeys: ["url"] },
   )
+}
 
 /////////////
 /// SCHEMA
-/** ### {@link Schema_Base `oas.Schema.Base`} */
-export interface Schema_Base<T = unknown> extends Arbitrary.unmap<ReturnType<typeof Schema_base<T>>> {}
+/** ### {@link Schema_Base `openapi.Schema.Base`} */
+export interface Schema_Base<T = unknown> extends 
+  required<{ deprecated: boolean }>,
+  optional<{
+    description: string
+    const: T
+    example: T
+    nullable: boolean
+  }> 
+  { }
 
-/** ### {@link Schema_base `oas.Schema.base`} */
-export const Schema_base = <T>(constraints: Schema.Constraints<T> = Schema.defaultConstraints) => ({
-  ...(constraints.nullable && { nullable: fc.boolean({ falseBias: true }) }), // default: false
-  ...(constraints.include?.examples && {
-    example: (constraints.arbitrary ?? fc.jsonValue()) as fc.Arbitrary<T>,
-  }),
-  ...(constraints.include?.const && { const: constraints.arbitrary ?? (fc.jsonValue() as fc.Arbitrary<T>) }),
-  ...(constraints.include?.description && { description: fc.lorem() }),
-  deprecated: fc.boolean(), // default: false
-})
+/** ### {@link Schema_base `openapi.Schema.base`} */
+export function Schema_base<T>(constraints: Schema.Constraints<T>): Arbitrary.map<Schema_Base<T>> 
+export function Schema_base<T>({ 
+  nullable, 
+  arbitrary, 
+  include,
+}: Schema.Constraints<T> = Schema.defaults) { 
+  return ({
+    deprecated: fc.boolean(),
+    ...nullable && { nullable: fc.boolean({ falseBias: true }) },
+    ...include?.examples && { example: arbitrary ?? fc.jsonValue() },
+    ...include?.const && { const: arbitrary ?? fc.jsonValue() },
+    ...include?.description && { description: fc.lorem() },
+  }) satisfies Arbitrary.map<Schema_Base>
+}
 
-/** ### {@link Discriminator `oas.Discriminator`} */
-export interface Discriminator extends Arbitrary.infer<typeof Discriminator> {}
-export const Discriminator = fc.record(
-  {
-    propertyName: fc.string(),
-    mapping: fc.dictionary(fc.string(), fc.string()),
-  },
-  { requiredKeys: ["propertyName"] },
-)
+export interface Discriminator extends 
+  optional<{ mapping: globalThis.Record<string, string> }>,
+  required<{ propertyName: string }>
+  { }
 
-type Schema_Scalar = BooleanNode | IntegerNode | NumberNode | StringNode
+/** ### {@link Discriminator `openapi.Discriminator`} */
+export const Discriminator: fc.Arbitrary<Discriminator> = fc.record({
+  propertyName: fc.string(),
+  mapping: fc.dictionary(fc.string(), fc.string()),
+}, { requiredKeys: ["propertyName"] })
 
-type Schema_datatype = NullNode | Schema.Scalar | ArrayNode | TupleNode | ObjectNode
+type Schema_Scalar = 
+  | BooleanNode 
+  | IntegerNode 
+  | NumberNode 
+  | StringNode
+  ;
 
-type Schema_any = Schema_datatype | Schema.Combinator | openapi.$ref
+type Schema_datatype = 
+  | NullNode 
+  | Schema.Scalar 
+  | ArrayNode 
+  | TupleNode 
+  | ObjectNode
+  ;
 
-/** ### {@link Schema `oas.Schema`} */
+type Schema_any = 
+  | Schema_datatype 
+  | Schema.Combinator 
+  | openapi.$ref
+  ;
+
+/** ### {@link Schema `openapi.Schema`} */
 export namespace Schema {
-  /** ### {@link Constraints `oas.Schema.Constraints`} */
-  export interface Constraints<T = unknown> {
-    depthSize?: fc.DepthSize
-    nullable?: boolean
-    empty?: T
-    include?: arbitrary.Include
-    arbitrary?: fc.Arbitrary<T>
-  }
+  /** ### {@link Constraints `openapi.Schema.Constraints`} */
+  export interface Constraints<T = unknown> extends 
+    optional<{
+      depthSize: fc.DepthSize
+      nullable: boolean
+      empty: T
+      include: arbitrary.Include
+      arbitrary: fc.Arbitrary<T>
+    }> 
+    { }
 
-  /** ### {@link defaultConstraints `oas.Schema.defaultConstraints`} */
-  export const defaultConstraints = {
+  /** ### {@link defaults `openapi.Schema.defaults`} */
+  export const defaults = {
     include: {
       description: false,
       example: false,
@@ -366,10 +523,10 @@ export namespace Schema {
     depthSize: "small",
     empty: void 0 as never,
     nullable: true,
-  } satisfies Required<Omit<Schema.Constraints, "arbitrary">> & { include: Required<arbitrary.Include> }
+  } as const satisfies Required<Omit<Schema.Constraints, "arbitrary">> & { include: Required<arbitrary.Include> }
 
-  /** ### {@link dictionary `oas.Schema.dictionary`} */
-  export function dictionary(constraints: Schema.Constraints = Schema.defaultConstraints) {
+  /** ### {@link dictionary `openapi.Schema.dictionary`} */
+  export function dictionary(constraints: Schema.Constraints = Schema.defaults) {
     return fc.record({
       type: fc.constant(lit("object")),
       ...Schema_base({ ...constraints, empty: {} }),
@@ -378,19 +535,19 @@ export namespace Schema {
     })
   }
 
-  /** ### {@link boolean `oas.Schema.boolean`} */
+  /** ### {@link boolean `openapi.Schema.boolean`} */
   export const boolean = BooleanNode
-  /** ### {@link integer `oas.Schema.integer`} */
+  /** ### {@link integer `openapi.Schema.integer`} */
   export const integer = IntegerNode
-  /** ### {@link number `oas.Schema.number`} */
+  /** ### {@link number `openapi.Schema.number`} */
   export const number = NumberNode
-  /** ### {@link string `oas.Schema.string`} */
+  /** ### {@link string `openapi.Schema.string`} */
   export const string = StringNode
 
   //////////
   /// def.
-  /** ### {@link define `oas.Schema.define`} */
-  export const define = (constraints: Schema.Constraints = Schema.defaultConstraints) =>
+  /** ### {@link define `openapi.Schema.define`} */
+  export const define = (constraints: Schema.Constraints = Schema.defaults) =>
     fc.letrec((loop) => ({
       object: ObjectNode(loop("tree") as never, loop("tree") as never, constraints),
       array: ArrayNode(loop("tree") as never, constraints),
@@ -398,7 +555,7 @@ export namespace Schema {
       anyOf: AnyOfNode(loop("tree") as never),
       allOf: AllOfNode(loop("object") as never),
       tree: fc.oneof(
-        { depthSize: constraints?.depthSize ?? Schema.defaultConstraints.depthSize },
+        { depthSize: constraints?.depthSize ?? Schema.defaults.depthSize },
         IntegerNode(constraints),
         NumberNode(constraints),
         StringNode(constraints),
@@ -447,49 +604,49 @@ export namespace Schema {
     })
   }
 
-  /** ### {@link declare `oas.Schema.declare`} */
+  /** ### {@link declare `openapi.Schema.declare`} */
   export type declare = {
     tree: Schema_any
     array: Schema.ArrayNode<Schema_any>
     object: Schema.ObjectNode
   }
 
-  /** ### {@link typedef `oas.Schema.typedef`} */
+  /** ### {@link typedef `openapi.Schema.typedef`} */
   export interface typedef extends Schema.declare {}
-  /** ### {@link typedef `oas.Schema.typedef`} */
+  /** ### {@link typedef `openapi.Schema.typedef`} */
   export const typedef = Schema.define()
-  /** ### {@link any `oas.Schema.any`} */
+  /** ### {@link any `openapi.Schema.any`} */
 
-  /** ### {@link array `oas.Schema.array`} */
+  /** ### {@link array `openapi.Schema.array`} */
   export const array = typedef.array
-  /** ### {@link object `oas.Schema.object`} */
+  /** ### {@link object `openapi.Schema.object`} */
   export const object = typedef.object
 
-  /** ### {@link OneOf `oas.Schema.OneOf`} */
+  /** ### {@link OneOf `openapi.Schema.OneOf`} */
   export interface OneOf {
     oneOf: readonly Schema.any[]
   }
 
-  /** ### {@link oneOf `oas.Schema.oneOf`} */
+  /** ### {@link oneOf `openapi.Schema.oneOf`} */
   export const oneOf = typedef.oneOf
 
-  /** ### {@link AnyOf `oas.Schema.AnyOf`} */
+  /** ### {@link AnyOf `openapi.Schema.AnyOf`} */
   export interface AnyOf {
     anyOf: readonly Schema.any[]
   }
 
-  /** ### {@link anyOf `oas.Schema.anyOf`} */
+  /** ### {@link anyOf `openapi.Schema.anyOf`} */
   export const anyOf = typedef.anyOf
 
-  /** ### {@link AllOf `oas.Schema.AllOf`} */
+  /** ### {@link AllOf `openapi.Schema.AllOf`} */
   export interface AllOf {
     allOf: readonly Schema.any[]
   }
 
-  /** ### {@link allOf `oas.Schema.allOf`} */
+  /** ### {@link allOf `openapi.Schema.allOf`} */
   export const allOf = typedef.allOf
 
-  export function any(constraints: Schema.Constraints = Schema.defaultConstraints): fc.Arbitrary<Schema.any> {
+  export function any(constraints: Schema.Constraints = Schema.defaults): fc.Arbitrary<Schema.any> {
     return fc.oneof(
       Schema.object,
       Schema.array,
@@ -506,7 +663,7 @@ export namespace Schema {
   export type Combinator = Schema.AllOf | Schema.AnyOf | Schema.OneOf
 }
 
-void (Schema.is = is)
+void (Schema.is = isOpenApiSchema)
 void (Schema.base = Schema_base)
 void (Schema.NullNode = NullNode)
 void (Schema.BooleanNode = BooleanNode)
@@ -519,10 +676,10 @@ void (Schema.typeof = typeOf)
 
 export interface $ref<T extends string = string> extends openapi.$ref<T> {}
 
-/** ### {@link Schema `oas.Schema`} */
+/** ### {@link Schema `openapi.Schema`} */
 export declare namespace Schema {
   export {
-    is,
+    isOpenApiSchema as is,
     typeOf as typeof,
     ArrayNode,
     BooleanNode,
@@ -533,76 +690,88 @@ export declare namespace Schema {
     $ref,
     StringNode,
     TupleNode,
-    /** ### {@link Schema_any `oas.Schema.any`} */
+    /** ### {@link Schema_any `openapi.Schema.any`} */
     Schema_any as any,
-    /** ### {@link Schema_datatype `oas.Schema.datatype`} */
+    /** ### {@link Schema_datatype `openapi.Schema.datatype`} */
     Schema_datatype as datatype,
-    /** ### {@link Schema_Base `oas.Schema.Base`} */
+    /** ### {@link Schema_Base `openapi.Schema.Base`} */
     Schema_Base as Base,
-    /** ### {@link Schema_base `oas.Schema.base`} */
+    /** ### {@link Schema_base `openapi.Schema.base`} */
     Schema_base as base,
-    /** ### {@link Schema_Scalar `oas.Schema.Scalar`} */
+    /** ### {@link Schema_Scalar `openapi.Schema.Scalar`} */
     Schema_Scalar as Scalar,
   }
 }
-
-// export interface Ref<T extends string = string> extends inline<{ $ref: T }> { required: never }
 
 export interface NullNode {
   type: "null"
   nullable: true
   enum: [null]
 }
+
 export function NullNode(): fc.Arbitrary<NullNode> {
-  return fc.constant({ type: "null", nullable: true, enum: [null] })
+  return fc.constant({ 
+    type: "null", 
+    nullable: true, 
+    enum: [null] 
+  })
 }
 
-export interface BooleanNode extends Partial<Schema_Base<boolean>> {
-  type: "boolean"
-}
+export interface BooleanNode extends 
+  optional<Schema_Base<boolean>>,
+  required<{ type: "boolean" }>
+  { }
+
 export function BooleanNode(
-  constraints: Schema.Constraints = Schema.defaultConstraints,
+  constraints: Schema.Constraints = Schema.defaults,
 ): fc.Arbitrary<BooleanNode> {
-  return fc.record(
-    {
-      type: fc.constant(lit("boolean")),
-      ...Schema_base({ ...constraints, empty: false, arbitrary: fc.boolean() }),
-    },
-    { requiredKeys: ["type"] },
-  )
+  return fc.record({
+    type: fc.constant(lit("boolean")),
+    ...Schema_base({ ...constraints, empty: false, arbitrary: fc.boolean() }),
+  }, { requiredKeys: ["type"] })
 }
 
-function absorbNaN<K extends string>(key: K, x?: number): { [P in K]+?: number }
-function absorbNaN(key: string, x?: number) {
-  return { ...(globalThis.Number.isNaN(globalThis.Number(x)) ? {} : { [key]: x }) }
-}
-const minimumOf = (x?: number, y?: number) =>
-  globalThis.Math.min(x ?? globalThis.Number.NaN, y ?? globalThis.Number.NaN)
-const maximumOf = (x?: number, y?: number) =>
-  globalThis.Math.max(x ?? globalThis.Number.NaN, y ?? globalThis.Number.NaN)
-const factorOf = (lo?: number, hi?: number) => (x?: number) =>
-  (x ?? globalThis.Number.NaN) %
-    globalThis.Math.abs(globalThis.Math.min(lo ?? globalThis.Number.NaN, hi ?? globalThis.Number.NaN)) ===
-    0 &&
-  globalThis.Math.abs(globalThis.Math.max(lo ?? globalThis.Number.NaN, hi ?? globalThis.Number.NaN)) %
-    (x ?? globalThis.Number.NaN) ===
-    0
-    ? (x ?? globalThis.Number.NaN)
-    : globalThis.Number.NaN
+const Number_NaN = globalThis.Number.NaN
+const Number_isNaN = globalThis.Number.isNaN
+const Math_min = globalThis.Math.min
+const Math_max = globalThis.Math.max
+const Math_abs = globalThis.Math.abs
 
-/** ### {@link IntegerNode `oas.IntegerNode`} */
-export interface IntegerNode extends Partial<Schema_Base<number>> {
-  type: "integer"
-  format?: Autocomplete<format.integer>
-  minimum?: number
-  maximum?: number
-  exclusiveMinimum?: boolean
-  exclusiveMaximum?: boolean
-  multipleOf?: number
+namespace Bounded {
+  export function absorbNaN<K extends string>(key: K, x?: number): { [P in K]+?: number }
+  export function absorbNaN(key: string, x?: number) {
+    return { ...(Number_isNaN(globalThis.Number(x)) ? {} : { [key]: x }) }
+  }
+  export const minimumOf = (x?: number, y?: number) =>
+    Math_min(x ?? Number_NaN, y ?? Number_NaN)
+  export const maximumOf= (x?: number, y?: number) =>
+    Math_max(x ?? Number_NaN, y ?? Number_NaN)
+  export const factorOf = (lo?: number, hi?: number) => (x?: number) =>
+    (x ?? Number_NaN) %
+      Math_abs(Math_min(lo ?? Number_NaN, hi ?? Number_NaN)) ===
+      0 &&
+    Math_abs(Math_max(lo ?? Number_NaN, hi ?? Number_NaN)) %
+      (x ?? Number_NaN) ===
+      0
+      ? (x ?? Number_NaN)
+      : Number_NaN
 }
+
+/** ### {@link IntegerNode `openapi.IntegerNode`} */
+export interface IntegerNode extends 
+  required<{ type: "integer" }>,
+  optional<Schema_Base<number>>,
+  optional<{
+    format?: Autocomplete<format.integer>
+    minimum?: number
+    maximum?: number
+    exclusiveMinimum?: boolean
+    exclusiveMaximum?: boolean
+    multipleOf?: number
+  }> { }
 
 export function IntegerNode(
-  constraints: Schema.Constraints = Schema.defaultConstraints,
+  constraints: Schema.Constraints = Schema.defaults,
 ): fc.Arbitrary<IntegerNode> {
   return fc
     .record(
@@ -621,28 +790,30 @@ export function IntegerNode(
     .map(({ type, format, minimum, maximum, multipleOf, exclusiveMinimum, exclusiveMaximum, ...node }) => ({
       type,
       format,
-      ...absorbNaN("minimum", minimumOf(minimum, maximum)),
-      ...absorbNaN("maximum", maximumOf(minimum, maximum)),
-      ...absorbNaN("multipleOf", factorOf(minimum, maximum)(multipleOf)),
+      ...Bounded.absorbNaN("minimum", Bounded.minimumOf(minimum, maximum)),
+      ...Bounded.absorbNaN("maximum", Bounded.maximumOf(minimum, maximum)),
+      ...Bounded.absorbNaN("multipleOf", Bounded.factorOf(minimum, maximum)(multipleOf)),
       ...(exclusiveMinimum != null && minimum != null && { exclusiveMinimum }),
       ...(exclusiveMaximum != null && maximum != null && { exclusiveMaximum }),
       ...node,
     }))
 }
 
-/** ### {@link NumberNode `oas.NumberNode`} */
-export interface NumberNode extends Partial<Schema_Base<number>> {
-  type: "number"
-  format?: Autocomplete<format.number>
-  minimum?: number
-  maximum?: number
-  exclusiveMinimum?: boolean
-  exclusiveMaximum?: boolean
-  multipleOf?: number
-}
+/** ### {@link NumberNode `openapi.NumberNode`} */
+export interface NumberNode extends 
+  required<{ type: "number" }>,
+  optional<Schema_Base<number>>,
+  optional<{
+    format: Autocomplete<format.number>
+    minimum: number
+    maximum: number
+    exclusiveMinimum: boolean
+    exclusiveMaximum: boolean
+    multipleOf: number
+  }> { }
 
 export function NumberNode(
-  constraints: Schema.Constraints = Schema.defaultConstraints,
+  constraints: Schema.Constraints = Schema.defaults,
 ): fc.Arbitrary<NumberNode> {
   return fc
     .record(
@@ -661,28 +832,29 @@ export function NumberNode(
     .map(({ type, format, minimum, maximum, multipleOf, exclusiveMinimum, exclusiveMaximum, ...node }) => ({
       type,
       format,
-      ...absorbNaN("minimum", minimumOf(minimum, maximum)),
-      ...absorbNaN("maximum", maximumOf(minimum, maximum)),
-      ...absorbNaN("multipleOf", factorOf(minimum, maximum)(multipleOf)),
+      ...Bounded.absorbNaN("minimum", Bounded.minimumOf(minimum, maximum)),
+      ...Bounded.absorbNaN("maximum", Bounded.maximumOf(minimum, maximum)),
+      ...Bounded.absorbNaN("multipleOf", Bounded.factorOf(minimum, maximum)(multipleOf)),
       ...(exclusiveMinimum != null && minimum != null && { exclusiveMinimum }),
       ...(exclusiveMaximum != null && maximum != null && { exclusiveMaximum }),
       ...node,
     }))
 }
 
-/** ### {@link StringNode `oas.StringNode`} */
-export interface StringNode extends Partial<Schema_Base<string>> {
-  type: "string"
-  pattern?: Autocomplete<format.string>
-  format?: string
-  minLength?: number
-  maxLength?: number
-}
+/** ### {@link StringNode `openapi.StringNode`} */
+export interface StringNode extends 
+  required<{ type: "string" }>,
+  optional<Schema_Base<string>>,
+  optional<{
+    pattern: Autocomplete<format.string>
+    format: string
+    minLength: number
+    maxLength: number
+  }> { }
 
-/** ### {@link StringNode `oas.StringNode`} */
-export function StringNode(
-  constraints: Schema.Constraints = Schema.defaultConstraints,
-): fc.Arbitrary<StringNode> {
+/** ### {@link StringNode `openapi.StringNode`} */
+export function StringNode(constraints?: Schema.Constraints): fc.Arbitrary<StringNode>
+export function StringNode(constraints: Schema.Constraints = Schema.defaults) {
   return fc
     .tuple(
       StringNode_format(constraints),
@@ -705,7 +877,7 @@ export function StringNode(
     .map(([format, { example, ...body }]) => ({
       ...format,
       ...body,
-      ...((format.example || example) && { example: format.example ?? example }),
+      ...optionally({ example: format.example ?? example }),
     }))
 }
 void (StringNode.email = StringNode_email)
@@ -716,13 +888,13 @@ void (StringNode.uuid = StringNode_uuid)
 void (StringNode.uri = StringNode_uri)
 void (StringNode.format = StringNode_format)
 
-export function StringNode_email(constraints: Schema.Constraints = Schema.defaultConstraints) {
+export function StringNode_email(constraints: Schema.Constraints = Schema.defaults) {
   return {
     format: fc.constant("string"),
     ...(constraints.include?.example && { example: fc.emailAddress() }),
   } satisfies Record<string, fc.Arbitrary<unknown>>
 }
-export function StringNode_date(constraints: Schema.Constraints = Schema.defaultConstraints) {
+export function StringNode_date(constraints: Schema.Constraints = Schema.defaults) {
   return {
     format: fc.constant("date"),
     ...(constraints.include?.example && {
@@ -730,7 +902,7 @@ export function StringNode_date(constraints: Schema.Constraints = Schema.default
     }),
   }
 }
-export function StringNode_datetime(constraints: Schema.Constraints = Schema.defaultConstraints) {
+export function StringNode_datetime(constraints: Schema.Constraints = Schema.defaults) {
   return {
     format: fc.constant("datetime"),
     ...(constraints.include?.example && {
@@ -738,19 +910,19 @@ export function StringNode_datetime(constraints: Schema.Constraints = Schema.def
     }),
   }
 }
-export function StringNode_uuid(constraints: Schema.Constraints = Schema.defaultConstraints) {
+export function StringNode_uuid(constraints: Schema.Constraints = Schema.defaults) {
   return {
     format: fc.constant("uuid"),
     ...(constraints.include?.example && { example: fc.uuid({ version: 7 }) }),
   }
 }
-export function StringNode_ulid(constraints: Schema.Constraints = Schema.defaultConstraints) {
+export function StringNode_ulid(constraints: Schema.Constraints = Schema.defaults) {
   return {
     format: fc.constant("ulid"),
     ...(constraints.include?.example && { example: fc.uuid({ version: 7 }) }),
   }
 }
-export function StringNode_uri(constraints: Schema.Constraints = Schema.defaultConstraints) {
+export function StringNode_uri(constraints: Schema.Constraints = Schema.defaults) {
   return {
     format: fc.constant("uri"),
     ...(constraints.include?.example && {
@@ -758,7 +930,7 @@ export function StringNode_uri(constraints: Schema.Constraints = Schema.defaultC
     }),
   }
 }
-export function StringNode_format(constraints: Schema.Constraints = Schema.defaultConstraints) {
+export function StringNode_format(constraints: Schema.Constraints = Schema.defaults) {
   return fc.oneof(
     fc.record(StringNode_date(constraints), { requiredKeys: [] }),
     fc.record(StringNode_datetime(constraints), { requiredKeys: [] }),
@@ -780,13 +952,14 @@ interface ItemConstraints {
  * setting the items key to `false`, and using `prefixItems`
  * to define the schemas at each index.
  */
-export interface TupleNode<T extends { [x: number]: unknown } = readonly Schema.any[]>
-  extends globalThis.Partial<Schema_Base<T>>,
-    globalThis.Partial<ItemConstraints> {
-  type: "array"
-  items: false
-  prefixItems: T
-}
+export interface TupleNode<T extends { [x: number]: unknown } = readonly Schema.any[]> extends 
+  optional<Schema_Base<T>>,
+  optional<ItemConstraints>,
+  required<{
+    type: "array"
+    items: false
+    prefixItems: T
+  }> { }
 
 export function TupleNode<const T extends readonly unknown[]>(
   items: fc.Arbitrary<T>,
@@ -808,15 +981,16 @@ export function TupleNode(items: fc.Arbitrary<{ [x: number]: unknown }>, constra
   })
 }
 
-export interface ArrayNode<T extends Schema.any = Schema.any>
-  extends globalThis.Partial<Schema_Base<readonly T[]>>,
-    globalThis.Partial<ItemConstraints> {
-  type: "array"
-  items: T
-  prefixItems?: never
-}
+export interface ArrayNode<T extends Schema.any = Schema.any> extends 
+  optional<Schema_Base<readonly T[]>>,
+  optional<ItemConstraints>,
+  required<{
+    type: "array"
+    items: T
+    prefixItems?: never
+  }> { }
 
-/** ### {@link ArrayNode `oas.ArrayNode`} */
+/** ### {@link ArrayNode `openapi.ArrayNode`} */
 export function ArrayNode<T extends Schema.any>(
   items: fc.Arbitrary<T>,
   constraints?: Schema.Constraints,
@@ -827,60 +1001,98 @@ export function ArrayNode(
 ): fc.Arbitrary<ArrayNode<Schema.any>>
 export function ArrayNode(
   items: fc.Arbitrary<unknown>,
-  constraints: Schema.Constraints = Schema.defaultConstraints,
+  constraints: Schema.Constraints = Schema.defaults,
 ): {} {
-  return fc.record(
-    {
-      type: fc.constant(lit("array")),
-      items,
-      ...Schema_base({ ...constraints, empty: [] }),
-      maxItems: fc.nat(),
-      minItems: fc.nat(), // default: 0
-      uniqueItems: fc.boolean(), // default: false
-    },
-    {
-      requiredKeys: ["type", "items"],
-    },
-  )
+  return fc.record({
+    type: fc.constant(lit("array")),
+    items,
+    ...Schema_base({ ...constraints, empty: [] }),
+    maxItems: fc.nat(),
+    minItems: fc.nat(), // default: 0
+    uniqueItems: fc.boolean(), // default: false
+  }, { requiredKeys: ["type", "items"] })
 }
 
-interface ObjectNode_Shape {
-  discriminator: Arbitrary.infer<typeof Discriminator>
-}
+interface ObjectNode_Shape { discriminator: Arbitrary.infer<typeof Discriminator> }
 
-/** ### {@link ObjectNode `oas.ObjectNode`} */
-interface ObjectNode<T extends { [x: string]: unknown } = { [x: string]: Schema.any }, U = T>
-  extends globalThis.Partial<Schema_Base>,
-    globalThis.Partial<ObjectNode_Shape> {
-  type: "object"
-  properties: T
-  // additionalProperties?: boolean | Ref.typedef | U
-  required: readonly ({} extends T ? unknown : keyof T & (string | number))[]
-}
+interface ObjectNode<T extends { [x: string]: unknown } = { [x: string]: Schema.any }, U = T> extends 
+  optional<Schema_Base>,
+  optional<ObjectNode_Shape>,
+  required<{
+    type: "object"
+    properties: T
+    // additionalProperties?: boolean | Ref.typedef | U
+    required: readonly ({} extends T ? unknown : keyof T & (string | number))[]
+  }> { }
 
-/** @internal */
-function addProps<T>(properties: fc.Arbitrary<T>) {
-  return fc.oneof(properties, fc.constant(false))
-}
+/** ### {@link ObjectNode `openapi.ObjectNode`} */
+function ObjectNode<T extends fc.Arbitrary<Schema.any>, U>(
+  properties: T,
+  additionalProperties?: fc.Arbitrary<U>,
+  constraints?: Schema.Constraints,
+): fc.Arbitrary<ObjectNode>
 
 function ObjectNode<T extends fc.Arbitrary<Schema.any>, U>(
   properties: T,
-  additional?: fc.Arbitrary<U>,
-  constraints: Schema.Constraints = Schema.defaultConstraints,
-) {
-  return fc
-    .record(
-      {
-        type: fc.constant("object"),
-        properties: fc.dictionary(properties),
-        ...(core.is.record(additional) && { additionalProperties: addProps(additional) }),
-        ...Schema_base({ ...constraints, empty: {} }),
-      },
-      { requiredKeys: ["type", "properties"] },
-    )
-    .map(({ type, ...schema }) => ({
+  additionalProperties?: fc.Arbitrary<U>,
+  constraints: Schema.Constraints = Schema.defaults,
+): fc.Arbitrary<ObjectNode> {
+  return fc.record({
+    type: fc.constant("object"),
+    properties: fc.dictionary(properties),
+    ...optionally({ additionalProperties }),
+    ...Schema_base({ ...constraints, empty: {} }),
+  }, { 
+    requiredKeys: [
+      "type", 
+      "properties"
+    ] 
+  }).map(
+    ({ type, ...schema }) => ({
       type,
       required: [...(has.atLeastOneProperty(schema) ? fc.peek(fc.keysof(schema.properties)) : [])],
       ...schema,
-    }))
+    })
+  )
+}
+
+
+/** 
+ * @deprecated I think think we want this actually 
+ * ## {@link optionally `optionally`}
+ * 
+ * Spread objects and arrays that may or may not be defined with a uniform syntax.
+ * 
+ * @example
+ *  const ex_01 = {
+ *    a: 1,
+ *    b: 2,
+ *    ...optionally({ c: 3 }),
+ *  }
+ *  
+ *  ex_01
+ *  // ^? const ex_01: { c?: 3, a: number, b: number }
+ *  
+ *  const ex_02 = [
+ *    4,
+ *    5,
+ *    ...optionally(Math.random() > 0.5 && [6, 7] as const),
+ *  ] as const
+ *  
+ *  ex_02
+ *  // ^? const ex_02: readonly [4, 5] | readonly [4, 5, 6, 7]
+ *  
+ *  const maybe = (i?: { i: 8 }) => ({
+ *    g: 7,
+ *    h: 8,
+ *    ...optionally(i),
+ *  })
+ *  
+ *  const ex_03 = maybe()
+ *  //    ^? const ex_03: { g: 7, h: 8, i?: 9 }
+ */
+function optionally<const T extends readonly unknown[]>(maybeArray?: T | boolean): T | []
+function optionally<const T extends { [x: string]: unknown }>(maybeObject?: T | boolean): { [K in keyof T]+?: T[K] } 
+function optionally<const T extends { [x: string]: unknown }>(_?: T) {
+  return !_ ? [] : !_[globalThis.Object.keys(_)[0]] ? [] : _
 }

@@ -34,7 +34,7 @@ export namespace parameter {
     )
   }
 
-  export function pathSchema(constraints: Schema.Constraints = Schema.defaultConstraints) {
+  export function pathSchema(constraints: Schema.Constraints = Schema.defaults) {
     return fc.oneof(
       NumberNode(constraints),
       StringNode(constraints),
