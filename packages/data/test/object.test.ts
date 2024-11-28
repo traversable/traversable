@@ -1,7 +1,8 @@
-import * as fc from "fast-check"
+import { fc, test } from "@fast-check/vitest"
 import * as vi from "vitest"
 
 import { fn, object, type props } from "@traversable/data"
+import { URI, symbol } from "@traversable/registry"
 
 const PATTERN = {
   identifier: /^[a-z$_][a-z$_0-9]*$/,
@@ -85,8 +86,29 @@ export function arrayPath<T>(arbitrary: fc.Arbitrary<T>, constraints: arrayEntri
 //////////////////
 
 
-vi.describe(`object`, () => {
-  vi.it(`object.filterKeys.defer`, () => {
+
+vi.describe(`️〖️⛳️️〗‹‹‹ @traversable/data/object`, () => {
+  vi.test(
+    `〖️⛳️〗‹ ❲object.omit❳`, 
+    () => {
+      fc.assert(
+        fc.property(
+          dictionaryKeysTuple(fc.jsonValue(), { maxLength: 10 }), 
+          ([d, ks]) => {
+            const omit_01 = object.omit(d, ...ks)
+            const pick_01 = object.pick(d, ...ks)
+            void ks.forEach((k) => vi.assert.isFalse(k in omit_01))
+            void ks.forEach((k) => vi.assert.isTrue(k in pick_01))
+            void ks.forEach((k) => vi.assert.isTrue(xor(k in omit_01, k in pick_01)))
+          }
+        ),
+      )
+    }
+  )
+})
+
+vi.describe(`〖️🚑〗‹‹‹ @traversable/data/object`, () => {
+  vi.it(`〖️🚑〗‹ ❲object.filterKeys.defer❳`, () => {
     const hasLessThanNChars = (maxLength: number) => (s: string) => s.length < maxLength
 
     const startsWith = <P extends string>(prefix: P) => 
@@ -147,7 +169,7 @@ vi.describe(`object`, () => {
     )
   })
 
-  vi.it(`object.filter`, () => {
+  vi.it(`〖️🚑〗‹ ❲object.filter❳`, () => {
     const isString = (u: unknown): u is string => typeof u === "string"
     const isStringOrNumber = (u: unknown): u is string | number =>
       typeof u === "string" || typeof u === "number"
@@ -195,41 +217,27 @@ vi.describe(`object`, () => {
     }>
   })
 
-  vi.describe(`object.omit`, () => {
+  vi.it(`〖️🚑〗‹ ❲object.omit❳: omits the thing`, () => {
     const input = object.let({
       abc: 123,
       def: 456,
       ghi: 789,
     })
-    vi.it(`[object.omit]: omits properties`, () => {
-      vi.assert.deepEqual(object.omit.defer(`abc`, `ghi`)(input), { def: 456 })
-      vi.assert.deepEqual(object.omit.defer(`abc`)(input), { def: 456, ghi: 789 })
-      vi.assert.deepEqual(object.omit.defer(`abc`, `def`, `ghi`)(input), {})
-    })
-    vi.it(`[object.omit]: given 0 keys, preserves the original reference`, () => {
-      vi.assert.isTrue(globalThis.Object.is(object.omit.defer()(input), input))
-    })
-    
+    vi.assert.isTrue(globalThis.Object.is(object.omit.defer()(input), input))
   })
 
-  vi.test(`object.omit[arbitrary]`, () => {
-
-    fc.assert(
-      fc.property(
-        dictionaryKeysTuple(fc.jsonValue(), { maxLength: 10 }), 
-        ([d, ks]) => {
-          const omit_01 = object.omit(d, ...ks)
-          const pick_01 = object.pick(d, ...ks)
-          void ks.forEach((k) => vi.assert.isFalse(k in omit_01))
-          void ks.forEach((k) => vi.assert.isTrue(k in pick_01))
-          void ks.forEach((k) => vi.assert.isTrue(xor(k in omit_01, k in pick_01)))
-
-        }
-      ),
-    )
+  vi.it(`〖️🚑〗‹ ❲object.omit❳: preserves reference when object is unchanged`, () => {
+    const input = object.let({
+      abc: 123,
+      def: 456,
+      ghi: 789,
+    })
+    vi.assert.deepEqual(object.omit.defer(`abc`, `ghi`)(input), { def: 456 })
+    vi.assert.deepEqual(object.omit.defer(`abc`)(input), { def: 456, ghi: 789 })
+    vi.assert.deepEqual(object.omit.defer(`abc`, `def`, `ghi`)(input), {})
   })
 
-  vi.it(`object.snake`, () => {
+  vi.it(`〖️🚑〗‹ ❲object.snake❳`, () => {
     const input = object.const({
       //  ^?
       prop: 1,
@@ -254,7 +262,7 @@ vi.describe(`object`, () => {
     vi.expectTypeOf(object.snake(input)).toEqualTypeOf<typeof expected>()
   })
 
-  vi.it(`object.camel`, () => {
+  vi.it(`〖️🚑〗‹ ❲object.camel❳`, () => {
     const input = {
       //  ^?
       prop: 1,
@@ -280,8 +288,7 @@ vi.describe(`object`, () => {
     vi.assert.deepStrictEqual(actual, expected)
   })
 
-  vi.describe(`object.serialize`, () => {
-    vi.it(`[object.serialize]: stringifies non-circular json values`, () => {
+    vi.it(`〖️🚑〗‹ ❲object.serialize❳: stringifies non-circular json values`, () => {
       vi.assert.equal( 
         object.serialize(
           { "a-": { b: { c: { d: 1, e: false, f: null, }, g: undefined, h: [ { i: "hey", j: "whaaaat" }, {}, ], }, } },
@@ -308,7 +315,7 @@ vi.describe(`object`, () => {
   `.trim())
     })
 
-    vi.it(`[object.serialize]: handles circular values`, () => {
+    vi.it(`〖️🚑〗‹ ❲object.serialize❳: handles circular values`, () => {
       let output = {
         foo: true,
         bar: [[1, 2, 3]],
@@ -342,15 +349,14 @@ vi.describe(`object`, () => {
       )
     })
   
-    vi.it(`[object.serialize]: supports minification`, () => {
+    vi.it(`〖️🚑〗‹ ❲object.serialize❳: supports minification`, () => {
       vi.assert.equal(
         object.serialize({ "a-": { b: { c: { d: 1, e: false, f: null, }, g: undefined, h: [ { i: "hey", j: "whaaaat" }, {}, ], }, } }, { mode: "minify" }), 
         `{"a-":{b:{c:{d:1,e:false,f:null},g:undefined,h:[{i:"hey",j:"whaaaat"},{}]}}}`,
       )
     })
-  })
 
-  vi.it(`object.titlecaseValues`, () => {
+  vi.it(`〖️🚑〗‹ ❲object.titlecase.values❳`, () => {
     vi.assert.deepEqual(object.titlecase.values({}), {})
     vi.assert.deepEqual(object.titlecase.values({}, { delimiter: "-", separator: "-" }), {})
     vi.assert.deepEqual(
@@ -385,5 +391,11 @@ vi.describe(`object`, () => {
     )
   })
 
-})
+  // test.prop([fc.dictionary(fc.string(), fc.jsonValue())], {})(`〖️🚑〗 object.flatten`, (record) => {
+  //   // const ex_01 = { a: { b: { c: { d: [1] } } } }
+  //   console.log(object.flatten({ a: { b: { c: [{ d: 1, e: 2, f: { g: [3, 4, 5], h: [7, { i: 9000 } ], j: [{ k: 10 }]}}]}}}))
+  //   // object.flatten(ex_01)
+  //   vi.assert.isTrue(object.flatten(object.flatten({ a: { b: { c: [{ d: 1, e: 2, f: { g: [3, 4, 5], h: [7, { i: 9000 } ], j: [{ k: 10 }]}}]}}})))
+  // })
 
+})

@@ -5,9 +5,9 @@ import {
   absorb,
   apply,
   call,
-  exhaustive,
   distribute,
   distributes,
+  exhaustive,
   flow,
   fn,
   free,
@@ -16,6 +16,7 @@ import {
   isUnusedParam,
   pipe,
   tee,
+  upcast,
 } from "./_internal/_function.js"
 
 import params = fn.params
@@ -65,6 +66,7 @@ export {
   throw_ as throw,
   throwWithMessage,
   UnusedParam,
+  upcast,
 }
 
 export { 

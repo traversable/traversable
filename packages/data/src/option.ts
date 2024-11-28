@@ -1,6 +1,6 @@
+import { URI } from "@traversable/registry"
 import type { any } from "any-ts"
 import type { Concattable, Foldable, None, Option, Predicate, Some } from "./exports.js"
-import { URI } from "./_internal/_uri.js"
 
 export type { Option, None, Some } from "./exports.js"
 
@@ -247,18 +247,29 @@ export function map<A, B>(
  * @example
  *  const myConsole
  *    : { log?: (...args: unknown[]) => void }
- *    = { ...(Math.random() > 0.5 ? { log: globalThis.console.log } : {}) }
+ *    = { ...(Math.random() > 0.5 ? { log: console.log } : {}) }
  * 
  *  //       ↓↓
  *  myConsole?.(123)
  */
 export const apply
-  : <A>(option: Option<A>) => <B>(wrappedFn: Option<(a: A) => B>) => Option<B> 
+  : <A, B>(option: Option<A>) => (wrappedFn: Option<(a: A) => B>) => Option<B> 
   = (option) => (wrappedFn) => isNone(wrappedFn) ? none() : isNone(option) ? none() : some(wrappedFn.value(option.value))
 
-export const flap
-  : <A, B>(wrappedFn: Option<(a: A) => B>) => (a: A) => A | B 
-  = (wrappedFn) => (a) => isNone(wrappedFn) ? a : wrappedFn.value(a)
+export function flap<A, B>(wrappedFn: Option<(a: A) => B>): (a: A) => Option<[B, A] extends [A, B] ? B : A | B>
+export function flap<A, B>(wrappedFn: Option<(a: A) => B>) {
+  return (a: A) => isNone(wrappedFn) ? none() : some(wrappedFn.value(a))
+}
+
+export function call<A, B>(wrappedFn: Option<(a: A) => B>): (a: A) => A | B
+export function call<A, B>(wrappedFn: Option<(a: A) => B>) {
+  return (a: A) => isNone(wrappedFn) ? a : wrappedFn.value(a)
+}
+
+export function callNullable<A, B>(nullableFn: null | undefined | ((a: A) => B)): (a: A) => [B, A] extends [A, B] ? B : A | B
+export function callNullable<A, B>(nullableFn: null | undefined | ((a: A) => B)) {
+  return call(fromNullable(nullableFn))
+}
 
 export function flatMap<A, B>(fn: (a: A) => Option<B>): (option: Option<A>) => Option<B> {
   return (option) => isSome(option) ? fn(option.value) : none()
@@ -298,9 +309,10 @@ export const toNull
   : <T>(option: Option<T>) => T | null
   = getOrElse(() => null)
 
-export const alt
-  : <T>(getFallback: () => Option<T>) => <U>(option: Option<U>) => Option<T | U> 
-  = (getFallback) => (option) => isNone(option) ? getFallback() : option
+export function alt <T>(getFallback: () => Option<T>): <U>(option: Option<U>) => Option<[U, T] extends [T, U] ? U : T | U> 
+export function alt <T>(getFallback: () => Option<T>) {
+  return <U>(option: Option<U>) => isNone(option) ? getFallback() : option
+}
 
 export function oneOf<S, T extends S, U extends S>
   (guard: (src: S) => T, otherwise: (src: S) => U):

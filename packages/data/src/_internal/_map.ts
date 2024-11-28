@@ -1,10 +1,21 @@
-import type { newtype, some } from "any-ts"
-import type { entries, entry } from "./_entry.js"
+import type * as array from "../array.js"
+
+const Object_getOwnPropertySymbols = globalThis.Object.getOwnPropertySymbols
+const Object_keys = globalThis.Object.keys
+const Object_defineProperty = globalThis.Object.defineProperty
+const Array_isArray = globalThis.Array.isArray
 
 const reservedPropertyNames = [
   "__proto__",
   "toString",
 ] as const
+
+type KeyOf<
+  T, 
+  K extends 
+  | [T] extends [array.any] ? Extract<keyof T, `${number}`> : keyof T & (string | number)
+  = [T] extends [array.any] ? Extract<keyof T, `${number}`> : keyof T & (string | number)
+> = K
 
 /** 
  * {@link map `map [overload 1/2]`} ("data-last")
@@ -26,7 +37,7 @@ const reservedPropertyNames = [
  * **Ergonomics:** if you'd prefer to provide both arguments at the same time, see overload #2.
  */
 export function map<const T, V>
-  (fn: (value: T[some.keyof<T>], key: some.keyof<T>, object: T) => V): (object: T) => { -readonly [K in keyof T]: V }
+  (fn: (value: T[KeyOf<T>], key: KeyOf<T>, object: T) => V): (object: T) => { -readonly [K in keyof T]: V }
   // (fn: (prev: T[some.keyof<T>], key: some.keyof<T>, xs: T) => V): (xs: T) => { [key in keyof T]: V }
 
 /** 
@@ -48,17 +59,17 @@ export function map<const T, V>
  * **Ergonomics:** if you'd prefer to use {@link map `map`} in a pipeline, see overload #1.
  */
 export function map<const T, V>
-  (object: T, fn: (value: T[some.keyof<T>], key: some.keyof<T>, object: T) => V): { -readonly [K in keyof T]: V }
+  (object: T, fn: (value: T[KeyOf<T>], key: KeyOf<T>, object: T) => V): { -readonly [K in keyof T]: V }
 // impl.
 export function map<const T, V>(
   ...args:
-    | [fn: (value: T[some.keyof<T>], key: some.keyof<T>, object: T) => V]
-    | [object: T, fn: (value: T[some.keyof<T>], key: some.keyof<T>, object: T) => V]
+    | [fn: (value: T[KeyOf<T>], key: KeyOf<T>, object: T) => V]
+    | [object: T, fn: (value: T[KeyOf<T>], key: KeyOf<T>, object: T) => V]
 ) {
   if(args.length === 1) return (object: T) => map(object, args[0]) 
   else {
     const [object, fn] = args
-    if(globalThis.Array.isArray(object)) return object.map(fn as never)
+    if(Array_isArray(object)) return object.map(fn as never)
     else {
       let out: { [x: string]: unknown } = {}
       for (const k in object) 
@@ -70,22 +81,56 @@ export function map<const T, V>(
   }
 }
 
-function unsafeBind<T, K extends keyof any, V>(object: T, key: K, value: V): { [P in K]: V } & T
-/// impl.
-function unsafeBind<T extends {}, K extends keyof any, V>(
-  object: T, 
-  key: K, 
-  value: V
+export function mapPreserveIndex<const T, V>
+  (fn: (value: T[KeyOf<T>], key: KeyOf<T>, object: T) => V): (object: T) => { -readonly [K in keyof T]: V }
+  // (fn: (prev: T[some.keyof<T>], key: some.keyof<T>, xs: T) => V): (xs: T) => { [key in keyof T]: V }
+
+export function mapPreserveIndex<const T, V>
+  (object: T, fn: (value: T[KeyOf<T>], key: KeyOf<T>, object: T) => V): { -readonly [K in keyof T]: V }
+// impl.
+export function mapPreserveIndex<const T extends { [x: symbol | string]: unknown }, V>(
+  ...args:
+    | [fn: (value: T[keyof T], key: KeyOf<T>, object: T) => V]
+    | [object: T, fn: (value: T[keyof T], key: KeyOf<T>, object: T) => V]
 ) {
-  return (
-    void globalThis.Object.defineProperty(object, key, { 
-      value, configurable: true, 
-      enumerable: true, 
-      writable: true 
-    }), 
-    object
-  )
+  if(args.length === 1) return (object: T) => mapPreserveIndex(object, args[0]) 
+  else {
+    const [object, fn] = args
+    if(Array_isArray(object)) return object.map(fn as never)
+    else {
+      const syms = Object_getOwnPropertySymbols(object)
+      const ks = Object_keys(object)
+      let out: { [x: string | symbol]: unknown } = {}
+      for (let ix = 0, len = ks.length; ix < len; ix++) {
+        const k = ks[ix]
+        const x = object[k]
+        out[k] = fn(x as never, k as never, object)
+      }
+      for (let ix = 0, len = syms.length; ix < len; ix++) {
+        const sym = syms[ix]
+        out[sym] = object[sym]
+      }
+      return out
+    }
+  }
 }
+
+// function unsafeBind<T, K extends keyof any, V>(object: T, key: K, value: V): { [P in K]: V } & T
+// /// impl.
+// function unsafeBind<T extends {}, K extends keyof any, V>(
+//   object: T, 
+//   key: K, 
+//   value: V
+// ) {
+//   return (
+//     void Object_defineProperty(object, key, { 
+//       value, configurable: true, 
+//       enumerable: true, 
+//       writable: true 
+//     }), 
+//     object
+//   )
+// }
 
 function bindDontPoison<T, K extends keyof any, V>(object: T, key: K, value: V): { [P in K]: V } & T
 /// impl.
@@ -96,7 +141,7 @@ function bindDontPoison<T extends {}, K extends keyof any, V>(
 ) {
   return (reservedPropertyNames as readonly (keyof any)[]).includes(key) 
     ? (
-      void globalThis.Object.defineProperty(object, key, { 
+      void Object_defineProperty(object, key, { 
         value, configurable: true, 
         enumerable: true, 
         writable: true 

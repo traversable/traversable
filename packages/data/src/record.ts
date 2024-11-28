@@ -1,4 +1,4 @@
-import { newtype } from "any-ts"
+import type { newtype } from "any-ts"
 import type { key } from "./_internal/_key.js"
 
 import { identity } from "./_internal/_function.js"

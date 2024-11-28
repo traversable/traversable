@@ -1,4 +1,4 @@
-import type { Universal, mutable as mut, newtype, nonempty, some } from "any-ts"
+import type { Universal, inline, mutable as mut, newtype, nonempty, some } from "any-ts"
 
 // type-level dependencies
 import type * as array from "../array.js"
@@ -9,6 +9,7 @@ import type { prop, props } from "./_prop.js"
 import type { to } from "./_to.js"
 import type { jsdoc } from "./_unicode.js"
 
+import { Invariant, URI, symbol } from "@traversable/registry"
 // dependencies IRL
 import * as fn from "./_function.js"
 import { key, type keys } from "./_key.js"
@@ -32,11 +33,6 @@ type getOrUnknown<T> = [T] extends [never] ? unknown : T
 /** @internal */
 type evaluate<T> = never | { [K in keyof T]: T[K] }
 /** @internal */
-type finiteArray<T> = globalThis.Extract<
-  T extends array.any ? number extends T["length"] ? never : T : never, 
-  array.any
->
-/** @internal */
 type parseInt<T> = [T] extends [`${infer N extends number}`] ? N : T;
 /** @internal */
 type literal<T extends any.primitive> 
@@ -52,8 +48,6 @@ const Object_values = globalThis.Object.values
 /** @internal - makes lookup a one-time cost */
 const Object_entries = globalThis.Object.entries
 /** @internal - makes lookup a one-time cost */
-const Object_hasOwnProperty = globalThis.Object.prototype.hasOwnProperty
-/** @internal - makes lookup a one-time cost */
 const Object_create = globalThis.Object.create
 /** @internal - makes lookup a one-time cost */
 const Object_getPrototypeOf = globalThis.Object.getPrototypeOf
@@ -62,9 +56,15 @@ const Object_fromEntries = globalThis.Object.fromEntries
 /** @internal - makes lookup a one-time cost */
 const Object_getOwnPropertySymbols = globalThis.Object.getOwnPropertySymbols
 /** @internal - makes lookup a one-time cost */
+// const Object_prototype_hasOwnProperty = globalThis.Object.prototype.hasOwnProperty
+/** @internal */
+const Object_hasOwnProperty 
+  : (object: {}, property: keyof any) => boolean
+  = globalThis.Function.call.bind(globalThis.Object.prototype.hasOwnProperty) as never
+/** @internal - makes lookup a one-time cost */
 const Object_hasOwn
   : <K extends key.any>(u: unknown, k: key.any) => u is { [P in K]: unknown }
-  = (u, k): u is never => object_isComposite(u) && Object_hasOwnProperty.call(u, k)
+  = (u, k): u is never => object_isComposite(u) && Object_hasOwnProperty(u, k)
 
 /** @internal */
 const isArray: (u: unknown) => u is array.any = globalThis.Array.isArray
@@ -86,13 +86,6 @@ const isFlat = (u: unknown): u is object.of<any.showable> =>
 /** @internal */
 const isShowable = (u: unknown): u is any.showable => u == null
   || typeof u === "boolean"
-  || typeof u === "number"
-  || typeof u === "bigint"
-  || typeof u === "string"
-/** @internal */
-const isPrimitive = (u: unknown): u is any.primitive => u == null 
-  || typeof u === "boolean"
-  || typeof u === "symbol"
   || typeof u === "number"
   || typeof u === "bigint"
   || typeof u === "string"
@@ -221,6 +214,7 @@ export function object_fromPath(leaf: unknown, ...keys: prop.any[]) {
 /** ### {@link object_knownPart `object.knownPart`} */
 export type object_knownPart<T> = never | 
   { [k in keyof T as literal<k>]: T[k] }
+
 /** ### {@link object_optionalKeys `object.optionalKeys`} */
 export type object_optionalKeys<T, K = keyof T> = 
   K extends keyof T ? {} extends globalThis.Pick<T, K> ? K : never : never
@@ -1818,11 +1812,10 @@ export function object_keys<const T extends object.any>
   { return options.symbols === object_keys.defaults.symbols ? Object_keys(object) : object_keys.impl(object) }
 
 export type object_keys<T> 
-  = [T] extends [finiteArray<T>]
+  = [T] extends [array.finite<T>]
   ? { -readonly [K in keyof T]: parseInt<K> } extends 
   infer KS extends any.keysOf<T> ? KS : never
   : (keyof T)[]
-
 
 export declare namespace object_keys {
   interface Options extends globalThis.Partial<{ symbols: "keep" | "forget" }> {}
@@ -1938,180 +1931,6 @@ export function object_some<V>(predicate: (value: V) => boolean) {
       if (predicate(object[k])) return true
     }
     return false
-  }
-}
-
-
-/** 
- * ## {@link object_flatten `object.flatten`} 
- * ### ｛ {@link jsdoc.mapping ` 🌈 `} ｝
- * 
- * @example
- *  import { object } from "@traversable/data"
- *  import * as vi from "vitest"
- * 
- *  const ex_01 = object.flatten({ 
- *    a: 1, 
- *    b: { 
- *      c: [{ d: 2, e: 3 }, { f: 4 }], 
- *      g: 5 
- *    }, 
- *    h: [6], 
- *    i: { j: { k: 7 } } 
- *  })
- *
- *  vi.assert.deepEqual(
- *    ex_01,
- *    {
- *      "a": 1,
- *      "b.c.0.d": 2,
- *      "b.c.0.e": 3,
- *      "b.c.1.f": 4,
- *      "b.g": 5,
- *      "h.0": 6,
- *      "i.j.k": 7,
- *    }
- *  )
- */
-export function object_flatten<const T extends object.any>(object: T) {
-  const loop = fn.loop<object_flatten.entry, object_flatten.entries>(
-    ([path, value], loop) => {
-      if (isPrimitive(value)) return [path, value] as const
-      else if (value !== null && typeof value === "object" )
-        return object_entries(value).flatMap(([k, next]) => loop([`${path}.${k}`, next] as const))
-      else throw [`\`object.flatten\` encountered a value it didn't know how to parse at path ${path}, got:`, value]
-    }
-  )
-  return Object_fromEntries(Object_entries(object).map(loop))
-}
-
-export type object_flatten<T> = object_flatten.loop<T, "">
-export declare namespace object_flatten {
-  type entry = readonly [key: string, value: unknown]
-  type entries = readonly [path: string, leaf: any.primitive] | readonly (readonly [path: string, leaf: any.primitive])[]
-  type loop<T, P extends string>
-    = T extends any.primitive ? [path: P, leaf: T]
-    : T extends array.any 
-    ? (
-      globalThis.Exclude<keyof T & string, "length"> extends infer K 
-      ? K extends keyof T & string
-      ? `${P extends "" ? "" : `${P}.`}${K}` extends infer Q 
-      ? [Q] extends [string] ? object_flatten.loop<T[K], Q> : never : never
-      : never
-      : never
-    )
-    : (keyof T & string) extends infer K 
-    ? K extends (keyof T & string)
-    ? `${P extends "" ? "" : `${P}.`}${K}` extends infer Q 
-    ? [Q] extends [string] ? object_flatten.loop<T[K], Q> : never : never
-    : never
-    : never
-    ;
-}
-
-/**
- * ## {@link object_serialize `object.serialize`} 
- * ### ｛ {@link jsdoc.destructor ` ⛓️‍💥 `} ｝
- */
-export function object_serialize<const T extends object.any>(object: T, options?: object_serialize.options): string 
-export function object_serialize<const T extends object.any>(object: T, options?: object_serialize.options): string { 
-  return isFlat(object)
-    ? object_serialize.flat(object, object_serialize.configFromOptions(options))
-    : object_serialize.recursive(object, object_serialize.configFromOptions(options)) 
-}
-
-export namespace object_serialize {
-  export type options = 
-    | { mode: "pretty" | "minify", indentBy?: number, delimiter?: string }
-    | { indentBy?: number, delimiter?: string, mode?: never }
-  export type config = {
-    indentBy: number
-    delimiter: string
-    mode: undefined | "minify"
-  }
-
-  /** @internal */
-  const pretty = { indentBy: 2, delimiter: "\n", mode: undefined } as const
-  /** @internal */
-  const minify = { indentBy: 0, delimiter: "", mode: "minify" } as const
-
-  export const configFromOptions 
-    : (options?: object_serialize.options) => object_serialize.config
-    = (options) => options === undefined ? pretty
-      : "mode" in options
-        ? options.mode === "pretty" ? pretty
-        : minify
-      : { indentBy: options.indentBy ?? 2, delimiter: options.delimiter ?? "\n", mode: undefined }
-
-  /** @internal */
-  const pad 
-    : (indent: number, fill?: string) => string
-    = (indent, fill = " ") => {
-      if(indent <= 0) return ""
-      let todo = indent
-      let out = ""
-      while((todo--) > 0) out = out.concat(fill)
-      return out
-    }
-
-  export const show 
-    : (value: any.showable) => string
-    = (value) => typeof value === "string" ? `"${value}"` : `${value}`
-
-  export const flat = (value: object.of<any.showable>, { delimiter, indentBy, mode }: object_serialize.config) => {
-    const keys = Object_keys(value)
-    const __ = mode === "minify" ? "" : " "
-    return fn.pipe(
-      keys.reduce(
-        (acc, k) => `${acc.length === 0 ? "" : `${acc},${__}`}${object_parseKey(k)}:${__}${show(value[k as never])}`, 
-        ``,
-      ),
-      (s) => `{${delimiter}${pad(indentBy)}${s}${pad(indentBy)}${delimiter}}`
-    )
-  }
-
-  export const recursive = (object: any.json, { indentBy, delimiter, mode }: object_serialize.config): string => {
-    let seen = new globalThis.WeakSet()
-    const __ = mode === "minify" ? "" : " "
-
-    const loop = fn.loop<[next: any.json | fn.any, indent: number], string>(
-      ([next, indent], loop) => {
-        if(object_is(next)) {
-          if(seen.has(next)) return `[Circular ${typeof next}]`
-          else seen.add(next)
-        }
-
-        switch (true) {
-          case isSymbol(next): return globalThis.String(next)
-          case isString(next): return `"${next}"`
-          case isBigInt(next): return `${next}n`
-          case isShowable(next): return `${next}`
-          case isFunction(next): return `[Function ${next.name === '' ? '(anonymous)' : next.name}]`
-          case isArray(next): return fn.pipe(
-            next,
-            map((x) => loop([x, indent + indentBy])),
-            (xs) => xs.length === 0 ? "[]" : xs.join(`,${delimiter}${pad(indent)}`),
-            (s) => `[${delimiter}${pad(indent)}${s}${delimiter}${pad(indent - indentBy)}]`
-          )
-          case object_is(next): return fn.pipe(
-            next,
-            map((x) => loop([x, indent + indentBy])),
-            Object_entries,
-            (xs) => xs.length === 0 ? "{}" : fn.pipe(
-              xs,
-              map(([k, v]) => `${object_parseKey(k)}:${__}${globalThis.String(v)}`),
-              (xs) => xs.join(`,${delimiter}${pad(indent)}`),
-              (x) => `{${delimiter}${pad(indent)}${x}${delimiter}${pad(indent - indentBy)}}`,
-            ),
-          )
-          default: {
-            console.log("next: END", next)
-            return fn.exhaustive(next)
-          }
-        }
-      })
-
-    return loop([object, indentBy])
   }
 }
 
@@ -2242,4 +2061,110 @@ object_filterKeys.defer = (
   <const T extends object.any> (predicate: some.predicate<key.nonnumber>): (object: T) => { -readonly [K in keyof T]+?: T[K] }
   <const T extends object.any> (predicate: some.predicate<key.nonstring>): (object: T) => { -readonly [K in keyof T]+?: T[K] }
   <const T extends object.any> (predicate: some.predicate<keyof any>): (object: T) => { -readonly [K in keyof T]+?: T[K] }
+}
+
+
+/**
+ * ## {@link object_serialize `object.serialize`} 
+ * ### ｛ {@link jsdoc.destructor ` ⛓️‍💥 `} ｝
+ */
+export function object_serialize<const T extends object.any>(object: T, options?: object_serialize.Options): string 
+export function object_serialize<const T extends object.any>(object: T, options?: object_serialize.Options): string { 
+  return isFlat(object)
+    ? object_serialize.flat(object, object_serialize.configFromOptions(options))
+    : object_serialize.recursive(object, object_serialize.configFromOptions(options)) 
+}
+
+export namespace object_serialize {
+  export type Options = 
+    | { mode: "pretty" | "minify", indentBy?: number, delimiter?: string }
+    | { indentBy?: number, delimiter?: string, mode?: never }
+  export type Config = {
+    indentBy: number
+    delimiter: string
+    mode: undefined | "minify"
+  }
+
+  /** @internal */
+  const pretty = { indentBy: 2, delimiter: "\n", mode: undefined } as const satisfies Config
+  /** @internal */
+  const minify = { indentBy: 0, delimiter: "", mode: "minify" } as const satisfies Config
+
+
+
+  export const configFromOptions 
+    : (options?: Options) => object_serialize.Config
+    = (options) => !options ? pretty
+      : "mode" in options
+        ? options.mode === "pretty" ? pretty
+        : minify
+      : { indentBy: options.indentBy ?? 2, delimiter: options.delimiter ?? "\n", mode: undefined }
+
+  /** @internal */
+  const pad 
+    : (indent: number, fill?: string) => string
+    = (indent, fill = " ") => {
+      if(indent <= 0) return ""
+      let todo = indent
+      let out = ""
+      while((todo--) > 0) out = out.concat(fill)
+      return out
+    }
+
+  export const show 
+    : (value: any.showable) => string
+    = (value) => typeof value === "string" ? `"${value}"` : `${value}`
+
+  export const flat = (value: object.of<any.showable>, { delimiter, indentBy, mode }: object_serialize.Config) => {
+    const keys = Object_keys(value)
+    const __ = mode === "minify" ? "" : " "
+    return fn.pipe(
+      keys.reduce(
+        (acc, k) => `${acc.length === 0 ? "" : `${acc},${__}`}${object_parseKey(k)}:${__}${show(value[k as never])}`, 
+        ``,
+      ),
+      (s) => `{${delimiter}${pad(indentBy)}${s}${pad(indentBy)}${delimiter}}`
+    )
+  }
+
+  export const recursive = (object: any.json, { indentBy, delimiter, mode }: object_serialize.Config): string => {
+    let seen = new globalThis.WeakSet()
+    const __ = mode === "minify" ? "" : " "
+
+    const loop = fn.loop<[next: any.json | fn.any, indent: number], string>(
+      ([next, indent], loop) => {
+        if(object_is(next)) {
+          if(seen.has(next)) return `[Circular ${typeof next}]`
+          else seen.add(next)
+        }
+
+        switch (true) {
+          case isSymbol(next): return globalThis.String(next)
+          case isString(next): return `"${next}"`
+          case isBigInt(next): return `${next}n`
+          case isShowable(next): return `${next}`
+          case isFunction(next): return `[Function ${next.name === '' ? '(anonymous)' : next.name}]`
+          case isArray(next): return fn.pipe(
+            next,
+            map((x) => loop([x, indent + indentBy])),
+            (xs) => xs.length === 0 ? "[]" : xs.join(`,${delimiter}${pad(indent)}`),
+            (s) => `[${delimiter}${pad(indent)}${s}${delimiter}${pad(indent - indentBy)}]`
+          )
+          case object_is(next): return fn.pipe(
+            next,
+            map((x) => loop([x, indent + indentBy])),
+            Object_entries,
+            (xs) => xs.length === 0 ? "{}" : fn.pipe(
+              xs,
+              map(([k, v]) => `${object_parseKey(k)}:${__}${globalThis.String(v)}`),
+              (xs) => xs.join(`,${delimiter}${pad(indent)}`),
+              (x) => `{${delimiter}${pad(indent)}${x}${delimiter}${pad(indent - indentBy)}}`,
+            ),
+          )
+          default: return fn.exhaustive(next)
+        }
+      })
+
+    return loop([object, indentBy])
+  }
 }

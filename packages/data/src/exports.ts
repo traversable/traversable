@@ -1,8 +1,9 @@
+import type { URI } from "@traversable/registry";
 import type { newtype } from "any-ts";
 import { jsdoc } from "./_internal/_unicode.js"
-import { URI } from "@traversable/data/_internal/_uri";
 
 export type { nonempty } from "./nonempty.js"
+export type { any } from "./_internal/_any.js"
 
 export * from "./version.js";
 export * as array from "./array.js"
@@ -60,7 +61,11 @@ export type Equal<in T> = (left: T, right: T) => boolean;
  * - {@link Equal `data.Equal`}
  * - the Wikipedia page for [total orders](https://en.wikipedia.org/wiki/Total_order)
  */
-export type Compare<in T> = (left: T, right: T) => -1 | 0 | 1;
+export interface Compare<in T> { 
+	// (left: T, right: T): -1 | 0 | 1 
+	(left: T, right: T): number 
+}
+
 export declare namespace Compare {
 	export {
 		Compare_any as any,

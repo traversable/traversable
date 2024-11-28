@@ -5,7 +5,7 @@ import type { jsdoc, math } from "./_internal/_unicode.js"
 
 export {
   /**
-   * ### {@link number_any `number.any`}
+   * ## {@link number_any `number.any`}
    * Greatest lower bound of the {@link number `number`} namespace
    */
   type number_any as any,
@@ -14,7 +14,7 @@ export {
 type number_any<T extends number = number> = T
 
 /**
- * ### {@link finite `number.finite`}
+ * ## {@link finite `number.finite`}
  * 
  * {@link finite `number.finite`} constrains a type parameter to be a _literal_ 
  * number (e.g., `1` or `-1.1`, but not `number`).
@@ -37,7 +37,7 @@ type number_any<T extends number = number> = T
 export type finite<T> = number extends T ? never : [T] extends [number] ? number : never
 
 /**
- * ### {@link nonfinite `number.nonfinite`}
+ * ## {@link nonfinite `number.nonfinite`}
  * 
  * {@link nonfinite `number.nonfinite`} constrains a type parameter to be a _literal_ 
  * number (`number`, but not `1` or `-1.1`).
@@ -60,7 +60,7 @@ export type finite<T> = number extends T ? never : [T] extends [number] ? number
 export type nonfinite<T> = number extends T ? number : never
 
 /**
- * ### {@link numeric `number.numeric`}
+ * ## {@link numeric `number.numeric`}
  * 
  * A type representing a number, or a string numeric (string containing a number). 
  * Includes `bigint` (e.g. `1n` and `"1n"`).
@@ -73,7 +73,7 @@ export type numeric<
 > = T
 
 /**
- * ### {@link from `number.from`}
+ * ## {@link from `number.from`}
  *
  * Extract from {@link T `T`} those members that are assignable to {@link number.any `number`}
  *
@@ -84,7 +84,7 @@ export type numeric<
 export type from<T, N extends T extends number ? T : never = T extends number ? T : never> = N
 
 /**
- * ### {@link and `number.and`}
+ * ## {@link and `number.and`}
  *
  * Intersects {@link T `T`} with {@link number.any `number`}
  *
@@ -95,15 +95,15 @@ export type from<T, N extends T extends number ? T : never = T extends number ? 
 export type and<T, N extends number & T = number & T> = N
 
 /**
- * ### {@link is `number.is`}
- * #### ｛ {@link jsdoc.guard ` ️🦺‍ ` } ｝
+ * ## {@link is `number.is`}
+ * ### ｛ {@link jsdoc.guard ` ️🦺‍ ` } ｝
  *
  * Narrows its argument from `unknown` to {@link number_any `number`}
  */
 export const is = (u: unknown): u is number => typeof u === "number"
 
 /**
- * ### {@link MIN `number.MIN`}
+ * ## {@link MIN `number.MIN`}
  * `-(2⁵³ - 1)` or `-(Math.pow(2, 53) - 1)`
  * [greatest lower bound](https://en.wikipedia.org/wiki/Infimum_and_supremum) 
  * of the set of all finite numbers in JavaScript.
@@ -111,7 +111,7 @@ export const is = (u: unknown): u is number => typeof u === "number"
 export const MIN = globalThis.Number.MIN_SAFE_INTEGER
 
 /**
- * ### {@link MAX `number.MAX`}
+ * ## {@link MAX `number.MAX`}
  * 
  * `2⁵³ - 1` or `Math.pow(2, 53) - 1` is the 
  * [least upper bound](https://en.wikipedia.org/wiki/Infimum_and_supremum) 
@@ -120,7 +120,7 @@ export const MIN = globalThis.Number.MIN_SAFE_INTEGER
 export const MAX = globalThis.Number.MAX_SAFE_INTEGER
 
 /**
- * ### {@link TOP `number.TOP`}
+ * ## {@link TOP `number.TOP`}
  * 
  * `+Infinity` is the [top type](https://en.wikipedia.org/wiki/Top_type)
  * and [least upper bound](https://en.wikipedia.org/wiki/Infimum_and_supremum) 
@@ -129,7 +129,7 @@ export const MAX = globalThis.Number.MAX_SAFE_INTEGER
 export const TOP = globalThis.Number.POSITIVE_INFINITY
 
 /**
- * ### {@link BOTTOM `number.BOTTOM`}
+ * ## {@link BOTTOM `number.BOTTOM`}
  * 
  * `-Infinity` is the [bottom type](https://en.wikipedia.org/wiki/Bottom_type)
  * and [greatest lower bound](https://en.wikipedia.org/wiki/Infimum_and_supremum) 
@@ -138,12 +138,12 @@ export const TOP = globalThis.Number.POSITIVE_INFINITY
 export const BOTTOM = globalThis.Number.NEGATIVE_INFINITY
 
 /** 
- * ### {@link float `number.float`} 
- * #### ｛ {@link math.real `ℝ`}  ｝
+ * ## {@link float `number.float`} 
+ * ### ｛ {@link math.real `ℝ`}  ｝
  * -----
  * 1. {@link float `float`} is a [newtype](https://doc.rust-lang.org/rust-by-example/generics/new_types.html)
- * that inherits from {@link globalThis.Number.prototype `Number.prototype`} and represents a number with an
- * exponent.
+ * that inherits from {@link globalThis.Number.prototype `Number.prototype`} and represents an exponential 
+ * number (a number with a non-zero number after the decimal point).
  * 
  * 2. The {@link float `float`} function constructs a {@link float `float`} (or 
  * "floating point" or "real" number) from an arbitrary JavaScript number.
@@ -161,7 +161,7 @@ export function float(x: number) { return x }
 
 export {
   /** 
-   * ### {@link isNaN `number.isNaN`}
+   * ## {@link isNaN `number.isNaN`}
    * 
    * Check if a value is {@link globalThis.Number.NaN `NaN`}.
    * 
@@ -175,7 +175,7 @@ const number_isNaN
   = globalThis.Number.isNaN
 
 /** 
- * ### {@link isNotNaN `number.isNotNaN`}
+ * ## {@link isNotNaN `number.isNotNaN`}
  * 
  * Check if a value is a number, and is not {@link globalThis.Number.NaN `NaN`}.
  */
@@ -184,7 +184,7 @@ export const isNotNaN
   = (x: unknown) => is(x) && x === x
 
 /**
- * ### {@link parse `number.parse`}
+ * ## {@link parse `number.parse`}
  * A runtime-safe version of {@link parseFloat `parseFloat`}
  */
 export const parse
@@ -200,7 +200,7 @@ export declare namespace Bounded {
 }
 
 /** 
- * ### {@link isNegativeZero `number.isNegativeZero`}
+ * ## {@link isNegativeZero `number.isNegativeZero`}
  * 
  * Returns true [iff](https://en.wikipedia.org/wiki/If_and_only_if) its argument is exactly `-0`.
  * 
@@ -218,7 +218,7 @@ export const isNegativeZero
     && (1 / u) === globalThis.Number.NEGATIVE_INFINITY
 
 /** 
- * ### {@link isFinite `number.isFinite`}
+ * ## {@link isFinite `number.isFinite`}
  * 
  * Returns `true` [iff](https://en.wikipedia.org/wiki/If_and_only_if) its argument 
  * is a number that is not one of:
@@ -240,8 +240,8 @@ export const isNonFinite
   = (number) => typeof number === "number" && !globalThis.Number.isFinite(number)
 
 /** 
- * ### {@link add `number.add`}
- * #### ｛ {@link jsdoc.folding ` 🪭 ` } ｝
+ * ## {@link add `number.add`}
+ * ### ｛ {@link jsdoc.folding ` 🪭 ` } ｝
  * 
  * Folds an array of numbers by adding them. 
  * 
@@ -266,8 +266,8 @@ export function add(...xs: number[] | [xs: readonly number[]]): number {
 }
 
 /**
- * ### {@link multiply `number.multiply`}
- * #### ｛ {@link jsdoc.folding ` 🪭 ` } ｝
+ * ## {@link multiply `number.multiply`}
+ * ### ｛ {@link jsdoc.folding ` 🪭 ` } ｝
  *
  * Folds an array of numbers by multiplying them. 
  * 
@@ -292,7 +292,7 @@ export function multiply(...xs: number[] | [xs: readonly number[]]): number {
 }
 
 /** 
- * ### {@link clampInteger `number.clampInteger`}
+ * ## {@link clampInteger `number.clampInteger`}
  * - If `x` is less than {@link min `min`}, returns {@link min `min`}
  * - Else if `x` is greater than {@link max `max`}, returns {@link max `max`}
  */
@@ -304,8 +304,8 @@ export function clampInteger({ min = 0, max = globalThis.Number.MAX_SAFE_INTEGER
 }
 
 /** 
- * ### {@link max `number.max`} 
- * #### ｛ {@link jsdoc.folding ` 🪭 ` } ｝
+ * ## {@link max `number.max`} 
+ * ### ｛ {@link jsdoc.folding ` 🪭 ` } ｝
  * 
  * Folds an array of numbers by comparing them 2 at a time, always 
  * taking the maximum.
@@ -362,8 +362,8 @@ export function max(...xs: number[] | [xs: readonly number[]]): number {
 }
 
 /** 
- * ### {@link min `number.min`} 
- * #### ｛ {@link jsdoc.folding ` 🪭 ` } ｝
+ * ## {@link min `number.min`} 
+ * ### ｛ {@link jsdoc.folding ` 🪭 ` } ｝
  * 
  * Reduces or [folds](https://en.wikipedia.org/wiki/Fold_(higher-order_function)) 
  * an array of numbers by comparing them 2 at a time, always taking the minimum.

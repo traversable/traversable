@@ -1,10 +1,11 @@
+import { URI } from "@traversable/registry"
 import type { None, Option, Some, integer } from "./exports.js"
 import type { numeric } from "./number.js"
 
 /** @internal */
-const none = (): None => ({ _tag: "@traversable/data/Option::None" })
+const none = (): None => ({ _tag: URI.None })
 /** @internal */
-const some = <T>(value: T): Some<T> => ({ _tag: "@traversable/data/Option::Some", value })
+const some = <T>(value: T): Some<T> => ({ _tag: URI.Some, value })
 
 export {
   /**

@@ -1,4 +1,5 @@
-import type { any, mut, nonempty, some } from "any-ts"
+import { Invariant } from "@traversable/registry"
+import type { any, mut } from "any-ts"
 import type { array_shift } from "./_array.js"
 
 export { fn }
@@ -25,6 +26,7 @@ export {
   tupled,
   untupled,
   UnusedParam,
+  upcast,
 }
 
 /** @internal */
@@ -156,6 +158,10 @@ const identity
   : <const T>(x: T) => T 
   = (x) => x
 
+const upcast
+  : <I extends O, O>(i: I) => O
+  = identity
+
 const absorb
   : <T>(x: T) => never 
   = (x) => x as never
@@ -192,8 +198,8 @@ const loop
  * Checks to make sure a function's implementation is total
  */
 const exhaustive
-  : <_>(_: never) => _ 
-  = () => { throw Error(`\`exhaustive\` was called, which should never happen`) }
+  : <_ extends never = never>(..._: _[]) => _ 
+  = (..._) => Invariant.FailedToExhaustivelyMatch("@traversable/data/fn.exhaustive", _)
 
 const free
   : <T = never>(type: T) => T 

@@ -1,7 +1,13 @@
 import type { any } from "./_internal/_any.js"
 
 import {
-  // functions
+  type object_invertible as invertible,
+  type object_knownPart as knownPart,
+  type object_omitLax as omitLax,
+  type object_optional as optional,
+  type object_optionalKeys as optionalKeys,
+  type object_required as required,
+  type object_requiredKeys as requiredKeys,
   object_bind as bind,
   object_camel as camel,
   object_capitalize as capitalize,
@@ -12,7 +18,6 @@ import {
   object_filter as filter,
   object_filterKeys as filterKeys,
   object_find as find,
-  object_flatten as flatten,
   object_fromArray as fromArray,
   object_fromEntries as fromEntries,
   object_fromKeys as fromKeys,
@@ -23,8 +28,6 @@ import {
   object_includes as includes,
   object_intersect as intersect,
   object_invert as invert,
-  // types
-  type object_invertible as invertible,
   object_is as is,
   object_isComposite as isComposite,
   object_isKeyOf as isKeyOf,
@@ -32,17 +35,12 @@ import {
   object_isRecord as isRecord,
   object_kebab as kebab,
   object_keys as keys,
-  type object_knownPart as knownPart,
   object_lookup as lookup,
   object_lowercase as lowercase,
   object_mapKeys as mapKeys,
-  // aliased
   object_const,
   object_let,
   object_omit as omit,
-  type object_omitLax as omitLax,
-  type object_optional as optional,
-  type object_optionalKeys as optionalKeys,
   object_parseEntry as parseEntry,
   object_parseKey as parseKey,
   object_pascal as pascal,
@@ -50,8 +48,6 @@ import {
   object_pluck as pluck,
   object_postfix as postfix,
   object_prefix as prefix,
-  type object_required as required,
-  type object_requiredKeys as requiredKeys,
   object_serialize as serialize,
   object_snake as snake,
   object_stringifyValues as stringifyValues,
@@ -81,7 +77,6 @@ export declare namespace object {
     filter,
     filterKeys,
     find,
-    flatten,
     fromArray,
     fromEntries,
     fromKeys,
@@ -166,7 +161,6 @@ export namespace object {
   object.filter = filter
   object.filterKeys = filterKeys
   object.find = find
-  object.flatten = flatten
   object.fromArray = fromArray
   object.fromEntries = fromEntries
   object.fromKeys = fromKeys
