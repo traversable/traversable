@@ -252,9 +252,21 @@ export function map<A, B>(
  *  //       ↓↓
  *  myConsole?.(123)
  */
-export const apply
-  : <A, B>(option: Option<A>) => (wrappedFn: Option<(a: A) => B>) => Option<B> 
-  = (option) => (wrappedFn) => isNone(wrappedFn) ? none() : isNone(option) ? none() : some(wrappedFn.value(option.value))
+export function apply<A, B>(option: Option<A>): (wrappedFn: Option<(a: A) => B>) => Option<B> 
+export function apply<A, B>(option: Option<A>, wrappedFn: Option<(a: A) => B>): Option<B> 
+export function apply<A, B>(
+  ..._:
+    | [option: Option<A>]
+    | [option: Option<A>, wrappedFn: Option<(a: A) => B>]
+) {
+  return _.length === 1
+    ? (wrappedFn: Option<(a: A) => B>) => apply(_[0], wrappedFn)
+    : isNone(_[1]) ? none() : isNone(_[0]) ? none() : some(_[1].value(_[0].value))
+}
+
+export const apSecond
+  : <A, B>(second: Option<B>) => (first: Option<A>) => Option<B>
+  = (second) => (first) => apply(second, map(first, () => (b) => b))
 
 export function flap<A, B>(wrappedFn: Option<(a: A) => B>): (a: A) => Option<[B, A] extends [A, B] ? B : A | B>
 export function flap<A, B>(wrappedFn: Option<(a: A) => B>) {

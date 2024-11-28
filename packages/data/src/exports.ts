@@ -1,19 +1,20 @@
-import type { URI } from "@traversable/registry";
-import type { newtype } from "any-ts";
+import type { URI } from "@traversable/registry"
+import type { newtype } from "any-ts"
 import { jsdoc } from "./_internal/_unicode.js"
 
 export type { nonempty } from "./nonempty.js"
 export type { any } from "./_internal/_any.js"
 
-export * from "./version.js";
+export * from "./version.js"
 export * as array from "./array.js"
-export * as Equal from "./equal.js";
+export * as Equal from "./equal.js"
 export * as fn from "./function.js"
 export * as integer from "./integer.js"
 export * as number from "./number.js"
 export * as string from "./string.js"
 export * as unicode from "./_internal/_unicode.js"
 export * as Option from "./option.js"
+export * as pair from "./pair.js"
 
 export { boolean } from "./boolean.js"
 export { entry, entries } from "./entry.js"
@@ -40,12 +41,12 @@ export { record } from "./record.js"
  * - the Wikipedia page on
  * [first-order logic](https://en.wikipedia.org/wiki/First-order_logic)
  */
-export type Predicate<in T = any> = (value: T) => boolean;
+export type Predicate<in T = any> = (value: T) => boolean
 
 /**
  * ## {@link Predicate `data.Predicate`}
  */
-export type Equal<in T> = (left: T, right: T) => boolean;
+export type Equal<in T> = (left: T, right: T) => boolean
 
 /**
  * ## {@link Compare `data.Compare`}
@@ -71,14 +72,14 @@ export declare namespace Compare {
 		Compare_any as any,
 		Compare_object as object,
 		Compare_infer as infer,
-	};
+	}
 }
 export declare namespace Compare {
-	type Compare_any = Compare<any>;
+	type Compare_any = Compare<any>
 	type Compare_object<T> =
 		| never
-		| Compare<{ -readonly [K in keyof T]: Compare.infer<T[K]> }>;
-	type Compare_infer<T> = [T] extends [Compare<infer U>] ? U : never;
+		| Compare<{ -readonly [K in keyof T]: Compare.infer<T[K]> }>
+	type Compare_infer<T> = [T] extends [Compare<infer U>] ? U : never
 }
 
 /**
@@ -90,7 +91,7 @@ export declare namespace Compare {
  * Like the built-in utility, this implementation is homomorphic
  * (structure-preserving)
  */
-export type Pick<T, K extends keyof T> = never | { -readonly [x in K]: T[x] };
+export type Pick<T, K extends keyof T> = never | { -readonly [x in K]: T[x] }
 
 /**
  * ## {@link Omit `data.Omit`}
@@ -101,7 +102,7 @@ export type Pick<T, K extends keyof T> = never | { -readonly [x in K]: T[x] };
  * Like the built-in utility, this implementation is homomorphic
  * (structure-preserving)
  */
-export type Omit<T, K extends keyof any> = never | Pick<T, Exclude<keyof T, K>>;
+export type Omit<T, K extends keyof any> = never | Pick<T, Exclude<keyof T, K>>
 
 /**
  * ### {@link Force `data.Force`}
@@ -155,11 +156,11 @@ export type Optional<T, K extends keyof T = keyof T> = never |
  * See also:
  * - {@link Compare `data.Compare`}
  */
-export type Sort<in out T> = (array: readonly T[]) => readonly T[];
+export type Sort<in out T> = (array: readonly T[]) => readonly T[]
 export declare namespace Sort {
-	export type infer<T> = [T] extends [Sort<infer U>] ? U : never;
-	export type { Sort_any as any };
-	export type Sort_any<T extends Sort<any> = Sort<any>> = T;
+	export type infer<T> = [T] extends [Sort<infer U>] ? U : never
+	export type { Sort_any as any }
+	export type Sort_any<T extends Sort<any> = Sort<any>> = T
 }
 
 /**
@@ -182,15 +183,15 @@ export declare namespace Sort {
  *   https://en.wikipedia.org/wiki/Covariance_and_contravariance_(computer_science)
  * )
  */
-export type MapSort<in T> = <S>(fn: (s: S) => T) => Sort<S>;
+export type MapSort<in T> = <S>(fn: (s: S) => T) => Sort<S>
 export declare namespace MapSort {
 	/**
 	 * ### {@link infer `data.MapSort.infer`}
 	 * Type-level utility that extracts
 	 */
-	export type infer<T> = [T] extends [MapSort<infer U>] ? U : never;
-	export type { MapSort_any as any };
-	export type MapSort_any<T extends MapSort<any> = MapSort<any>> = T;
+	export type infer<T> = [T] extends [MapSort<infer U>] ? U : never
+	export type { MapSort_any as any }
+	export type MapSort_any<T extends MapSort<any> = MapSort<any>> = T
 }
 
 /**
