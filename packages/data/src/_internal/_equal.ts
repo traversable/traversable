@@ -261,15 +261,19 @@ export const Equal_tuple: <T extends readonly Equal<any>[]>(
  * on a given {@link Equal `Equal`} for the elements of the array.
  * @category combinators
  */
-export const Equal_array: <T>(equiv: Equal<T>) => Equal<readonly T[]> =
-	(equiv) => (left, right) => {
-		if (left.length !== right.length) return false;
-
-		for (let ix = 0; ix < self.length; ix++)
+export function Equal_array<T>(equiv: Equal<T>): Equal<readonly T[]> {
+  return (left, right) => {
+    if (left.length !== right.length) return false;
+    for (let ix = 0; ix < left.length; ix++)
 			if (!equiv(left[ix], right[ix])) return false;
-
 		return true;
-	};
+	}
+}
+
+Equal_array.defer = <T>(equiv: Equal<T>) => 
+	(left: readonly T[]) => 
+		(right: readonly T[]) => 
+			Equal_array(equiv)(left, right) 
 
 /**
  * ### {@link Equal_nonemptyArray `Equal.nonemptyArray`}
