@@ -988,11 +988,8 @@ export function TupleNode(items: fc.Arbitrary<{ [x: number]: unknown }>, constra
 export interface ArrayNode<T extends Schema.any = Schema.any> extends 
   optional<Schema_Base<readonly T[]>>,
   optional<ItemConstraints>,
-  required<{
-    type: "array"
-    items: T
-    prefixItems?: false
-  }> { }
+  required<{ type: "array", items: T }> 
+  { prefixItems?: false }
 
 /** ### {@link ArrayNode `openapi.ArrayNode`} */
 export function ArrayNode<T extends Schema.any>(
