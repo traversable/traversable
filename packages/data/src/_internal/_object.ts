@@ -1,4 +1,4 @@
-import type { Universal, inline, mutable as mut, newtype, nonempty, some } from "any-ts"
+import type { Universal, mutable as mut, newtype, nonempty, some } from "any-ts"
 
 // type-level dependencies
 import type * as array from "../array.js"
@@ -9,8 +9,7 @@ import type { prop, props } from "./_prop.js"
 import type { to } from "./_to.js"
 import type { jsdoc } from "./_unicode.js"
 
-import { Invariant, URI, symbol } from "@traversable/registry"
-// dependencies IRL
+// actual dependencies
 import * as fn from "./_function.js"
 import { key, type keys } from "./_key.js"
 import { map } from "./_map.js"
@@ -41,43 +40,30 @@ type literal<T extends any.primitive>
   : boolean extends T ? never
   : T
 
-/** @internal - makes lookup a one-time cost */
+/** @internal - pay the lookup cost once */
 const Object_keys = globalThis.Object.keys
-/** @internal - makes lookup a one-time cost */
+/** @internal */
 const Object_values = globalThis.Object.values
-/** @internal - makes lookup a one-time cost */
+/** @internal */
 const Object_entries = globalThis.Object.entries
-/** @internal - makes lookup a one-time cost */
+/** @internal */
 const Object_create = globalThis.Object.create
-/** @internal - makes lookup a one-time cost */
+/** @internal */
 const Object_getPrototypeOf = globalThis.Object.getPrototypeOf
-/** @internal - makes lookup a one-time cost */
+/** @internal */
 const Object_fromEntries = globalThis.Object.fromEntries
-/** @internal - makes lookup a one-time cost */
+/** @internal */
 const Object_getOwnPropertySymbols = globalThis.Object.getOwnPropertySymbols
-/** @internal - makes lookup a one-time cost */
-// const Object_prototype_hasOwnProperty = globalThis.Object.prototype.hasOwnProperty
 /** @internal */
 const Object_hasOwnProperty 
   : (object: {}, property: keyof any) => boolean
   = globalThis.Function.call.bind(globalThis.Object.prototype.hasOwnProperty) as never
-/** @internal - makes lookup a one-time cost */
+/** @internal */
 const Object_hasOwn
   : <K extends key.any>(u: unknown, k: key.any) => u is { [P in K]: unknown }
   = (u, k): u is never => object_isComposite(u) && Object_hasOwnProperty(u, k)
-
 /** @internal */
 const isArray: (u: unknown) => u is array.any = globalThis.Array.isArray
-/** @internal */
-/** @internal */
-const isSymbol = (u: unknown): u is symbol => 
-  typeof u === "symbol"
-/** @internal */
-const isBigInt = (u: unknown): u is bigint => 
-  typeof u === "bigint"
-/** @internal */
-const isFunction = (u: unknown): u is fn.any => 
-  typeof u === "function"
 /** @internal */
 function getEmpty<T extends {}>(_: T): any.indexedBy<keyof T | number>
 function getEmpty(_: {}) { return isArray(_) ? [] : {} }
@@ -86,7 +72,7 @@ function getEmpty(_: {}) { return isArray(_) ? [] : {} }
  * ## {@link object_symbols `object.symbols`}
  * ### ｛ {@link jsdoc.destructor ` ️⛓️‍💥️‍ `} ｝
  * 
- * Returns an array of all of an object's own (non-inherited) symbol properties.
+ * Returns an array of the input object's own (non-inherited) symbol properties.
  * 
  * {@link object_symbols `object.symbols`} is like {@link object_keys `object.keys`},
  * but for symbols.
@@ -101,7 +87,6 @@ export const object_symbols: {
   <T extends object.any>(object: T): object_symbols<T>[]
   (object: object.any): symbol[]
 } = Object_getOwnPropertySymbols
-
 
 export type object_symbols<
   T, 
@@ -792,27 +777,29 @@ export type object_invert<T extends object_invertible>
  * ## {@link object_isComposite `object.isComposite`} 
  * ### ｛ {@link jsdoc.guard ` 🦺 ` } ｝
  * 
- * Targets any non-primitive JavaScript object
+ * Typeguard that targets any non-primitive JavaScript object
+ * (including arrays).
  * 
  * See also:
  * - {@link object_is `object.is`}
  * - {@link object_isRecord `object.isRecord`}
  */
 export function object_isComposite<T>(u: unknown): u is { [x: string]: T } 
-  { return typeof u === "object" && u !== null }
+  { return u !== null && typeof u === "object" }
 
 /**
  * ## {@link object_isRecord `object.isRecord`} 
  * ### ｛ {@link jsdoc.guard ` 🦺 ` } ｝
  *
- * Targets any non-array, non-primitive JavaScript object
+ * Typeguard that targets non-array, non-primitive JavaScript objects
  * 
  * See also:
  * - {@link object_is `object.is`}
  * - {@link object_isComposite `object.isComposite`}
  */
-export function object_isRecord(u: unknown): u is { [x: string]: unknown } 
-  { return object_isComposite(u) && !isArray(u) }
+export function object_isRecord(u: unknown): 
+  u is { [x: string]: unknown } 
+  { return u !== null && typeof u === "object" && !isArray(u) }
 
 /** 
  * ## {@link object_is `object.is`} 

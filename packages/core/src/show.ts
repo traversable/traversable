@@ -1,5 +1,5 @@
 import type { prop, props, unicode } from "@traversable/data"
-import { ANSI, fn, map } from "@traversable/data"
+import { ANSI, char, fn, map } from "@traversable/data"
 import { Invariant, PATTERN } from "@traversable/registry"
 import { inline } from "any-ts"
 
@@ -165,46 +165,6 @@ const pad
     return out
   }
 
-const ESC = [
-  /**  0- 9  */ "\\u0000", "\\u0001", "\\u0002", "\\u0003", "\\u0004", "\\u0005", "\\u0006", "\\u0007", '\\b', '\\t',
-  /** 10-19 */ '\\n', '\\u000b', '\\f', '\\r', '\\u000e', '\\u000f', '\\u0010', '\\u0011', '\\u0012', '\\u0013', 
-  /** 20-29 */ '\\u0014', '\\u0015', '\\u0016', '\\u0017', '\\u0018', '\\u0019', '\\u001a', '\\u001b', '\\u001c', '\\u001d', 
-  /** 30-39 */ '\\u001e', '\\u001f', '', '', '\\"', '', '', '', '', '',
-  /** 40-59 */ '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', 
-  /** 60-79 */ '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '',
-  /** 80-92 */ '', '', '', '', '', '', '', '', '', '', '', '', '\\\\',
-]
-const esc = (s: string): string => {
-  let pt
-  let last = 0
-  let out = ""
-  for (let ix = 0, len = s.length; ix < len; ix++) {
-    void (pt = s.charCodeAt(ix))
-     
-    if (
-      pt === 34 || // "
-      pt === 92 || // \
-      pt < 32
-    ) {
-      void (out += s.slice(last, ix) + ESC[pt])
-      void (last = ix + 1)
-      // lone surroates
-    } else if (pt >= 0xd800 && pt <= 0xdfff) {
-      if (pt <= 0xdbff && ix + 1 < len) {
-        void (pt = s.charCodeAt(ix + 1))
-        if (pt >= 0xdc00 && pt <= 0xdfff) {
-          void (ix++)
-          continue
-        }
-      }
-      void (out += s.slice(last, ix) + '\\u' + pt.toString(16))
-      void (last = ix + 1)
-    }
-  }
-  void (out += s.slice(last))
-  return out
-}
-
 const bigint
   : serialize.Hook<bigint>
   = (_) => `${_}n`
@@ -217,7 +177,7 @@ const null_
 const string
   : serialize.Hook<string>
   = (s) => {
-    return '"' + esc(s) + '"'
+    return '"' + char.escape(s) + '"'
   }
 const number
   : serialize.Hook<number>
@@ -253,7 +213,7 @@ export function serialize
   }
 
 function parseKey(k: keyof any): string {
-  const s = esc(globalThis.String(k))
+  const s = char.escape(globalThis.String(k))
   const hd = s[0]
   const end = s[s.length - 1]
   return typeof k === "symbol" ? s
@@ -270,7 +230,7 @@ function parseJsonKey(key: keyof any): string
 function parseJsonKey(
   k: keyof never, 
 ): string {
-  const s = esc(globalThis.String(k))
+  const s = char.escape(globalThis.String(k))
   const hd = s[0]
   const end = s[s.length - 1]
   return hd === end && hd === '"' ? s : '"' + s + '"'
