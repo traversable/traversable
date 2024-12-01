@@ -25,10 +25,24 @@ Error.withTrace = <
   })
 
 export const UnmatchedScalar = Error("Expected a scalar value")
+
 export const UnexpectedRequiredElement = Error("Required elements cannot follow optional elements")
+
 export const FailedToExhaustivelyMatch = Error.withTrace("Failed to exhaustively handle all code paths")
+
 export const IllegalState = Error.withTrace(
   "Illegal state: this code path should not be possible to execute. " +
     "Please consider creating an issue at " +
     pkg.bugs.url,
 )
+
+export const NotYetSupported = (featureName: string, functionName: string) =>
+  Error("NotYetSupported")(
+    "'" +
+      featureName +
+      "' is not currently supported by '" +
+      functionName +
+      "'." +
+      "If you'd like us to add that support, let us know at: " +
+      pkg.bugs.url,
+  )
