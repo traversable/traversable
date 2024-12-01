@@ -6,12 +6,15 @@ import { fn, keys, map, object, props } from "@traversable/data"
 import { Invariant, URI, symbol } from "@traversable/registry";
 import type { JSON } from "./json.js"
 
+/** @internal */
+declare namespace Inductive {
+  type stringIndex<T> = T | { [x: string]: Inductive.stringIndex<T> }
+}
 /** 
  * @internal 
  * References are cheap. These aliases allow us to only pay the
  * cost of lookup once.
  */
-const hasOwnProperty = globalThis.Object.prototype.hasOwnProperty
 /** @internal */
 const isComposite = object.isComposite
 /** @internal */
@@ -20,9 +23,8 @@ const Object_values = globalThis.Object.values
 const Object_keys = globalThis.Object.keys
 /** @internal */
 const nonNullable 
-  : <T>(u: T) => u is Exclude<T, null | undefined>
+  : <T>(u: T) => u is globalThis.Exclude<T, null | undefined>
   = (u): u is never => !u == null
-
 /** @internal */
 const Array_isArray 
   : (u: unknown) => u is any[]
@@ -33,7 +35,6 @@ const isJsonArray
 const isJsonObject
   : (u: unknown) => u is JSON.object
   = object.isComposite
-
 /** @internal */
 const isPrimitive = (u: unknown): u is null | undefined | boolean | number | string | bigint | symbol => 
   u == null 
@@ -45,17 +46,19 @@ const isPrimitive = (u: unknown): u is null | undefined | boolean | number | str
 
 /** 
  * @internal 
+ * 
  * This is the runtime implementation for accessing a
  * deeply nested property. It is optimized for performance
- * (although, there's some juice we could still squeeze out
- * of it).
+ * (although there's still a bit of juice we could squeeze
+ * out of it).
  * 
  * It is used internally by:
  * 
  * - {@link get `tree.get`}
  * - {@link get_defer `tree.get.defer`}
  * - {@link has `tree.has`}
- * - {@link set `tree.set`} (as a transitive dependency)
+ * - {@link mutate `tree.mutate`} (as a transitive dependency)
+ * - {@link set `tree.set`} (alias for `tree.mutate`)
  */
 function get_(x: unknown, ks: [...keys.any]) {
   let out = x
@@ -89,18 +92,7 @@ export function hasOwn(
 ): u is { [x: string]: unknown } {
   return typeof key === "symbol" 
     ? isComposite(u) && key in u 
-    : hasOwnProperty.call(u, key)
-}
-
-export type get<T, KS extends props.any> = get.loop<KS, T>;
-export declare namespace get {
-  type loop<KS extends props.any, T>
-    = T extends null | undefined
-    ? T 
-    : KS extends readonly [infer K extends keyof T, ...infer Todo extends props.any]
-    ? get.loop<Todo, T[K]>
-    : KS extends readonly [] ? T
-    : unknown
+    : Object.hasOwn(u ?? {}, key)
 }
 
 /** 
@@ -108,20 +100,16 @@ export declare namespace get {
  * 
  * Get a deeply nested value from a data structure.
  * 
- * In many cases, {@link get `tree.get`} is overkill.
- * 
  * When your use case requires accessing arbitrarily nested
  * properties _programmatically_, {@link get `tree.get`}
  * is a great fit.
  * 
- * For a variant that is data-last + supports partial application,
+ * For a variant that is data-last (supports partial application),
  * use {@link get_defer `tree.get.defer`}.
  * 
  * See also:
  * - {@link get_defer `tree.get.defer`}
  */
-
-
 export function get<
   const T extends {},
   K0 extends some.keyof<T>,
@@ -194,7 +182,6 @@ export function get<
   const T extends {},
   K extends some.keyof<T>,
 >(shape: T, ...keys: [K]): T[K]
-
 export function get<
   const T extends {},
   K0 extends some.keyof<T>,
@@ -209,7 +196,6 @@ export function get<
   K9 extends some.keyof<(((((((((T[K0] & {})[K1] & {})[K2] & {})[K3] & {})[K4] & {})[K5] & {})[K6] & {})[K7] & {})[K8] & {})>,
 >(shape: T, ...keys: [K0, K1, K2, K3, K4, K5, K6, K7, K8, K9]): 
   undefined | (((((((((T[K0] & {})[K1] & {})[K2] & {})[K3] & {})[K4] & {})[K5] & {})[K6] & {})[K7] & {})[K8] & {})[K9]
-
 export function get<
   const T extends {},
   K0 extends some.keyof<T>,
@@ -223,7 +209,6 @@ export function get<
   K8 extends some.keyof<((((((((T[K0] & {})[K1] & {})[K2] & {})[K3] & {})[K4] & {})[K5] & {})[K6] & {})[K7] & {})>,
 >(shape: T, ...keys: [K0, K1, K2, K3, K4, K5, K6, K7, K8]): 
   undefined | ((((((((T[K0] & {})[K1] & {})[K2] & {})[K3] & {})[K4] & {})[K5] & {})[K6] & {})[K7] & {})[K8]
-
 export function get<
   const T extends {},
   K0 extends some.keyof<T>,
@@ -236,7 +221,6 @@ export function get<
   K7 extends some.keyof<(((((((T[K0] & {})[K1] & {})[K2] & {})[K3] & {})[K4] & {})[K5] & {})[K6] & {})>,
 >(shape: T, ...keys: [K0, K1, K2, K3, K4, K5, K6, K7]): 
   undefined | (((((((T[K0] & {})[K1] & {})[K2] & {})[K3] & {})[K4] & {})[K5] & {})[K6] & {})[K7]
-
 export function get<
   const T extends {},
   K0 extends some.keyof<T>,
@@ -248,7 +232,6 @@ export function get<
   K6 extends some.keyof<((((((T[K0] & {})[K1] & {})[K2] & {})[K3] & {})[K4] & {})[K5] & {})>,
 >(shape: T, ...keys: [K0, K1, K2, K3, K4, K5, K6]): 
   undefined | ((((((T[K0] & {})[K1] & {})[K2] & {})[K3] & {})[K4] & {})[K5] & {})[K6]
-
 export function get<
   const T extends {},
   K0 extends some.keyof<T>,
@@ -259,7 +242,6 @@ export function get<
   K5 extends some.keyof<(((((T[K0] & {})[K1] & {})[K2] & {})[K3] & {})[K4] & {})>,
 >(shape: T, ...keys: [K0, K1, K2, K3, K4, K5]): 
   undefined | (((((T[K0] & {})[K1] & {})[K2] & {})[K3] & {})[K4] & {})[K5]
-
 export function get<
   const T extends {},
   K0 extends some.keyof<T>,
@@ -268,7 +250,6 @@ export function get<
   K3 extends some.keyof<(((T[K0] & {})[K1] & {})[K2] & {})>,
   K4 extends some.keyof<((((T[K0] & {})[K1] & {})[K2] & {})[K3] & {})>,
 >(shape: T, ...keys: [K0, K1, K2, K3, K4]): undefined | ((((T[K0] & {})[K1] & {})[K2] & {})[K3] & {})[K4]
-
 export function get<
   const T extends {},
   K0 extends some.keyof<T>,
@@ -276,31 +257,40 @@ export function get<
   K2 extends some.keyof<((T[K0] & {})[K1] & {})>,
   K3 extends some.keyof<(((T[K0] & {})[K1] & {})[K2] & {})>,
 >(shape: T, ...keys: [K0, K1, K2, K3]): undefined | (((T[K0] & {})[K1] & {})[K2] & {})[K3]
-
 export function get<
   const T extends {},
   K0 extends some.keyof<T>,
   K1 extends some.keyof<(T[K0] & {})>,
   K2 extends some.keyof<((T[K0] & {})[K1] & {})>,
 >(shape: T, ...keys: [K0, K1, K2]): undefined | ((T[K0] & {})[K1] & {})[K2]
-
 export function get<
   const T extends {},
   K0 extends some.keyof<T>,
   K1 extends some.keyof<(T[K0] & {})>,
 >(shape: T, ...keys: [K0, K1]): undefined | (T[K0] & {})[K1]
-
 export function get<
   const T extends {},
   K0 extends some.keyof<T>,
 >(shape: T, ...keys: [K0]): undefined | T[K0]
-
 export function get<const T extends {}>(shape: T, ...keys: []): T
-export function get<T>(shape: Inductive.index<T>, ...keys: [...props.any]): T | undefined
-/// impl.
-export function get(t: {}, ...k: [...props.any]) { return get_(t, k) }
+export function get<T>(shape: Inductive.stringIndex<T>, ...keys: [...props.any]): T | undefined
+export function get(t: {}, ...k: [...props.any]) 
+  /// impl.
+  { return get_(t, k) }
+
+export type get<T, KS extends props.any> = get.loop<KS, T>;
+export declare namespace get {
+  type loop<KS extends props.any, T>
+    = T extends null | undefined
+    ? T 
+    : KS extends readonly [infer K extends keyof T, ...infer Todo extends props.any]
+    ? get.loop<Todo, T[K]>
+    : KS extends readonly [] ? T
+    : unknown
+}
 
 
+void (get.defer = get_defer)
 /** 
  * ## {@link get_defer `tree.get.defer`}
  * 
@@ -332,38 +322,6 @@ export function get_defer(
   }
 }
 
-void (get.defer = get_defer)
-
-export declare namespace has {
-  type path<KS extends keys.any, T = {}> = never 
-    | has.loop<KS, T> extends infer U extends {} ? has<U> : never
-    // KS extends nonempty.propsLeft<infer Todo, infer K>
-    // ? has.loop<T, K, Todo>
-    // : T extends infer U extends {} ? has<U> : never
-    // ;
-  type loop<KS extends keys.any, T = {}> = never 
-    | KS extends nonempty.propsLeft<infer Todo, infer K>
-    ? has.loop<Todo, { [P in K]: T }>
-    : T
-    ;
-  // type loop<
-  //   T, 
-  //   K extends prop.any, 
-  //   Todo extends props.any
-  // > = has.path<Todo, { [P in K]: T }>
-  type maybe<KS extends props.any, T = {}>
-    = KS extends nonempty.propsLeft<infer Todo, infer K>
-    ? has.maybeLoop<T, K, Todo>
-    : T extends {} ? has<T> : T
-    ;
-  type maybeLoop<
-    T,
-    K extends prop.any,
-    Todo extends props.any
-  > = has.maybe<Todo, { [P in K]+?: T }>
-}
-export interface has<T extends {}> extends newtype<T> {}
-
 /** 
  * ## {@link has `tree.has`}
  * 
@@ -378,90 +336,51 @@ export interface has<T extends {}> extends newtype<T> {}
  * the provided path. If provided, the target of the type-guard
  * will be applied at the target node of the tree.
  */
-
-function separatePath(ks: keys.any | [...keys.any, (u: any) => u is any]): 
-  [path: key.any[], check: (u: any) => u is any]
-function separatePath(_: keys.any | [...keys.any, (u: any) => u is any]) { 
-  return keys.is(_) 
-  ? [_, (_: any) => _ != null] 
-  : [_.slice(0, -1), _[_.length - 1]] 
-}
-
 export function has<KS extends keys.any>
-  (...params: [...KS]):
-  (u: unknown) => u is has.path<KS>
-
+  (...params: [...KS]): (u: unknown) => u is has.path<KS>
 export function has<const KS extends keys.any, T>
-  (...params: [...KS, (u: any) => u is T]):
-  (u: unknown) => u is has.path<KS, T>
-
+  (...params: [...KS, (u: unknown) => u is T]): (u: unknown) => u is has.path<KS, T>
 /// impl.
-export function has(
-  ...params:
-    | [...path: keys.any] 
-    | [...path: keys.any, guard: (u: any) => u is any]
-) {
+export function has
+  (...params: [...keys.any] | [...keys.any, (u: any) => u is any]) {
   return (u: unknown) => {
-    const [path, check] = separatePath(params)
+    const [path, check] = has.separatePath(params)
     const got = get_(u, path)
     return got !== symbol.not_found && check(got)
   }
 }
 
-export type treeFrom<KS extends props.any, T = {}>
-  = KS extends readonly [
-    ...infer Todo extends props.any, 
-    infer K extends prop.any
-  ] ? treeFrom<Todo, { [P in K]: T }> 
-  : T
-  ;
-
-/** 
- * ## {@link fromPath `tree.fromPath`}
- * 
- * Given a path, constructs a tree from the bottom-up.
- *
- * If the {@link leaf `leaf`} argument is provided,
- * {@link fromPath `tree.fromPath`} will use that
- * value as its starting point.
- * 
- * @example
- *  import { tree } from "@traversable/core"
- * 
- *  tree.fromPath("")
- */
-export function fromPath<const KS extends props.any, T>(...path: [...KS]): treeFrom<KS>
-export function fromPath<const KS extends props.any, T>(path: [...KS], leaf?: T): treeFrom<KS, T>
-/// impl.
-export function fromPath(
-  ...args:
-    | [...props.any]
-    | [path: [...props.any], leaf: unknown]
-) {
-  const [path, leaf] = props.is(args) 
-    ? [args, {}] as const 
-    : [args[0], {}] as const
-  let out: unknown = leaf
-  let key: string | number | undefined
-  while ((key = path.pop()) !== undefined) {
-    let struct
-      : { [x: string]: unknown } 
-      = typeof key === "number" ? [] as never : {}
-    void (struct[key] = out)
-    void (out = struct)
-  }
-  return out
+void (has.separatePath = separatePath)
+function separatePath(xs: keys.any | [...keys.any, (u: any) => u is any]): 
+  [path: key.any[], check: (u: any) => u is any]
+function separatePath(xs: keys.any | [...keys.any, (u: any) => u is any]) { 
+  return keys.is(xs) 
+  ? [xs, (_: any) => _ != null] 
+  : [xs.slice(0, -1), xs[xs.length - 1]] 
 }
+
+export declare namespace has {
+  type path<KS extends keys.any, T = {}> 
+    = KS extends nonempty.propsLeft<infer Todo, infer K>
+    ? has.path<Todo, { [P in K]: T }>
+    : T extends infer U extends {} ? has<U> : never
+  type maybe<KS extends props.any, T = {}>
+    = KS extends nonempty.propsLeft<infer Todo, infer K>
+    ? has.path<Todo, { [P in K]+?: T }>
+    : T extends infer U extends {} ? has<U> : never
+}
+export interface has<T extends {}> extends newtype<T> {}
 
 /** 
  * ## {@link set `tree.set`}
+ * 
+ * @alias {@link mutate `tree.mutate`}
  * 
  * Write to a deeply nested value anywhere inside a tree.
  * 
  * **Note:** {@link set `tree.set`} trades performance for
  * purity, which means that by default, the accessor that 
- * it creates will _mutate_ its argument. You can override
- * this behavior by setting `options.clone` to 
+ * it creates will _mutate_ its argument.
  * 
  * This behavior is
  * configurable, see {@link set.Options `set.Options`}.
@@ -472,19 +391,21 @@ export function fromPath(
  * That will change in the future -- we just haven't had time to
  * implement it yet :)
  */
-export function set<KS extends props.any>(...path: [...KS]): <const T extends has.path<KS>>(tree: T) => {
+export const set = mutate
+
+export function mutate<KS extends props.any>(...path: [...KS]): <const T extends has.path<KS>>(tree: T) => {
   <V extends get<T, KS>>(v: V): unknown
   <V>(v: V): unknown
 }
-export function set<KS extends props.any>(path: [...KS], options?: set.Options): <const T extends has.path<KS>>(tree: T) => {
+export function mutate<KS extends props.any>(path: [...KS], options?: mutate.Options): <const T extends has.path<KS>>(tree: T) => {
   <V extends get<T, KS>>(v: V): unknown
   <V>(v: V): unknown
 }
 /// impl.
-export function set(
+export function mutate(
   ...args:
     | [...path: props.any]
-    | [path: [...props.any], options?: set.Options]
+    | [path: [...props.any], options?: mutate.Options]
 ) {
   const [path, options] = props.is(args) ? [args, set.defaults] : args
   const config = set.configFromOptions(options)
@@ -511,62 +432,86 @@ export function set(
   }
 }
 
-export declare namespace set {
+export declare namespace mutate {
   interface Options {
     clone?: boolean | (<T>(tree: T) => T)
   }
   interface Config extends Required<Options> {}
 }
-export namespace set {
+export namespace mutate {
   export const defaults = {
     clone: false,
-  } satisfies set.Config
-  export function configFromOptions(options?: set.Options): set.Config {
-    return !options ? set.defaults : {
-      clone: options?.clone ?? set.defaults.clone,
+  } satisfies mutate.Config
+  export function configFromOptions(options?: mutate.Options): mutate.Config {
+    return !options ? mutate.defaults : {
+      clone: options?.clone ?? mutate.defaults.clone,
     } 
   }
 }
 
-// interface fluent<
-//   T, 
-//   _ extends 
-//   | { [K in keyof T]: fluent<T[K]> } 
-//   = { [K in keyof T]: fluent<T[K]> }
-// > {
-//   get get(): get<_>
-// }
-// declare function get_fluent<const T extends {}>(shape: T): get.fluent<T>
-// const zzs = get_fluent({ a: { b: 2 }, c: 3 })
-// const z = zzs.get.a.get.b.get
+/** 
+ * ## {@link fromPath `tree.fromPath`}
+ * 
+ * Given a path, constructs a tree from the bottom-up.
+ *
+ * If the {@link leaf `leaf`} argument is provided,
+ * {@link fromPath `tree.fromPath`} will use that
+ * value as its starting point.
+ * 
+ * @example
+ *  import { tree } from "@traversable/core"
+ * 
+ *  tree.fromPath("")
+ */
+export function fromPath<const KS extends props.any, T>(...path: [...KS]): fromPath<KS>
+export function fromPath<const KS extends props.any, T>(path: [...KS], leaf?: T): fromPath<KS, T>
+/// impl.
+export function fromPath(
+  ...args:
+    | [...props.any]
+    | [path: [...props.any], leaf: unknown]
+) {
+  const [path, leaf] = props.is(args) 
+    ? [args, {}] as const 
+    : [args[0], {}] as const
+  let out: unknown = leaf
+  let key: string | number | undefined
+  while ((key = path.pop()) !== undefined) {
+    let struct
+      : { [x: string]: unknown } 
+      = typeof key === "number" ? [] as never : {}
+    void (struct[key] = out)
+    void (out = struct)
+  }
+  return out
+}
 
+export type fromPath<KS extends keys.any, T = {}>
+  = KS extends nonempty.propsLeft<infer Todo, infer K>
+  ? fromPath<Todo, { [P in K]: T }> : T
 
 export type fromPaths<T extends fromPaths.Path> = fromPaths.loop<T>
-
 export declare namespace fromPaths {
   interface Leaf<V = unknown> { readonly [symbol.leaf]: URI.leaf, value: V }
   type Path<V = unknown> = readonly [props.any, V]
   type Paths<V = unknown> = readonly Path<V>[]
+  type Nodes = { [x: string]: Node }
   type Node = 
     | Leaf 
     | readonly [props.any, Leaf][]
-
-  type Nodes = { [x: string]: Node }
-
+    ;
   type nextFrom<
     T extends fromPaths.Path, 
     U extends T 
     | T extends readonly [nonempty.mut.props<any, infer V>, infer W] ? readonly [V, W] : never
     = T extends readonly [nonempty.mut.props<any, infer V>, infer W] ? readonly [V, W] : never
   > = U
-
-  type loop<T extends fromPaths.Path> 
-    = never | [T] extends [readonly [readonly [], any]] ? T[1]
-    : { -readonly [E in T as E[0][0]]: fromPaths.loop<fromPaths.nextFrom<E>> }
-
-  type roundtrip<T extends readonly [props.any, unknown]> 
-    = never | [T] extends [readonly [readonly [], any]] ? T[1] //Leaf<T[1]>
-    : { -readonly [E in T as E[0][0]]: fromPaths.roundtrip<fromPaths.nextFrom<E>> }
+  type loop<T extends fromPaths.Path> = never
+    | [T] extends [readonly [readonly [], any]] ? T[1]
+    : { -readonly [E in T as E[0][0]]: loop<fromPaths.nextFrom<E>> }
+  type roundtrip<T extends readonly [props.any, unknown]> = never
+    | [T] extends [readonly [readonly [], any]] ? T[1] //Leaf<T[1]>
+    : { -readonly [E in T as E[0][0]]: roundtrip<fromPaths.nextFrom<E>> }
 }
 
 /** 
@@ -579,17 +524,21 @@ export declare namespace fromPaths {
  * - {@link fromPath `tree.fromPath`}
  */
 
-export function fromPaths<const T extends [path: props.any, leaf: unknown]>(paths: readonly T[]): fromPaths<T> 
-export function fromPaths<const T extends [path: props.any, leaf: unknown]>(paths: readonly T[], opts: fromPaths.Options<{ roundtrip: true }>): fromPaths.roundtrip<T> 
-export function fromPaths<const T extends [path: props.any, leaf: unknown]>(paths: readonly T[], opts?: fromPaths.Options): fromPaths<T> 
-export function fromPaths<const T extends [path: props.any, leaf: unknown]>(paths: readonly T[], opts: fromPaths.Options = fromPaths.defaults) {
-  const loop = fromPaths.loop(fromPaths.configFromOptions(opts))
-  const marked = fromPaths.markAll(paths)
-  return loop(marked)
-}
+export function fromPaths<const T extends [path: props.any, leaf: unknown]>
+  (paths: readonly T[]): fromPaths<T> 
+export function fromPaths<const T extends [path: props.any, leaf: unknown]>
+  (paths: readonly T[], opts: fromPaths.Options<{ roundtrip: true }>): fromPaths.roundtrip<T> 
+export function fromPaths<const T extends [path: props.any, leaf: unknown]>
+  (paths: readonly T[], opts?: fromPaths.Options): fromPaths<T> 
+/// impl.
+export function fromPaths<const T extends [path: props.any, leaf: unknown]>
+  (paths: readonly T[], opts: fromPaths.Options = fromPaths.defaults) {
+    const loop = fromPaths.loop(fromPaths.configFromOptions(opts))
+    const marked = fromPaths.markAll(paths)
+    return loop(marked)
+  }
 
 export namespace fromPaths {
-  type Partial<T> = never | { [K in keyof T]+?: T[K] }
   export interface Options<T extends Partial<Config> = Partial<Config>> extends newtype<T> {}
   export interface Config { roundtrip: boolean }
   export const defaults = { roundtrip: false } as const satisfies Config
@@ -600,6 +549,16 @@ export namespace fromPaths {
       ...opts,
     }
   }
+  /** @internal */
+  const ascending = (x: number, y: number) => x > y ? 1 : y > x ? -1 : 0
+  /** @internal */
+  const pathsAllHaveNumericKeys
+    : (pairs: readonly [keys.any, unknown][]) => pairs is readonly [readonly [number, ...props.any], unknown][]
+    = (pairs): pairs is never => pairs.every(([k]) => k && typeof k[0] === "number")
+  /** @internal */
+  const getZeroZero 
+    : <T>(xss: readonly [readonly [T, ...any], ...any]) => T
+    = (xss) => xss[0][0]
   /**
    * ### {@link group `fromPaths.group`}
    * 
@@ -667,11 +626,7 @@ export namespace fromPaths {
    */
   export const isLeaf
     : <T>(u: unknown) => u is Leaf<T> 
-    = (u): u is never => has(symbol.leaf, (v): v is URI.leaf => v === URI.leaf)(u)
-
-  const pathsAllHaveNumericKeys
-    : (pairs: readonly [keys.any, unknown][]) => pairs is readonly [readonly [number, ...props.any], unknown][]
-    = (pairs): pairs is never => pairs.every(([k]) => k && typeof k[0] === "number")
+    = has(symbol.leaf, (v): v is URI.leaf => v === URI.leaf) as never
 
   /** 
    * ### {@link isContiguous `tree.fromPaths.isContiguous`}
@@ -707,12 +662,6 @@ export namespace fromPaths {
     = (pairs) => 
       pathsAllHaveNumericKeys(pairs) 
       && checkContiguous(...pairs.map(getZeroZero))
-    
-  const getZeroZero 
-    : <T>(xss: readonly [readonly [T, ...any], ...any]) => T
-    = (xss) => xss[0][0]
-
-  const ascending = (x: number, y: number) => x > y ? 1 : y > x ? -1 : 0
   export const checkContiguous 
     : (...unsorted: [...readonly number[]]) => boolean
     = (...unsorted) => {
@@ -725,14 +674,11 @@ export namespace fromPaths {
       }
       return true
     }
-
   export const isPathArray 
     : <K extends keys.any, V>(u: unknown) => u is readonly [K, V][]
     = (u): u is never => Array_isArray(u) && u.every(Array_isArray)
-
-  export const isGroupedArray = (u: unknown): u is readonly [path: props.any, leaf: unknown][] =>
-    isPathArray(u) 
-    && isContiguous(u)
+  export const isGroupedArray = (u: unknown): u is readonly [path: props.any, leaf: unknown][] => 
+    isPathArray(u) && isContiguous(u)
 
   /**
    * ### {@link wrap `fromPaths.wrap`}
@@ -819,15 +765,21 @@ export namespace fromPaths {
  * See also:
  * - {@link fromPaths `tree.fromPaths`}
  */
-export function toPaths<const T extends JSON>(json: T): readonly [path: props.any, leaf: unknown][] 
-export function toPaths<const T extends JSON>(json: { [x: string]: fromPaths.Leaf }, opts: toPaths.Options & { roundtrip: true }): readonly [path: props.any, leaf: unknown][] 
-export function toPaths<const T extends JSON>(json: T, opts?: toPaths.Options): readonly [path: props.any, leaf: unknown][] 
-export function toPaths<const T extends JSON>(json: T, opts: toPaths.Options = toPaths.defaults) { 
-  const config = toPaths.configFromOptions(opts)
-  return toPaths.isBaseCase(json, config) 
-    ? toPaths.done(json, config) 
-    : toPaths.go(config)(json)
-}
+export function toPaths<const T extends JSON>
+  (json: T): readonly [path: props.any, leaf: unknown][] 
+export function toPaths<const T extends JSON>(
+  json: { [x: string]: fromPaths.Leaf }, 
+  opts: toPaths.Options & { roundtrip: true }
+): readonly [path: props.any, leaf: unknown][] 
+export function toPaths<const T extends JSON>
+  (json: T, opts?: toPaths.Options): readonly [path: props.any, leaf: unknown][] 
+export function toPaths<const T extends JSON>
+  (json: T, opts: toPaths.Options = toPaths.defaults) { 
+    const config = toPaths.configFromOptions(opts)
+    return toPaths.isBaseCase(json, config) 
+      ? toPaths.done(json, config) 
+      : toPaths.go(config)(json)
+  }
 
 export declare namespace toPaths {
   type Path<T = JSON> = readonly [path: props.any, leaf: T]
@@ -887,9 +839,9 @@ export namespace toPaths {
     })
 
   /** 
-   * ### {@link impl `tree.toPaths.go`} 
+   * ### {@link go `toPaths.go`} 
    * 
-   * {@link impl `tree.toPaths.go`} is responsible for wiring up the recursive
+   * {@link go `toPaths.go`} is responsible for wiring up the recursive
    * call ({@link loop `tree.toPaths.loop`}), and destructing the intermediate
    * representation into the final output type.
    */
@@ -907,25 +859,35 @@ export namespace toPaths {
    * ### {@link construct `tree.toPaths.construct`} 
    * Dual of {@link destruct `tree.toPaths.destruct`}
    */
-  export const construct = <T extends JSON>([prev, next]: [props.any, next: T]) => ({ prev, next })
+  export function construct<T extends JSON>
+    ([prev, next]: [props.any, next: T]): 
+    { prev: props.any, next: T }
+    { return { prev, next } }
   /** 
    * ### {@link destruct `tree.toPaths.destruct`} 
    * Dual of {@link construct `tree.toPaths.construct`}
    */
-  export function destruct(config: toPaths.Config & { roundTrip: true }): <V>(stream: toPaths.Stream<fromPaths.Leaf<V>>) => [props.any, V]
-  export function destruct(config: toPaths.Config & { roundTrip: false }): <V>(stream: toPaths.Stream<V>) => readonly [props.any, V]
-  export function destruct(config: toPaths.Config): <V>(stream: toPaths.Stream<V | fromPaths.Leaf<V>>) => readonly [props.any, V]
-  export function destruct(config: toPaths.Config) { 
-    return <V>({ prev, next }: toPaths.Stream<V | fromPaths.Leaf<V>>) => {
-      return [
-        prev, 
-        fromPaths.isLeaf(next) 
-          ? config.roundtrip ? fromPaths.unwrap(next) 
+  export function destruct
+    (config: toPaths.Config & { roundTrip: true }): 
+      <V>(stream: toPaths.Stream<fromPaths.Leaf<V>>) => [props.any, V]
+  export function destruct
+    (config: toPaths.Config & { roundTrip: false }): 
+      <V>(stream: toPaths.Stream<V>) => readonly [props.any, V]
+  export function destruct
+    (config: toPaths.Config): 
+      <V>(stream: toPaths.Stream<V | fromPaths.Leaf<V>>) => readonly [props.any, V]
+  export function destruct
+    (config: toPaths.Config) { 
+      return <V>({ prev, next }: toPaths.Stream<V | fromPaths.Leaf<V>>) => {
+        return [
+          prev, 
+          fromPaths.isLeaf(next) 
+            ? config.roundtrip ? fromPaths.unwrap(next) 
+            : next
           : next
-        : next
-      ] as [props.any, V]
+        ] as [props.any, V]
+      }
     }
-  }
 
   /** 
    * ### {@link empty `tree.toPaths.empty`} 
@@ -934,101 +896,101 @@ export namespace toPaths {
   export const empty = <T extends JSON>(init: T) => construct([[], init])
 }
 
-
 /** 
- * ## {@link flatten `tree.flatten`} 
+* ## {@link flatten `tree.flatten`} 
  * ### ｛ {@link jsdoc.mapping ` 🌈 `} ｝
  * 
  * @example
-*  import { tree } from "@traversable/core"
-*  import * as vi from "vitest"
-* 
-*  const ex_01 = tree.flatten({ 
-*    a: 1, 
-*    b: { 
-*      c: [{ d: 2, e: 3 }, { f: 4 }], 
-*      g: 5 
-*    }, 
-*    h: [6], 
-*    i: { j: { k: 7 } } 
-*  })
-*
-*  vi.assert.deepEqual(
-*    ex_01,
-*    {
-*      "a": 1,
-*      "b.c.0.d": 2,
-*      "b.c.0.e": 3,
-*      "b.c.1.f": 4,
-*      "b.g": 5,
-*      "h.0": 6,
-*      "i.j.k": 7,
-*    }
-*  )
-*/
-export function flatten (tree: unknown, options?: flatten.Options): {} 
-export function flatten (tree: unknown, options?: flatten.Options): {} 
+ *  import { tree } from "@traversable/core"
+ *  import * as vi from "vitest"
+ * 
+ *  const ex_01 = tree.flatten({ 
+ *    a: 1, 
+ *    b: { 
+ *      c: [{ d: 2, e: 3 }, { f: 4 }], 
+ *      g: 5 
+ *    }, 
+ *    h: [6], 
+ *    i: { j: { k: 7 } } 
+ *  })
+ *
+ *  vi.assert.deepEqual(
+ *    ex_01,
+ *    {
+ *      "a": 1,
+ *      "b.c.0.d": 2,
+ *      "b.c.0.e": 3,
+ *      "b.c.1.f": 4,
+ *      "b.g": 5,
+ *      "h.0": 6,
+ *      "i.j.k": 7,
+ *    }
+ *  )
+ */
+export function flatten<const T>
+  (tree: T, options?: flatten.Options): {}
+/// TODO: get these return types working
+export function flatten<const T>
+  (tree: T, options?: flatten.Options): {} 
 /// impl.
 export function flatten (
- tree: unknown, {
-   preserveReferences = flatten.defaults.preserveReferences
- }: flatten.Options = flatten.defaults
+  tree: unknown, {
+    preserveReferences = flatten.defaults.preserveReferences
+  }: flatten.Options = flatten.defaults
 ) {
- if (isPrimitive(tree)) return tree
- const out: 
-   & { [x: string]: unknown } 
-   & { [symbol.ref]?: { [x: number]: (string | number)[] } }
-   = {}
+  if (isPrimitive(tree)) return tree
+  let seen = new globalThis.WeakMap()
+  let circular: (string | number)[][] = []
+  let refCount = 0
+  const out: 
+    & { [x: string]: unknown } 
+    & { [symbol.ref]?: { [x: number]: (string | number)[] } }
+    = {}
 
- let seen = new globalThis.WeakMap()
- let circular: (string | number)[][] = []
- let refCount = 0
+  const loop = (path: (string | number)[], node: unknown) => {
+    if (isPrimitive(node)) 
+      void (out[path.join(".")] = node)
+    else if (Array_isArray(node)) 
+      void node.forEach((x, ix) => loop([...path, ix], x))
+    else if (object.isRecord(node)) {
+      if (seen.has(node)) {
+        void refCount++
+        void circular.push(seen.get(node))
+        /** 
+         * If the path is `[]`, the circular reference points to
+         * the root of the tree. Nothing to do here (yet).
+         */
+        if (path.length === 0) 
+          void 0
+        else 
+          void (out[path.join(".")] = `[Circular *[Symbol(${URI.ref})[${refCount}]]`)
+      }
+      else {
+        void (seen.set(node, path))
+        void Object_keys(node).forEach((k) => loop([...path, k], node[k]))
+      }
+    }
+    else void Invariant.IllegalState("@traversable/core/tree.flatten") 
+  }
 
- const loop = (path: (string | number)[], node: unknown) => {
-   if (isPrimitive(node)) 
-     void (out[path.join(".")] = node)
-   else if (Array_isArray(node)) 
-     void node.forEach((x, ix) => loop([...path, ix], x))
-   else if (object.isRecord(node)) {
-     if (seen.has(node)) {
-       refCount++
-       circular.push(seen.get(node))
-       if (path.length === 0)
-         /** 
-          * If the path is `[]`, the circular reference points to
-          * the root of the tree. Nothing to do here (yet).
-          */
-         {}
-       else {
-         // refCount++
-         void (out[path.join(".")] = `[Circular *[Symbol(${URI.ref})[${refCount}]]`)
-       }
-     }
-     else {
-       void (seen.set(node, path))
-       void Object_keys(node).forEach((k) => loop([...path, k], node[k]))
-     }
-   }
-   else 
-     void Invariant.IllegalState("@traversable/core/tree.flatten") 
- }
+  void loop([], tree)
+  if (preserveReferences) 
+    void circular.forEach((cycle, ix) => (
+      void (out[symbol.ref] ??= {}),
+      void (out[symbol.ref][ix + 1] = cycle)
+    ))
 
- void loop([], tree)
- if (preserveReferences) {
-   circular.forEach((cycle, ix) => (
-     void (out[symbol.ref] ??= {}),
-     void (out[symbol.ref][ix + 1] = cycle)
-   ))
- }
-
- return out
+  return out
 }
 
 export type flatten<T> = flatten.loop<T, "">
 export declare namespace flatten {
   interface Options extends inline<typeof flatten.defaults> {}
   type entry = readonly [key: string, value: unknown]
-  type entries = readonly [path: string, leaf: any.primitive] | readonly (readonly [path: string, leaf: any.primitive])[]
+  type entries = 
+    | readonly [path: string, leaf: any.primitive] 
+    | readonly (readonly [path: string, leaf: any.primitive])[]
+    ;
   type loop<T, P extends string>
     = T extends any.primitive ? [path: P, leaf: T]
     : T extends array.any 
@@ -1049,69 +1011,34 @@ export declare namespace flatten {
     ;
 }
 
-
-
 export namespace flatten {
- export const defaults = {
-   /** 
-    * ### {@link defaults.preserveReferences `Options.preserveReferences`}
-    * 
-    * Determines how {@link flatten `tree.flatten`} should handle circular
-    * references.
-    * 
-    * If `true`, the output object will include a {@link symbol.ref `symbol.ref`}
-    * property that contains the paths to each of the circularly-referenced
-    * nodes in the tree.
-    * 
-    * The entries in {@link symbol.ref `symbol.ref`} are a mapping from the 
-    * _order_ that the circular reference was discovered, to the array of path
-    * segments that lead to the reference.
-    * 
-    * The _order_ is important, because {@link flatten `tree.flatten`}
-    * doesn't have access to the name of the identifier itself. 
-    * 
-    * There might be a way to get that, not sure -- but barring a way to get
-    * that, the order is used to disambiguate which pointers point to which 
-    * references.
-    * 
-    * If that explanation confused you, take a look at the tests for 
-    * {@link flatten `tree.flatten`} in `core/test/tree.test.ts`.
-    * 
-    * If unspecified, defaults to `true`.
-    */
-   preserveReferences: true as boolean,
- } as const
-}
-
-/** 
- * ## {@link tree `data.tree`}
- * 
- * A fun example of how you can use induction and get a completely
- * different performance profile.
- * 
- * Since these are _constraints_, they flow _upwards_. This allows
-
- * 
- * re-use the work TypeScript already did to type-check our
- * input
- * 
- * which flow from the leaf nodes
- * upward, rather than 
- * 
- * 
- * This namespace applies a bottom-up (or "inductive")
- */
-declare namespace Inductive {
-  type numericIndex<T> =
-    | T
-    | { [x: number]: Inductive.numericIndex<T> }
-  type stringIndex<T> =
-    | T
-    | { [x: string]: Inductive.stringIndex<T> }
-  type matrices<T> =
-    | T
-    | readonly Inductive.matrices<T>[]
-  type index<T> =
-    | T
-    | { [x: keyof any]: Inductive.index<T> }
+  export const defaults = {
+    /** 
+     * ### {@link defaults.preserveReferences `Options.preserveReferences`}
+     * 
+     * Determines how {@link flatten `tree.flatten`} should handle circular
+     * references.
+     * 
+     * If `true`, the output object will include a {@link symbol.ref `symbol.ref`}
+     * property that contains the paths to each of the circularly-referenced
+     * nodes in the tree.
+     * 
+     * The entries in {@link symbol.ref `symbol.ref`} are a mapping from the 
+     * _order_ that the circular reference was discovered, to the array of path
+     * segments that lead to the reference.
+     * 
+     * The _order_ is important, because {@link flatten `tree.flatten`}
+     * doesn't have access to the name of the identifier itself. 
+     * 
+     * There might be a way to get that, not sure -- but barring a way to get
+     * that, the order is used to disambiguate which pointers point to which 
+     * references.
+     * 
+     * If that explanation confused you, take a look at the tests for 
+     * {@link flatten `tree.flatten`} in `core/test/tree.test.ts`.
+     * 
+     * If unspecified, defaults to `true`.
+     */
+    preserveReferences: true as boolean,
+  } as const
 }

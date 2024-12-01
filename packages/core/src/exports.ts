@@ -8,6 +8,7 @@ export * from "./version.js";
 
 export { fc, Property } from "./arbitrary/index.js"
 export { JsonPointer } from "./json-pointer.js"
+export * as show from "./show.js"
 
 export { 
   type intersect,

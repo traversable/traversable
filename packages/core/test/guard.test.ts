@@ -194,12 +194,12 @@ function ObjectNode_options(): fc.Arbitrary<is.object.Options> {
  * are located in the `describe` block directly below this one.
  */
 vi.describe("〖🚑〗‹‹‹ ❲@traversable/core/guard❳", () => {
-  vi.it("〖🚑〗‹ ❲is.object❳", () => {
+  vi.it("〖🚑〗› ❲is.object❳", () => {
     vi.assert.isTrue(is.object.any({}))
     vi.assert.isFalse(is.object.any([]))
   })
 
-  vi.it("〖🚑〗‹ ❲is.object❳: validates required fields", () => {
+  vi.it("〖🚑〗› ❲is.object❳: validates required fields", () => {
     const ex_01 = is.object({
       abc: is.literally("ABC"),
       def: is.array(is.literally("DEF")),
@@ -216,7 +216,7 @@ vi.describe("〖🚑〗‹‹‹ ❲@traversable/core/guard❳", () => {
     )
   })
 
-  vi.it("〖🚑〗‹ ❲is.object❳: validates optional fields", () => {
+  vi.it("〖🚑〗› ❲is.object❳: validates optional fields", () => {
     const ex_02 = is.object({
       mno: is.optional(is.string),
       pqr: is.optional(is.boolean),
@@ -235,7 +235,7 @@ vi.describe("〖🚑〗‹‹‹ ❲@traversable/core/guard❳", () => {
     void vi.assert.isTrue(ex_02({ stu: undefined }))
   })
 
-  vi.it("〖🚑〗‹ ❲is.object❳: supports exactOptionalPropertyTypes", () => {
+  vi.it("〖🚑〗› ❲is.object❳: supports exactOptionalPropertyTypes", () => {
     const ex_03 = is.object({
       mno: is.optional(is.string),
       pqr: is.optional(is.boolean),
@@ -254,7 +254,7 @@ vi.describe("〖🚑〗‹‹‹ ❲@traversable/core/guard❳", () => {
     void vi.assert.isFalse(ex_03({ mno: undefined, stu: undefined }))
   })
 
-  vi.it("〖🚑〗‹ ❲is.object❳: validates mixed fields", () => {
+  vi.it("〖🚑〗› ❲is.object❳: validates mixed fields", () => {
     const ex_04 = is.object({
       vwx: is.number,
     })
@@ -266,7 +266,7 @@ vi.describe("〖🚑〗‹‹‹ ❲@traversable/core/guard❳", () => {
 })
 
 vi.describe("〖🚑〗‹‹‹ ❲@traversable/core/guard❳: ", () => {
-  vi.it("〖🚑〗‹ ❲is.partial❳: validates optional fields", () => {
+  vi.it("〖🚑〗› ❲is.partial❳: validates optional fields", () => {
     const ex_05 = is.partial({
       mno: is.string,
       pqr: is.boolean,
@@ -281,7 +281,7 @@ vi.describe("〖🚑〗‹‹‹ ❲@traversable/core/guard❳: ", () => {
     void vi.assert.isTrue(ex_05({ mno: undefined, stu: undefined }))
   })
 
-  vi.it("〖🚑〗‹ ❲is.partial❳: supports exactOptionalPropertyTypes", () => {
+  vi.it("〖🚑〗› ❲is.partial❳: supports exactOptionalPropertyTypes", () => {
     const ex_06 = is.partial({
       mno: is.string,
       pqr: is.boolean,
@@ -302,7 +302,7 @@ vi.describe("〖🚑〗‹‹‹ ❲@traversable/core/guard❳: ", () => {
 })
 
 vi.describe("〖🚑〗‹‹‹ ❲@traversable/core/guard❳: ", () => {
-  vi.it("〖🚑〗‹ ❲is.tuple❳: validates required fields", () => {
+  vi.it("〖🚑〗› ❲is.tuple❳: validates required fields", () => {
     const ex_07 = is.tuple(
       is.literally("ABC"),
       is.tuple(is.literally("DEF"), is.tuple(is.number, is.tuple(is.anything))),
@@ -312,7 +312,7 @@ vi.describe("〖🚑〗‹‹‹ ❲@traversable/core/guard❳: ", () => {
     void vi.assert.isTrue(ex_07([ "ABC", ["DEF", [9001, [/pattern/g]]], "G"]))
   })
 
-  vi.it("〖🚑〗‹ ❲is.tuple❳: handles optional fields", () => {
+  vi.it("〖🚑〗› ❲is.tuple❳: handles optional fields", () => {
     const ex_08 = is.tuple(
       is.string,
       is.number,
@@ -323,7 +323,7 @@ vi.describe("〖🚑〗‹‹‹ ❲@traversable/core/guard❳: ", () => {
     vi.assert.isFalse(ex_08(["should fail", 0, "because of this element"]))
   })
 
-  vi.it("〖🚑〗‹ ❲is.tuple❳: throws when given non-consecutive optionals", () => {
+  vi.it("〖🚑〗› ❲is.tuple❳: throws when given non-consecutive optionals", () => {
     vi.assert.throw(() => is.tuple(
       is.string,
       is.optional(is.anything),

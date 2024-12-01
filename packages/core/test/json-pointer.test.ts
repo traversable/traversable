@@ -79,21 +79,21 @@ const pointer = fc.array(noEscapableChars).map((xs) => "/" + xs.join("/"))
  */
 
 vi.describe("〖️🚑〗‹‹‹ ❲@traversable/core/json-pointer❳", () => {
-  void vi.it("〖🚑〗‹ ❲JsonPointer.escape❳", () => {
+  void vi.it("〖🚑〗› ❲JsonPointer.escape❳", () => {
     vi.assert.equal(core.JsonPointer.escape(""), "")
     vi.assert.equal(core.JsonPointer.escape("foo"), "foo")
     vi.assert.equal(core.JsonPointer.escape("foo~/"), "foo~0~1")
     vi.assert.equal(core.JsonPointer.escape("fo/o"), "fo~1o")
     vi.assert.equal(core.JsonPointer.escape("fo~o"), "fo~0o")
   })
-  void vi.it("〖🚑〗‹ ❲JsonPointer.unescape❳", () => {
+  void vi.it("〖🚑〗› ❲JsonPointer.unescape❳", () => {
     vi.assert.equal(core.JsonPointer.unescape(""), "")
     vi.assert.equal(core.JsonPointer.unescape("foo"), "foo")
     vi.assert.equal(core.JsonPointer.unescape("foo~0~1"), "foo~/")
     vi.assert.equal(core.JsonPointer.unescape("fo~1o"), "fo/o")
     vi.assert.equal(core.JsonPointer.unescape("fo~0o"), "fo~o")
   })
-  void vi.it("〖🚑〗‹ ❲JsonPointer.toPath❳", () => {
+  void vi.it("〖🚑〗› ❲JsonPointer.toPath❳", () => {
     vi.assert.deepEqual(core.JsonPointer.toPath(""), [])
     vi.assert.deepEqual(core.JsonPointer.toPath("/"), [""])
     vi.assert.throws(() => core.JsonPointer.toPath("does not start with fwd slash"))
@@ -105,14 +105,14 @@ vi.describe("〖️🚑〗‹‹‹ ❲@traversable/core/json-pointer❳", () =>
  * PROPERTY-BASED TEST SUITE
  */
 vi.describe("〖⛳️〗‹‹‹ ❲@traversable/core/json-pointer❳", () => {
-  void test.prop([unescaped])("〖⛳️️〗‹ ❲JsonPointer.escape❳", (_) => 
+  void test.prop([unescaped])("〖⛳️️〗› ❲JsonPointer.escape❳", (_) => 
     vi.assert.equal(
       stripTargetChars(_),
       stripTargetChars(core.JsonPointer.escape(_))
     )
   )
 
-  void test.prop([escaped])("〖️⛳️〗‹ ❲JsonPointer.unescape❳", (_) => 
+  void test.prop([escaped])("〖️⛳️〗› ❲JsonPointer.unescape❳", (_) => 
     vi.assert.deepEqual(
       stripTargetChars(core.JsonPointer.unescape(_)),
       stripTargetChars(_),

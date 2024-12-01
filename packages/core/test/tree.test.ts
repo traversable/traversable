@@ -31,7 +31,7 @@ const withIndex = <K, V>(xss: readonly [readonly K[], V][]): readonly [readonly 
  */
 
 vi.describe("〖️🚑〗‹‹‹ @traversable/core/tree", () => {
-  vi.it("〖️🚑〗‹ ❲tree.set❳: applies the patch when both the source and target are composite types", () => {
+  vi.it("〖️🚑〗› ❲tree.set❳: applies the patch when both the source and target are composite types", () => {
     const patch = { X: { Y: { Z: 9000 }} }
     const ex_01 = tree.set
       ("a", "b", "c")
@@ -44,7 +44,7 @@ vi.describe("〖️🚑〗‹‹‹ @traversable/core/tree", () => {
     )
   })
 
-  vi.it("〖️🚑〗‹ ❲tree.set❳: applies the patch when both the source and target are primitive types", () => {
+  vi.it("〖️🚑〗› ❲tree.set❳: applies the patch when both the source and target are primitive types", () => {
     const ex_01 = tree.set
       ("a", "b", "c")
       ({ a: { b: { c: 3 } } })
@@ -56,7 +56,7 @@ vi.describe("〖️🚑〗‹‹‹ @traversable/core/tree", () => {
     )
   })
 
-  vi.it("〖️🚑〗‹ ❲tree.set❳: applies the patch when source is primitive and the target is composite", () => {
+  vi.it("〖️🚑〗› ❲tree.set❳: applies the patch when source is primitive and the target is composite", () => {
     const ex_01 = tree.set
       ("a", "b", "c")
       ({ a: { b: { c: 4 } } })
@@ -68,7 +68,7 @@ vi.describe("〖️🚑〗‹‹‹ @traversable/core/tree", () => {
     )
   })
 
-  vi.it("〖️🚑〗‹ ❲tree.set❳: applies the patch when source is composite and the target is primitive", () => {
+  vi.it("〖️🚑〗› ❲tree.set❳: applies the patch when source is composite and the target is primitive", () => {
     const ex_01 = tree.set
       ("a", "b", "c")
       ({ a: { b: { c: [1, 2, 3] } } })
@@ -80,7 +80,7 @@ vi.describe("〖️🚑〗‹‹‹ @traversable/core/tree", () => {
     )
   })
 
-  vi.it.only("〖️🚑〗‹ ❲tree.set❳: mutates its argument", () => {
+  vi.it.only("〖️🚑〗› ❲tree.set❳: mutates its argument", () => {
     const input_01 = { "$": { "_": { 0: { "_": { "A": {} } } } } }
     void tree.set
       ("$", "_", 0, "_", "A")
@@ -94,7 +94,7 @@ vi.describe("〖️🚑〗‹‹‹ @traversable/core/tree", () => {
     )
   })
 
-  vi.it("〖️🚑〗‹ ❲tree.toPaths❳", () => {
+  vi.it("〖️🚑〗› ❲tree.toPaths❳", () => {
     void vi.assert.deepEqual(tree.toPaths("hey"), [[[], "hey"]])
     void vi.assert.deepEqual(tree.toPaths(null), [[[], null]])
     void vi.assert.deepEqual(tree.toPaths([1]), [[[0], 1]])
@@ -123,7 +123,7 @@ vi.describe("〖️🚑〗‹‹‹ @traversable/core/tree", () => {
     )
   })
 
-  vi.it("〖️🚑〗‹ ❲tree.fromPaths❳", () => {
+  vi.it("〖️🚑〗› ❲tree.fromPaths❳", () => {
     const ex_01 = tree.fromPaths([
       [ [ "a", 0 ], "zero" ],
       [ [ "a", 1 ], "one" ],
@@ -161,7 +161,7 @@ vi.describe("〖️🚑〗‹‹‹ @traversable/core/tree", () => {
     )
   })
 
-  vi.it("〖️🚑〗‹ ❲tree.fromPaths.ensureContiguous❳", () => {
+  vi.it("〖️🚑〗› ❲tree.fromPaths.ensureContiguous❳", () => {
     void vi.assert.isTrue(
       tree.fromPaths.isContiguous([
       [ [ 0, "c" ], 100 ],
@@ -209,7 +209,7 @@ vi.describe("〖️🚑〗‹‹‹ @traversable/core/tree", () => {
     ]))
   })
 
-  vi.it("〖️🚑〗‹ ❲tree.fromPaths.group❳", () => {
+  vi.it("〖️🚑〗› ❲tree.fromPaths.group❳", () => {
     void vi.assert.deepEqual(
       tree.fromPaths.group([
         [ [ "a", 0 ], wrap(null) ],
@@ -254,7 +254,7 @@ vi.describe("〖️🚑〗‹‹‹ @traversable/core/tree", () => {
     )
   })
 
-  vi.it("〖️🚑〗‹ ❲tree.fromPaths.isGroupedArray❳", () => {
+  vi.it("〖️🚑〗› ❲tree.fromPaths.isGroupedArray❳", () => {
     void vi.assert.isTrue(
       tree.fromPaths.isGroupedArray([
         [ [ 0 ], wrap([ 400, 4_000, 40_000 ]) ],
@@ -276,7 +276,7 @@ vi.describe("〖️🚑〗‹‹‹ @traversable/core/tree", () => {
     )
   })
 
-  vi.it("〖️🚑〗‹ ❲tree.fromPaths.markAll❳", () => {
+  vi.it("〖️🚑〗› ❲tree.fromPaths.markAll❳", () => {
     void vi.assert.deepEqual(
       tree.fromPaths.markAll([
         [ [ "a", 0 ], null ],
@@ -311,7 +311,7 @@ vi.describe("〖️🚑〗‹‹‹ @traversable/core/tree", () => {
     )
   })
 
-  vi.it(`〖️🚑〗‹ ❲tree.flatten❳ typical use`, () => {
+  vi.it(`〖️🚑〗› ❲tree.flatten❳ typical use`, () => {
     vi.assert.equal(tree.flatten(1), 1)
     vi.assert.deepEqual(
       tree.flatten({ a: 1, b: [2] }),
@@ -323,7 +323,7 @@ vi.describe("〖️🚑〗‹‹‹ @traversable/core/tree", () => {
     )
   })
 
-  vi.it(`〖️🚑〗‹ ❲tree.flatten❳: pathological cases`, () => {
+  vi.it(`〖️🚑〗› ❲tree.flatten❳: pathological cases`, () => {
     const ex_01 = { a: { b: void 0 as never as { d: 2, e: { f: unknown } } }, c: 1 as const }
     const ex_02 = { d: 2 as const, e: { f: void 0 as never as { a: { b: unknown }, c: 1 } } }
     void (ex_01.a.b = ex_02)
@@ -405,7 +405,7 @@ vi.describe("〖️🚑〗‹‹‹ @traversable/core/tree", () => {
  */
 vi.describe("〖⛳️〗‹‹‹ ❲@traversable/core/tree❳", () => {
   test.prop([fc.needleInAHaystack()])(
-    "〖⛳️〗‹ ❲tree.get❳", 
+    "〖⛳️〗› ❲tree.get❳", 
     ([haystack, path]) => {
   const axa = tree.get(haystack, ...path)
    
@@ -414,7 +414,7 @@ vi.describe("〖⛳️〗‹‹‹ ❲@traversable/core/tree❳", () => {
   )
 
   test.prop([fc.needleInAHaystack()])(
-    "〖⛳️〗‹ ❲tree.has❳", 
+    "〖⛳️〗› ❲tree.has❳", 
     ([haystack, path]) => (
       void vi.assert.isTrue(tree.has(...path as [])(haystack)),
       /** 
@@ -429,7 +429,7 @@ vi.describe("〖⛳️〗‹‹‹ ❲@traversable/core/tree❳", () => {
     fc.needleInAHaystack(),
     fc.dictionary(fc.identifier(), fc.jsonValue()),
   ])(
-    "〖⛳️〗‹ ❲tree.set❳", 
+    "〖⛳️〗› ❲tree.set❳", 
     ([haystack, path], patch) => {
       // TODO: fix tree.set's types so you can remove these type assertions
       const modified: {} = tree.set(...path as [])(haystack)(patch) as never
@@ -440,7 +440,7 @@ vi.describe("〖⛳️〗‹‹‹ ❲@traversable/core/tree❳", () => {
     }
   )
 
-  vi.it("〖⛳️〗‹ ❲tree.toPaths❳", () =>
+  vi.it("〖⛳️〗› ❲tree.toPaths❳", () =>
     fc.assert(
       fc.property(
         fc.dictionary(fc.identifier(), fc.jsonValue()),
@@ -453,7 +453,7 @@ vi.describe("〖⛳️〗‹‹‹ ❲@traversable/core/tree❳", () => {
   /** 
    * TODO: figure out how to make this roundtrip
    */
-  vi.it.todo("〖️🌍〗‹ ❲tree.toPaths::tree.fromPaths❳", () => {
+  vi.it.todo("〖️🌍〗› ❲tree.toPaths::tree.fromPaths❳", () => {
   })
 
   const constraints = { 
@@ -495,7 +495,7 @@ vi.describe("〖⛳️〗‹‹‹ ❲@traversable/core/tree❳", () => {
  * ======================
  */
 vi.describe("〖🧙〗‹‹‹ @traversable/core/tree", () => {
-    vi.it("〖🧙〗‹ tree.get", () => {
+    vi.it("〖🧙〗› tree.get", () => {
       type input_01 = typeof input_01
 
       const input_01 = { 

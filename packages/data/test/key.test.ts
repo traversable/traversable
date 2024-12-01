@@ -15,7 +15,7 @@ const preventsPoisoning = test.prop(
 )
 
 vi.describe("️〖️⛳️〗‹‹‹ @traversable/data/key", () => {
-  preventsPoisoning("〖️⛳️〗‹ ❲key.as❳", (k) => {
+  preventsPoisoning("〖️⛳️〗› ❲key.as❳", (k) => {
     const propertyName = key.as(k)
     const object: { [x: string]: number } = globalThis.Object.defineProperty(
       globalThis.Object.create(null),
