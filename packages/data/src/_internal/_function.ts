@@ -21,6 +21,7 @@ export {
   isUnusedParam,
   identity,
   loop,
+  loopN,
   pipe,
   tuple,
   tupled,
@@ -188,10 +189,19 @@ const call
  * @category optimization
  */
 const loop
-  : <A, B>(f: (a: A, next: (a: A) => B) => B) => (a: A) => B
-  = (f) => (a) => {
-  const next = (a_: typeof a) => f(a_, next)
-  return f(a, next)
+  : <A, B>(fn: (a: A, next: (a: A) => B) => B) => (a: A) => B
+  = (fn) => (a) => {
+    const next = (a_: typeof a) => fn(a_, next)
+    return fn(a, next)
+  }
+
+type ContinuationFn<A extends readonly unknown[], B> = (...params: [...args: A, loop: (...args: A) => B]) => B
+
+function loopN<A extends readonly unknown[], B>(fn: ContinuationFn<A, B>): (...a: A) => B {
+  return (...a: A) => {
+    const next = (...a_: typeof a) => fn(...a_, next)
+    return fn(...a, next)
+  }
 }
 
 /**
@@ -751,47 +761,19 @@ function pipe(
     case a.length === 15:
       return a[14](a[13](a[12](a[11](a[10](a[9](a[8](a[7](a[6](a[5](a[4](a[3](a[2](a[1](a[0]))))))))))))))
     case a.length === 16:
-      return a[15](
-        a[14](a[13](a[12](a[11](a[10](a[9](a[8](a[7](a[6](a[5](a[4](a[3](a[2](a[1](a[0])))))))))))))),
-      )
+      return a[15](a[14](a[13](a[12](a[11](a[10](a[9](a[8](a[7](a[6](a[5](a[4](a[3](a[2](a[1](a[0])))))))))))))))
     case a.length === 17:
-      return a[16](
-        a[15](a[14](a[13](a[12](a[11](a[10](a[9](a[8](a[7](a[6](a[5](a[4](a[3](a[2](a[1](a[0]))))))))))))))),
-      )
+      return a[16](a[15](a[14](a[13](a[12](a[11](a[10](a[9](a[8](a[7](a[6](a[5](a[4](a[3](a[2](a[1](a[0]))))))))))))))))
     case a.length === 18:
-      return a[17](
-        a[16](
-          a[15](
-            a[14](a[13](a[12](a[11](a[10](a[9](a[8](a[7](a[6](a[5](a[4](a[3](a[2](a[1](a[0])))))))))))))),
-          ),
-        ),
-      )
+      return a[17](a[16](a[15](a[14](a[13](a[12](a[11](a[10](a[9](a[8](a[7](a[6](a[5](a[4](a[3](a[2](a[1](a[0])))))))))))))))))
     case a.length === 19:
-      return a[18](
-        a[17](
-          a[16](
-            a[15](
-              a[14](a[13](a[12](a[11](a[10](a[9](a[8](a[7](a[6](a[5](a[4](a[3](a[2](a[1](a[0])))))))))))))),
-            ),
-          ),
-        ),
-      )
+      return a[18](a[17](a[16](a[15](a[14](a[13](a[12](a[11](a[10](a[9](a[8](a[7](a[6](a[5](a[4](a[3](a[2](a[1](a[0]))))))))))))))))))
     case a.length === 20:
-      return a[19](
-        a[18](
-          a[17](
-            a[16](
-              a[15](
-                a[14](a[13](a[12](a[11](a[10](a[9](a[8](a[7](a[6](a[5](a[4](a[3](a[2](a[1](a[0])))))))))))))),
-              ),
-            ),
-          ),
-        ),
-      )
+      return a[19](a[18](a[17](a[16](a[15](a[14](a[13](a[12](a[11](a[10](a[9](a[8](a[7](a[6](a[5](a[4](a[3](a[2](a[1](a[0])))))))))))))))))))
     default: {
       const args: any.functions = a
       let ret: unknown = args[0]
-      for (let i = 1; i < args.length; i++) ret = args[i](ret)
+      for (let ix = 1, len = args.length; ix < len; ix++) ret = args[ix](ret)
       return ret
     }
   }
