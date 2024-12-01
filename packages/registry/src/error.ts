@@ -24,6 +24,12 @@ Error.withTrace = <
     return throw_(globalThis.Error(header + msg + "\n" + show(", got: ")(...v)))
   })
 
+export const SymbolNotFound = (symbol: symbol) => 
+  Error(`'@traversable/registry' was unable to locate symbol 'Symbol(${symbol.toString()})`)
+
+export const URINotFound = (uri: string) => 
+  Error(`'@traversable/registry' was unable to locate uri '${uri}'`)
+
 export const UnmatchedScalar = Error("Expected a scalar value")
 
 export const UnexpectedRequiredElement = Error("Required elements cannot follow optional elements")
@@ -46,3 +52,8 @@ export const NotYetSupported = (featureName: string, functionName: string) =>
       "If you'd like us to add that support, let us know at: " +
       pkg.bugs.url,
   )
+
+export const FailedToRegisterSymbol = (uri: string) => Error(
+  `Attempt to set uri ${uri} failed. Make sure the registry is bound to the global object ` + 
+  `by running 'console.log((globalThis as any)[symbol.REGISTRY]))'`
+)

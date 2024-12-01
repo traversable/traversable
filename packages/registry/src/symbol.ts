@@ -1,6 +1,7 @@
 export { symbol_ as symbol, URI }
 
 const ns = "@traversable/registry/URI" as const
+const URI_REGISTRY = `${ns}::KnownSymbolRegistry`
 
 const URI_null = `${ns}::Null` as const
 type URI_null = typeof URI_null
@@ -35,8 +36,11 @@ const symbol_string = Symbol.for(URI_string)
 type symbol_string = typeof symbol_string
 const symbol_object = Symbol.for(URI_object)
 type symbol_object = typeof symbol_object
+const symbol_REGISTRY = Symbol.for(URI_REGISTRY)
+type symbol_REGISTRY = typeof symbol_REGISTRY
 
 declare namespace URI {
+  export { URI_REGISTRY as REGISTRY }
   export {
     URI_null as null,
     URI_undefined as undefined,
@@ -67,9 +71,9 @@ namespace URI {
   /// URIs that __do__ have an associated symbol
   export const ref = `${ns}::Ref` as const
   export type ref = typeof URI.ref
-  export const leaf = `${ns}::leaf` as const
+  export const leaf = `${ns}::Leaf` as const
   export type leaf = typeof URI.leaf
-  export const not_found = `${ns}::not_found` as const
+  export const not_found = `${ns}::NotFound` as const
   export type not_found = typeof URI.not_found
   export const nullable = `${ns}::Nullable` as const
   export type nullable = typeof URI.nullable
@@ -112,6 +116,8 @@ namespace URI {
   /// URIs that __do__ have an associated symbol
   /////////////////////////////////////////////////////
 }
+
+void (URI.REGISTRY = URI_REGISTRY)
 void (URI.null = URI_null)
 void (URI.undefined = URI_undefined)
 void (URI.boolean = URI_boolean)
@@ -122,6 +128,9 @@ void (URI.string = URI_string)
 void (URI.object = URI_object)
 
 declare namespace symbol_ {
+  export {
+    symbol_REGISTRY as REGISTRY
+  }
   export {
     symbol_null as null,
     symbol_undefined as undefined,
@@ -134,6 +143,7 @@ declare namespace symbol_ {
   }
 }
 namespace symbol_ {
+
   export const ref = Symbol.for(URI.ref)
   export type ref = typeof symbol_.ref
   export const leaf = Symbol.for(URI.leaf)
@@ -181,6 +191,7 @@ namespace symbol_ {
   export type tag = typeof symbol_.tag
 }
 
+void (symbol_.REGISTRY = symbol_REGISTRY)
 void (symbol_.undefined = symbol_undefined)
 void (symbol_.null = symbol_null)
 void (symbol_.boolean = symbol_boolean)
