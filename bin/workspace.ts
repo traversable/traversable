@@ -7,6 +7,7 @@ import * as fs from "./fs.js"
 import { template } from "./assets/index.js"
 import { Print, tap, Transform } from "./util.js"
 import * as S from "effect/Schema"
+import { SCOPE } from "bin/constants.js"
 
 const $$ = (command: string) => process.execSync(command, { stdio: "inherit" })
 
@@ -21,8 +22,8 @@ const PATH = {
 const TEMPLATE = {
   RootKey: "packages/",
   BuildKey: { pre: "packages/", post: "/tsconfig.build.json" },
-  BaseKey: "@traversable/",
-  BaseKey$: { pre: "@traversable/", post: "/*" },
+  BaseKey: `${SCOPE}/`,
+  BaseKey$: { pre: `${SCOPE}/`, post: "/*" },
   BaseValue: { pre: "packages/", post: "/src/index.js" },
   BaseValue$: { pre: "packages/", post: "/*.js" },
 } as const
@@ -43,7 +44,6 @@ interface Effect {
   create: (deps: Required<Deps>) => void,
   cleanup: (deps: Required<Deps>) => void,
 }
-
 
 interface Reference extends S.Schema.Type<typeof Reference> {}
 const Reference = S.Struct({ path: S.String })
@@ -197,7 +197,7 @@ const filterBaseRefs = ($: Deps) => ([path]: [string, any]) =>
 
 namespace make {
   export const _ref = (dep: string) => ({ path: `../${dep}` } as const)
-  export const _dep = (dep: string) => ([`@traversable/${dep}`, "workspace:^" ] as const)
+  export const _dep = (dep: string) => ([`@${SCOPE}/${dep}`, "workspace:^" ] as const)
   export const refs = ($: Deps) => ([...$.localDeps ?? []]).sort(order.lexico).map(make._ref)
   export const deps = ($: Deps) => ([...$.localDeps ?? []]).sort(order.lexico).map(make._dep)
 }
@@ -457,7 +457,7 @@ namespace write {
   export const workspaceReadme = defineEffect(
     ($) => pipe(
       [
-        `# @traversable/${$.pkgName}`
+        `# @${SCOPE}/${$.pkgName}`
       ].join("\n"),
       $.dryRun ? tap("\n\n[CREATE #13]: workspaceReadme\n", globalThis.String)
       : fs.writeString(path.join(PATH.packages, $.pkgName, "README.md")),
@@ -471,9 +471,24 @@ namespace write {
   export const workspaceSrcVersion = defineEffect(
     ($) => pipe(
       [
-        `import pkg from "./__generated__/__manifest__.js"`,
-        `export const VERSION = \`\${pkg.name}@\${pkg.version}\` as const`,
-        `export type VERSION = typeof VERSION`,
+        `import { ${$.pkgName} } from "${SCOPE}/${$.pkgName}"`,
+        `import * as vi from "vitest"`,
+        ``,
+        `import pkg from "../package.json"`,
+        ``,
+        `vi.describe(\`〖⛳️〗‹‹‹ ❲\${pkg.name}/version❳ (with v\${pkg.version})\`, () => {`,
+	      `  vi.it(\`〖⛳️〗› ❲\${pkg.name.slice("${SCOPE}/".length)}.VERSION❳\`, () => {`,
+        `    const expected = \`\${pkg.name}@\${pkg.version}`,
+        `    vi.assert.equal(${$.pkgName}.VERSION, expected)`,
+        `  })`,
+        `})`,
+
+// 		vi.assert.equal(data.VERSION, expected)
+// 	})
+// })
+        // `import pkg from "./__generated__/__manifest__.js"`,
+        // `export const VERSION = \`\${pkg.name}@\${pkg.version}\` as const`,
+        // `export type VERSION = typeof VERSION`,
       ].join("\n"),
       $.dryRun ? tap("\n\n[CREATE #14]: workspaceVersionSrc\n", globalThis.String) 
       : fs.writeString(path.join(PATH.packages, $.pkgName, "src", "version.ts")),
@@ -487,7 +502,7 @@ namespace write {
   export const workspaceTestVersion = defineEffect(
     ($) => pipe(
       ([
-        `import { ${Transform.toCamelCase($.pkgName)} } from "@traversable/${$.pkgName}"`,
+        `import { ${Transform.toCamelCase($.pkgName)} } from "@${SCOPE}/${$.pkgName}"`,
         `import * as vi from "vitest"`,
         `import pkg from "../package.json"`,
         ``,
