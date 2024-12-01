@@ -1,15 +1,9 @@
 export {
   /// types
-  type finite,
-  type nonfinite,
-  /// terms
-  endsWith,
-  startsWith,
-  unappend,
-  unprepend,
-  /// aliased types
   type array_any as any,
+  type array_finite as finite,
   type array_flattenOnce as flattenOnce,
+  type array_nonfinite as nonfinite,
   type array_shift as shift,
   type array_split as split,
   type array_take as take,
@@ -17,6 +11,7 @@ export {
   array_append as append,
   array_const as const,
   array_emptyOf as emptyOf,
+  array_endsWith as endsWith,
   array_every as every,
   array_filter as filter,
   array_find as find,
@@ -46,7 +41,11 @@ export {
   array_snd as snd,
   array_snds as snds,
   array_sort as sort,
+  array_startsWith as startsWith,
   array_tail as tail,
   array_tails as tails,
   array_dequeue as dequeue,
+  array_unappend as unappend,
+  array_unprepend as unprepend,
+  array_zip as zip,
 } from "./_internal/_array.js"

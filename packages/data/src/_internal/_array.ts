@@ -11,6 +11,9 @@ import { key, type keys } from "./_key.js"
 import type { prop } from "./_prop.js"
 import type { jsdoc } from "./_unicode.js"
 
+/** @internal - pay the lookup cost once */
+const Math_min = globalThis.Math.min
+
 /**
  * ### {@link array_any `array.any`}
  * Greatest lower bound of the {@link array `array`} namespace
@@ -24,16 +27,16 @@ export type array_any<T extends readonly unknown[] = readonly unknown[]> = T
 export type array_of<T> = readonly T[]
 
 /**
- * ### {@link finite `array.finite`}
+ * ### {@link array_finite `array.finite`}
  * 
- * {@link finite `array.finite`} constrains a type parameter to be a _finite_ 
+ * {@link array_finite `array.finite`} constrains a type parameter to be a _finite_ 
  * array (`[1, 2, 3]`, not `number[]` or `(1 | 2 | 3)[]`).
  * 
- * **Note:** For this to work, you need to apply {@link finite `array.finite`}
+ * **Note:** For this to work, you need to apply {@link array_finite `array.finite`}
  * to the type parameter you're _currently_ declaring, see example below.
  * 
  * See also:
- * - {@link finite `array.nonfinite`}
+ * - {@link array_finite `array.nonfinite`}
  * 
  * @example
  *  import type { array } from "@traversable/data"
@@ -44,19 +47,19 @@ export type array_of<T> = readonly T[]
  *  onlyTuples([1, 2, 3])       // ✅
  *  onlyTuples(Object.keys({})) // 🚫
  */
-export type finite<T> = [T] extends [readonly unknown[]] ? [number] extends [T["length"]] ? never : readonly unknown[] : never
+export type array_finite<T> = [T] extends [readonly unknown[]] ? [number] extends [T["length"]] ? never : readonly unknown[] : never
 
 /**
- * ### {@link nonfinite `array.nonfinite`}
+ * ### {@link array_nonfinite `array.nonfinite`}
  * 
- * {@link nonfinite `array.nonfinite`} constrains a type parameter to be a _nonfinite_ 
+ * {@link array_nonfinite `array.nonfinite`} constrains a type parameter to be a _nonfinite_ 
  * array (`number[]` or `(1 | 2 | 3)[]`, but not `[1, 2, 3]`).
  * 
- * **Note:** For this to work, you need to apply {@link nonfinite `array.nonfinite`}
+ * **Note:** For this to work, you need to apply {@link array_nonfinite `array.nonfinite`}
  * to the type parameter you're _currently_ declaring, see example below.
  * 
  * See also:
- * - {@link finite `array.finite`}
+ * - {@link array_finite `array.finite`}
  * 
  * @example
  *  import type { array } from "@traversable/data"
@@ -67,7 +70,7 @@ export type finite<T> = [T] extends [readonly unknown[]] ? [number] extends [T["
  *  noTuples("a.b.c".split(".")) // ✅
  *  noTuples([1, 2, 3])          // 🚫
  */
-export type nonfinite<T> = [T] extends [readonly unknown[]] ? [number] extends [T["length"]] ? readonly unknown[] : never : never
+export type array_nonfinite<T> = [T] extends [readonly unknown[]] ? [number] extends [T["length"]] ? readonly unknown[] : never : never
 
 /** @internal */
 namespace local {
@@ -190,12 +193,12 @@ export const array_emptyOf
   : <T = never>() => any.array<T>
   = () => []
 
-export function startsWith<T extends any.primitive>(...values: [T, ...T[]]): (xs: readonly T[]) => boolean
-export function startsWith<T>(predicate: (x: T) => boolean): (xs: readonly T[]) => boolean
-export function startsWith<T extends { [x: number]: unknown }>(reference: T): (xs: readonly T[]) => boolean
-export function startsWith<T extends any.primitive>(primitive: T): (xs: readonly T[]) => boolean
-export function startsWith<T>(...values: T[]): (xs: readonly T[]) => boolean
-export function startsWith(
+export function array_startsWith<T extends any.primitive>(...values: [T, ...T[]]): (xs: readonly T[]) => boolean
+export function array_startsWith<T>(predicate: (x: T) => boolean): (xs: readonly T[]) => boolean
+export function array_startsWith<T extends { [x: number]: unknown }>(reference: T): (xs: readonly T[]) => boolean
+export function array_startsWith<T extends any.primitive>(primitive: T): (xs: readonly T[]) => boolean
+export function array_startsWith<T>(...values: T[]): (xs: readonly T[]) => boolean
+export function array_startsWith(
   ...args: 
     | [predicate: (x: any, y: any) => boolean]
     | [value: unknown]
@@ -209,11 +212,11 @@ export function startsWith(
   return (xs) => predicate(xs[0])
 }
 
-export function endsWith<T extends any.primitive>(...values: [T, ...T[]]): (xs: readonly T[]) => boolean
-export function endsWith<T>(predicate: (x: T) => boolean): (xs: readonly T[]) => boolean
-export function endsWith<T extends { [x: number]: unknown }>(reference: T): (xs: readonly T[]) => boolean
-export function endsWith<T extends any.primitive>(primitive: T): (xs: readonly T[]) => boolean
-export function endsWith<T>(
+export function array_endsWith<T extends any.primitive>(...values: [T, ...T[]]): (xs: readonly T[]) => boolean
+export function array_endsWith<T>(predicate: (x: T) => boolean): (xs: readonly T[]) => boolean
+export function array_endsWith<T extends { [x: number]: unknown }>(reference: T): (xs: readonly T[]) => boolean
+export function array_endsWith<T extends any.primitive>(primitive: T): (xs: readonly T[]) => boolean
+export function array_endsWith<T>(
   ...args: 
   | [predicate: (x: any, y: any) => boolean]
   | [value: unknown]
@@ -228,7 +231,7 @@ export function endsWith<T>(
 }
 
 /** 
- * ### {@link unprepend `array.unprepend`}
+ * ### {@link array_unprepend `array.unprepend`}
  * 
  * Removes an element from the beginning of an array if it satisfies 
  * a condition you define.
@@ -244,7 +247,7 @@ export function endsWith<T>(
  * 4. an array of primitives to be tried, in order, to find a match
  * 
  * See also:
- * - {@link unappend `array.unappend`}
+ * - {@link array_unappend `array.unappend`}
  * 
  * @example
  *  import { array } from "@traversable/data"
@@ -259,11 +262,11 @@ export function endsWith<T>(
  *  log(ex_02)  //  =>  [                   { id: 2, B: "B" }, { id: 3, C: "C" }]
  * 
  */
-export function unprepend<T extends any.primitive>(...values: [T, ...T[]]): (xs: readonly T[]) => readonly T[] 
-export function unprepend<T>(predicate: (x: NoInfer<T>) => boolean): (xs: readonly T[]) => readonly T[] 
-export function unprepend<T extends { [x: number]: unknown }>(reference: T): (xs: readonly T[]) => readonly T[] 
-export function unprepend<T extends any.primitive>(primitive: T): (xs: readonly T[]) => readonly T[] 
-export function unprepend(
+export function array_unprepend<T extends any.primitive>(...values: [T, ...T[]]): (xs: readonly T[]) => readonly T[] 
+export function array_unprepend<T>(predicate: (x: NoInfer<T>) => boolean): (xs: readonly T[]) => readonly T[] 
+export function array_unprepend<T extends { [x: number]: unknown }>(reference: T): (xs: readonly T[]) => readonly T[] 
+export function array_unprepend<T extends any.primitive>(primitive: T): (xs: readonly T[]) => readonly T[] 
+export function array_unprepend(
   ...args: 
     | [predicate: (x: any, y: any) => boolean]
     | [reference: {}]
@@ -271,13 +274,13 @@ export function unprepend(
 ): (xs: readonly unknown[]) => readonly unknown[]  {
   const [h, ...t] = args
   const predicate = typeof h === "function" 
-    ? startsWith(h as never) 
-    : startsWith(...(t.length === 0 ? [(v: any) => globalThis.Object.is(h, v)] : [h, ...t]))
+    ? array_startsWith(h as never) 
+    : array_startsWith(...(t.length === 0 ? [(v: any) => globalThis.Object.is(h, v)] : [h, ...t]))
   return (xs) => predicate(xs as never) ? xs.slice(1) : xs
 }
 
 /** 
- * ### {@link unappend `array.unappend`}
+ * ### {@link array_unappend `array.unappend`}
  * 
  * Removes an element from the end of an array, if it satisfies a "condition"
  * you define.
@@ -293,7 +296,7 @@ export function unprepend(
  * 4. an array of primitives to be tried, in order, to find a match
  * 
  * See also:
- * - {@link unprepend `array.unprepend`}
+ * - {@link array_unprepend `array.unprepend`}
  * 
  * @example
  *  import { array } from "@traversable/data"
@@ -307,11 +310,11 @@ export function unprepend(
  *  const ex_02 = pop([{ id: 1, A: "A" }, { id: 2, B: "B" }, { id: 3, C: "C" }])
  *  log(ex_02)  // => [{ id: 2, B: "B" }, { id: 3, C: "C" }                   ]
  */
-export function unappend<T extends any.primitive>(...values: [T, ...T[]]): (xs: readonly T[]) => readonly T[] 
-export function unappend<T>(predicate: (x: T, y: T) => boolean): (xs: readonly T[]) => readonly T[] 
-export function unappend<T extends { [x: number]: unknown }>(reference: T): (xs: readonly T[]) => readonly T[] 
-export function unappend<T extends any.primitive>(value: T): (xs: readonly T[]) => readonly T[] 
-export function unappend(
+export function array_unappend<T extends any.primitive>(...values: [T, ...T[]]): (xs: readonly T[]) => readonly T[] 
+export function array_unappend<T>(predicate: (x: T, y: T) => boolean): (xs: readonly T[]) => readonly T[] 
+export function array_unappend<T extends { [x: number]: unknown }>(reference: T): (xs: readonly T[]) => readonly T[] 
+export function array_unappend<T extends any.primitive>(value: T): (xs: readonly T[]) => readonly T[] 
+export function array_unappend(
   ...args: 
     | [predicate: (x: any, y: any) => boolean]
     | [reference: {}]
@@ -319,8 +322,8 @@ export function unappend(
 ): (xs: readonly unknown[]) => readonly unknown[]  {
   const [h, ...t] = args
   const predicate = typeof h === "function" 
-    ? startsWith(h as never) 
-    : startsWith(...t.length === 0 ? [(v: any) => globalThis.Object.is(h, v)] : [h, ...t])
+    ? array_startsWith(h as never) 
+    : array_startsWith(...t.length === 0 ? [(v: any) => globalThis.Object.is(h, v)] : [h, ...t])
   return (xs) => predicate(xs as never) ? xs.slice(0, -(xs.length - 1)) : xs
 }
 
@@ -907,3 +910,62 @@ export const array_pascal: {
   <const T extends keys.any, Sep extends string>(keys: T, separator: Sep): { -readonly [x in keyof T]: key.pascal<T[x], Sep> }
 } = (keys: keys.any, separator = "_") => keys.map((k) => key.pascal(k, separator))
 export type array_pascal<T extends keys.any, Sep extends string = "_"> = never | { -readonly [x in keyof T]: key.pascal<T[x], Sep> }
+
+export type IndexedBy<K extends keyof any, T extends { [I in K]: unknown } = { [I in K]: unknown }> = T
+
+/**
+ * ## {@link array_zip `array.zip`}
+ * ### ｛ {@link jsdoc.combining ` 🪢 `} , {@link jsdoc.preserves_structure ` 🌿‍ ` } ｝
+ * 
+ * Takes 2 arrays (`L` and `R`), and returns an array of 2-tuples whose length 
+ * is the _shorter_ of the two input arrays, where the element at index `n` in the 
+ * output array is contains the elements in `L` and `R` at `n` joined pairwise.
+ * 
+ * {@link array_zip `array.zip`} __preserves__ as much __structure__ as possible at 
+ * the type-level, without needing to resort to recursion. This works because the
+ * output type is homomorphic with regard to its inputs.
+ * 
+ * @example
+* 
+*  import { array } from "@traversable/array"
+*  
+*  const ex_01 = array.zip(["L1", "L2", "L3"], ["R1", "R2", "R3"])
+*  //     ^? const ex_01: [[x: "L1", y: "R1"], [x: "L2", y: "R2"], [x: "L3", y: "R3"]]
+* 
+*  const ex_02 = array.zip(["L1", "L2", "L3"], ["R1"])
+*  //     ^? const ex_02: [[x: "L1", y: "R1"]]
+* 
+*  const ex_03 = array.zip(["L1", "L2", "L3", "L4", "L5", "L6"], ["R1", "R2"])
+*  //     ^? const ex_03: [[x: "L1", y: "R1"], [x: "L2", y: "R2"]]
+*  
+*  const ex_04 = array.zip(Array.from({ length: Math.random() * 100 }), Array.from({ length: Math.random() * 100 }))
+*  //     ^? const ex_04: [x: unknown, y: unknown][]
+*/
+
+export function array_zip<
+ const L extends readonly unknown[],
+ const R extends IndexedBy<keyof L>
+> (left: L, right: R): { -readonly [I in keyof L]: [x: L[I], y: R[I]] }
+export function array_zip<
+ const L extends IndexedBy<keyof R>,
+ const R extends readonly unknown[]
+> (left: L, right: R): { -readonly [I in keyof R]: [x: L[I], y: R[I]] }
+export function array_zip<
+ const L extends readonly unknown[], 
+ const R extends readonly unknown[]
+> (left: L, right: R): [x: L[number], y: R[number]][]
+/// impl.
+export function array_zip(xs: readonly unknown[], ys: readonly unknown[]): [unknown, unknown][] {
+ let out: [unknown, unknown][] = []
+ for (let ix = 0; ix < Math_min(xs.length, ys.length); ix++)
+   void (out[ix] = [xs[ix], ys[ix]]);
+ return out
+}
+
+export type array_zip<
+  L extends { [x: number]: unknown }, 
+  R extends { [y: number]: unknown },
+  _ = L extends IndexedBy<keyof R> ? R 
+    : R extends IndexedBy<keyof L> ? L : never
+> = [_] extends [never] ? [x: L[number], y: R[number]][]
+  : { -readonly [I in keyof _]: [x: L[I & keyof L], y: R[I & keyof R]] }
