@@ -1,7 +1,7 @@
 import type { Partial, any, id, mut } from "any-ts"
 
 import { core, tree } from "@traversable/core"
-import { Option, array, fn, type key, map, object, pair, type prop, string } from "@traversable/data"
+import { Compare, Option, array, fn, type key, map, object, pair, type prop, string } from "@traversable/data"
 import { symbol } from "@traversable/registry"
 import { Schema } from "./schema.js"
 
@@ -613,18 +613,22 @@ const fromHooks
   = (schemaName, hooks, moduleName) => (document) =>
     fromAST(Context.initializer({ moduleName, schemaName, hooks, document }))(document)
 
+export interface InlineParams {
+  hooks: UserDefined
+  moduleName: string
+  schemaName?: string
+}
 export const inline 
-  : (definitions: UserDefined, moduleName: string, schemaName?: string) 
-    => (root: Schema.any) 
-    => (schema: Schema.any) 
+  : (params: InlineParams) 
+    => (schema: Schema.any, root?: Schema.any) 
     => CompilationTarget
-  = (definitions, moduleName, schemaName = "inline") => (document) => fromAST(
+  = ({ hooks, moduleName, schemaName = "inline" }) => (schema, root = schema) => fromAST(
     Context.initializer({ 
       moduleName,
       schemaName,
-      hooks: defineHooks(definitions),
-      document,
-    }))
+      hooks: defineHooks(hooks),
+      document: root,
+    }))(schema)
  
 const fromAST
   : (ctx: Context) => (root: Schema.any) => CompilationTarget 

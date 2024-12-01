@@ -30,4 +30,6 @@ export {
   is,
 } from "./schema.js"
 
+export * as Interpreter from "./interpreter.js"
+export { fromJSON, toJSON } from "./json-adapter.js"
 
