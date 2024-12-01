@@ -69,8 +69,6 @@ const Object_hasOwn
 /** @internal */
 const isArray: (u: unknown) => u is array.any = globalThis.Array.isArray
 /** @internal */
-const isString = (u: unknown): u is string =>
-  typeof u === "string"
 /** @internal */
 const isSymbol = (u: unknown): u is symbol => 
   typeof u === "symbol"
@@ -80,15 +78,6 @@ const isBigInt = (u: unknown): u is bigint =>
 /** @internal */
 const isFunction = (u: unknown): u is fn.any => 
   typeof u === "function"
-/** @internal */
-const isFlat = (u: unknown): u is object.of<any.showable> => 
-  object_is(u) && object_values(u).every(isShowable)
-/** @internal */
-const isShowable = (u: unknown): u is any.showable => u == null
-  || typeof u === "boolean"
-  || typeof u === "number"
-  || typeof u === "bigint"
-  || typeof u === "string"
 /** @internal */
 function getEmpty<T extends {}>(_: T): any.indexedBy<keyof T | number>
 function getEmpty(_: {}) { return isArray(_) ? [] : {} }
@@ -1657,11 +1646,11 @@ export const object_createLookup
  * ### ｛ {@link jsdoc.mapping ` 🌈‍ `} , {@link jsdoc.preserves_structure ` 🌿‍ ` } ｝
  */
 export function object_parseKey<const T extends keyof any>(key: T): Universal.key<T>
-export function object_parseKey(key: keyof any) {
+export function object_parseKey(k: keyof any, _ = globalThis.String(k)) {
   return (
-    isSymbol(key) ? globalThis.String(key) 
-    : isQuoted(key) ? escape(`${key}`)
-    : isValidIdentifier(key) ? escape(`${key}`) : `"` + escape(`${key}`) + `"`
+    typeof k === "symbol" ? _ 
+    : isQuoted(k) ? escape(_)
+    : isValidIdentifier(k) ? escape(_) : `"` + escape(_) + `"`
   )
 }
 
@@ -2063,108 +2052,3 @@ object_filterKeys.defer = (
   <const T extends object.any> (predicate: some.predicate<keyof any>): (object: T) => { -readonly [K in keyof T]+?: T[K] }
 }
 
-
-/**
- * ## {@link object_serialize `object.serialize`} 
- * ### ｛ {@link jsdoc.destructor ` ⛓️‍💥 `} ｝
- */
-export function object_serialize<const T extends object.any>(object: T, options?: object_serialize.Options): string 
-export function object_serialize<const T extends object.any>(object: T, options?: object_serialize.Options): string { 
-  return isFlat(object)
-    ? object_serialize.flat(object, object_serialize.configFromOptions(options))
-    : object_serialize.recursive(object, object_serialize.configFromOptions(options)) 
-}
-
-export namespace object_serialize {
-  export type Options = 
-    | { mode: "pretty" | "minify", indentBy?: number, delimiter?: string }
-    | { indentBy?: number, delimiter?: string, mode?: never }
-  export type Config = {
-    indentBy: number
-    delimiter: string
-    mode: undefined | "minify"
-  }
-
-  /** @internal */
-  const pretty = { indentBy: 2, delimiter: "\n", mode: undefined } as const satisfies Config
-  /** @internal */
-  const minify = { indentBy: 0, delimiter: "", mode: "minify" } as const satisfies Config
-
-
-
-  export const configFromOptions 
-    : (options?: Options) => object_serialize.Config
-    = (options) => !options ? pretty
-      : "mode" in options
-        ? options.mode === "pretty" ? pretty
-        : minify
-      : { indentBy: options.indentBy ?? 2, delimiter: options.delimiter ?? "\n", mode: undefined }
-
-  /** @internal */
-  const pad 
-    : (indent: number, fill?: string) => string
-    = (indent, fill = " ") => {
-      if(indent <= 0) return ""
-      let todo = indent
-      let out = ""
-      while((todo--) > 0) out = out.concat(fill)
-      return out
-    }
-
-  export const show 
-    : (value: any.showable) => string
-    = (value) => typeof value === "string" ? `"${value}"` : `${value}`
-
-  export const flat = (value: object.of<any.showable>, { delimiter, indentBy, mode }: object_serialize.Config) => {
-    const keys = Object_keys(value)
-    const __ = mode === "minify" ? "" : " "
-    return fn.pipe(
-      keys.reduce(
-        (acc, k) => `${acc.length === 0 ? "" : `${acc},${__}`}${object_parseKey(k)}:${__}${show(value[k as never])}`, 
-        ``,
-      ),
-      (s) => `{${delimiter}${pad(indentBy)}${s}${pad(indentBy)}${delimiter}}`
-    )
-  }
-
-  export const recursive = (object: any.json, { indentBy, delimiter, mode }: object_serialize.Config): string => {
-    let seen = new globalThis.WeakSet()
-    const __ = mode === "minify" ? "" : " "
-
-    const loop = fn.loop<[next: any.json | fn.any, indent: number], string>(
-      ([next, indent], loop) => {
-        if(object_is(next)) {
-          if(seen.has(next)) return `[Circular ${typeof next}]`
-          else seen.add(next)
-        }
-
-        switch (true) {
-          case isSymbol(next): return globalThis.String(next)
-          case isString(next): return `"${next}"`
-          case isBigInt(next): return `${next}n`
-          case isShowable(next): return `${next}`
-          case isFunction(next): return `[Function ${next.name === '' ? '(anonymous)' : next.name}]`
-          case isArray(next): return fn.pipe(
-            next,
-            map((x) => loop([x, indent + indentBy])),
-            (xs) => xs.length === 0 ? "[]" : xs.join(`,${delimiter}${pad(indent)}`),
-            (s) => `[${delimiter}${pad(indent)}${s}${delimiter}${pad(indent - indentBy)}]`
-          )
-          case object_is(next): return fn.pipe(
-            next,
-            map((x) => loop([x, indent + indentBy])),
-            Object_entries,
-            (xs) => xs.length === 0 ? "{}" : fn.pipe(
-              xs,
-              map(([k, v]) => `${object_parseKey(k)}:${__}${globalThis.String(v)}`),
-              (xs) => xs.join(`,${delimiter}${pad(indent)}`),
-              (x) => `{${delimiter}${pad(indent)}${x}${delimiter}${pad(indent - indentBy)}}`,
-            ),
-          )
-          default: return fn.exhaustive(next)
-        }
-      })
-
-    return loop([object, indentBy])
-  }
-}

@@ -2,7 +2,7 @@ import type { any, nonempty } from "any-ts"
 
 import { PATTERN } from "@traversable/registry"
 import type { Predicate } from "../exports.js"
-import { escapeChar, isEscapable, startsWithEscapable } from "./_char.js"
+import { escapeChar, startsWithEscapable } from "./_char.js"
 
 /**
  * ### {@link finite `string.finite`}

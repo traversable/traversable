@@ -71,6 +71,7 @@ export {
 
 export { 
   loop,
+  loopN,
   tupled, 
   untupled,
 } from "./_internal/_function.js"

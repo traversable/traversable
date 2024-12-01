@@ -1,10 +1,18 @@
 import type { any } from "./_internal/_any.js"
 
 import {
+  type object_invertible as invertible,
+  type object_knownPart as knownPart,
+  type object_omitLax as omitLax,
+  type object_optional as optional,
+  type object_optionalKeys as optionalKeys,
+  type object_required as required,
+  type object_requiredKeys as requiredKeys,
   object_bind as bind,
   object_camel as camel,
   object_capitalize as capitalize,
   object_complement as complement,
+  object_const,
   object_createLookup as createLookup,
   object_emptyOf as emptyOf,
   object_entries as entries,
@@ -21,7 +29,6 @@ import {
   object_includes as includes,
   object_intersect as intersect,
   object_invert as invert,
-  type object_invertible as invertible,
   object_is as is,
   object_isComposite as isComposite,
   object_isKeyOf as isKeyOf,
@@ -29,16 +36,11 @@ import {
   object_isRecord as isRecord,
   object_kebab as kebab,
   object_keys as keys,
-  type object_knownPart as knownPart,
+  object_let,
   object_lookup as lookup,
   object_lowercase as lowercase,
   object_mapKeys as mapKeys,
-  object_const,
-  object_let,
   object_omit as omit,
-  type object_omitLax as omitLax,
-  type object_optional as optional,
-  type object_optionalKeys as optionalKeys,
   object_parseEntry as parseEntry,
   object_parseKey as parseKey,
   object_pascal as pascal,
@@ -46,9 +48,6 @@ import {
   object_pluck as pluck,
   object_postfix as postfix,
   object_prefix as prefix,
-  type object_required as required,
-  type object_requiredKeys as requiredKeys,
-  object_serialize as serialize,
   object_snake as snake,
   object_stringifyValues as stringifyValues,
   object_titlecase as titlecase,
@@ -112,7 +111,6 @@ export declare namespace object {
     prefix,
     required,
     requiredKeys,
-    serialize,
     snake,
     stringifyValues,
     titlecase,
@@ -184,7 +182,6 @@ export namespace object {
   object.pluck = pluck
   object.postfix = postfix
   object.prefix = prefix
-  object.serialize = serialize
   object.snake = snake
   object.stringifyValues = stringifyValues
   object.lowercase = lowercase

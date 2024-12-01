@@ -17,6 +17,7 @@ export * as Option from "./option.js"
 export * as pair from "./pair.js"
 
 export { boolean } from "./boolean.js"
+export { ANSI, type Ansi } from "./_internal/_ansi.js"
 export { entry, entries } from "./entry.js"
 export { key, keys } from "./key.js"
 export { map } from "./map.js"

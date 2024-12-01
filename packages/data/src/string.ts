@@ -659,16 +659,16 @@ export function isKeyOf(
  *  // The first element of the tuple contains every character that passed the predicate. In this example, none of the characters
  *  // passed, so the first element is the empty string:
  *  chomp("#YOLO")
- *  // => ["", "#YOLO"]
+ *  //=> ["", "#YOLO"]
  *
  *  // If the predicate succeeds for every character, second element will be `null` as a signal that the entire string was slurped:
  *  chomp("abcdefghijklmnopqrstuvwxyz")
- *  // => ["abcdefghijklmnopqrstuvwxyz", null]
+ *  //=> ["abcdefghijklmnopqrstuvwxyz", null]
  *
  *  // It's worth reiterating that the slurped substring will **not** include the
  *  // failing character.
  *  chomp("https://developer.mozilla.org/en-US/docs/Web/API/URL/hash#examples")
- *  // => ['https://developer.mozilla.org/en-US/docs/Web/API/URL/hash', '#examples']
+ *  //=> ['https://developer.mozilla.org/en-US/docs/Web/API/URL/hash', '#examples']
  */
 export function slurpWhile<T extends string | readonly string[]>(
   predicate: (char: string, seen: string) => boolean
@@ -677,7 +677,7 @@ export function slurpWhile<T extends string | readonly string[]>(
 export function slurpWhile(predicate: (char: string, seen: string) => boolean) {
   return (chars: string | readonly string[]) => {
     let out = ""
-    for (let ix = 0; ix < chars.length; ix++) {
+    for (let ix = 0, len = chars.length; ix < len; ix++) {
       const char = chars[ix]
       if (predicate(char, out)) out += char
       else return { slurped: out, unslurped: chars.slice(ix) }
