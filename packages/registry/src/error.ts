@@ -36,6 +36,8 @@ export const UnexpectedRequiredElement = Error("Required elements cannot follow 
 
 export const FailedToExhaustivelyMatch = Error.withTrace("Failed to exhaustively handle all code paths")
 
+export const PredicateFailed = Error("Unexpected predicate failure")
+
 export const IllegalState = Error.withTrace(
   "Illegal state: this code path should not be possible to execute. " +
     "Please consider creating an issue at " +
