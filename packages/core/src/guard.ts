@@ -357,9 +357,9 @@ export const isNullable
   : (u: unknown) => u is null | undefined
   = (u): u is never => u == null
 
-export const nonNullable 
-  : <T>(u: T) => u is Exclude<T, null | undefined>
-  = (u): u is never => !u == null
+export const nonnullable 
+  : (u: unknown) => u is {}
+  = (u): u is never => u !== null
 
 export const defined
   : <T>(u: T) => u is Exclude<T, undefined>
