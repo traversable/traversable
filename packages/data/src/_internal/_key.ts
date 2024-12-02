@@ -156,7 +156,7 @@ type finite<T>
   : never
   : never
 
-export declare namespace key {
+export declare namespace key{
   export {
     finite,
     /**
@@ -224,6 +224,7 @@ export declare namespace key {
   export type nonnumber<T extends symbol | string = symbol | string> = T
   export type nonsymbol<T extends number | string = number | string> = T
   export type nonstring<T extends symbol | number = symbol | number> = T
+  export type nonKeyOf<T, K extends key.any> = never | [K] extends [keyof T] ? never : key.any
 
   /** 
    * A higher-kinded type (HKT) is just a type that you can pass around as a reference, without applying it (yet).

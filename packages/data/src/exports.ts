@@ -14,6 +14,7 @@ export * as number from "./number.js"
 export * as string from "./string.js"
 export * as unicode from "./_internal/_unicode.js"
 export * as Option from "./option.js"
+export * as Result from "./result.js"
 export * as pair from "./pair.js"
 
 export { ANSI, type Ansi } from "./_internal/_ansi.js"
@@ -236,7 +237,7 @@ export interface Some<T> { _tag: URI.Some, value: T }
  * - {@link Option `data.Option`}
  * - Rust's docs on [`Result`](https://doc.rust-lang.org/std/result/)
  */
-export type Result<T, E = never> = Ok<T> | Err<E>
+export type Result<T = unknown, E = never> = Ok<T> | Err<E>
 export interface Ok<T> { _tag: URI.Ok, ok: T }
 export interface Err<T> { _tag: URI.Err, err: T }
 
