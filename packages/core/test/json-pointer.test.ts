@@ -9,12 +9,13 @@ const noEscapableChars = fc.alphanumeric().filter((x) => !x.includes("~") && !x.
 const unescapedTokens = fc.tuple(
   fc.array(fc.alphanumeric()).map((xs) => xs.join("/")),
   fc.array(unescapedChar),
-).map(([xs, ys]) => {
+  fc.noBias(fc.boolean()),
+).map(([xs, ys, bool]) => {
   let out: string[] = []
   for (let ix = 0, bound = Math.min(xs.length, ys.length); ix < bound; ix++) {
     const x = xs[ix]
     const y = ys[ix]
-    const [l, r] = Math.random() > 0.5 ? [x, y] : [y, x]
+    const [l, r] = bool ? [x, y] : [y, x]
     out.push(`${l}${r}`)
   }
   return out
@@ -22,14 +23,15 @@ const unescapedTokens = fc.tuple(
 
 const escapedTokens = fc.tuple(
   fc.array(noEscapableChars).map((xs) => xs.join("")),
-  fc.array(escapedChar)
+  fc.array(escapedChar),
+  fc.noBias(fc.boolean()),
 ).map(
-  ([xs, ys]) => {
+  ([xs, ys, bool]) => {
     let out: string[] = []
     for (let ix = 0, bound = Math.min(xs.length, ys.length); ix < bound; ix++) {
       const x = xs[ix]
       const y = ys[ix]
-      const [l, r] = Math.random() > 0.5 ? [x, y] : [y, x]
+      const [l, r] = bool ? [x, y] : [y, x]
       out.push(`${l}${r}`)
     }
     return out

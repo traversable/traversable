@@ -30,14 +30,33 @@ export {
   isString as string,
   isSymbol as symbol,
   isUndefined as undefined,
-  nonNullable,
+  nonnullable,
   notNull,
   optional,
   or,
   tuple,
 } from "./guard.js"
 
-import type { empty as Empty, nonempty as NonEmpty, any, has, some } from "any-ts"
+import { key, prop } from "@traversable/data"
+import type { empty as Empty, nonempty as NonEmpty, has } from "any-ts"
+
+import { 
+  array,
+  object,
+} from "./guard.js"
+
+export declare namespace any {
+  export {
+    any_object as object,
+    any_array as array,
+  }
+}
+const any_object = object.any
+const any_array = array.any
+export namespace any {
+  void (any.object = any_object)
+  void (any.array = any_array)
+}
 
 export declare namespace nonempty {
   export type object_<T> = Extract<T, has.oneProperty<T>>
@@ -46,7 +65,7 @@ export declare namespace nonempty {
 export namespace nonempty {
   export const object = <T extends Record<string, any>>(u: T): u is nonempty.object<T> =>
     globalThis.Object.keys(u).length > 0
-  export const array: <T>(u: any.array<T>) => u is NonEmpty.array<T> = (u): u is NonEmpty.array<never> =>
+  export const array: <T>(u: readonly T[]) => u is NonEmpty.array<T> = (u): u is NonEmpty.array<never> =>
     u.length > 0
   export function string<T extends string>(u: T): u is T & NonEmpty.string
   export function string(u: unknown): u is NonEmpty.string
@@ -67,9 +86,9 @@ export namespace empty {
 
 export const keyof: {
   <K extends string, const T extends {}>(struct: T): (key: K) => key is K & keyof T
-  <K extends any.key, const T extends {}>(struct: T): (key: K) => key is K & keyof T
-  <K extends any.index, const T extends {}>(struct: T): (key: K) => key is K & keyof T
+  <K extends prop.any, const T extends {}>(struct: T): (key: K) => key is K & keyof T
+  <K extends key.any, const T extends {}>(struct: T): (key: K) => key is K & keyof T
 } =
   (struct: {}) =>
-  (key: any.index): key is never =>
+  (key: key.any): key is never =>
     key in struct

@@ -32,7 +32,7 @@ function JsonPointer_escape<T extends string.finite<T>>(component: T): JsonPoint
 function JsonPointer_escape<T extends number.finite<T>>(component: T): JsonPointer.escape<T> 
 function JsonPointer_escape(component: string): string
 function JsonPointer_escape(component: number): `${number}`
-function JsonPointer_escape(component: string | number): `${number}`
+function JsonPointer_escape(component: string | number): string
 function JsonPointer_escape(_: prop.any) {
   void (_ = _ + "")
   if (_.indexOf("~") === -1 && _.indexOf("/") === -1) return _
@@ -54,7 +54,7 @@ function JsonPointer_escape(_: prop.any) {
  * [`RFC-6901`](https://datatracker.ietf.org/doc/html/rfc6901#section-3).
  * 
  * @example
- * const ex_01 = JsonPointer.fromPath("f~o/o", "bar", "1", "/baz~")
+ * const ex_01 = JsonPointer.fromPath(["f~o/o", "bar", "1", "/baz~"])
  * //      ^?  const ex_01: "/f~0o~1o/bar/1/~1baz~0"
  * console.log(ex_01) // => "/f~0o~1o/bar/1/~1baz~0"
  */
