@@ -23,6 +23,7 @@ import { type Arbitrary, lit } from "./types.js"
 
 /** @internal */
 type inline<T> = T
+type autocomplete<T> = T | (string & {})
 
 export const PATTERN = {
   BearerCaseInsensitive: /^[Bb][Ee][Aa][Rr][Ee][Rr]$/,
@@ -181,7 +182,9 @@ export declare namespace openapi {
   interface schemas { [x: string]: Schema.any }
   interface parameters extends inline<readonly openapi.parameter[]> {}
 
-  interface response {
+  type response = {
+  // interface response {
+    description?: string
     content?: openapi.content
     headers?: openapi.headers
   }
@@ -877,7 +880,7 @@ export function requestBody(_?: arbitrary.Constraints): fc.Arbitrary<openapi.req
 //   : globalThis.String(p) // fn.throw(p)
 
 interface path_parameter extends inline<{ 
-  in: "path"
+  in: autocomplete<"path">
   name: string 
   schema: Schema.any
   required: boolean
@@ -886,7 +889,7 @@ interface path_parameter extends inline<{
 }> {}
 
 interface query_parameter extends inline<{
-  in: "query"
+  in: autocomplete<"query">
   name: string
   schema: Schema.any
   required?: boolean
@@ -896,7 +899,7 @@ interface query_parameter extends inline<{
 }> {}
 
 interface header_parameter extends inline<{
-  in: "header"
+  in: autocomplete<"header">
   name: string
   schema: Schema.any
   required?: boolean
@@ -906,7 +909,7 @@ interface header_parameter extends inline<{
 }> {}
 
 interface cookie_parameter extends inline<{
-  in: "cookie"
+  in: autocomplete<"cookie">
   name: string
   schema: Schema.any
   required?: boolean
@@ -1076,7 +1079,7 @@ export namespace parameter {
 
 // export interface Responses { [x: string]: Response }
 
-/** ### {@link responses `openapopenapiesponses`} */
+/** ### {@link responses `openapi.responses`} */
 export function responses(constraints?: arbitrary.Constraints): fc.Arbitrary<openapi.responses>
 export function responses(constraints: arbitrary.Constraints = {}): fc.Arbitrary<{}> {
   return fc

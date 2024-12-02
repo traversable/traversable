@@ -1,208 +1,193 @@
-import { array, fn, map, object, type prop, type props } from "@traversable/data"
-
+import { array, fn, map, prop, Result } from "@traversable/data"
+import { is, tree, JsonPointer, or } from "@traversable/core"
 import { Schema } from "./schema.js"
+import { inline } from "any-ts"
 
-const stringifyPath: (delimiter: string) => (path: (string | number)[]) => string = (delimiter) =>
-  array.reduce((acc, k) => (acc === "" ? "" : acc + delimiter) + k, "")
+type Refs = { [$ref: string]: Partial<Schema.any> }
 
-export declare namespace reffer {
-  /**
-   * ### {@link reffer.Options `reffer.Options`}
-   *
-   * - If `delimiter` is unspecified, defaults to {@link reffer.defaults.delimiter `"~1"`}
-   * - If `path` is unspecified, defaults to {@link reffer.defaults.path `["#"]`}
-   */
-  interface Options {
-    path?: (string | number)[]
-    delimiter?: string
+// TODO: make this type better
+type Doc = { 
+  paths?: Record<string, Record<string, {}>>
+  components?: {
+    schemas?: Record<string, Record<string, {}>>
   }
 }
 
-export type reffer<T = never> = never | [tree: Schema.any, refs: { [$ref: string]: Schema.any }]
-
-export function reffer<T extends Schema.any>(schema: T): mapRef<T>
-export function reffer<T extends Schema.any>(schema: T, options: reffer.Options): mapRef<T>
-export function reffer<T extends Schema.any>(
-  schema: T,
-  { path = reffer.defaults.path, delimiter = reffer.defaults.delimiter }: reffer.Options = reffer.defaults,
-) {
-  let refs: {}[] = []
-
-  const loop = fn.loop<[node: Schema.any, path: props.any], {}>(([node, ps], loop) => {
-    switch (true) {
-      case Schema.is.ref(node):
-      case Schema.is.null(node):
-      case Schema.is.scalar(node):
-        return node
-      case Schema.is.allOf(node):
-        return { allOf: map(node.allOf, (c, ix) => loop([c, [...ps, "allOf", ix]])) }
-      case Schema.is.anyOf(node):
-        return { anyOf: map(node.anyOf, (c, ix) => loop([c, [...ps, "anyOf", ix]])) }
-      case Schema.is.oneOf(node):
-        return { oneOf: map(node.oneOf, (c, ix) => loop([c, [...ps, "oneOf", ix]])) }
-      case Schema.is.tuple(node): {
-        return node
-      }
-      case Schema.is.array(node):
-        return {
-          ...node,
-          items: loop([node.items, [...ps, "items"]]),
-        }
-      case Schema.is.object(node):
-        return object_(node, ps, delimiter, refs, loop)
-      default:
-        return fn.exhaustive<never>(node)
-    }
-  })
-
-  return fn.pipe(
-    loop([schema, path]),
-    object.bind("schema"),
-    object.intersect.defer({
-      schemas: refs.reduce((acc, cur) => ({ ...acc, ...cur }), {}),
-    }),
-  )
+type Flags = {
+  debug: boolean
+  logging: boolean
 }
 
-export namespace reffer {
-  export const defaults = {
-    path: ["#"],
-    delimiter: "/",
-  } satisfies Required<reffer.Options>
+type Options = {
+  document: Doc
+  focus?: readonly string[]
+  deps?: Partial<Deps>
+  flags?: Partial<Flags>
 }
 
-export type mapRef<_> = {
-  schemas: { [x: string]: {} }
-  schema: { [x: string]: {} }
+interface Deps {
+  logger: typeof globalThis.console.log
+  // escapePath(path: Context["path"]): string
+  createRef(path: Context["path"]): string[]
+  // createHash(node: {}, ctx: Context): string | number
 }
 
-export function mapRef<T extends { [x: string]: Schema.any }>(schema: T): mapRef<T>
-export function mapRef<T extends { [x: string]: Schema.any }>(schema: T, options: reffer.Options): mapRef<T>
-export function mapRef<T extends { [x: string]: Schema.any }>(
-  schema: T, { 
-    path = reffer.defaults.path, 
-    delimiter = reffer.defaults.delimiter,
-  }: reffer.Options = reffer.defaults,
-) {
-  let refs: {}[] = []
-
-  const loop = fn.loop<[node: Schema.any, path: props.any], {}>(([node, ps], loop) => {
-    switch (true) {
-      case Schema.is.ref(node): return node
-      case Schema.is.null(node): return node
-      case Schema.is.scalar(node): return node
-      case Schema.is.array(node): return array_(node, ps, delimiter, refs, loop)
-      case Schema.is.tuple(node): return tuple(node, ps, delimiter, refs, loop)
-      case Schema.is.object(node): return object_(node, ps, delimiter, refs, loop)
-      case Schema.is.allOf(node): return allOf(node, ps, delimiter, refs, loop)
-      case Schema.is.anyOf(node): return anyOf(node, ps, delimiter, refs, loop)
-      case Schema.is.oneOf(node): return oneOf(node, ps, delimiter, refs, loop)
-      default: return fn.exhaustive<never>(node)
-    }
-  })
-
-  return fn.pipe(
-    schema,
-    map((v, k) => loop([v, [...path, k as prop.any]])),
-    object.bind("schema"),
-    (schema) => ({
-      ...schema,
-      schemas: refs.reduce((acc, cur) => ({ ...acc, ...cur }), {}),
-    }),
-  )
+interface InternalState {
+  path: prop.any[], 
+  refs: Refs 
+  cache: globalThis.WeakMap<{}, prop.any[]>
+  cycles: { firstSeen: string, loc: string }[]
 }
 
-function oneOf(
-  node: Schema.OneOf,
-  path: props.any,
-  delimiter: string,
-  todo: {}[],
-  loop: (_: [node: Schema.any, path: props.any]) => {},
-) {
-  return { 
-    allOf: map(
-      node.oneOf, 
-      (c, ix) => loop([c, [...path, "allOf", ix]])
-    )
-  }
+interface Context extends 
+  globalThis.Required<globalThis.Omit<Options, "deps" | "flags">>,
+  inline<{ deps: globalThis.Required<Deps>, flags: Flags }>,
+  InternalState {}
+
+namespace Invariant {
+  export const CachedValueCannotBeNullable = (cacheKey: {} | null) =>
+    fn.throw("Unexpected cached value of 'undefined' found when using key: ", cacheKey)
+  export const UnexpectedNullableValue = () => 
+    fn.throw("Encountered 'null' or 'undefined' in a context where a non-nullable value was expected")
 }
 
-function anyOf(
-  node: Schema.AnyOf, 
-  path: props.any,
-  _delimiter: string,
-  _todo: {}[],
-  loop: (_: [node: Schema.any, path: props.any]) => {},
-) {
-  return { 
-    allOf: map(
-      node.anyOf, 
-      (c, ix) => loop([c, [...path, "allOf", ix]])
-    )
-  }
-}
+const hasSchema = tree.has("schema", is.any.object)
 
-function allOf(
-  node: Schema.AllOf,
-  path: props.any,
-  _delimiter: string,
-  _todo: {}[],
-  loop: (_: [node: Schema.any, path: props.any]) => {},
-) {
-  return { 
-    allOf: map(
-      node.allOf, 
-      (c, ix) => loop([c, [...path, "allOf", ix]])
-    )
-  }
-}
+const deps = {
+  logger: globalThis.console.log,
+  // escapePath: fn.flow(
+  //   map(JsonPointer.escape),
+  //   array.join("/"),
+  // ),
+  createRef: fn.flow(
+    map(JsonPointer.escape),
+  ),
+} satisfies Context["deps"]
 
-function array_(
-  schema: Schema.ArrayNode,
-  path: props.any,
-  _delimiter: string,
-  _todo: {}[],
-  loop: (_: [node: Schema.any, path: props.any]) => {},
-) {
+const flags = {
+  debug: false,
+  logging: false,
+} satisfies Context["flags"]
+
+
+const defaults = {
+  path: [],
+  cycles: [],
+  focus: [],
+  refs: {},
+  deps,
+  flags,
+} satisfies Omit<Required<Context>, "cache" | "document">
+
+function initializeContext(opts: Doc | Options, start: readonly string[]): Context {
+  const cache = new globalThis.WeakMap() satisfies Context["cache"]
+  const document = "document" in opts 
+    ? opts.document satisfies Context["document"]
+    : opts satisfies Context["document"]
+  const deps = "deps" in opts 
+    ? { ...defaults.deps, ...opts.deps } satisfies Context["deps"]
+    : defaults.deps satisfies Context["deps"]
+  const flags = "flags" in opts 
+    ? { ...defaults.flags, ...opts.flags } satisfies Context["flags"]
+    : defaults.flags satisfies Context["flags"]
+  const focus = fn.pipe(
+    "focus" in opts && opts.focus || [],
+    xs => xs.concat(...start),
+    // "deps" in opts && opts.deps?.createRef || defaults.deps.createRef,
+  ) satisfies Context["focus"]
   return {
-    ...schema,
-    items: loop([schema.items, [...path, "items"]]),
+    ...defaults,
+    // ..."deps" in opts && { ...defaults.deps, ...opts.deps },
+    // ..."flags" in opts && { ...defaults.flags, ...opts.flags },
+    deps,
+    flags,
+    cache,
+    document,
+    focus,
+  } satisfies Context
+}
+
+function checkCache<T extends {} | null>(_: T, $: Context): Result<T, { $ref: string }>
+function checkCache<T extends {} | null>(_: T, $: Context): Result<T, { $ref: string }> {
+  console.log("  -+--> 🔎 AT 🔎", $.path)
+
+  if (is.nullable(_)) return Invariant.UnexpectedNullableValue()
+  else if ($.cache.has(_)) {
+    const cachedPath = $.cache.get(_)
+    console.log(" ⛳️ HAZ AT    ⛳️", $.path)
+    console.log(" ⛳️ HAZ CACHED⛳️", cachedPath)
+    console.log(" ⛳️ HAZ VALUE ⛳️", _)
+
+    if (cachedPath == null) return Invariant.CachedValueCannotBeNullable(_)
+    // const firstSeen = $.deps.escapePath(path)
+    // const firstSeen = $.deps.createRef(path).join("/")
+    const firstSeen = cachedPath.join("/")
+
+    $.flags.logging && console.log("CACHE HIT", _)
+    $.flags.debug && $.cycles.push({ firstSeen, loc: $.path.join("/") })
+    void ($.refs[firstSeen] = _)
+
+    return Result.err({ $ref: firstSeen })
+  }
+  else {
+    console.log("  . . . 🚫 AT 🚫", $.path)
+    // console.log(" . . . 🚫  no can HAZ, _:    🚫", _)
+    void ($.cache.set(_, $.path))
+    $.flags.logging && console.log("CACHE MISS", _)
+    return Result.ok(_)
   }
 }
 
-function tuple(
-  node: Schema.TupleNode,
-  prev: props.any,
-  delimiter: string,
-  todo: {}[],
-  loop: (_: [node: Schema.any, path: props.any]) => {},
-) {
-  const { prefixItems, ...rest } = node
-  return fn.pipe(
-    prefixItems,
-    map((v, ix) => loop([v, [...prev, "prefixItems", ix]])),
-    object.bind("prefixItems"),
-    object.intersect.defer(rest),
-  )
-}
+const loop = fn.loopN<[cursor: {}, ctx: Context], {}>
+  ((_, $, loop) => {
+    $.flags.logging && (console.log("calling loop", _))
+    switch (true) {
+      case is.scalar(_): return _
+      case is.nullable(_): return _
+      case hasSchema(_): {
+        console.log("HAS SCHEMA", $.path)
+        return fn.pipe(
+          checkCache(_.schema, { ...$, refs: $.refs, cache: $.cache, path: $.path }),
+          // checkCache(_.schema, { ...$, refs: $.refs, cache: $.cache, path: [...$.path, "schema"] }),
+          Result.map(
+            (_) => {
+              // const path = $.deps.createRef($.path)
+              const $ref = $.path.concat("schema").join("/")
+              const next = loop(_.schema, { ...$, refs: $.refs, cache: $.cache })
+              void ($.refs[$ref] = next)
+              
+              return { $ref }
+            }
+          ),
+          Result.union,
+        )
+      }
+      case is.array(is.nonnullable)(_): return fn.pipe(
+        checkCache(_, $),
+        Result.map(map((x, ix) => loop(x, { ...$, refs: $.refs, cache: $.cache, path: [...$.path, ix] }))),
+        Result.union,
+      )
+      case is.any.object(_): return fn.pipe(
+        checkCache(_, $),
+        Result.map(map((x, ix) => loop(x, { ...$, refs: $.refs, cache: $.cache, path: [...$.path, ix] }))),
+        Result.union,
+        // map((x, ix) => loop(x, { ...$, refs: $.refs, cache: $.cache, path: [...$.path, ix] }))
+      )
+      case is.nonnullable(_): return fn.throw(_)
+      default: return fn.exhaustive(_)
+    }
+  })
 
-function object_(
-  schema: Schema.ObjectNode,
-  prev: props.any,
-  delimiter: string,
-  todo: {}[],
-  loop: (_: [node: Schema.any, path: props.any]) => {},
-) {
-  const { properties, ...rest } = schema
-  return fn.pipe(
-    properties,
-    map((node, k) => {
-      const path = [...prev, "properties", k]
-      const pathFromRoot = stringifyPath(delimiter)(path)
-      const $ref = { [pathFromRoot]: loop([node, path]) }
-      return void todo.push($ref), { $ref: pathFromRoot }
-    }),
-    object.bind("properties"),
-    object.intersect.defer(rest),
-  )
-}
+export const reffer 
+  : (opts: Doc | Options) => (start: readonly string[]) => [refs: {}, doc: {}, cycles: {}[]]
+  = (opts) => (start) => {
+    const ctx = initializeContext(opts, start)
+    ctx.flags.logging && void (console.log("Initialized context:", ctx))
+    
+    const doc = fn.pipe(
+      tree.get(ctx.document, ...start) ?? {},
+      (x) => loop(x, ctx),
+    )
+
+    return [doc, ctx.refs, ctx.cycles]
+  }

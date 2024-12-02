@@ -29,6 +29,11 @@ export {
   has,
   is,
 } from "./schema.js"
+// export { mapRef, reffer } from "./reffer-old.js"
+export { dereference, fullyDereference } from "./deref.js"
+export { reffer } from "./reffer.js"
+
+export { openapi as doc } from "./document.js"
 
 export * as Interpreter from "./interpreter.js"
 export { fromJSON, toJSON } from "./json-adapter.js"

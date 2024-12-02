@@ -177,12 +177,9 @@ export declare namespace openapi {
         // TODO: add TRACE, HEAD, etc.
         [http.Verb.get]?: openapi.operation
         [http.Verb.put]?: openapi.operation
+        // [http.Verb.delete]?: openapi.operation
+        // [http.Verb.patch]?: openapi.operation
         [http.Verb.post]?: {
-          // [http.Verb.enum.get]?: openapi.operation
-          // [http.Verb.enum.post]?: openapi.operation
-          // [http.Verb.enum.put]?: openapi.operation
-          // [http.Verb.enum.delete]?: openapi.operation
-          // [http.Verb.enum.patch]?: {
           parameters?: readonly openapi.parameter[]
           responses?: {
             200?: openapi.response
@@ -192,6 +189,7 @@ export declare namespace openapi {
              * ### [HTTP status code](https://developer.mozilla.org/en-US/docs/Web/HTTP/Status)
              */
             [status: number]: {
+              description?: string
               content?: {
                 [http.MediaType.applicationJSON]?: openapi.mediatype
                 [http.MediaType.applicationJavascript]?: openapi.mediatype
