@@ -1,17 +1,17 @@
 import type { Partial, any, id } from "any-ts"
 
+import { core, tree } from "@traversable/core"
 import { 
-  type key, 
-  type prop, 
   Option, 
   array, 
   fn, 
+  type key, 
   map, 
   object, 
   pair,
+  type prop, 
   string,
 } from "@traversable/data"
-import { core, tree } from "@traversable/core"
 import { symbol } from "@traversable/registry"
 
 import { Schema } from "./schema.js"

@@ -365,33 +365,33 @@ export const snake
   = key.snake
 
 /** 
- * ## {@link toUpper `string.toUpper`} 
+ * ## {@link uppercase `string.uppercase`} 
  *
  * @example
  * import { string } from "@traversable/data"
  *
- * const ex_01 = string.toUpper("hoboken_new_jersey")
+ * const ex_01 = string.uppercase("hoboken_new_jersey")
  * //       ^? const ex_01: "HOBOKEN_NEW_JERSEY"
  * console.log(ex_01) // => "HOBOKEN_NEW_JERSEY"
  */
-export type toUpper<T extends string> = key.toUpper<T>
-export const toUpper 
-  : <T extends string>(string: T) => key.toUpper<T>
-  = key.toUpper
+export type uppercase<T extends string> = key.uppercase<T>
+export const uppercase 
+  : <T extends string>(string: T) => key.uppercase<T>
+  = key.uppercase
 
 /** 
- * ## {@link toLower `string.toLower`} 
+ * ## {@link lowercase `string.lowercase`} 
  * @example
  * import { string } from "@traversable/data"
  *
- * const ex_01 = string.toLower("CHAISE_LOUNGE")
+ * const ex_01 = string.lowercase("CHAISE_LOUNGE")
  * //       ^? const ex_01: "chaise_lounge"
  * console.log(ex_01) // => "chaise_lounge"
  */
-export type toLower<T extends string> = key.toLower<T>
-export const toLower 
-  : <T extends string>(string: T) => key.toLower<T>
-  = key.toLower
+export type lowercase<T extends string> = key.lowercase<T>
+export const lowercase 
+  : <T extends string>(string: T) => key.lowercase<T>
+  = key.lowercase
 
 /**
  * ## {@link kebab `string.kebab`}
