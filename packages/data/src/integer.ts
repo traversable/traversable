@@ -10,8 +10,8 @@ const some = <T>(value: T): Some<T> => ({ _tag: URI.Some, value })
 export {
   /**
    * ### {@link integer `integer.any`}
-   * 
-   * Greatest lower bound of the {@link integer `integer`} namespace
+   * [Least upper bound](https://en.wikipedia.org/wiki/Upper_and_lower_bounds)
+   * of the {@link integer `integer`} namespace
    */
   integer as any,
   /** 

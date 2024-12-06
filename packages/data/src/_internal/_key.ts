@@ -6,9 +6,9 @@ import { prop } from "./_prop.js"
 import { escape as escapeString, isQuoted } from "./_string.js"
 
 /** @internal */
-type matchUppercaseAlpha<T extends string> = key.toUpper<T> extends T ? key.toLower<T> extends T ? never : T : never
+type matchUppercaseAlpha<T extends string> = key.uppercase<T> extends T ? key.lowercase<T> extends T ? never : T : never
 /** @internal */
-type matchLowercaseAlpha<T extends string> = key.toLower<T> extends T ? key.toUpper<T> extends T ? never : T : never
+type matchLowercaseAlpha<T extends string> = key.lowercase<T> extends T ? key.uppercase<T> extends T ? never : T : never
 /** @internal */
 type takeUppercaseChars<T extends string, Out extends string = never>
   = [T] extends [never] ? [match: never, nonmatch: never]
@@ -246,8 +246,8 @@ export declare namespace key{
     interface camel extends Kind<key.any> { [-1]: key.camel<this[0]> }
     interface kebab extends Kind<key.any> { [-1]: key.kebab<this[0]> }
     interface pascal extends Kind<key.any> { [-1]: key.pascal<this[0]> }
-    interface upper extends Kind<key.any> { [-1]: key.toUpper<this[0]> }
-    interface lower extends Kind<key.any> { [-1]: key.toLower<this[0]> }
+    interface upper extends Kind<key.any> { [-1]: key.uppercase<this[0]> }
+    interface lower extends Kind<key.any> { [-1]: key.lowercase<this[0]> }
     interface prefix extends Kind<Pair> { [-1]: key.prefix<this[0][0], this[0][1]> }
     interface unprefix extends Kind<Pair> { [-1]: key.unprefix<this[0][0], this[0][1]> }
     interface postfix extends Kind<Pair> { [-1]: key.postfix<this[0][0], this[0][1]> }
@@ -331,9 +331,9 @@ export namespace key {
    * - `number`: coerce the number to a string
    * - `symbol`: return the symbol
    */
-  export function toUpper<K extends key.any>(k: K): key.toUpper<K>
-  export function toUpper(k: key.any) { return isSymbol(k) ? k : `${k}`.toUpperCase() }
-  export type toUpper<K extends key.any> = K extends symbol ? K : globalThis.Uppercase<`${K & (string | number)}`>
+  export function uppercase<K extends key.any>(k: K): key.uppercase<K>
+  export function uppercase(k: key.any) { return isSymbol(k) ? k : `${k}`.toUpperCase() }
+  export type uppercase<K extends key.any> = K extends symbol ? K : globalThis.Uppercase<`${K & (string | number)}`>
 
   /** 
    * ### {@link toLower `key.toLower`} 
@@ -344,9 +344,9 @@ export namespace key {
    * - `number`: coerce the number to a string
    * - `symbol`: return the symbol
    */
-  export function toLower<K extends key.any>(k: K): key.toLower<K>
-  export function toLower(k: key.any) { return isSymbol(k) ? k : `${k}`.toLowerCase() }
-  export type toLower<K extends key.any> = K extends symbol ? K : globalThis.Lowercase<`${K & (string | number)}`>
+  export function lowercase<K extends key.any>(k: K): key.lowercase<K>
+  export function lowercase(k: key.any) { return isSymbol(k) ? k : `${k}`.toLowerCase() }
+  export type lowercase<K extends key.any> = K extends symbol ? K : globalThis.Lowercase<`${K & (string | number)}`>
 
   /** 
    * ### {@link prefix `key.prefix`} 
@@ -423,7 +423,7 @@ export namespace key {
       = S extends `${infer L}${_}${infer R}${infer T}`
       ? camel.loop<
         T, 
-        O extends "" ? `${toLower<L>}${toUpper<R>}` : `${O}${toLower<L>}${toUpper<R>}`, _
+        O extends "" ? `${lowercase<L>}${uppercase<R>}` : `${O}${lowercase<L>}${uppercase<R>}`, _
       > : `${O}${S}`
   }
 
@@ -477,9 +477,9 @@ export namespace key {
       ? H extends " " ? loop<key.capitalize<T>, O, _>
       : snake.loop<
         T,
-        O extends "" ? toLower<H> 
+        O extends "" ? lowercase<H> 
         : H extends `${number}` ? `${O}${H}` 
-        : toUpper<H> extends H ? `${O}${_}${toLower<H>}` 
+        : uppercase<H> extends H ? `${O}${_}${lowercase<H>}` 
         : `${O}${H}`,
         _ 
       > : `${O}${S & (string | number)}`

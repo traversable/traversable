@@ -53,7 +53,7 @@ function chars_escape(string: string): string
 function chars_escape(x: string): string {
   let prev = 0
   let out = ""
-  let pt
+  let pt: number
   for (let ix = 0; ix < x.length; ix++) {
     void (pt = x.charCodeAt(ix))
     if (pt === 34 || pt === 92 || pt < 32) {

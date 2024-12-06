@@ -1000,26 +1000,26 @@ export const object_values
  * ### ｛ {@link jsdoc.mapping ` 🌈 `} ｝
  */
 export function object_uppercase<const T extends object.any>(object: T): 
-  { -readonly [K in keyof T as key.toUpper<K>]: T[K] }
+  { -readonly [K in keyof T as key.uppercase<K>]: T[K] }
 export function object_uppercase<const T extends object.any>(object: T) 
   /// impl.
-  { return object_mapKeys(key.toUpper)(object) }
+  { return object_mapKeys(key.uppercase)(object) }
 
 /** 
  * ## {@link object_uppercase.values `object.uppercase.values`}
  * ### ｛ {@link jsdoc.mapping ` 🌈 `} ｝
  */
 object_uppercase.values = (
-  function object_uppercaseValues(object: { [x: key.any]: key.any }) { return map(object, key.toUpper) }
+  function object_uppercaseValues(object: { [x: key.any]: key.any }) { return map(object, key.uppercase) }
 ) as {
-  <const T extends { [x: string]: key.any }>(object: T): { -readonly [K in keyof T]: key.toUpper<T[K]> }
-  <const T extends { [x: number]: key.any }>(object: T): { -readonly [K in keyof T]: key.toUpper<number & T[K]> }
-  <const T extends { [x: key.any]: key.any }>(object: T): { -readonly [K in keyof T]: key.toUpper<T[K]> }
+  <const T extends { [x: string]: key.any }>(object: T): { -readonly [K in keyof T]: key.uppercase<T[K]> }
+  <const T extends { [x: number]: key.any }>(object: T): { -readonly [K in keyof T]: key.uppercase<number & T[K]> }
+  <const T extends { [x: key.any]: key.any }>(object: T): { -readonly [K in keyof T]: key.uppercase<T[K]> }
 }
 
-export type object_uppercase<T> = never | { -readonly [K in keyof T as key.toUpper<K>]: T[K] }
+export type object_uppercase<T> = never | { -readonly [K in keyof T as key.uppercase<K>]: T[K] }
 export declare namespace object_uppercase {
-  type values<T extends { [x: key.any]: key.any }> = never | { -readonly [K in keyof T]: key.toUpper<T[K]> }
+  type values<T extends { [x: key.any]: key.any }> = never | { -readonly [K in keyof T]: key.uppercase<T[K]> }
 }
 
 /** 
@@ -1031,24 +1031,24 @@ export function object_lowercase<const T extends { [x: string]: unknown }>(objec
 export function object_lowercase<const T extends { [x: key.any]: unknown }>(object: T): object_lowercase<T>
 export function object_lowercase(object: { [x: key.any]: unknown }) 
   /// impl.
-  { return object_mapKeys(key.toLower)(object) }
+  { return object_mapKeys(key.lowercase)(object) }
 
 /** 
  * ## {@link object_lowercase.values `object.lowercase.values`}
  * ### ｛ {@link jsdoc.mapping ` 🌈 `} ｝
  */
 object_lowercase.values = (
-  function object_lowercase_values(object: { [x: key.any]: key.any }) { return map(object, key.toLower) }
+  function object_lowercase_values(object: { [x: key.any]: key.any }) { return map(object, key.lowercase) }
 ) as {
-  <const T extends { [x: string]: key.any }>(object: T): { -readonly [K in keyof T]: key.toLower<T[K]> }
-  <const T extends { [x: number]: key.any }>(object: T): { -readonly [K in keyof T]: key.toLower<number & T[K]> }
-  <const T extends { [x: key.any]: key.any }>(object: T): { -readonly [K in keyof T]: key.toLower<T[K]> }
+  <const T extends { [x: string]: key.any }>(object: T): { -readonly [K in keyof T]: key.lowercase<T[K]> }
+  <const T extends { [x: number]: key.any }>(object: T): { -readonly [K in keyof T]: key.lowercase<number & T[K]> }
+  <const T extends { [x: key.any]: key.any }>(object: T): { -readonly [K in keyof T]: key.lowercase<T[K]> }
 }
 
 export type object_lowercase<T> = never | ([T] extends [readonly unknown[]] ? T : 
-  { -readonly [K in keyof T as key.toLower<K>]: T[K] })
+  { -readonly [K in keyof T as key.lowercase<K>]: T[K] })
 export declare namespace object_lowercase {
-  type values<T extends { [x: key.any]: key.any }> = never | { -readonly [K in keyof T]: key.toLower<T[K]> }
+  type values<T extends { [x: key.any]: key.any }> = never | { -readonly [K in keyof T]: key.lowercase<T[K]> }
 }
 
 /** 
@@ -2038,4 +2038,38 @@ object_filterKeys.defer = (
   <const T extends object.any> (predicate: some.predicate<key.nonstring>): (object: T) => { -readonly [K in keyof T]+?: T[K] }
   <const T extends object.any> (predicate: some.predicate<keyof any>): (object: T) => { -readonly [K in keyof T]+?: T[K] }
 }
+
+/** 
+ * ## {@link object_forEach `object.forEach`}
+ * ### ｛ {@link jsdoc.empty ` ️🕳️‍ ` } ｝
+ * 
+ * Close cousin of {@link globalThis.Array.prototype.forEach `Array.prototype.forEach`}.
+ * 
+ * See also:
+ * - {@link object_filterKeys `object.filterKeys`}
+ * - {@link globalThis.Array.prototype.forEach `Array.prototype.forEach`}
+ */
+export function object_forEach<S, T extends object.any>(object: T, effect: (v: S, k: string) => void): void
+export function object_forEach<S, T extends object.any>(object: T, effect: (v: S, k: number) => void): void
+export function object_forEach<S, T extends object.any>(object: T, effect: (v: S, k: prop.any) => void): void
+export function object_forEach<S, T extends object.any>(object: T, effect: (v: S, k: key.any) => void): void
+export function object_forEach<S, T extends object.any>(object: T, effect: (v: S, k: never) => void) {
+  return void Object_entries(object).forEach(([k, v]) => effect(v, k as never))
+}
+
+/** 
+ * ## {@link object_forEach.defer `object.forEach.defer`}
+ * ### ｛ {@link jsdoc.empty ` ️🕳️‍ ` } ｝
+ * 
+ * Curried variant of {@link object_forEach `object.forEach`}
+ * 
+ * See also:
+ * - {@link object_forEach `object.forEach`}
+ * - {@link globalThis.Array.prototype.forEach `Array.prototype.forEach`}
+ */
+object_forEach.defer = (
+  function object_forEach_defer<S>(effect: (v: S, k: keyof any) => void): <T extends object.any>(object: T) => void 
+    /// impl.
+    { return (object: object.any) => object_forEach(object, effect) }
+)
 

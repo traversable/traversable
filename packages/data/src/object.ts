@@ -19,6 +19,7 @@ import {
   object_filter as filter,
   object_filterKeys as filterKeys,
   object_find as find,
+  object_forEach as forEach,
   object_fromArray as fromArray,
   object_fromEntries as fromEntries,
   object_fromKeys as fromKeys,
@@ -31,6 +32,7 @@ import {
   object_invert as invert,
   object_is as is,
   object_isComposite as isComposite,
+  object_isEmpty as isEmpty,
   object_isKeyOf as isKeyOf,
   object_isNonEmpty as isNonEmpty,
   object_isRecord as isRecord,
@@ -49,7 +51,9 @@ import {
   object_postfix as postfix,
   object_prefix as prefix,
   object_snake as snake,
+  object_some as some,
   object_stringifyValues as stringifyValues,
+  object_symbols as symbols,
   object_titlecase as titlecase,
   object_transform as transform,
   object_uncapitalize as uncapitalize,
@@ -76,6 +80,7 @@ export declare namespace object {
     filter,
     filterKeys,
     find,
+    forEach,
     fromArray,
     fromEntries,
     fromKeys,
@@ -89,6 +94,7 @@ export declare namespace object {
     invertible,
     is,
     isComposite,
+    isEmpty,
     isKeyOf,
     isNonEmpty,
     isRecord,
@@ -112,7 +118,9 @@ export declare namespace object {
     required,
     requiredKeys,
     snake,
+    some,
     stringifyValues,
+    symbols,
     titlecase,
     transform,
     uncapitalize,
@@ -142,13 +150,7 @@ export declare namespace object {
 
 export function object() {}
 export namespace object {
-  object.keys = keys
-  object.fromPath = fromPath
-  object.isRecord = isRecord
-  object.isComposite = isComposite
-  object.has = has
   object.bind = bind
-  object.titlecase = titlecase
   object.camel = camel
   object.capitalize = capitalize
   object.complement = complement
@@ -159,20 +161,28 @@ export namespace object {
   object.filter = filter
   object.filterKeys = filterKeys
   object.find = find
+  object.forEach = forEach
   object.fromArray = fromArray
   object.fromEntries = fromEntries
   object.fromKeys = fromKeys
   object.fromPairs = fromPairs
+  object.fromPath = fromPath
   object.get = get
+  object.has = has
   object.includes = includes
   object.intersect = intersect
   object.invert = invert
   object.is = is
+  object.isComposite = isComposite
+  object.isEmpty = isEmpty
   object.isKeyOf = isKeyOf
   object.isNonEmpty = isNonEmpty
+  object.isRecord = isRecord
   object.kebab = kebab
+  object.keys = keys
   object.let = object_let
   object.lookup = lookup
+  object.lowercase = lowercase
   object.mapKeys = mapKeys
   object.omit = omit
   object.parseEntry = parseEntry
@@ -183,12 +193,14 @@ export namespace object {
   object.postfix = postfix
   object.prefix = prefix
   object.snake = snake
+  object.some = some
   object.stringifyValues = stringifyValues
-  object.lowercase = lowercase
-  object.uppercase = uppercase
+  object.symbols = symbols
+  object.titlecase = titlecase
   object.transform = transform
   object.uncapitalize = uncapitalize
   object.unpostfix = unpostfix,
   object.unprefix = unprefix
+  object.uppercase = uppercase
   object.values = values
 }

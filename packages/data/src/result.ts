@@ -1,11 +1,10 @@
 // import type { any, mut } from "any-ts"
 import { Invariant, URI } from "@traversable/registry"
 
-import type { Result, Err, Ok } from "./exports.js"
-import type { jsdoc } from "./_internal/_unicode.js"
-import type { prop } from "./_internal/_prop.js"
-import type { key } from "./_internal/_key.js"
 import { exhaustive, identity } from "./_internal/_function.js"
+import type { key } from "./_internal/_key.js"
+import type { jsdoc } from "./_internal/_unicode.js"
+import type { Err, Ok, Result } from "./exports.js"
 
 /** @internal */
 const Object_keys = globalThis.Object.keys

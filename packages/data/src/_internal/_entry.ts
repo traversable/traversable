@@ -7,6 +7,11 @@ export declare namespace entry {
      * ### {@link entry_any `entry.any`}
      * Greatest lower bound of the {@link entry `entry`} namespace
      */
+    /**
+     * ### {@link entry_any `entry.any`}
+     * [Least upper bound](https://en.wikipedia.org/wiki/Upper_and_lower_bounds)
+     * of the `entry` namespace
+     */
     entry_any as any
   }
   export type entry_any<
@@ -105,9 +110,11 @@ export namespace entries {
    * ### {@link values `entries.values`}
    *
    * @example
-   * const ex_01 = entries.values([["a", 1], ["b", 2], [3, "c"]])
-   * //       ^? const ex_01: [1, 2, "c"]
-   * console.log(ex_01) // => [1, 2, "c"]
+   *  import { entries } from "@traversable/data"
+   * 
+   *  const ex_01 = entries.values([["a", 1], ["b", 2], [3, "c"]])
+   *  //       ^? const ex_01: [1, 2, "c"]
+   *  console.log(ex_01) // => [1, 2, "c"]
    */
   export function values<T extends entries.any>(xs: T): entries.values<T>
   export function values<T extends entries.any>(xs: T) {

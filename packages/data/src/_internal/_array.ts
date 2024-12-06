@@ -1,6 +1,5 @@
 import type { 
   any, 
-  check, 
   mut, 
   nonempty, 
   some, 
@@ -16,9 +15,10 @@ const Math_min = globalThis.Math.min
 
 /**
  * ### {@link array_any `array.any`}
- * Greatest lower bound of the {@link array `array`} namespace
+ * [Least upper bound](https://en.wikipedia.org/wiki/Upper_and_lower_bounds)
+ * of the `array` namespace
  */
-export type array_any<T extends readonly unknown[] = readonly unknown[]> = T
+export type array_any<T extends readonly unknown[] = unknown[]> = T
 
 /**
  * ### {@link array_of `array.of`}
@@ -603,9 +603,27 @@ export type array_flattenOnce<xs extends any.array, acc extends any.array = []>
   : acc
 
 /** ### {@link array_flatMap `array.flatMap`} */
-export const array_flatMap
-  : <const T, U>(fn: (input: T) => any.array<U>) => (xs: readonly T[]) => readonly U[]
-  = (fn) => (xs) => xs.flatMap(fn)
+export function array_flatMap<const T, U>
+  (xs: readonly T[], fn: (input: T) => any.array<U>): readonly U[]
+export function array_flatMap<const T, U>
+  (xs: readonly T[], fn: (input: T) => any.array<U>) /// impl.
+  { return xs.flatMap(fn) }
+
+array_flatMap.defer = array_flatMap_defer
+
+/** 
+ * ### {@link array_flatMap_defer `array.flatMap.defer`}
+ * 
+ * Data-last variant of {@link array_flatMap `array.flatMap`}
+ */
+function array_flatMap_defer<const T, U>
+  (fn: (input: T, ix: number, xs: readonly T[]) => any.array<U>): 
+    (xs: readonly T[]) 
+      => readonly U[]
+function array_flatMap_defer<const T, U>
+  (fn: (input: T, ix: number, xs: readonly T[]) => any.array<U>) /// impl.
+  { return (xs: readonly T[]) => xs.flatMap(fn) } 
+
 
 /** ### {@link array_flatten `array.flatten`} */
 export const array_flatten
@@ -624,13 +642,13 @@ export type array_lead<T extends any.array>
   : never
 
 /** ### {@link array_last `array.last`} */
-export function array_last<const T extends check.isTuple<T>>(xs: T): array_last<T>
+export function array_last<const T extends array_finite<T>>(xs: T): array_last<T>
 export function array_last<const T extends nonempty.array>(xs: T): T[number]
 export function array_last<const T extends any.array>(xs: T): T[number] | undefined // last<xs>
 export function array_last<const T extends any.array>(xs: T) { return xs[xs.length - 1] }
 
 /** ### {@link array_lead `array.lead`} */
-export function array_lead<const T extends check.isTuple<T>>(xs: T): array_lead<T>
+export function array_lead<const T extends array_finite<T>>(xs: T): array_lead<T>
 export function array_lead<const T extends nonempty.mut.array>(xs: T): [T[0], ...(T[number])[]]
 export function array_lead<const T extends mut.array>(xs: T): [] | T[number][]
 export function array_lead<const T extends nonempty.array>(xs: T): readonly [T[0], ...(T[number])[]]
@@ -853,34 +871,43 @@ export type array_uncapitalize<T extends keys.any> = never | { -readonly [x in k
  * @example
  *  import { array } from "@traversable/data"
  * 
- *  const ex_01 = array
+ *  const ex_01 = array.lowercase("yes", "no", "maybe", "i", "don't", "know")
+ *  //     ^?     const ex_01: ["YES", "NO", "MAYBE", "I", "DON'T", "KNOW"]
+ *  console.log(ex_01)   // => ["YES", "NO", "MAYBE", "I", "DON'T", "KNOW"]
+ * 
+ *  const ex_02 = array.lowercase(["can", "you", "repeat", "the", "question"])
+ *  //     ^?     const ex_02: ["CAN", "YOU", "REPEAT", "THE", "QUESTION"]
+ *  console.log(ex_02)   // => ["CAN", "YOU", "REPEAT", "THE", "QUESTION"]
+ *  
+ *  const ex_03 = array.lowercase(["smells", "Like", "Teen", "Spirit",  1991])
+ *  //     ^?      const ex_03: ["SMELLS", "LIKE", "TEEN", "SPIRIT", "1991"]
+ *  console.log(ex_03)    // => ["SMELLS", "LIKE", "TEEN", "SPIRIT", "1991"]
  */
-export function array_toLower<const T extends keys.any>(keys: T): { -readonly [x in keyof T]: key.toLower<T[x]> }
-export function array_toLower(...args: keys.any | [keys.any]) { return args.flat(1).map(key.toLower) }
-export type array_toLower<T extends keys.any> = never | { -readonly [x in keyof T]: key.toLower<T[x]> }
+export function array_lowercase<const T extends keys.any>(keys: T): { -readonly [x in keyof T]: key.lowercase<T[x]> }
+export function array_lowercase(...args: keys.any | [keys.any]) { return args.flat(1).map(key.lowercase) }
+export type array_lowercase<T extends keys.any> = never | { -readonly [x in keyof T]: key.lowercase<T[x]> }
 
 /** 
- * ### {@link array_toUpper `array.toUpper`} 
+ * ### {@link array_uppercase `array.uppercase`} 
  * 
  * @example
  *  import { array } from "@traversable/data"
  * 
- *  const ex_01 = array.toUpper("yes", "no", "maybe", "i", "don't", "know")
+ *  const ex_01 = array.uppercase("yes", "no", "maybe", "i", "don't", "know")
  *  //     ^?     const ex_01: ["YES", "NO", "MAYBE", "I", "DON'T", "KNOW"]
  *  console.log(ex_01)   // => ["YES", "NO", "MAYBE", "I", "DON'T", "KNOW"]
  * 
- *  const ex_02 = array.toUpper(["can", "you", "repeat", "the", "question"])
+ *  const ex_02 = array.uppercase(["can", "you", "repeat", "the", "question"])
  *  //     ^?     const ex_02: ["CAN", "YOU", "REPEAT", "THE", "QUESTION"]
- *  console.log(ex_03)   // => ["CAN", "YOU", "REPEAT", "THE", "QUESTION"]
+ *  console.log(ex_02)   // => ["CAN", "YOU", "REPEAT", "THE", "QUESTION"]
  *  
- *  const ex_03 = array.toUpper(["smells", "Like", "Teen", "Spirit",  1991])
+ *  const ex_03 = array.uppercase(["smells", "Like", "Teen", "Spirit",  1991])
  *  //     ^?      const ex_03: ["SMELLS", "LIKE", "TEEN", "SPIRIT", "1991"]
- *  console.log(ex_02)    // => ["SMELLS", "LIKE", "TEEN", "SPIRIT", "1991"]
- * 
+ *  console.log(ex_03)    // => ["SMELLS", "LIKE", "TEEN", "SPIRIT", "1991"]
  */
-export function array_toUpper<const T extends keys.any>(keys: T): { -readonly [x in keyof T]: key.toUpper<T[x]> }
-export function array_toUpper(keys: keys.any) { return keys.map(key.toUpper) }
-export type array_toUpper<T extends keys.any> = never | { -readonly [x in keyof T]: key.toUpper<T[x]> }
+export function array_uppercase<const T extends keys.any>(keys: T): { -readonly [x in keyof T]: key.uppercase<T[x]> }
+export function array_uppercase(keys: keys.any) { return keys.map(key.uppercase) }
+export type array_uppercase<T extends keys.any> = never | { -readonly [x in keyof T]: key.uppercase<T[x]> }
 
 /** 
  * ### {@link array_camel `array.camel`} 
@@ -910,8 +937,6 @@ export const array_pascal: {
   <const T extends keys.any, Sep extends string>(keys: T, separator: Sep): { -readonly [x in keyof T]: key.pascal<T[x], Sep> }
 } = (keys: keys.any, separator = "_") => keys.map((k) => key.pascal(k, separator))
 export type array_pascal<T extends keys.any, Sep extends string = "_"> = never | { -readonly [x in keyof T]: key.pascal<T[x], Sep> }
-
-export type IndexedBy<K extends keyof any, T extends { [I in K]: unknown } = { [I in K]: unknown }> = T
 
 /**
  * ## {@link array_zip `array.zip`}
@@ -944,10 +969,10 @@ export type IndexedBy<K extends keyof any, T extends { [I in K]: unknown } = { [
 
 export function array_zip<
  const L extends readonly unknown[],
- const R extends IndexedBy<keyof L>
+ const R extends any.indexedBy<keyof L>
 > (left: L, right: R): { -readonly [I in keyof L]: [x: L[I], y: R[I]] }
 export function array_zip<
- const L extends IndexedBy<keyof R>,
+ const L extends any.indexedBy<keyof R>,
  const R extends readonly unknown[]
 > (left: L, right: R): { -readonly [I in keyof R]: [x: L[I], y: R[I]] }
 export function array_zip<
@@ -965,7 +990,16 @@ export function array_zip(xs: readonly unknown[], ys: readonly unknown[]): [unkn
 export type array_zip<
   L extends { [x: number]: unknown }, 
   R extends { [y: number]: unknown },
-  _ = L extends IndexedBy<keyof R> ? R 
-    : R extends IndexedBy<keyof L> ? L : never
+  _ = L extends any.indexedBy<keyof R> ? R 
+    : R extends any.indexedBy<keyof L> ? L : never
 > = [_] extends [never] ? [x: L[number], y: R[number]][]
   : { -readonly [I in keyof _]: [x: L[I & keyof L], y: R[I & keyof R]] }
+
+/** 
+ * ## {@link array_forEach `array.forEach`}
+ * ### ｛ {@link jsdoc.empty ` ️🕳️‍ ` } ｝
+ * 
+ * Same semantics as {@link globalThis.Array.prototype.forEach `Array.prototype.forEach`}.
+ */
+export function array_forEach<T extends array_any>(xs: T, effect: (x: T[number], ix: number) => void): void
+  { return xs.forEach(effect) }

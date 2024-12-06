@@ -1,31 +1,31 @@
 import type { URI } from "@traversable/registry"
 import type { newtype } from "any-ts"
-import { jsdoc } from "./_internal/_unicode.js"
 
 export type { nonempty } from "./nonempty.js"
-export type { any } from "./_internal/_any.js"
+export type { any } from "./any.js"
 
 export * from "./version.js"
-export * as array from "./array.js"
 export * as Equal from "./equal.js"
+export * as Option from "./option.js"
+export * as Result from "./result.js"
+
+export * as array from "./array.js"
 export * as fn from "./function.js"
 export * as integer from "./integer.js"
 export * as number from "./number.js"
 export * as string from "./string.js"
-export * as unicode from "./_internal/_unicode.js"
-export * as Option from "./option.js"
-export * as Result from "./result.js"
 export * as pair from "./pair.js"
 
-export { ANSI, type Ansi } from "./_internal/_ansi.js"
+export { type Ansi, ANSI } from "./ansi.js"
 export { boolean } from "./boolean.js"
-export * as char from "./_internal/_chars.js"
+export { char } from "./char.js"
 export { entry, entries } from "./entry.js"
 export { key, keys } from "./key.js"
-export { map } from "./map.js"
+export { forEach, map } from "./map.js"
 export { object } from "./object.js"
 export { prop, props } from "./prop.js"
 export { record } from "./record.js"
+export { jsdoc, unicode } from "./unicode.js"
 
 /**
  * ## {@link Predicate `data.Predicate`}

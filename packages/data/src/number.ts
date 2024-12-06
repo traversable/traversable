@@ -5,8 +5,9 @@ import type { jsdoc, math } from "./_internal/_unicode.js"
 
 export {
   /**
-   * ## {@link number_any `number.any`}
-   * Greatest lower bound of the {@link number `number`} namespace
+   * ### {@link number_any `number.any`}
+   * [Least upper bound](https://en.wikipedia.org/wiki/Upper_and_lower_bounds)
+   * of the `number` namespace
    */
   type number_any as any,
 }

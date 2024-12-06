@@ -1,5 +1,5 @@
+import { fc, test } from "@fast-check/vitest"
 import * as vi from "vitest"
-import { test, fc } from "@fast-check/vitest"
 
 import { show } from "@traversable/core"
 

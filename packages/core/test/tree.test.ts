@@ -30,7 +30,7 @@ const withIndex = <K, V>(xss: readonly [readonly K[], V][]): readonly [readonly 
  * are located in the `describe` block directly below this one.
  */
 
-vi.describe("〖️🚑〗‹‹‹ @traversable/core/tree", () => {
+vi.describe("〖️🚑〗‹‹‹ ❲@traversable/core/tree❳", () => {
   vi.it("〖️🚑〗› ❲tree.set❳: applies the patch when both the source and target are composite types", () => {
     const patch = { X: { Y: { Z: 9000 }} }
     const ex_01 = tree.set
@@ -80,7 +80,7 @@ vi.describe("〖️🚑〗‹‹‹ @traversable/core/tree", () => {
     )
   })
 
-  vi.it.only("〖️🚑〗› ❲tree.set❳: mutates its argument", () => {
+  vi.it("〖️🚑〗› ❲tree.set❳: mutates its argument", () => {
     const input_01 = { "$": { "_": { 0: { "_": { "A": {} } } } } }
     void tree.set
       ("$", "_", 0, "_", "A")
@@ -440,20 +440,16 @@ vi.describe("〖⛳️〗‹‹‹ ❲@traversable/core/tree❳", () => {
     }
   )
 
-  vi.it("〖⛳️〗› ❲tree.toPaths❳", () =>
-    fc.assert(
-      fc.property(
-        fc.dictionary(fc.identifier(), fc.jsonValue()),
-        (json) => tree.toPaths(json)
-          .forEach(([path]) => void vi.assert.isTrue(tree.has(...path)(json)))
-      ),
-    )
+  test.prop([fc.dictionary(fc.identifier(), fc.jsonValue())])(
+    "〖⛳️〗› ❲tree.toPaths❳", 
+    (json) => tree.toPaths(json).forEach(([path]) => vi.assert.isTrue(tree.has(...path)(json)))
   )
 
-  /** 
-   * TODO: figure out how to make this roundtrip
-   */
-  vi.it.todo("〖️🌍〗› ❲tree.toPaths::tree.fromPaths❳", () => {
+  vi.it("〖⛳️〗› ❲tree.accessor❳: accessor is a composite type", () => {
+    const ex_01 = { a: { b: { c: { d: 0 } } } }
+    const accessor = tree.accessor("a", "b", "c")(ex_01)
+    void (accessor.d = 1)
+    vi.assert.deepEqual(ex_01, { a: { b: { c: { d: 1 } } } })
   })
 
   const constraints = { 
@@ -487,6 +483,11 @@ vi.describe("〖⛳️〗‹‹‹ ❲@traversable/core/tree❳", () => {
     from: toPaths,
   })()
 
+  /** 
+   * TODO: figure out how to make this roundtrip
+   */
+  vi.it.todo("〖️🌍〗› ❲tree.toPaths::tree.fromPaths❳", () => {
+  })
 })
 
 /** 
@@ -494,106 +495,115 @@ vi.describe("〖⛳️〗‹‹‹ ❲@traversable/core/tree❳", () => {
  *    TYPE-LEVEL TESTS
  * ======================
  */
-vi.describe("〖🧙〗‹‹‹ @traversable/core/tree", () => {
-    vi.it("〖🧙〗› tree.get", () => {
-      type input_01 = typeof input_01
+vi.describe("〖🧙〗‹‹‹ ❲@traversable/core/tree❳", () => {
+  vi.it("〖🧙〗› tree.get", () => {
+    type input_01 = typeof input_01
 
-      const input_01 = { 
-        a: { 
+    const input_01 = { 
+      a: { 
+        ...Math.random() > 0.5 &&
+        ({
+        b: { 
           ...Math.random() > 0.5 &&
           ({
-          b: { 
+          c: { 
             ...Math.random() > 0.5 &&
             ({
-            c: { 
               ...Math.random() > 0.5 &&
-              ({
-                ...Math.random() > 0.5 &&
-                ({ 
-                  d: { 
-                  ...Math.random() > 0.5 && 
-                  ({ e: [ { f: { g: 1, h: 2 }, i: 3 }, [6] ] as const }),
-                  j: 7 
-                }, 
-                }),
+              ({ 
+                d: { 
+                ...Math.random() > 0.5 && 
+                ({ e: [ { f: { g: 1, h: 2 }, i: 3 }, [6] ] as const }),
+                j: 7 
+              }, 
               }),
-              k: 8 
-            }, 
             }),
+            k: 8 
           }, 
           }),
-          l: 10 
         }, 
-        m: {
-          ...Math.random() > 0.5 && ({ n: 11 }),
-          o: {
-            p: [
-              100,
-              200,
-              300,
-              { q: { r: [ 0, { s: 12, t: { u: [13, { v: 14 }] } } ] as const, w: 15 }, x: 16 },
-            ],
-            y: 17,
-          },
-          z: 18,
-        }
-      } as const
-  
-      vi.assertType<readonly [13, { v: 14 }]>
-        (tree.get(input_01, "m", "o", "p", 3, "q", "r", 1, "t", "u"))
-  
-      vi.assertType<undefined | 1>
-        (tree.get(input_01, "a", "b", "c", "d", "e", 0, "f", "g"))
-  
-      vi.assertType<undefined | { g: 1, h: 2 }>
-        (tree.get(input_01, "a", "b", "c", "d", "e", 0, "f"))
-  
-      vi.assertType<undefined | { f: { g: 1, h: 2 }, i: 3 }>
-        (tree.get(input_01, "a", "b", "c", "d", "e", 0))
-  
-      vi.assertType<undefined | readonly [{ f: { g: 1, h: 2 }, i: 3 }, readonly [6]]>
-        (tree.get(input_01, "a", "b", "c", "d", "e"))
-  
-      vi.assertType<
-        | { e?: readonly [{ f: { g: 1, h: 2 }, i: 3 }, readonly [6]], j: number }
-        | undefined
-      >(tree.get(input_01, "a", "b", "c", "d"))
-  
-      vi.assertType<
-        undefined | 
-        { 
-          k: number
-            d?: {
-              e?: readonly [
-                { f: { g: 1, h: 2 }, i: 3 },
-                readonly [6]
-              ]
-              j: number
-            }
-          }
-        >(tree.get(input_01, "a", "b", "c"))
-      
-      vi.assertType<
-        undefined | 
-        { 
-          c?: {
-            k: number 
-            d?: { e?: readonly [ { f: { g: 1, h: 2 }, i: 3 }, readonly [6] ], j: number }
-          }
-        }
-      >(tree.get(input_01, "a", "b"))
+        }),
+        l: 10 
+      }, 
+      m: {
+        ...Math.random() > 0.5 && ({ n: 11 }),
+        o: {
+          p: [
+            100,
+            200,
+            300,
+            { q: { r: [ 0, { s: 12, t: { u: [13, { v: 14 }] } } ] as const, w: 15 }, x: 16 },
+          ],
+          y: 17,
+        },
+        z: 18,
+      }
+    } as const
 
-      vi.assertType<
-        undefined |
-        { 
-          l: number 
-          b?: { 
-            c?: { 
-              k: number 
-              d?: { j: number, e?: readonly [ { f: { g: 1, h: 2 }, i: 3 }, readonly [6] ] }
-            }
+    vi.assertType<readonly [13, { v: 14 }]>
+      (tree.get(input_01, "m", "o", "p", 3, "q", "r", 1, "t", "u"))
+
+    vi.assertType<undefined | 1>
+      (tree.get(input_01, "a", "b", "c", "d", "e", 0, "f", "g"))
+
+    vi.assertType<undefined | { g: 1, h: 2 }>
+      (tree.get(input_01, "a", "b", "c", "d", "e", 0, "f"))
+
+    vi.assertType<undefined | { f: { g: 1, h: 2 }, i: 3 }>
+      (tree.get(input_01, "a", "b", "c", "d", "e", 0))
+
+    vi.assertType<undefined | readonly [{ f: { g: 1, h: 2 }, i: 3 }, readonly [6]]>
+      (tree.get(input_01, "a", "b", "c", "d", "e"))
+
+    vi.assertType<
+      | { e?: readonly [{ f: { g: 1, h: 2 }, i: 3 }, readonly [6]], j: number }
+      | undefined
+    >(tree.get(input_01, "a", "b", "c", "d"))
+
+    vi.assertType<
+      undefined | 
+      { 
+        k: number
+          d?: {
+            e?: readonly [
+              { f: { g: 1, h: 2 }, i: 3 },
+              readonly [6]
+            ]
+            j: number
           }
         }
-      >(tree.get(input_01, "a"))
-    })
+      >(tree.get(input_01, "a", "b", "c"))
+    
+    vi.assertType<
+      undefined | 
+      { 
+        c?: {
+          k: number 
+          d?: { e?: readonly [ { f: { g: 1, h: 2 }, i: 3 }, readonly [6] ], j: number }
+        }
+      }
+    >(tree.get(input_01, "a", "b"))
+
+    vi.assertType<
+      undefined |
+      { 
+        l: number 
+        b?: { 
+          c?: { 
+            k: number 
+            d?: { j: number, e?: readonly [ { f: { g: 1, h: 2 }, i: 3 }, readonly [6] ] }
+          }
+        }
+      }
+    >(tree.get(input_01, "a"))
+  })
+
+  vi.it("〖⛳️〗› ❲tree.accessor❳: no primitive accessors", () => {
+    const ex_01 = { a: { b: { c: 0 } } }
+    const makeAccessor = tree.accessor("a", "b", "c")
+    const accessor = makeAccessor(ex_01)
+    vi.assertType
+      <tree.TypeError<"Accessors must point to an object, but path 'a.b.c' points to type:", number>>
+      (accessor)
+  })
 })
