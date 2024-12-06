@@ -80,7 +80,7 @@ namespace local {
   export const isPrimitive: any.guard<any.primitive> = (u): u is never =>
     [`number`, `string`, `symbol`, `bigint`].includes(typeof u) || local.isNullable(u)
   /** @internal */
-  export const array_getEmpty = <T>() => [] as any.array<T>
+  export const array_getEmpty = <T>() => [] as readonly T[]
 }
 
 /** @internal */
@@ -143,7 +143,7 @@ export type array_shift<T extends mut.array> = array_split<T, 1>
  */
 export const array_is: {
   <T extends trap.any<T>>(u: T): u is globalThis.Extract<any.array, T>
-  (u: unknown): u is any.array
+  (u: unknown): u is readonly unknown[]
 } = globalThis.Array.isArray
 
 /** ## {@link array_isArrayOf `array.isArrayOf`} */
@@ -724,8 +724,8 @@ export function array_indexBy<K extends string | number>(index: K) {
  * ## {@link array_find `array.find`} 
  */
 export function array_find<S, T extends S>(guard: (src: S) => src is T): (xs: readonly S[]) => T | undefined
-export function array_find<T>(pred: Predicate<T>): (xs: ) => T | undefined
-export function array_find<T>(pred: some.predicate<T>) { return (xs: any.array<T>) => xs.find(pred) }
+export function array_find<T>(pred: Predicate<T>): (xs: readonly T[]) => T | undefined
+export function array_find<T>(pred: some.predicate<T>) { return (xs: readonly T[]) => xs.find(pred) }
 
 /** 
  * ## {@link array_findLast `array.findLast`} 
@@ -770,7 +770,7 @@ export function array_lastIndexOf<T>(_: ((x: T) => boolean) | T) {
 /** 
  * ## {@link array_getConcattable `array.getConcattable`} 
  */
-export function array_getConcattable<T = never>(): Concattable<any.array<T>> {
+export function array_getConcattable<T = never>(): Concattable<readonly T[]> {
   return ({ concat: (l, r) => l.length === 0 ? r : r.length === 0 ? l : l.concat(r) })
 }
 
@@ -778,7 +778,7 @@ export function array_getConcattable<T = never>(): Concattable<any.array<T>> {
  * ## {@link array_getFoldable `array.getFoldable`} 
  */
 export const array_getFoldable
-  : <T = never>() => Foldable<any.array<T>> 
+  : <T = never>() => Foldable<readonly T[]> 
   = () => ({ concat: array_getConcattable().concat, empty: local.array_getEmpty() })
 
 /** 

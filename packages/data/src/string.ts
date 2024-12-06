@@ -27,67 +27,6 @@ const not
   : <T>(predicate: (...args: T[]) => boolean) => (...args: T[]) => boolean
   = (predicate) => (...args) => !predicate(...args)
 
-interface string_ascii extends newtype<string> {}
-interface string_base64 extends newtype<string> {}
-interface string_cuid extends newtype<string> {}
-interface string_cuid2 extends newtype<string> {}
-interface string_date extends newtype<string> {}
-interface string_datetime extends newtype<string> {}
-interface string_duration extends newtype<string> {}
-interface string_email extends newtype<string> {}
-interface string_emoji extends newtype<string> {}
-interface string_nanoid extends newtype<string> {}
-interface string_ip extends newtype<string> {}
-interface string_regex extends newtype<string> {}
-interface string_search extends newtype<string> {}
-interface string_time extends newtype<string> {}
-interface string_ulid extends newtype<string> {}
-interface string_url extends newtype<string> {}
-interface string_utf8 extends newtype<string> {}
-interface string_utf16 extends newtype<string> {}
-interface string_uuid extends newtype<string> {}
-
-export type {
-  /** ## {@link string_ascii `string.ascii`} */
-  string_ascii as ascii,
-  /** ## {@link string_base64 `string.base64`} */
-  string_base64 as base64,
-  /** ## {@link string_cuid `string.cuid`} */
-  string_cuid as cuid,
-  /** ## {@link string_cuid2 `string.cuid2`} */
-  string_cuid2 as cuid2,
-  /** ## {@link string_date `string.date`} */
-  string_date as date,
-  /** ## {@link string_datetime `string.datetime`} */
-  string_datetime as datetime,
-  /** ## {@link string_duration `string.duration`} */
-  string_duration as duration,
-  /** ## {@link string_email `string.email`} */
-  string_email as email,
-  /** ## {@link string_emoji `string.emoji`} */
-  string_emoji as emoji,
-  /** ## {@link string_ip `string.ip`} */
-  string_ip as ip,
-  /** ## {@link string_nanoid `string.nanoid`} */
-  string_nanoid as nanoid,
-  /** ## {@link string_regex `string.regex`} */
-  string_regex as regex,
-  /** ## {@link string_search `string.search`} */
-  string_search as search,
-  /** ## {@link string_time `string.time`} */
-  string_time as time,
-  /** ## {@link string_ulid `string.ulid`} */
-  string_ulid as ulid,
-  /** ## {@link string_url `string.url`} */
-  string_url as url,
-  /** ## {@link string_utf8 `string.utf8`} */
-  string_utf8 as utf8,
-  /** ## {@link string_utf16 `string.utf16`} */
-  string_utf16 as utf16,
-  /** ## {@link string_uuid `string.uuid`} */
-  string_uuid as uuid,
-}
-
 /**
  * ## {@link from `string.from`}
  *
@@ -267,7 +206,9 @@ export const unsurround
     : s
     ;
 
-/** ## {@link surround `string.surround`} */
+/** 
+ * ## {@link surround `string.surround`} 
+ */
 export const surround 
   : <Ends extends any.showable>(ends: Ends) => <Btwn extends string>(s: Btwn) => string
   = (ends) => (s) => s.startsWith(`${ends}`)
@@ -347,9 +288,9 @@ export function uncapitalize<T extends string>(text: T) { return text.charAt(0).
  * @example
  * import { string } from "@traversable/data"
  *
- * const ex_01 = string.snake("propertyCard")
- * //       ^? const ex_01: "property_card"
- * console.log(ex_01) // => "property_card"
+ * const ex_01 = string.snake("priorArt")
+ * //       ^? const ex_01: "prior_art"
+ * console.log(ex_01) // => "prior_art"
  *
  * const ex_02 = string.snake("background-color", "-")
  * //       ^? const ex_02: "backgroundColor"

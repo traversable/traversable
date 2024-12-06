@@ -8,7 +8,6 @@ export {
   char_startsWithEscapable as startsWithEscapable,
   char_Delimiters as Delimiters,
   char_isEscapable as isEscapable,
-  // chars_escapeChar as escape,
 }
 
 /**
@@ -84,7 +83,8 @@ const char_Delimiters = [...char_Escapables, ` `, `_`, `.`] as const
  * ## {@link char_is `char.is`}
  * ### ｛ {@link jsdoc.guard ` 🦺 ` } ｝
  * 
- * Typeguard that targets a JavaScript 
+ * Typeguard that targets the set of strings containing a single
+ * character.
  */
 const char_is
   : (u: unknown) => u is string

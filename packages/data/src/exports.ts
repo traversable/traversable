@@ -1,5 +1,4 @@
 import type { URI } from "@traversable/registry"
-import type { newtype } from "any-ts"
 
 export type { nonempty } from "./nonempty.js"
 export type { any } from "./any.js"
@@ -11,7 +10,6 @@ export * as Result from "./result.js"
 
 export * as array from "./array.js"
 export * as fn from "./function.js"
-export * as integer from "./integer.js"
 export * as number from "./number.js"
 export * as string from "./string.js"
 export * as pair from "./pair.js"
@@ -26,6 +24,9 @@ export { object } from "./object.js"
 export { prop, props } from "./prop.js"
 export { record } from "./record.js"
 export { jsdoc, unicode } from "./unicode.js"
+
+export * as integer from "./integer.js"
+export type integer<_ = number> = import("@traversable/registry").integer<_>
 
 /**
  * ## {@link Predicate `data.Predicate`}
@@ -265,65 +266,3 @@ export interface Concattable<in out T> {
  */
 export interface Foldable<in out T> extends Concattable<T> { empty: T }
 
-/**
- * ### {@link integer `number.integer`}
- * * #### ｛ {@link jsdoc.integer `ℤ`}  ｝
- * -----
- *
- * See also: [Integer](https://en.wikipedia.org/wiki/Integer_(computer_science))
- *
- * A signed, 64-bit number representation.
- *
- * > **Note:** to convert an {@link integer `integer`} to a TypeScript number, you can use the
- *   [unary plus](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Operators/Unary_plus)
- *   operator (e.g., `+ myInteger`).
- *
- * **Note:** `number -> integer` is _lossy_. For a constructor that preserves the integer exponent
- * of its argument, see {@link float `number.float`.}
- *
- * 1. {@link integer `integer`} is a [newtype](https://doc.rust-lang.org/rust-by-example/generics/new_types.html)
- * that inherits from {@link globalThis.Number.prototype `Number.prototype`}, but
- * preserves (at the type-level) what is otherwise lost: that the value it represents
- * is a whole number.
- *
- * 2. The {@link integer `integer`} function constructs an {@link integer `integer`} from
- * an arbitrary JavaScript number.
- *
- * In most contexts, an {@link integer `integer`} and a regular number can be used
- * interchangably, but sometimes you'll need to explicitly "unwrap" an {@link integer `integer`}
- * to "forget" that information -- see the example below.
- *
- * - [Reference](https://en.wikipedia.org/wiki/Integer_(computer_science))
- *
- * @example
- *  import { integer } from "@traversable/data"
- *
- *  const coinToss = () => integer(Math.random())
- *
- *  const ex_01 = coinToss()
- *  //    ^? const ex_01: integer
- *
- *  const ex_02 = coinToss()
- *  //    ^? const ex_02: integer
- *
- *  // integers can be compared using infix operators like `>`, `>=`, `<` and `<=`, like regular numbers:
- *  if (ex_01 > ex_02) {
- *    // integers can be interpolated:
- *    console.log(`${ex_01} > ${ex_02}`)
- *  }
- *
- *  // if you need to pass an integer to a function that expects a number, use the _unary plus operator_ (a.k.a.
- *  // ["prefix plus"](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Operators/Unary_plus):
- *  const ex_03 = Math.max(ex_01, ex_02)
- *  //                     ^^^^ 🚫 Argument of type 'integer' is not assignable to parameter of type 'number'
- *
- *  //                     ↓ ✅     ↓ ✅
- *  const ex_04 = Math.max(+ ex_01, + ex_02)
- *  //    ^? const ex_04: number
- *
- *  // you can also use `valueOf`:
- *  //                     ↓ ✅    ↓ ✅
- *  const ex_05 = Math.max(+ex_01, +ex_02)
- *  //    ^? const ex_05: number
- */
-export interface integer extends newtype<number> {}
