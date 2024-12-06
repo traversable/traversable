@@ -17,7 +17,7 @@ import { std } from "./data.js"
 import Country = std.Country
 import Currency = std.Currency
 import Digit = std.Digit
-import State = std.State
+import State = std.UnitedStateOfAmerica
 
 /** @internal */
 const PATTERN = {
@@ -936,16 +936,16 @@ export namespace country {
 export function state(): fc.Arbitrary<State>
 export function state() {
   return fc
-    .nat(std.States.length - 1)
-    .map((ix) => std.States[ix])
+    .nat(std.UnitedStatesOfAmerica.length - 1)
+    .map((ix) => std.UnitedStatesOfAmerica[ix])
 }
 
 export namespace state {
   export const _internal = fc
-    .nat(std.States.length - 1)
-    .map((ix) => std.States[ix])
+    .nat(std.UnitedStatesOfAmerica.length - 1)
+    .map((ix) => std.UnitedStatesOfAmerica[ix])
 
-  export type Code = std.State["code"]
+  export type Code = std.UnitedStateOfAmerica["code"]
   /**
    * ### {@link code `fc.state.code`}
    *
@@ -956,7 +956,7 @@ export namespace state {
    *  console.log(fc.peek(fc.state.code())) // => "AZ"
    *  console.log(fc.peek(fc.state.code())) // => "TX"
    */
-  export function code(): fc.Arbitrary<std.State["code"]> {
+  export function code(): fc.Arbitrary<std.UnitedStateOfAmerica["code"]> {
     return state().map((s) => s.code)
   }
 }
