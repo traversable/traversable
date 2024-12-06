@@ -1,4 +1,4 @@
-import { newtype } from "any-ts"
+import type { newtype } from "any-ts"
 
 /** 
  * "/api/v1/search"

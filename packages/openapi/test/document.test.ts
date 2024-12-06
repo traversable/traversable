@@ -1,8 +1,9 @@
 import * as vi from "vitest"
-import { fc, show, test } from "@traversable/core"
-import { openapi } from "@traversable/openapi"
 import * as fs from "node:fs"
 import * as path from "node:path"
+
+import { openapi } from "@traversable/openapi"
+import { fc } from "@traversable/core"
 
 const PATH = {
   target: path.join(path.resolve(), "packages", "openapi", "test", "__generated__", "arb.json")

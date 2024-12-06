@@ -1038,8 +1038,6 @@ export function RecordNode<T extends Schema.any = Schema.any>(
   }, { requiredKeys: ["type", "additionalProperties"] })
 }
 
-
-
 interface ObjectNode_Shape { discriminator: Arbitrary.infer<typeof Discriminator> }
 
 interface ObjectNode<T extends { [x: string]: unknown } = { [x: string]: Schema.any }, U = T> extends 

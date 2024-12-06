@@ -1,7 +1,7 @@
-import { Invariant } from "@traversable/registry"
+import { JsonPointer, is, tree } from "@traversable/core"
 import { fn /* , forEach */ } from "@traversable/data"
 import type { prop } from "@traversable/data"
-import { is, JsonPointer, tree } from "@traversable/core"
+import { Invariant } from "@traversable/registry"
 
 export interface Dictionary
   <T = unknown> { [x: string]: T }
@@ -205,14 +205,12 @@ export function normalize<R>(...predicates: readonly Predicate<R>[]) {
     const predicate = tree.has("schema", tree.has("type", is.string))
     const getSchemas = accessors(predicate)
     const access = getSchemas(doc)
-    console.log("access", access)
 
     let refs: { [x: string]: {} } = {}
     for (const k in access) {
-      // clone the element so the new value doesn't point to a pointer -- otherwise
-      // the mutation will propogate, and we lose the original value
+      // clone the element so the new value doesn't point to a pointer -- 
+      // otherwise the mutation will propogate, and we lose the original value
       void (refs[k] = globalThis.structuredClone(access[k]))
-      // void (refs[qualify(k)] = globalThis.structuredClone(access[k]))
     }
 
     // Here we rip out all the nested schemas from ex_07
@@ -231,38 +229,8 @@ export function normalize<R>(...predicates: readonly Predicate<R>[]) {
           }
         )
     )
-
-    // Here we rebuild ex_07 by piecing it back together from the refs we previously ripped out
-    // for (const k in access) {
-    //   const accessor = access[k]
-    //   const ref: { schema: unknown } = refs[k] as never
-    //   // const accessed = tree.get(ex_07 as never, ...unqualifiedPath)
-    //   // const referenced = tree.get(refs, ...unqualifiedPath)
-    //   accessor.schema = ref.schema
-    //   const path = JsonPointer.toPath(k).slice(1)
-    //   console.log("path", path)
-    //   console.log("tree.get(refs, ...", tree.get(doc, ...path))
-    // }
-
-    console.log("\n\nrefs", refs)
-    console.log("\n\naccess", access)
-
-      // const accessed = tree.get(ex_07 as never, ...unqualifiedPath)
-      // const referenced = tree.get(refs, ...unqualifiedPath)
-
-    // const document = {
-    //   ...doc,
-    //   components: {
-    //     ...doc.components,
-    //     schemas: {
-    //       ...doc.components.schemas,
-    //       ...refs,
-
-    //     }
-    //   }
-    // }
-    doc.components.schemas = { ...doc.components.schemas, ...refs }
-
+    if (!doc.components) void (doc.components = { schemas: {} })
+    doc.components.schemas = { ...doc.components?.schemas, ...refs }
 
     return doc
 

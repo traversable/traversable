@@ -1,7 +1,7 @@
-import * as vi from "vitest"
+import { JsonPointer, and, fc, is, show, test, tree } from "@traversable/core"
+import { Option, fn, object } from "@traversable/data"
 import { openapi } from "@traversable/openapi"
-import { and, fc, is, JsonPointer, show, test, tree } from "@traversable/core"
-import { fn, object, Option } from "@traversable/data"
+import * as vi from "vitest"
 
 const hasSchema = tree.has("schema", is.any.object)
 const Array_isArray = globalThis.Array.isArray
@@ -599,24 +599,29 @@ vi.describe("〖⛳️〗‹‹‹ ❲@traversable/openapi❳", () => {
     const getDocumentSchemas = openapi.accessors(tree.has("schema", tree.has("type", is.string)))
     let accessors = getDocumentSchemas(ex_07)
 
-    // console.log("accessors", accessors)
-
     ///////////////
     ///   ACT   ///
     ///////////////
 
-    // Here we create save all the nested schemas in an object called `refs`, where
-    // each key in `refs` is a fully qualified, JsonPointer-escaped path that resolves
-    // to a schema in `ex_07`
-
+    
+    /** 
+     * #### {@link refs `refs`}  
+     * 
+     * Spec: 
+     * 
+     * - Each key in `refs` must be fully qualified
+     * - Each key in `refs` must be JSON-pointer-escaped
+     * - Each key in `refs` must resolve to a schema found in `ex_07`
+     */
     let refs: { [x: string]: unknown } = {}
+
     for (const k in accessors) {
-      // clone the element so the new value doesn't point to a pointer -- otherwise
-      // the mutation will propogate, and we lose the original value
+      // Clone the element so the new value doesn't point to a pointer -- otherwise
+      // the mutation will propogate, and we lose the original value:
       void (refs[Qualifier.to(k)] = globalThis.structuredClone(accessors[k]))
     }
 
-    // Here we rip out all the nested schemas from ex_07
+    // Rip out all the nested schemas from `ex_07`:
     void globalThis.Object
       .entries(accessors)
       .forEach(
@@ -628,7 +633,7 @@ vi.describe("〖⛳️〗‹‹‹ ❲@traversable/openapi❳", () => {
         )
       )
 
-    // Here we rebuild ex_07 by piecing it back together from the refs we previously ripped out
+    // Rebuild `ex_07` by following the references we just ripped out:
     for (const k in accessors) {
       const accessor = accessors[k]
       const refPath = qualify(k)
@@ -641,96 +646,12 @@ vi.describe("〖⛳️〗‹‹‹ ❲@traversable/openapi❳", () => {
     //////////////////
     ///   ASSERT   ///
     //////////////////
-
-    // None of what we did should be lossy. Assert that there's no structural difference
-    // between `ex_07` and `ex08`
+    // None of what we just did should be lossy:
     vi.assert.deepEqual(ex_07, ex_08)
   })
 
-  // test.prop([fc.dictionary(fc.dictionary(fc.jsonValue(), { minKeys: 1 }))], {
-  //   examples: [
-  //     [
-  //       { a: { b: { c: { d: 1 } }}}
-  //     ]
-  //   ]
-  // })(
-  //   "〖⛳️〗‹ ❲openapi.accessors❳: property -- lossless round trip", 
-  //   (json) => {
-  //     const clone = globalThis.structuredClone(json)
-  //     const accessors = openapi.accessors((u, p) => p.length > 1 && is.recordOf(is.any.object)(u))(json)
-  //     // console.log(show.serialize(json, "pretty"))
-  //     // console.log("accessors", accessors) // show.serialize(accessors, "leuven") )
-  //     let refs: { [x: string]: unknown } = {}
-
-  //     // console.log("\n\n\n\n\n\nBEFORE", show.serialize(json, "leuven"))
-
-  //     console.log("BEFORE ALL: json", show.serialize(json, "leuven"))
-  //     console.log("BEFORE ALL: accessors", show.serialize(accessors, "leuven"))
-
-  //     for (let k in accessors) {
-  //       const path = JsonPointer.toPath(k)
-
-  //       console.group("\n\nPATH")
-  //       console.log("path before", path)
-  //       // const last = path.pop()
-  //       // if (!last) throw Error("NO LAST")
-  //       // console.log("path after", path)
-  //       // console.log("last", last)
-  //       console.groupEnd()
-
-  //       console.log("\n\n\n --- " , k, " --- ")
-  //       const accessor = accessors[k]
-  //       console.log("UNESCAPED",JsonPointer.toPath(k))
-  //       console.log("\n\n\nJSON BEFORE", show.serialize(tree.get(json, ...JsonPointer.toPath(k)), "leuven"))
-  //       console.log("accessors[k] BEFORE:", accessors[k])
-  //       // clone the element so the new value doesn't point to a pointer -- otherwise
-  //       // the mutation will propogate, and we lose the original
-  //       void (refs[JsonPointer.escape(k)] = globalThis.structuredClone(accessors[k]))
-  //       void (accessors[k][path[path.length - 1]] = { $ref: JsonPointer.escape(k) } )
-  //       console.log("accessors[k] AFTER:", accessors[k])
-  //       console.log("refs[k]", refs[k])
-  //       console.log("object.pick(accessors, k)", object.pick(accessors, k))
-  //       console.log("object.pick(json, k)", tree.get(json, ...JsonPointer.toPath(k)))
-  //     }
-
-  //     console.log("AFTER ALL: accessors", show.serialize(accessors, "leuven"))
-  //     console.log("AFTER ALL: refs", show.serialize(refs, "leuven"))
-  //     console.log("AFTER ALL: json", show.serialize(json, "leuven"))
-
-  //     // console.log("refs", refs)
-  //     // console.log("accessors", accessors)
-  //     // console.log("json", show.serialize(json, "leuven"))
-
-  //   vi.assert.isTrue(false)
-  //   }
-  // )
-
-  //     // void globalThis.Object
-  //     // .entries(accessors)
-  //     // .forEach(
-  //     //   // fn.flow(
-  //     //     // ([pathname, accessor]) => [pathname, accessor] satisfies [string, unknown],
-  //     //     ([pathname, accessor]) => {
-  //     //       const key = globalThis.Object.keys(accessor)[0]
-  //     //       if (key === undefined) throw Error("WRONG")
-  //     //       console.log("key", key)
-  //     //       accessor[key] = { $ref: pathname }
-  //     //       // void (accessor.schema = { $ref: pathname })
-  //     //     }
-  //     //   // )
-  //     // )
-
-  //     // for (const k in json)
-  //     // vi.assert.isFalse()
-
-  //     // console.log("refs", refs)
-  //     // console.log("accessors", accessors)
-  //     // vi.assert.isTrue(true)
-
   vi.test("〖⛳️〗‹ ❲openapi.query.normalize❳", () => {
     const normal = openapi.normalize()(ex_07)
-    console.log("norml", show.serialize(normal, "pretty"))
-
     vi.assert.deepEqual(
       normal, {
         paths: {
@@ -864,21 +785,6 @@ vi.describe("〖⛳️〗‹‹‹ ❲@traversable/openapi❳", () => {
         }
       }
     )
-
-                  
-          // { schema: { $ref: "/paths/~1v1~1users~1{id}/post/text~1html/201/response" } },
-          // norml.paths["/v1/users"].get["application/json"][200].response
-        // ), 
-    // ["paths", "/api/v2/limited/special_booking_requests/{sbr_id}/hotel_options"]
-
-    // console.log("dereferenced", 
-    //   // show.serialize(
-    //     openapi.fullyDereference({ document: norml })(["paths", "/v1/users/get/application/json/200"]),
-    //     // "leuven",
-    //   // )
-    // )
-
-
-
   })
+
 })
