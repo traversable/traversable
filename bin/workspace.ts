@@ -197,7 +197,7 @@ const filterBaseRefs = ($: Deps) => ([path]: [string, any]) =>
 
 namespace make {
   export const _ref = (dep: string) => ({ path: `../${dep}` } as const)
-  export const _dep = (dep: string) => ([`@${SCOPE}/${dep}`, "workspace:^" ] as const)
+  export const _dep = (dep: string) => ([`${SCOPE}/${dep}`, "workspace:^" ] as const)
   export const refs = ($: Deps) => ([...$.localDeps ?? []]).sort(order.lexico).map(make._ref)
   export const deps = ($: Deps) => ([...$.localDeps ?? []]).sort(order.lexico).map(make._dep)
 }
@@ -457,7 +457,7 @@ namespace write {
   export const workspaceReadme = defineEffect(
     ($) => pipe(
       [
-        `# @${SCOPE}/${$.pkgName}`
+        `# ${SCOPE}/${$.pkgName}`
       ].join("\n"),
       $.dryRun ? tap("\n\n[CREATE #13]: workspaceReadme\n", globalThis.String)
       : fs.writeString(path.join(PATH.packages, $.pkgName, "README.md")),
@@ -502,7 +502,7 @@ namespace write {
   export const workspaceTestVersion = defineEffect(
     ($) => pipe(
       ([
-        `import { ${Transform.toCamelCase($.pkgName)} } from "@${SCOPE}/${$.pkgName}"`,
+        `import { ${Transform.toCamelCase($.pkgName)} } from "${SCOPE}/${$.pkgName}"`,
         `import * as vi from "vitest"`,
         `import pkg from "../package.json"`,
         ``,
