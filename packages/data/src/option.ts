@@ -309,6 +309,14 @@ export const fromBoolean
   : (boolean: boolean) => Option<true>
   = (boolean) => boolean ? some(true) : none()
 
+export function toArray<T>(option: Option<T>): T[]
+export function toArray<T>(option: Option<T>): T[] /// impl.
+  { return isSome(option) ? [option.value] : [] }
+
+export function fromArray<T>(xs: T[]): Option<[T, ...T[]]>
+export function fromArray<T>(xs: T[]) ///impl.
+  { return xs.length === 0 ? none() : some(xs) }
+
 export const getOrElse
   : <U>(orElse: () => U) => <T>(option: Option<T>) => T | U
   = (orElse) => match({ onSome: (value) => value, onNone: orElse })

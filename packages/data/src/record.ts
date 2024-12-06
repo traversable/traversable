@@ -75,37 +75,38 @@ type nonfinite<T, K extends keyof T = keyof T>
 /**
  * ## {@link finite `record.finite`}
  * 
- * {@link finite `record.finite`} constrains a type parameter to be a _literal_ 
- * boolean (`true` or `false`, but not `boolean`).
+ * {@link finite `record.finite`} constrains a type parameter to be a "finite"
+ * record (that is, a record whose index signature is comprised of finite
+ * keys).
  * 
- * **Note:** For this to work, you need to apply {@link finite `boolean.finite`}
+ * **Note:** For this to work, you need to apply {@link finite `record.finite`}
  * to the type parameter you're _currently_ declaring, see example below.
  * 
  * See also:
- * - {@link nonfinite `boolean.nonfinite`}
+ * - {@link nonfinite `record.nonfinite`}
  * 
  * @example
  *  import { record, object } from "@traversable/data"
  * 
  *  const sym = Symbol.for("HEY")
  * 
- *  const ex_01 = finite({ [-1]: 2, "0": 1, [symbol]: 3 })
+ *  const ex_01 = record.finite({ [-1]: 2, "0": 1, [symbol]: 3 })
  *  //    ^? const ex_01: { [-1]: 2, "0": 1, [symbol]: 3 }
  * 
- *  const ex_02 = finite({ [Symbol()]: 1 })  // ✅ No TypeError
+ *  const ex_02 = record.finite({ [Symbol()]: 1 })  // ✅ No TypeError
  *  //    ^? const ex_02: never
  * 
- *  const ex_03 = finite({ [sym]: 9 })
+ *  const ex_03 = record.finite({ [sym]: 9 })
  *  //    ^? const ex_03: { [sym]: 9 }
  * 
- *  const ex_04 = finite(                    // [🚫 TypeError]: '{ [k: string]: number; }' is 
- *    //  ^? const ex_04: never              // not assignable to parameter of type 'never'
- *    Object.fromEntries(Object.entries({ a: 1, b: 2 }))
+ *  const ex_04 = record.finite(                    // [🚫 TypeError]: '{ [k: string]: number; }' is 
+ *    //  ^? const ex_04: never                     // not assignable to parameter of type 'never'
+ *    globalThis.Object.fromEntries(globalThis.Object.entries({ a: 1, b: 2 }))
  *  ) 
  * 
- *  const ex_05 = finite(                    // ✅ No TypeError
+ *  const ex_05 = record.finite(                    // ✅ No TypeError
  *    //  ^? const ex_05: { a: 1, b: 2 }
- *    object_fromEntries(object_entries({ a: 1, b: 2 }))
+ *    object.fromEntries(object.entries({ a: 1, b: 2 }))
  *  )
  */
 const finite

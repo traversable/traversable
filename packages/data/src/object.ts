@@ -130,7 +130,108 @@ export declare namespace object {
     values,
   }
 }
+
 export declare namespace object {
+  /**
+   * ## {@link nonfinite `object.nonfinite`}
+   * 
+   * {@link nonfinite `object.nonfinite`} constrains a type parameter to be an
+   * object whose index is non-finite.
+   * 
+   * For example, the following examples all satisfy `object.nonfinite`:
+   * 
+   * ```typescript
+   *  import type { object } from "@traversable/data"
+   * 
+   *  type NonFinite_01 = globalThis.Record<string | symbol, unknown>
+   *  type Ok1 = object.nonfinite<NonFinite_01> 
+   *  //   ^? type Ok1 = {}
+   * 
+   *  type NonFinite_02 = { [K in string]?: unknown }
+   *  type Ok2 = object.nonfinite<NonFinite_02>
+   * 
+   *  interface NonFinite_03 { [x: number]: unknown }
+   *  type Ok3 = object.nonfinite<NonFinite_03>
+   * ```
+   * 
+   * Because these examples have known/knowable index signatures, they do not:
+   * 
+   * ```typescript
+   *  import type { object } from "@traversable/data"
+   * 
+   *  type Finite_01 = globalThis.Record<"a" | "b", unknown>
+   *  type Never_01 = object.nonfinite<Finite_01>
+   *  //   ^? type Never1 = never
+   *   
+   *  type Finite_02 = { [Symbol.iterator](): Iterator<unknown> }
+   *  type Never_02 = object.nonfinite<Finite_02>
+   *  //   ^? type Never2 = never
+   * ```
+   * 
+   * See also:
+   * - {@link finite `object.finite`}
+   * 
+   * @example
+   *  import type { object } from "@traversable/data"
+   * 
+   *  function nonfinite<T extends object.nonfinite<T>>(object: T) { return object }
+   *  
+   *  const ex_01 = nonfinite({ [Math.random() + ""]: Math.random() })   // ✅ No TypeError
+   *  //    ^? const ex_01: { [x: string]: number }
+   * 
+   *  const ex_02 = nonfinite({ [Math.random()]: 1, [Symbol.for()]: 2 }) // ✅ No TypeError
+   *  //    ^? const ex_02: { [x: number]: number, [x: symbol]: number }
+   * 
+   *  const ex_03 = nonfinite({ a: 1 })      // 🚫 [TypeError]: '{ a: number }` is not 
+   *  //    ^? const ex_03: never            //    assignable to parameter of type 'never'
+   */
+  type nonfinite<T, K extends keyof T = keyof T> 
+    = { [x: symbol]: never } extends T ? { [x: symbol]: unknown }
+    : number extends K ? { [x: number]: unknown } 
+    : symbol extends K ? { [x: symbol]: unknown }
+    : never
+    ;
+
+  /**
+   * ## {@link finite `object.finite`}
+   * 
+   * {@link finite `object.finite`} constrains a type parameter to be a "finite"
+   * object (that is, an object whose index signature is comprised of finite
+   * keys).
+   * 
+   * **Note:** For this to work, you need to apply {@link finite `object.finite`}
+   * to the type parameter you're _currently_ declaring, see example below.
+   * 
+   * See also:
+   * - {@link nonfinite `object.nonfinite`}
+   * 
+   * @example
+   *  import { object } from "@traversable/data"
+   * 
+   *  const sym = Symbol.for("HEY")
+   * 
+   *  const ex_01 = object.finite({ [-1]: 2, "0": 1, [symbol]: 3 })
+   *  //    ^? const ex_01: { [-1]: 2, "0": 1, [symbol]: 3 }
+   * 
+   *  const ex_02 = object.finite({ [Symbol()]: 1 })  // ✅ No TypeError
+   *  //    ^? const ex_02: never
+   * 
+   *  const ex_03 = object.finite({ [sym]: 9 })
+   *  //    ^? const ex_03: { [sym]: 9 }
+   * 
+   *  const ex_04 = object.finite(                    // [🚫 TypeError]: '{ [k: string]: number; }' is 
+   *    //  ^? const ex_04: never                     // not assignable to parameter of type 'never'
+   *    globalThis.Object.fromEntries(globalThis.Object.entries({ a: 1, b: 2 }))
+   *  ) 
+   * 
+   *  const ex_05 = object.finite(                    // ✅ No TypeError
+   *    //  ^? const ex_05: { a: 1, b: 2 }
+   *    object.fromEntries(object.entries({ a: 1, b: 2 }))
+   *  )
+   */
+  type finite<T, K extends keyof T = keyof T> 
+    = [nonfinite<T>] extends [never] ? { [P in K]+?: unknown } : never
+
   interface of<T> extends object.any<{ [x: string]: T }> {}
   type and<T> = object & T
   type from<
