@@ -128,9 +128,7 @@ void (URI.string = URI_string)
 void (URI.object = URI_object)
 
 declare namespace symbol_ {
-  export {
-    symbol_REGISTRY as REGISTRY
-  }
+  export { symbol_REGISTRY as REGISTRY }
   export {
     symbol_null as null,
     symbol_undefined as undefined,
@@ -143,7 +141,6 @@ declare namespace symbol_ {
   }
 }
 namespace symbol_ {
-
   export const ref = Symbol.for(URI.ref)
   export type ref = typeof symbol_.ref
   export const leaf = Symbol.for(URI.leaf)

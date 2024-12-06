@@ -13,6 +13,6 @@ declare module "@traversable/registry" {
 
 vi.describe(`〖⛳️〗‹‹‹ ❲@traverable/registry❳`, () => {
   vi.it(`〖⛳️〗› ❲registry.create❳`, () => {
-    vi.assert.equal((Registry.get("TestURI") ?? {}).toString(), `Symbol(${TestURI})`)
+    vi.assert.equal((Registry.get("TestURI") ?? "").toString(), `Symbol(${TestURI})`)
   })
 })
