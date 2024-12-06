@@ -18,7 +18,7 @@ export type toJSON<T>
   : T
 
 /** 
- * ## {@link toJSON `oas.toJSON`}
+ * ## {@link toJSON `openapi.toJSON`}
  * 
  * Converts an OpenAPI document to beta-normal form.
  * 
@@ -26,22 +26,22 @@ export type toJSON<T>
  * {@link normalizer `normalizer`}, which is just a function that takes
  * the leaf node and returns a fallback value of that type.
  * 
- * If no normalizer is defined, {@link toJSON `oas.toJSON`} will use the
+ * If no normalizer is defined, {@link toJSON `openapi.toJSON`} will use the
  * node's example data, if it exists.
  * 
  * If it does not exist, the leaf's corresponding entry in 
- * {@link toJSON.defaults `oas.toJSON.defaults`} will be used.
+ * {@link toJSON.defaults `openapi.toJSON.defaults`} will be used.
  * 
  * See also:
- * - {@link fromJSON `oas.fromJSON`}
+ * - {@link fromJSON `openapi.fromJSON`}
  * 
  * @example
- *  import { oas } from "@hotelengine/shared-oas"
+ *  import { openapi } from "@traversable/openapi"
  *  import * as vi from "vitest"
  *
  *  // 🡻🡻 ✅
  *  vi.assert.equal( 
- *    oas.toJSON({
+ *    openapi.toJSON({
  *      type: "object",
  *      required: ["a", "b"],
  *      properties: {
@@ -139,15 +139,15 @@ export type fromJSON<T>
   ;
 
 /**
- * ## {@link fromJSON `oas.fromJSON`}
+ * ## {@link fromJSON `openapi.fromJSON`}
  *
  * @example
- *  import { oas } from "@hotelengine/shared-oas"
+ *  import { openapi } from "@traversable/openapi"
  *  import * as vi from "vitest"
  *
  *  // 🡻🡻 ✅
  *  vi.assert.equal(
- *    oas.fromJSON({ a: true, b: [1, null, { c: "" }]}),
+ *    openapi.fromJSON({ a: true, b: [1, null, { c: "" }]}),
  *    {
  *      type: "object",
  *      required: ["a", "b"],
