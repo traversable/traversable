@@ -1,9 +1,10 @@
-import { core, fc, zip } from "@traversable/core"
+import { core, fc, is, tree, zip } from "@traversable/core"
 import { array, fn, map, object, string } from "@traversable/data"
 import { http } from "@traversable/http"
+import { PATTERN } from "@traversable/registry"
 import type { newtype } from "any-ts"
 
-import { mapRef, reffer } from "./reffer.js"
+import { normalize } from "./query.js"
 import { 
   BooleanNode,
   ExternalDocumentation,
@@ -24,16 +25,6 @@ import { type Arbitrary, lit } from "./types.js"
 /** @internal */
 type inline<T> = T
 type autocomplete<T> = T | (string & {})
-
-export const PATTERN = {
-  BearerCaseInsensitive: /^[Bb][Ee][Aa][Rr][Ee][Rr]$/,
-  NonemptyAlphaNumericWithDelimiters: /^[a-zA-Z0-9\.\-_]+$/,
-  Identifier: /^[$_a-zA-Z][$_a-zA-Z0-9]*$/,
-  PrefixedByForwardSlash: /^\/[a-zA-Z0-9_\$]+$/g,
-  StatusCode: /^[1-5][0-9][0-9]$/,
-  StatusCodeNonInfo: /^[2-5][0-9][0-9]$/,
-} as const
-
 
 export function openapi() {} 
 openapi.is = {
@@ -298,28 +289,8 @@ export function arbitrary(_: arbitrary.Constraints = defaults): fc.Arbitrary<{}>
         "openapi",
       ],
     },
-  ).map(({ components: { schemas, ...component }, paths, ...doc }) => {
-    // const mapped = mapRef(schemas, { path: ["#", "components", "schemas"] })
-      
-      // reffer()
-      // map(
-      //   (schema, k) => fn.pipe(
-      //     schema,
-      //     // (s) => reffer(s, { path: [`#/${k}`] }),
-      //     // (s) => reffer(s, { path: [`#/definitions/${k}`] }),
-      //   )
-      // ),
-      // object.entries,
-      // array.reduce(
-      //   (acc, [k, schema]) => ({
-      //     ...acc,
-      //     // ...definitions,
-      //     [k]: schema,
-      //   }),
-      //   {} as { [x: string]: Schema.any },
-      // ),
-      // (_) => (console.log(JSON.stringify(_, null, 2)), _),
-
+  ).map(
+    ({ components: { schemas, ...component }, paths, ...doc }) => {
     return {
       ...doc,
       paths,
@@ -328,7 +299,7 @@ export function arbitrary(_: arbitrary.Constraints = defaults): fc.Arbitrary<{}>
         schemas
       }
     }
-  })
+  }).map(normalize(tree.has("schemas", tree.has("type", is.string))))
 }
 
 type AppliedConstraints = { [K in keyof arbitrary.Constraints]-?: Required<arbitrary.Constraints[K]> }
@@ -411,8 +382,8 @@ export const defaults = {
   },
 } satisfies Required<arbitrary.Constraints>
 
-export const StatusCode = fc.stringMatching(PATTERN.StatusCode)
-export const StatusCodeNonInfo = fc.stringMatching(PATTERN.StatusCodeNonInfo)
+export const StatusCode = fc.stringMatching(PATTERN.statusCode)
+export const StatusCodeNonInfo = fc.stringMatching(PATTERN.statusCodeNonInfo)
 
 ///////////
 /// REF
@@ -444,7 +415,7 @@ namespace Auth {
   export const BearerHttpSecurityScheme = fc.record(
     {
       type: fc.constant(lit("http")),
-      scheme: fc.stringMatching(PATTERN.BearerCaseInsensitive),
+      scheme: fc.stringMatching(PATTERN.bearer),
       bearerFormat: fc.string(),
       description: fc.lorem(),
       in: fc.constantFrom(lit("header"), lit("query"), lit("cookie")),
