@@ -37,7 +37,7 @@ export {
   tuple,
 } from "./guard.js"
 
-import { key, prop } from "@traversable/data"
+import type { key, prop } from "@traversable/data"
 import type { empty as Empty, nonempty as NonEmpty, has } from "any-ts"
 
 import { 

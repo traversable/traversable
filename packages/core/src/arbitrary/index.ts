@@ -6,9 +6,9 @@ import * as vi from "vitest"
 export namespace Property {
   export declare namespace Roundtrip {
     interface Test<T, S> {
-      to(t: T): S;
-      from(s: S): T;
-      arbitrary: fc.Arbitrary<T>;
+      from(s: S): T
+      to(t: T): S
+      arbitrary: fc.Arbitrary<T>
     }
     interface Params<T> extends fc.Parameters<[T]> {
       assert?(l: T, r: T): void | boolean

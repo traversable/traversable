@@ -1,7 +1,7 @@
 import type { prop, props, unicode } from "@traversable/data"
 import { ANSI, char, fn, map } from "@traversable/data"
 import { Invariant, PATTERN } from "@traversable/registry"
-import { inline } from "any-ts"
+import type { inline } from "any-ts"
 
 type Nullable =
   | undefined
@@ -204,6 +204,8 @@ const primitive = (_: Primitive, $: serialize.Context) => {
  */
 export function serialize<T extends Serializable>
   (serializable: T, options?: serialize.Options): string
+export function serialize<T>
+  (serializable: T, options?: serialize.Options): string
 export function serialize
   (_: Serializable, options?: serialize.Options): string {
     const $ = contextFromOptions(options)
@@ -404,8 +406,34 @@ const Hask = {
   ref(_) { return ANSI.lightblue(_) },
 } satisfies serialize.Colors
 
+const HaskAlt = {
+  array(_) { return ANSI.Hask.body.bg(ANSI.Hask.identifierType.fg(_)) + ""},
+  bigint(_) { return ANSI.Hask.body.bg(ANSI.Hask.pragma.fg(_)) + "" },
+  boolean(_) { return ANSI.Hask.body.bg(ANSI.Hask.link.fg(_)) + "" },
+  key(_) { return ANSI.Hask.body.bg(ANSI.Hask.identifierTerm.fg(_)) + "" },
+  number(_) { return ANSI.Hask.body.bg(ANSI.Hask.pragma.fg(_)) + "" },
+  string(_) { return ANSI.Hask.body.bg(ANSI.Hask.glyph.fg(_)) + "" },
+  object(_) { return ANSI.Hask.body.bg(ANSI.Hask.comment.fg(_ )) + "" },
+  circular(_) { return ANSI.yellow.bg(ANSI.red.fg(_)) + "" },
+  ref(_) { return ANSI.lightblue(_) },
+} satisfies serialize.Colors
+
+const Leuven = {
+  array(_) { return ANSI.Leuven.body.bg(ANSI.Leuven.identifierType.fg(_)) + ""},
+  bigint(_) { return ANSI.Leuven.body.bg(ANSI.Leuven.pragma.fg(_)) + "" },
+  boolean(_) { return ANSI.Leuven.body.bg(ANSI.Leuven.link.fg(_)) + "" },
+  key(_) { return ANSI.Leuven.body.bg(ANSI.Leuven.identifierTerm.fg(_)) + "" },
+  number(_) { return ANSI.Leuven.body.bg(ANSI.Leuven.pragma.fg(_)) + "" },
+  string(_) { return ANSI.Leuven.body.bg(ANSI.Leuven.glyph.fg(_)) + "" },
+  object(_) { return ANSI.Leuven.body.bg(ANSI.Leuven.comment.fg(_ )) + "" },
+  circular(_) { return ANSI.yellow.bg(ANSI.red.fg(_)) + "" },
+  ref(_) { return ANSI.lightblue(_) },
+} satisfies serialize.Colors
+
 const themes = {
   Hask,
+  HaskAlt,
+  Leuven,
 } satisfies Record<string, serialize.Colors>
 
 const defaults = {
@@ -438,6 +466,18 @@ const presets = {
     colors: Hask,
     newline: "\n",
     tab: "  ",
+  },
+  pretty_2: {
+    ...defaults,
+    colors: HaskAlt,
+    newline: "\n",
+    tab: "  ",
+  },
+  leuven: {
+    ...defaults,
+    colors: Leuven,
+    newline: "\n",
+    tab: " ",
   },
   readable: {
     ...defaults,
@@ -499,7 +539,9 @@ const contextFromOptions
       ) satisfies serialize.Hooks,
       colors: 
         ( fromUser?.colors === undefined ? colors 
-        : fromUser?.colors === "Hask" ? Hask : {
+        : typeof fromUser.colors === "string" 
+          ? fromUser.colors in themes ? themes[fromUser.colors] : colors 
+        : {
           array: fromUser?.colors?.array ?? colors.array,
           bigint: fromUser?.colors?.bigint ?? colors.bigint,
           boolean: fromUser?.colors?.array ?? colors.boolean,

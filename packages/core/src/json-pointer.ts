@@ -115,10 +115,12 @@ export declare namespace JsonPointer {
 
 export declare namespace JsonPointer {
   type toPath<T extends prop.any | props.any> 
-    = T extends props.any 
+    = string extends T ? string[]
+    : number extends T ? string[]
+    : T extends props.any 
     ? { -readonly [K in keyof T]: JsonPointer.toPath.loop<`${T[K] & prop.any}`, "", [""]>[0] } 
-    : T extends "" ? []
-    : T extends `/${string}` ?    JsonPointer.toPath.loop<`${T & prop.any}`, "", [""]>
+    : T extends ""              ? []
+    : T extends `/${string}`    ? JsonPointer.toPath.loop<`${T & prop.any}`, "", [""]>
     : never
     ;
   namespace toPath {

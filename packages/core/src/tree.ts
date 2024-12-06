@@ -6,6 +6,11 @@ import { fn, keys, map, object, props } from "@traversable/data"
 import { Invariant, URI, symbol } from "@traversable/registry";
 import type { JSON } from "./json.js"
 
+declare namespace Predicate {
+  export { Any as any }
+  export type Any = never | { (u: any): u is unknown }
+}
+
 /** @internal */
 declare namespace Inductive {
   type stringIndex<T> = T | { [x: string]: Inductive.stringIndex<T> }
@@ -344,19 +349,23 @@ export function has<const KS extends keys.any, T>
 export function has
   (...params: [...keys.any] | [...keys.any, (u: any) => u is any]) {
   return (u: unknown) => {
-    const [path, check] = has.separatePath(params)
+    const [path, check] = has.defaults.separatePath(params)
     const got = get_(u, path)
     return got !== symbol.not_found && check(got)
   }
 }
 
-void (has.separatePath = separatePath)
-function separatePath(xs: keys.any | [...keys.any, (u: any) => u is any]): 
+function separatePath(xs: keys.any | [...keys.any, Predicate.any]): 
   [path: key.any[], check: (u: any) => u is any]
-function separatePath(xs: keys.any | [...keys.any, (u: any) => u is any]) { 
+function separatePath(xs: keys.any | [...keys.any, Predicate.any]) { 
   return keys.is(xs) 
-  ? [xs, (_: any) => _ != null] 
+  ? [xs, has.defaults.guard] 
   : [xs.slice(0, -1), xs[xs.length - 1]] 
+}
+
+has.defaults = {
+  separatePath,
+  guard: ((_?: any): _ is any => true) satisfies Predicate.any,
 }
 
 export declare namespace has {
@@ -388,8 +397,7 @@ export interface has<T extends {}> extends newtype<T> {}
  * **Note:** currently, `set` doesn't use any type-level tricks
  * to make sure you don't shoot yourself in the foot. 
  * 
- * That will change in the future -- we just haven't had time to
- * implement it yet :)
+ * That will change in the future, just haven't had time
  */
 export const set = mutate
 
@@ -425,12 +433,44 @@ export function mutate(
         void (cursor = cursor[k])
     }
     return <V>(next: V) => {
-      // TODO: fix tree.set's types so you can remove this type assertion
-      void ((prev as any)[last] = next)
+      // TODO: fix types so you can remove this type assertion
+      void ((prev as { [x: string]: typeof next })[last] = next)
       return tree
     }
   }
 }
+
+type pathToString<KS extends props.any, Out extends string> 
+  = KS extends nonempty.props<infer H, infer T> 
+  ? pathToString<T, `${Out extends "" ? "" : `${Out}.`}${H}`> 
+  : Out
+  ;
+
+export interface TypeError<Msg extends string, Got> extends newtype<never> {}
+
+// export type accessor<KS extends props.any, T extends has.path<KS>> = get<T, KS>
+export interface accessor<KS extends props.any, T extends has.path<KS>> extends newtype<get<T, KS> & {}> {}
+
+export function accessor<const KS extends props.any>(...path: [...KS]): {
+  <T extends has.path<KS, { [x: number]: string }>>(tree: T): accessor<KS, T>
+  <T extends has.path<KS, any.primitive>>(tree: T): TypeError<
+    `Accessors must point to an object, but path '${pathToString<KS, "">}' points to type:`,
+    get<T, KS>
+  >
+}
+/// impl.
+export function accessor(...path: prop.any[]) {
+  return (tree: {}) => {
+    let cursor: unknown = tree
+    let k: prop.any | undefined
+    while((k = path.shift()) !== undefined) {
+      if (has(k, isComposite)(cursor))
+        void (cursor = cursor[k])
+    }
+    return cursor
+  }
+}
+
 
 export declare namespace mutate {
   interface Options {
@@ -508,7 +548,7 @@ export declare namespace fromPaths {
   > = U
   type loop<T extends fromPaths.Path> = never
     | [T] extends [readonly [readonly [], any]] ? T[1]
-    : { -readonly [E in T as E[0][0]]: loop<fromPaths.nextFrom<E>> }
+    : { -readonly [E in T as E[0][0]]: fromPaths.loop<fromPaths.nextFrom<E>> }
   type roundtrip<T extends readonly [props.any, unknown]> = never
     | [T] extends [readonly [readonly [], any]] ? T[1] //Leaf<T[1]>
     : { -readonly [E in T as E[0][0]]: roundtrip<fromPaths.nextFrom<E>> }
@@ -537,6 +577,35 @@ export function fromPaths<const T extends [path: props.any, leaf: unknown]>
     const marked = fromPaths.markAll(paths)
     return loop(marked)
   }
+
+/**
+ * ### {@link loop `tree.fromPaths.loop`}
+ * 
+ * {@link loop `tree.fromPaths.loop`} is responsible for 
+ * {@link group `grouping`} the {@link markAll `marked`}
+ * paths together, then, mapping over the record's values.
+ * If it encounters a {@link Leaf `Leaf`}, it returns the leaf's
+ * value, otherwise it recurses.
+ * 
+ * The real trick to getting {@link fromPaths `tree.fromPaths`}
+ * to work was to handle the basecase _inside_ the mapping function.
+ * 
+ * My intuition tells me that there's probably a more elegant 
+ * breadth-first solution, but I'm satisfied with this algorithm
+ * as-is for now.
+ */
+fromPaths.loop = (opts: fromPaths.Config) => {
+  return fn.loop<
+    readonly [props.any, fromPaths.Leaf][], // [prop.any[], Leaf][],
+    readonly unknown[] | object.any
+  >((paths, loop) => {
+    return fn.pipe(
+      paths,
+      fromPaths.group,
+      map((v) => fromPaths.isLeaf(v) ? opts.roundtrip ? v : v.value : loop(v as never))
+    )
+  })
+}
 
 export namespace fromPaths {
   export interface Options<T extends Partial<Config> = Partial<Config>> extends newtype<T> {}
@@ -724,37 +793,6 @@ export namespace fromPaths {
   export function unmarkAll<const T extends readonly [props.any, Leaf][]>(pairs: T): fromPaths.unmarkAll<T>
   export function unmarkAll(pairs: readonly [props.any, Leaf][]) { return pairs.map(unmarkOne) }
   export type unmarkAll<T extends readonly [props.any, Leaf][]> = never | { -readonly [x in keyof T]: fromPaths.unmarkOne<T[x]> }
-
-  /**
-   * ### {@link loop `tree.fromPaths.loop`}
-   * 
-   * Where recursion happens.
-   * 
-   * {@link loop `tree.fromPaths.loop`} is responsible for 
-   * {@link group `grouping`} the {@link markAll `marked`}
-   * paths together, then, mapping over the record's values.
-   * If it encounters a {@link Leaf `Leaf`}, it returns the leaf's
-   * value, otherwise it recurses.
-   * 
-   * The real trick to getting {@link fromPaths `tree.fromPaths`}
-   * to work was to handle the basecase _inside_ the mapping function.
-   * 
-   * My intuition tells me that there's probably a more elegant 
-   * breadth-first solution, but I'm satisfied with this algorithm
-   * as-is for now.
-   */
-  export const loop = (opts: fromPaths.Config) => {
-    return fn.loop<
-      readonly [props.any, Leaf][], // [prop.any[], Leaf][],
-      readonly unknown[] | object.any
-    >((paths, loop) => {
-      return fn.pipe(
-        paths,
-        fromPaths.group,
-        map((v) => isLeaf(v) ? opts.roundtrip ? v : v.value : loop(v as never))
-      )
-    })
-  }
 }
 
 /** 
@@ -762,6 +800,7 @@ export namespace fromPaths {
  * #### {@link unicode.jsdoc.mapping ` 🌈 ` } ｝
  * 
  * Dual of {@link fromPaths `tree.fromPaths`}
+ * 
  * See also:
  * - {@link fromPaths `tree.fromPaths`}
  */
@@ -891,7 +930,7 @@ export namespace toPaths {
 
   /** 
    * ### {@link empty `tree.toPaths.empty`} 
-   * Greatest lower bound of {@link construct `tree.toPaths`}
+   * Least upper bound of {@link construct `tree.toPaths`}
    */
   export const empty = <T extends JSON>(init: T) => construct([[], init])
 }

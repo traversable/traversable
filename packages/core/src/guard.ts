@@ -375,14 +375,8 @@ export type Primitive<
   = null | undefined | boolean | symbol | number | bigint | string
 > = T
 
-export interface isPrimitive<
-  T extends 
-  | { (u: unknown): u is null }
-  = { (u: unknown): u is null }
-> extends newtype<T> {}
-
 export const isPrimitive
-  : isPrimitive
+  : (u: unknown) => u is Primitive
   = (u): u is never =>
      u == null
   || typeof u === "boolean"
