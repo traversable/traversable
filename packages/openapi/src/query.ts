@@ -210,7 +210,7 @@ export function normalize<R>(...predicates: readonly Predicate<R>[]) {
     for (const k in access) {
       // clone the element so the new value doesn't point to a pointer -- 
       // otherwise the mutation will propogate, and we lose the original value
-      void (refs[k] = globalThis.structuredClone(access[k]))
+      void (refs[k + "/schema"] = globalThis.structuredClone(access[k].schema)!)
     }
 
     // Here we rip out all the nested schemas from ex_07
@@ -221,7 +221,7 @@ export function normalize<R>(...predicates: readonly Predicate<R>[]) {
           ([pathname, accessor]) => {
             // console.log("accessor BEFORE", accessor)
             // console.log("accessor.schema", accessor.schema)
-             void (accessor.schema = { $ref: pathname })
+             void (accessor.schema = { $ref: pathname + "/schema" })
             //  console.log("accessor AFTER", accessor)
               const path = JsonPointer.toPath(pathname).slice(1)
               // console.log("path", path)

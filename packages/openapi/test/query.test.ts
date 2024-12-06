@@ -659,49 +659,49 @@ vi.describe("〖⛳️〗‹‹‹ ❲@traversable/openapi❳", () => {
             get: {
               "application/json": {
                 "200": {
-                  response: { schema: { $ref: "/paths/~1v1~1users/get/application~1json/200/response" } },
-                  requestBody: { schema: { $ref: "/paths/~1v1~1users/get/application~1json/200/requestBody" } },
+                  response: { schema: { $ref: "/paths/~1v1~1users/get/application~1json/200/response/schema" } },
+                  requestBody: { schema: { $ref: "/paths/~1v1~1users/get/application~1json/200/requestBody/schema" } },
                   parameters: [
-                    { name: "param_01", in: "query", schema: { $ref: "/paths/~1v1~1users/get/application~1json/200/parameters/0" } }, 
-                    { name: "param_02", in: "header", schema: { $ref: "/paths/~1v1~1users/get/application~1json/200/parameters/1" } },
+                    { name: "param_01", in: "query", schema: { $ref: "/paths/~1v1~1users/get/application~1json/200/parameters/0/schema" } }, 
+                    { name: "param_02", in: "header", schema: { $ref: "/paths/~1v1~1users/get/application~1json/200/parameters/1/schema" } },
                   ]
                 },
-                "404": { response: { schema: { $ref: "/paths/~1v1~1users/get/application~1json/404/response" } } }
+                "404": { response: { schema: { $ref: "/paths/~1v1~1users/get/application~1json/404/response/schema" } } }
               },
               "text/html": {
                "201": { 
-                  response: { schema: { $ref: "/paths/~1v1~1users/get/text~1html/201/response" } },
-                  requestBody: { schema: { $ref: "/paths/~1v1~1users/get/text~1html/201/requestBody" } },
+                  response: { schema: { $ref: "/paths/~1v1~1users/get/text~1html/201/response/schema" } },
+                  requestBody: { schema: { $ref: "/paths/~1v1~1users/get/text~1html/201/requestBody/schema" } },
                   parameters: [
-                    { name: "param_03", in: "query", schema: { $ref: "/paths/~1v1~1users/get/text~1html/201/parameters/0" } },
-                    { name: "param_04", in: "header", schema: { $ref: "/paths/~1v1~1users/get/text~1html/201/parameters/1" } }
+                    { name: "param_03", in: "query", schema: { $ref: "/paths/~1v1~1users/get/text~1html/201/parameters/0/schema" } },
+                    { name: "param_04", in: "header", schema: { $ref: "/paths/~1v1~1users/get/text~1html/201/parameters/1/schema" } }
                   ]
                 },
-                "404": { response: { schema: { $ref: "/paths/~1v1~1users/get/text~1html/404/response" } } }
+                "404": { response: { schema: { $ref: "/paths/~1v1~1users/get/text~1html/404/response/schema" } } }
               }
             },
             post: {
               "application/json": {
                 "204": { 
-                  response: { schema: { $ref: "/paths/~1v1~1users/post/application~1json/204/response" } },
-                  requestBody: { schema: { $ref: "/paths/~1v1~1users/post/application~1json/204/requestBody" } },
+                  response: { schema: { $ref: "/paths/~1v1~1users/post/application~1json/204/response/schema" } },
+                  requestBody: { schema: { $ref: "/paths/~1v1~1users/post/application~1json/204/requestBody/schema" } },
                   parameters: [
-                    { name: "param_05", in: "query", schema: { $ref: "/paths/~1v1~1users/post/application~1json/204/parameters/0" } },
-                    { name: "param_06", in: "header", schema: { $ref: "/paths/~1v1~1users/post/application~1json/204/parameters/1" } }
+                    { name: "param_05", in: "query", schema: { $ref: "/paths/~1v1~1users/post/application~1json/204/parameters/0/schema" } },
+                    { name: "param_06", in: "header", schema: { $ref: "/paths/~1v1~1users/post/application~1json/204/parameters/1/schema" } }
                   ]
                 },
-                "404": { response: { schema: { $ref: "/paths/~1v1~1users/post/application~1json/404/response" } } }
+                "404": { response: { schema: { $ref: "/paths/~1v1~1users/post/application~1json/404/response/schema" } } }
               },
               "text/html": {
                 "201": {
-                  response: { schema: { $ref: "/paths/~1v1~1users/post/text~1html/201/response" } },
-                  requestBody: { schema: { $ref: "/paths/~1v1~1users/post/text~1html/201/requestBody" } },
+                  response: { schema: { $ref: "/paths/~1v1~1users/post/text~1html/201/response/schema" } },
+                  requestBody: { schema: { $ref: "/paths/~1v1~1users/post/text~1html/201/requestBody/schema" } },
                   parameters: [
-                    { name: "param_07", in: "query", schema: { $ref: "/paths/~1v1~1users/post/text~1html/201/parameters/0" } },
-                    { name: "param_08", in: "header", schema: { $ref: "/paths/~1v1~1users/post/text~1html/201/parameters/1" } }
+                    { name: "param_07", in: "query", schema: { $ref: "/paths/~1v1~1users/post/text~1html/201/parameters/0/schema" } },
+                    { name: "param_08", in: "header", schema: { $ref: "/paths/~1v1~1users/post/text~1html/201/parameters/1/schema" } }
                   ]
                 },
-                "404": { response: { schema: { $ref: "/paths/~1v1~1users/post/text~1html/404/response" } } }
+                "404": { response: { schema: { $ref: "/paths/~1v1~1users/post/text~1html/404/response/schema" } } }
               }
             }
           },
@@ -710,11 +710,11 @@ vi.describe("〖⛳️〗‹‹‹ ❲@traversable/openapi❳", () => {
             get: {
               "application/json": {
               "301": {
-                  response: { schema: { $ref: "/paths/~1v1~1users~1{id}/get/application~1json/301/response" } },
-                  requestBody: { schema: { $ref: "/paths/~1v1~1users~1{id}/get/application~1json/301/requestBody" } },
+                  response: { schema: { $ref: "/paths/~1v1~1users~1{id}/get/application~1json/301/response/schema" } },
+                  requestBody: { schema: { $ref: "/paths/~1v1~1users~1{id}/get/application~1json/301/requestBody/schema" } },
                   parameters: [
-                    { name: "param_01", in: "query", schema: { $ref: "/paths/~1v1~1users~1{id}/get/application~1json/301/parameters/0" } },
-                    { name: "param_02", in: "header", schema: { $ref: "/paths/~1v1~1users~1{id}/get/application~1json/301/parameters/1" } }
+                    { name: "param_01", in: "query", schema: { $ref: "/paths/~1v1~1users~1{id}/get/application~1json/301/parameters/0/schema" } },
+                    { name: "param_02", in: "header", schema: { $ref: "/paths/~1v1~1users~1{id}/get/application~1json/301/parameters/1/schema" } }
                   ]
                 }
               }
@@ -722,69 +722,68 @@ vi.describe("〖⛳️〗‹‹‹ ❲@traversable/openapi❳", () => {
             post: {
               "application/json": {
                 "204": {
-                  response: { schema: { $ref: "/paths/~1v1~1users~1{id}/post/application~1json/204/response" } },
-                  requestBody: { schema: { $ref: "/paths/~1v1~1users~1{id}/post/application~1json/204/requestBody" } },
+                  response: { schema: { $ref: "/paths/~1v1~1users~1{id}/post/application~1json/204/response/schema" } },
+                  requestBody: { schema: { $ref: "/paths/~1v1~1users~1{id}/post/application~1json/204/requestBody/schema" } },
                   parameters: [
-                    { name: "param_05", in: "query", schema: { $ref: "/paths/~1v1~1users~1{id}/post/application~1json/204/parameters/0" } },
-                    { name: "param_06", in: "header", schema: { $ref: "/paths/~1v1~1users~1{id}/post/application~1json/204/parameters/1" } }
+                    { name: "param_05", in: "query", schema: { $ref: "/paths/~1v1~1users~1{id}/post/application~1json/204/parameters/0/schema" } },
+                    { name: "param_06", in: "header", schema: { $ref: "/paths/~1v1~1users~1{id}/post/application~1json/204/parameters/1/schema" } }
                   ]
                 },
-                "404": { response: { schema: { $ref: "/paths/~1v1~1users~1{id}/post/application~1json/404/response" } } }
+                "404": { response: { schema: { $ref: "/paths/~1v1~1users~1{id}/post/application~1json/404/response/schema" } } }
               },
               "text/html": {
                 "201": {
-                  response: { schema: { $ref: "/paths/~1v1~1users~1{id}/post/text~1html/201/response" } },
-                  requestBody: { schema: { $ref: "/paths/~1v1~1users~1{id}/post/text~1html/201/requestBody" } },
+                  response: { schema: { $ref: "/paths/~1v1~1users~1{id}/post/text~1html/201/response/schema" } },
+                  requestBody: { schema: { $ref: "/paths/~1v1~1users~1{id}/post/text~1html/201/requestBody/schema" } },
                   parameters: [
-                    { name: "param_07", in: "query", schema: { $ref: "/paths/~1v1~1users~1{id}/post/text~1html/201/parameters/0" } },
-                    { name: "param_08", in: "header", schema: { $ref: "/paths/~1v1~1users~1{id}/post/text~1html/201/parameters/1" } }
+                    { name: "param_07", in: "query", schema: { $ref: "/paths/~1v1~1users~1{id}/post/text~1html/201/parameters/0/schema" } },
+                    { name: "param_08", in: "header", schema: { $ref: "/paths/~1v1~1users~1{id}/post/text~1html/201/parameters/1/schema" } }
                   ]
                 },
-                "404": { response: { schema: { $ref: "/paths/~1v1~1users~1{id}/post/text~1html/404/response" } } }
+                "404": { response: { schema: { $ref: "/paths/~1v1~1users~1{id}/post/text~1html/404/response/schema" } } }
               }
             }
           }
         },
         components: {
           schemas: {
-            "/paths/~1v1~1users/get/application~1json/200/response": { schema: { type: "object", properties: { abc: { type: "number" } } } },
-            "/paths/~1v1~1users/get/application~1json/200/requestBody": { schema: { type: "array" } },
-            "/paths/~1v1~1users/get/application~1json/200/parameters/0": { name: "param_01", in: "query", schema: { type: "string" } },
-            "/paths/~1v1~1users/get/application~1json/200/parameters/1": { name: "param_02", in: "header", schema: { type: "number" } },
-            "/paths/~1v1~1users/get/application~1json/404/response": { schema: { type: "object", properties: { def: { type: "number" } } } },
-            "/paths/~1v1~1users/get/text~1html/201/response": { schema: { type: "object", properties: { ghi: { type: "number" } } } },
-            "/paths/~1v1~1users/get/text~1html/201/requestBody": { schema: { type: "array" } },
-            "/paths/~1v1~1users/get/text~1html/201/parameters/0": { name: "param_03", in: "query", schema: { type: "string" } },
-            "/paths/~1v1~1users/get/text~1html/201/parameters/1": { name: "param_04", in: "header", schema: { type: "number" } },
-            "/paths/~1v1~1users/get/text~1html/404/response": { schema: { type: "object", properties: { jkl: { type: "number" } } } },
-            "/paths/~1v1~1users/post/application~1json/204/response": { schema: { type: "object", properties: { mno: { type: "boolean" } } } },
-            "/paths/~1v1~1users/post/application~1json/204/requestBody": { schema: { type: "array" } },
-            "/paths/~1v1~1users/post/application~1json/204/parameters/0": { name: "param_05", in: "query", schema: { type: "string" } },
-            "/paths/~1v1~1users/post/application~1json/204/parameters/1": { name: "param_06", in: "header", schema: { type: "number" } },
-            "/paths/~1v1~1users/post/application~1json/404/response": { schema: { type: "object", properties: { pqr: { type: "number" } } } },
-            "/paths/~1v1~1users/post/text~1html/201/response": { schema: { type: "object", properties: { stu: { type: "number" } } } },
-            "/paths/~1v1~1users/post/text~1html/201/requestBody": { schema: { type: "array" } }, 
-            "/paths/~1v1~1users/post/text~1html/201/parameters/0": { name: "param_07", in: "query", schema: { type: "string" } },
-            "/paths/~1v1~1users/post/text~1html/201/parameters/1": { name: "param_08", in: "header", schema: { type: "number" } },
-            "/paths/~1v1~1users/post/text~1html/404/response": { schema: { type: "object", properties: { vwx: { type: "number" } } } },
-            "/paths/~1v1~1users~1{id}/get/application~1json/301/response": { schema: { type: "object", properties: { abc: { type: "number" } } } },
-            "/paths/~1v1~1users~1{id}/get/application~1json/301/requestBody": { schema: { type: "array" } },
-            "/paths/~1v1~1users~1{id}/get/application~1json/301/parameters/0": { name: "param_01", in: "query", schema: { type: "string" } },
-            "/paths/~1v1~1users~1{id}/get/application~1json/301/parameters/1": { name: "param_02", in: "header", schema: { type: "number" } },
-            "/paths/~1v1~1users~1{id}/post/application~1json/204/response": { schema: { type: "object", properties: { mno: { type: "boolean" } } } }, 
-            "/paths/~1v1~1users~1{id}/post/application~1json/204/requestBody": { schema: { type: "array" } },
-            "/paths/~1v1~1users~1{id}/post/application~1json/204/parameters/0": { name: "param_05", in: "query", schema: { type: "string" } },
-            "/paths/~1v1~1users~1{id}/post/application~1json/204/parameters/1": { name: "param_06", in: "header", schema: { type: "number" } },
-            "/paths/~1v1~1users~1{id}/post/application~1json/404/response": { schema: { type: "object", properties: { pqr: { type: "number" } } } },
-            "/paths/~1v1~1users~1{id}/post/text~1html/201/response": { schema: { type: "object", properties: { stu: { type: "number" } } } },
-            "/paths/~1v1~1users~1{id}/post/text~1html/201/requestBody": { schema: { type: "array" } },
-            "/paths/~1v1~1users~1{id}/post/text~1html/201/parameters/0": { name: "param_07", in: "query", schema: { type: "string" } },
-            "/paths/~1v1~1users~1{id}/post/text~1html/201/parameters/1": { name: "param_08", in: "header", schema: { type: "number" } },
-            "/paths/~1v1~1users~1{id}/post/text~1html/404/response": { schema: { type: "object", properties: { vwx: { type: "number" } } } }
+            "/paths/~1v1~1users/get/application~1json/200/response/schema": { type: "object", properties: { abc: { type: "number" } } },
+            "/paths/~1v1~1users/get/application~1json/200/requestBody/schema": { type: "array" },
+            "/paths/~1v1~1users/get/application~1json/200/parameters/0/schema": { type: "string" },
+            "/paths/~1v1~1users/get/application~1json/200/parameters/1/schema": { type: "number" },
+            "/paths/~1v1~1users/get/application~1json/404/response/schema": { type: "object", properties: { def: { type: "number" } } },
+            "/paths/~1v1~1users/get/text~1html/201/response/schema": { type: "object", properties: { ghi: { type: "number" } } },
+            "/paths/~1v1~1users/get/text~1html/201/requestBody/schema": { type: "array" },
+            "/paths/~1v1~1users/get/text~1html/201/parameters/0/schema": { type: "string" },
+            "/paths/~1v1~1users/get/text~1html/201/parameters/1/schema": { type: "number" },
+            "/paths/~1v1~1users/get/text~1html/404/response/schema": { type: "object", properties: { jkl: { type: "number" } } },
+            "/paths/~1v1~1users/post/application~1json/204/response/schema": { type: "object", properties: { mno: { type: "boolean" } } },
+            "/paths/~1v1~1users/post/application~1json/204/requestBody/schema": { type: "array" },
+            "/paths/~1v1~1users/post/application~1json/204/parameters/0/schema": { type: "string" },
+            "/paths/~1v1~1users/post/application~1json/204/parameters/1/schema": { type: "number" },
+            "/paths/~1v1~1users/post/application~1json/404/response/schema": { type: "object", properties: { pqr: { type: "number" } } },
+            "/paths/~1v1~1users/post/text~1html/201/response/schema": { type: "object", properties: { stu: { type: "number" } } },
+            "/paths/~1v1~1users/post/text~1html/201/requestBody/schema": { type: "array" },
+            "/paths/~1v1~1users/post/text~1html/201/parameters/0/schema": { type: "string" },
+            "/paths/~1v1~1users/post/text~1html/201/parameters/1/schema": { type: "number" },
+            "/paths/~1v1~1users/post/text~1html/404/response/schema": { type: "object", properties: { vwx: { type: "number" } } },
+            "/paths/~1v1~1users~1{id}/get/application~1json/301/response/schema": { type: "object", properties: { abc: { type: "number" } } },
+            "/paths/~1v1~1users~1{id}/get/application~1json/301/requestBody/schema": { type: "array" },
+            "/paths/~1v1~1users~1{id}/get/application~1json/301/parameters/0/schema": { type: "string" },
+            "/paths/~1v1~1users~1{id}/get/application~1json/301/parameters/1/schema": { type: "number" },
+            "/paths/~1v1~1users~1{id}/post/application~1json/204/response/schema": { type: "object", properties: { mno: { type: "boolean" } } }, 
+            "/paths/~1v1~1users~1{id}/post/application~1json/204/requestBody/schema": { type: "array" },
+            "/paths/~1v1~1users~1{id}/post/application~1json/204/parameters/0/schema": { type: "string" },
+            "/paths/~1v1~1users~1{id}/post/application~1json/204/parameters/1/schema": { type: "number" },
+            "/paths/~1v1~1users~1{id}/post/application~1json/404/response/schema": { type: "object", properties: { pqr: { type: "number" } } },
+            "/paths/~1v1~1users~1{id}/post/text~1html/201/response/schema": { type: "object", properties: { stu: { type: "number" } } },
+            "/paths/~1v1~1users~1{id}/post/text~1html/201/requestBody/schema": { type: "array" },
+            "/paths/~1v1~1users~1{id}/post/text~1html/201/parameters/0/schema": { type: "string" },
+            "/paths/~1v1~1users~1{id}/post/text~1html/201/parameters/1/schema": { type: "number" },
+            "/paths/~1v1~1users~1{id}/post/text~1html/404/response/schema": { type: "object", properties: { vwx: { type: "number" } } }
           }
         }
       }
     )
   })
-
 })
