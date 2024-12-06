@@ -8,7 +8,7 @@
 	},
   "references": [
     { "path": "../data" },
-		{ "path": "../registry" }
+    { "path": "../registry" }
   ],
 	"include": ["src"]
 }
