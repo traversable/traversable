@@ -1,21 +1,30 @@
+export * as Interpreter from "./interpreter.js"
+export { accessors, find, filter, normalize, query } from "./query.js"
+export { fromJSON, toJSON } from "./json-adapter.js"
+export { openapi as doc, arbitrary } from "./document.js"
 export { VERSION } from "./version.js"
 export { 
+  /// types
   type $ref,
   type Autocomplete,
   type HasType,
   type Schema_Base,
-  Schema,
+  /// namespaces
+  format,
+  has,
+  is,
+  /// schemas
   ArrayNode,
-  ExternalDocumentation,
   BooleanNode,
   DataType,
   DataTypes,
   Discriminator,
+  ExternalDocumentation,
   IntegerNode,
   NullNode,
   NumberNode,
   Schema_base,
-  StringNode,
+  Schema,
   StringNode_date,
   StringNode_datetime,
   StringNode_email,
@@ -23,18 +32,7 @@ export {
   StringNode_ulid,
   StringNode_uri,
   StringNode_uuid,
+  StringNode,
   TupleNode,
   XML,
-  format,
-  has,
-  is,
 } from "./schema.js"
-// export { mapRef, reffer } from "./reffer-old.js"
-export { dereference, fullyDereference } from "./deref.js"
-export { reffer } from "./reffer.js"
-
-export { openapi as doc } from "./document.js"
-
-export * as Interpreter from "./interpreter.js"
-export { fromJSON, toJSON } from "./json-adapter.js"
-

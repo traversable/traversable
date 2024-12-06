@@ -1,25 +1,36 @@
-import type { Partial, any, id, mut } from "any-ts"
+import type { Partial, any, id } from "any-ts"
 
+import { 
+  type key, 
+  type prop, 
+  Option, 
+  array, 
+  fn, 
+  map, 
+  object, 
+  pair,
+  string,
+} from "@traversable/data"
 import { core, tree } from "@traversable/core"
-import { Compare, Option, array, fn, type key, map, object, pair, type prop, string } from "@traversable/data"
 import { symbol } from "@traversable/registry"
+
 import { Schema } from "./schema.js"
 
 export {
+  type Binary,
+  type Codegen,
+  type CompilationTarget,
+  type Continuation,
+  type Hooks,
+  type Nullary,
+  type PropsContext,
+  type Unary,
+  type UserDefined,
+  type UserDefinitions,
   Context,
   defineHooks,
   fromHooks,
   fromAST,
-  type Nullary,
-  type Unary,
-  type Binary,
-  type Hooks,
-  type CompilationTarget,
-  type UserDefinitions,
-  type Codegen,
-  type UserDefined,
-  type Continuation,
-  type PropsContext,
 }
 
 type CompilationTarget = never | 
@@ -121,7 +132,7 @@ const normalizeOptionality
 
 const parseExample
   : <T extends any.nonnullable>(guard?: (u: unknown) => u is T) => (node: Schema.any) => Option<T>
-  = (guard = core.is.nonNullable as never) => fn.flow(
+  = (guard = core.is.nonnullable as never) => fn.flow(
     Option.guard(tree.has("example", guard)),
     Option.map(object.get.defer("example"))
   )
