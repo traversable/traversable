@@ -30,6 +30,7 @@
 <!-- * 🧙 Type-level additions/revisions -->
 <!-- * 💥️ Breaking changes -->
 <!-- * 🧱 Infrastructre / build-related changes >
+<!-- * 🧹 Chore / housekeeping >
 <!-- * ♻️ Refactor -->
 <!-- * ⚡️ Performance improvements/optimizations -->
 <!-- * _Other(s):_ ... -->
