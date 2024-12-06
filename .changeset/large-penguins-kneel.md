@@ -1,0 +1,5 @@
+---
+"@traversable/openapi": patch
+---
+
+stub

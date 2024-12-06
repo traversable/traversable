@@ -1,0 +1,5 @@
+---
+"@traversable/registry": patch
+---
+
+stub
