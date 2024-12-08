@@ -471,24 +471,9 @@ namespace write {
   export const workspaceSrcVersion = defineEffect(
     ($) => pipe(
       [
-        `import { ${$.pkgName} } from "${SCOPE}/${$.pkgName}"`,
-        `import * as vi from "vitest"`,
-        ``,
-        `import pkg from "../package.json"`,
-        ``,
-        `vi.describe(\`〖⛳️〗‹‹‹ ❲\${pkg.name}/version❳ (with v\${pkg.version})\`, () => {`,
-	      `  vi.it(\`〖⛳️〗› ❲\${pkg.name.slice("${SCOPE}/".length)}.VERSION❳\`, () => {`,
-        `    const expected = \`\${pkg.name}@\${pkg.version}`,
-        `    vi.assert.equal(${$.pkgName}.VERSION, expected)`,
-        `  })`,
-        `})`,
-
-// 		vi.assert.equal(data.VERSION, expected)
-// 	})
-// })
-        // `import pkg from "./__generated__/__manifest__.js"`,
-        // `export const VERSION = \`\${pkg.name}@\${pkg.version}\` as const`,
-        // `export type VERSION = typeof VERSION`,
+        `import pkg from "./__generated__/__manifest__.js"`,
+        `export const VERSION = \`\${pkg.name}@\${pkg.version}\` as const`,
+        `export type VERSION = typeof VERSION`,
       ].join("\n"),
       $.dryRun ? tap("\n\n[CREATE #14]: workspaceVersionSrc\n", globalThis.String) 
       : fs.writeString(path.join(PATH.packages, $.pkgName, "src", "version.ts")),

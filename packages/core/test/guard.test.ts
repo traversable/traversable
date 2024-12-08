@@ -1,7 +1,6 @@
 import * as vi from "vitest"
 
-import { Property, type core, fc, is, test } from "@traversable/core"
-import type { newtype } from "any-ts"
+import { type core, fc, is } from "@traversable/core"
 
 interface json<T = unknown> {
   null: core.is.null
