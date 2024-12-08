@@ -1,7 +1,7 @@
 export { isOpenApiSchema as is }
 
 import { core, fc, tree } from "@traversable/core"
-import { array, type keys, object } from "@traversable/data"
+import { Option, array, fn, type keys, object } from "@traversable/data"
 import type { newtype } from "any-ts"
 
 import * as fc_ from "fast-check"
@@ -167,8 +167,6 @@ const isNull: {
   tree.has("type", core.is.literally("null")),
 ) as never
 
-console.log(isNull({ enum: []}))
-
 /** @internal */
 const includes_ = array.includes
 /** @internal */
@@ -205,95 +203,6 @@ export declare namespace isOpenApiSchema {
   export { isConst as const, isNull as null }
 }
 
-function schemaSchema() {
-  return core.anyOf(
-    tree.has("$ref", core.is.string),
-    tree.has("allOf", core.is.array.any),
-    tree.has("anyOf", core.is.array.any),
-    tree.has("oneOf", core.is.array.any),
-    tree.has(
-      "type", core.anyOf(
-        core.is.literally("boolean"),
-        core.is.literally("integer"),
-        core.is.literally("number"),
-        core.is.literally("string"),
-        core.is.literally("object"),
-        core.is.literally("array"),
-      )
-    )
-  )
-}
-
-declare namespace node {
-  type node_any = 
-    | node.node_boolean
-    | node.node_integer
-    | node.node_number
-    | node.node_string
-    | node.node_object
-    | node.node_array
-
-  interface node_null extends required<{ type: "null" }> {}
-  interface node_boolean extends required<{ type: "boolean" }> {}
-  interface node_string extends required<{ type: "string" }> {}
-  interface node_integer extends required<{ type: "integer" }> {}
-  interface node_number extends required<{ type: "number" }> {}
-  interface node_array extends required<{ type: "array" }> {}
-  interface node_object extends required<{ type: "object" }> {}
-}
-
-const isSchemaRecord = core.is.record.of(isOpenApiSchema)
-
-const isObjectNode = core.is.object({
-  type: core.is.literally("object"),
-  properties: core.is.record.of(isOpenApiSchema),
-  // additionalProperties: core.is.optional(core.is.literally("test"))
-})
-
-const isArrayNode = core.is.object({
-  type: core.is.literally("array"),
-  items: isOpenApiSchema
-})
-
-const isTupleNode = core.is.object({
-  type: core.is.literally("array"),
-  items: core.is.array(isOpenApiSchema),
-})
-
-const isStringNode = core.is.object({
-  type: core.is.literally("string"),
-})
-
-// const isObjectNode = (u: unknown) => {
-//   return core.is.object.of({
-//     type: core.is.literally("object"),
-//     properties: core.is.record.of(is),
-//   })(u)
-//   /* 
-//     type: "object"
-//   properties: T
-//   // additionalProperties?: boolean | Ref.typedef | U
-//   required: readonly ({} extends T ? unknown : keyof T & (string | number))[]
-//   */
-// }
-
-const isAnySchema 
-  : (u: unknown) => u is Schema.any
-  = core.anyOf(
-    tree.has("$ref", core.is.string),
-    tree.has("allOf", core.is.array.any),
-    tree.has("anyOf", core.is.array.any),
-    tree.has("oneOf", core.is.array.any),
-    tree.has(
-      "type", core.anyOf(
-      core.is.literally("boolean"),
-      core.is.literally("integer"),
-      core.is.literally("number"),
-      core.is.literally("string"),
-      core.is.literally("object"),
-      core.is.literally("array"),
-    ))) as never
-
 export function isOpenApiSchema(u: unknown): u is Schema.any {
   return core.anyOf(
     tree.has("$ref", core.is.string),
@@ -316,7 +225,10 @@ export function isOpenApiSchema(u: unknown): u is Schema.any {
 export namespace isOpenApiSchema {
   void (isOpenApiSchema.null = isNull)
   void (isOpenApiSchema.const = isConst)
-  ///
+
+  // export const record
+  //   : <T extends Schema.any>(u: unknown) => u is RecordNode<T>
+  //   = (u): u is never => object(u) && "additionalProperties" in u
 
   export function nonRef<U>(u: U): u is globalThis.Exclude<U, openapi.$ref> {
     return u && typeof u === "object" && !("$ref" in u)
@@ -348,16 +260,17 @@ export namespace isOpenApiSchema {
     (u: unknown): u is Schema.StringNode
   } = (u: unknown): u is never => u !== null && typeof u === "object" && "type" in u && u.type === "string"
 
-  export const array: {
-    (u: Schema.any | NullNode | openapi.$ref): u is Schema.ArrayNode
-    (u: unknown): u is Schema.ArrayNode
-  } = (u: unknown): u is never => u !== null && typeof u === "object" && "type" in u && u.type === "array"
-
   export type AnyArray = { type: "array", items: false, prefixItems?: never }
   export const anyArray = (u: Schema.any | NullNode | openapi.$ref | AnyArray): u is AnyArray => 
     tree.has("type", core.is.literally("array"))(u)
     && tree.has("items", core.is.false)(u)
     && !(tree.has("prefixItems")(u))
+
+  export const array: {
+    (u: Schema.any | NullNode | openapi.$ref): u is Schema.ArrayNode
+    (u: unknown): u is Schema.ArrayNode
+  } = (u: unknown): u is never => u !== null && typeof u === "object" && "type" in u && u.type === "array"
+
 
   export const tuple: {
     (u: Schema.any | NullNode | openapi.$ref): u is Schema.TupleNode
@@ -495,6 +408,7 @@ type Schema_datatype =
   | ArrayNode 
   | TupleNode 
   | ObjectNode
+  // | RecordNode
   ;
 
 type Schema_any = 
@@ -554,6 +468,7 @@ export namespace Schema {
   export const define = (constraints: Schema.Constraints = Schema.defaults) =>
     fc.letrec((loop) => ({
       object: ObjectNode(loop("tree") as never, loop("tree") as never, constraints),
+      // record: RecordNode(loop("tree") as never, loop("tree") as never, constraints),
       array: ArrayNode(loop("tree") as never, constraints),
       oneOf: OneOfNode(loop("tree") as never),
       anyOf: AnyOfNode(loop("tree") as never),
@@ -654,6 +569,7 @@ export namespace Schema {
     return fc.oneof(
       Schema.object,
       Schema.array,
+      // Schema.record,
       Schema.oneOf,
       Schema.anyOf,
       Schema.allOf,
@@ -1014,58 +930,43 @@ export function ArrayNode(
   }, { requiredKeys: ["type", "items"] })
 }
 
-export interface RecordNode<T extends Schema.any = Schema.any> extends 
-  optional<Schema_Base<globalThis.Record<string, T>>>,
-  required<{ additionalProperties: T }> { }
-
-export function RecordNode<T extends Schema.any = Schema.any>(
-  additionalProperties: fc.Arbitrary<T>,
-  constraints?: Schema.Constraints,
-): fc.Arbitrary<RecordNode<T>>
-
-export function RecordNode<T extends Schema.any = Schema.any>(
-  additionalProperties: fc.Arbitrary<T>,
-  constraints: Schema.Constraints = Schema.defaults,
-): {} {
-  return fc.record({
-    type: fc.constant("object"),
-    additionalProperties,
-    ...Schema_base({ 
-      empty: {}, 
-      arbitrary: additionalProperties,
-      ...constraints, 
-    }),
-  }, { requiredKeys: ["type", "additionalProperties"] })
-}
-
 interface ObjectNode_Shape { discriminator: Arbitrary.infer<typeof Discriminator> }
 
-interface ObjectNode<T extends { [x: string]: unknown } = { [x: string]: Schema.any }, U = T> extends 
-  optional<Schema_Base>,
+interface ObjectNode<
+  T extends { [x: string]: unknown } = { [x: string]: Schema.any }, 
+  U extends Schema.any = Schema.any
+> extends 
+  optional<Schema_Base & { additionalProperties: U }>,
   optional<ObjectNode_Shape>,
   required<{
     type: "object"
     properties: T
-    // additionalProperties?: boolean | Ref.typedef | U
     required: readonly string[] // readonly ({} extends T ? unknown : keyof T & (string | number))[]
   }> { }
 
 /** ### {@link ObjectNode `openapi.ObjectNode`} */
-function ObjectNode<T extends fc.Arbitrary<Schema.any>, U>(
-  properties: T,
+function ObjectNode<T extends { [x: string]: Schema.any }, U extends Schema.any>(
+  properties: fc.Arbitrary<T>,
   additionalProperties?: fc.Arbitrary<U>,
   constraints?: Schema.Constraints,
-): fc.Arbitrary<ObjectNode>
+): fc.Arbitrary<ObjectNode<T> & Record<string, U>>
 
-function ObjectNode<T extends fc.Arbitrary<Schema.any>, U>(
+function ObjectNode<T extends { [x: string]: Schema.any }>(
   properties: T,
-  additionalProperties?: fc.Arbitrary<U>,
-  constraints: Schema.Constraints = Schema.defaults,
-): fc.Arbitrary<ObjectNode> {
+  constraints?: Schema.Constraints,
+): fc.Arbitrary<ObjectNode<T>>
+
+function ObjectNode<T extends { [x: string]: Schema.any }, U extends Schema.any>(
+  ...[model, $1, $2 = Schema.defaults]: 
+    | [properties: fc.Arbitrary<T>, constraints?: Schema.Constraints]
+    | [properties: fc.Arbitrary<T>, additionalProperties?: fc.Arbitrary<U>, constraints?: Schema.Constraints]
+): fc.Arbitrary<ObjectNode<{ [x: string]: T }, U>> {
+  const additional = fc.is($1) ? Option.some($1) : Option.none()
+  const constraints = fc.is($1) ? ($2 ?? Schema.defaults) : ($1 ?? Schema.defaults);
   return fc.record({
     type: fc.constant("object"),
-    properties: fc.dictionary(properties),
-    ...optionally({ additionalProperties }),
+    properties: fc.dictionary(model),
+    ...optionally({ additionalProperties: Option.toUndefined(additional) }),
     ...Schema_base({ ...constraints, empty: {} }),
   }, { 
     requiredKeys: [
@@ -1081,9 +982,7 @@ function ObjectNode<T extends fc.Arbitrary<Schema.any>, U>(
   )
 }
 
-
 /** 
- * @deprecated I think think we want this actually 
  * ## {@link optionally `optionally`}
  * 
  * Spread objects and arrays that may or may not be defined with a uniform syntax.
@@ -1121,3 +1020,67 @@ function optionally<const T extends { [x: string]: unknown }>(maybeObject?: T | 
 function optionally<const T extends { [x: string]: unknown }>(_?: T) {
   return !_ ? [] : !_[globalThis.Object.keys(_)[0]] ? [] : _
 }
+
+// export interface RecordNode<T extends Schema.any = Schema.any> extends 
+//   optional<Schema_Base<globalThis.Record<string, T>>>,
+//   required<{ 
+//     type: "object"
+//     additionalProperties: T 
+//   }> { }
+
+// export function RecordNode<
+//   T extends Schema.any = Schema.any, 
+//   U extends Schema.any = Schema.any
+// >(
+//   model: fc.Arbitrary<T>,
+//   properties?: fc.Arbitrary<U>,
+//   constraints?: Schema.Constraints,
+// ): fc.Arbitrary<RecordNode<T>>
+
+// export function RecordNode<
+//   T extends Schema.any = Schema.any, 
+//   U extends Schema.any = Schema.any
+// >(
+//   model: fc.Arbitrary<T>,
+//   constraints?: Schema.Constraints,
+// ): fc.Arbitrary<RecordNode<T>>
+
+// export function RecordNode<
+//   T extends Schema.any = Schema.any, 
+//   U extends Schema.any = Schema.any
+// >(
+//   ...[model, $1, $2]:
+//     | [model: fc.Arbitrary<T>, $1?: Schema.Constraints]
+//     | [model: fc.Arbitrary<T>, $1?: fc.Arbitrary<U>, $2?: Schema.Constraints]
+// ): {} {
+//   const properties = fc.is($1) ? Option.some($1) : Option.none()
+//   const constraints = fc.is($1) ? $2 ?? Schema.defaults : $1 ?? Schema.defaults
+//   return fc.record({
+//     type: fc.constant("object"),
+//     additionalProperties: model,
+//     ...Option.isSome(properties) && { properties: properties.value },
+//     ...Schema_base({ 
+//       empty: {}, 
+//       arbitrary: model,
+//       ...constraints, 
+//     }),
+//   }, { requiredKeys: ["type", "additionalProperties"] })
+// }
+
+// interface RecordNode<T e
+// function RecordNode<T extends { [x: string]: unknown }>(
+//   additionalProperties: fc.Arbitrary<T>,
+//   constraints?: Schema.Constraints
+// ): fc.Arbitrary<{ [x: string]: T }>
+// function RecordNode<T extends { [x: string]: unknown }, U>(
+//   additionalProperties: fc.Arbitrary<T>,
+//   properties?: fc.Arbitrary<U>,
+//   constraints?: Schema.Constraints
+// ): fc.Arbitrary<{ [x: string]: T } & U>
+// function RecordNode<T extends { [x: string]: unknown }, U>(
+//   ...args: 
+//     | [additionalProperties: fc.Arbitrary<T>, constraints?: Schema.Constraints]
+//     | [additionalProperties: fc.Arbitrary<T>, properties?: fc.Arbitrary<U>, constraints?: Schema.Constraints]
+// ) {
+//   return null as never
+// }

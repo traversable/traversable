@@ -1,17 +1,11 @@
 import { JsonPointer, is, tree } from "@traversable/core"
-import { fn /* , forEach */ } from "@traversable/data"
-import type { prop } from "@traversable/data"
+import { fn } from "@traversable/data"
+import type { prop, props } from "@traversable/data"
 import { Invariant } from "@traversable/registry"
+import type { Predicate } from "./types.js"
 
 export interface Dictionary
   <T = unknown> { [x: string]: T }
-
-export interface Predicate<
-  S = {} | null | undefined, 
-  // T extends S = S
-> { (src: S, path: prop.any[]): boolean
-    // (src: S, path: prop.any[]): src is T 
-  }
 
 /** @internal */
 const Object_entries = globalThis.Object.entries
@@ -23,8 +17,7 @@ const Array_isArray = globalThis.Array.isArray
 /**
  * ## {@link query `openapi.query`}
  * 
- * Given a record or an array of predicates, {@link find `openapi.filter`} 
- * returns a function that expects a search tree.
+ * Search an OpenAPI document for nodes that match a query. 
  * 
  * The semantics of {@link query `openapi.query`} depend on whether the set
  * of predicates was passed as an array (which implies that _order_ is 
@@ -61,8 +54,6 @@ export function query<Q>(predicates: readonly Predicate<Q>[]):
   <T extends {}>(tree: T) => prop.any[][]
 export function query(qs: { [x: number]: Predicate }) /// impl.
   { return Array_isArray(qs) ? find(...qs) : filter(qs) }
-
-query([(x: number) => x > 1])
 
 /**
  * ## {@link find `openapi.find`}
@@ -188,118 +179,10 @@ accessors.loop = fn.loopN<accessors.dependencies, void>((cursor, ks, access, qs,
 
 })
 
-type DocLike = { 
-  paths?: {}, 
-  components?: { schemas?: {} },
-}
-
 const qualifier = "/components/schemas"
 const qualify = (key: string) => qualifier + key
 const unqualify = (key: string) => key.startsWith(qualifier) ? key.substring(qualifier.length) : key
 
-export function normalize<R>(...predicates: readonly Predicate<R>[]): 
-  <T extends DocLike>(tree: T) => {}
-
-export function normalize<R>(...predicates: readonly Predicate<R>[]) {
-  return <T extends DocLike>(doc: T) => {
-    const predicate = tree.has("schema", tree.has("type", is.string))
-    const getSchemas = accessors(predicate)
-    const access = getSchemas(doc)
-
-    let refs: { [x: string]: {} } = {}
-    for (const k in access) {
-      // clone the element so the new value doesn't point to a pointer -- 
-      // otherwise the mutation will propogate, and we lose the original value
-      void (refs[k + "/schema"] = globalThis.structuredClone(access[k].schema)!)
-    }
-
-    // Here we rip out all the nested schemas from ex_07
-    void globalThis.Object
-      .entries(access)
-      .forEach(
-        fn.flow(
-          ([pathname, accessor]) => {
-            // console.log("accessor BEFORE", accessor)
-            // console.log("accessor.schema", accessor.schema)
-             void (accessor.schema = { $ref: pathname + "/schema" })
-            //  console.log("accessor AFTER", accessor)
-              const path = JsonPointer.toPath(pathname).slice(1)
-              // console.log("path", path)
-              // console.log("tree.get(refs, ...", tree.get(doc, ...path))
-          }
-        )
-    )
-    if (!doc.components) void (doc.components = { schemas: {} })
-    doc.components.schemas = { ...doc.components?.schemas, ...refs }
-
-    return doc
-
-
-    /**
-     * @example
-     *  // We'll be mutating `ex_07`, so here we make a copy of it.
-     *  // That way, we have something to compare it to when we're done rebuilding it
-     *  const ex_08 = globalThis.structuredClone(ex_07)
-     *
-     *  // A few helpers to simulate the real use case that we have, which is
-     *  // "moving" schemas from their various levels of nesting throughout the OpenAPI document,
-     *  // into a top-level declaration with the other schemas
-     *  const qualifier = "#/components/schemas"
-     *  const qualify = (key: string) => qualifier + key
-     *  const dequalify = (key: string) => key.startsWith(qualifier) ? key.substring(qualifier.length) : key
-     *  const Qualifier = {
-     *    to: qualify,
-     *    from: dequalify,
-     *  }
-     *
-     *  const getDocumentSchemas = openapi.accessors(tree.has("schema", tree.has("type", is.string)))
-     *  let accessors = getDocumentSchemas(ex_07)
-     *
-     *  console.log("accessors", accessors)
-     *
-     *  ///////////////
-     *  ///   ACT   ///
-     *  ///////////////
-     *
-     *  // Here we create save all the nested schemas in an object called `refs`, where
-     *  // each key in `refs` is a fully qualified, JsonPointer-escaped path that resolves
-     *  // to a schema in `ex_07`
-     *
-     *  let refs: { [x: string]: unknown } = {}
-     *  for (const k in accessors) {
-     *    // clone the element so the new value doesn't point to a pointer -- otherwise
-     *    // the mutation will propogate, and we lose the original value
-     *    void (refs[Qualifier.to(k)] = globalThis.structuredClone(accessors[k]))
-     *  }
-     *
-     *  // Here we rip out all the nested schemas from ex_07
-     *  void globalThis.Object
-     *    .entries(accessors)
-     *    .forEach(
-     *      fn.flow(
-     *        ([pathname, accessor]) => [Qualifier.to(pathname), accessor] satisfies [string, unknown],
-     *        ([pathname, accessor]) => {
-     *          void (accessor.schema = { $ref: pathname })
-     *        }
-     *      )
-     *    )
-     *
-     *  // Here we rebuild ex_07 by piecing it back together from the refs we previously ripped out
-     *  for (const k in accessors) {
-     *    const accessor = accessors[k]
-     *    const refPath = qualify(k)
-     *    const ref: { schema: unknown } = refs[refPath] as never
-     *    // const accessed = tree.get(ex_07 as never, ...unqualifiedPath)
-     *    // const referenced = tree.get(refs, ...unqualifiedPath)
-     *    accessor.schema = ref.schema
-     *  }
-     * 
-     * 
-     */
-
-
-  }
-}
 
 export declare namespace normalize {
   type dependencies = [

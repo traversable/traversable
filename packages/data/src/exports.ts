@@ -1,4 +1,4 @@
-import type { URI } from "@traversable/registry"
+import type { Kind, URI } from "@traversable/registry"
 
 export type { nonempty } from "./nonempty.js"
 export type { any } from "./any.js"
@@ -266,3 +266,18 @@ export interface Concattable<in out T> {
  */
 export interface Foldable<in out T> extends Concattable<T> { empty: T }
 
+/**
+ * ## {@link Functor `data.Functor`}
+ */
+export interface Functor extends Kind<Kind> {
+  map<S, T>(f: (s: S) => T): (F: any) => Kind.apply<this["~0"], T>
+}
+
+export declare namespace Functor {
+  type map<F extends Kind> = never | {
+    <S, T>(f: (s: S) => T): { (F: Kind.apply<F, S>): Kind.apply<F, T> }
+    <S, T>(F: Kind.apply<F, S>, f: (s: S) => T): Kind.apply<F, T>
+  }
+  type Algebra<F extends Kind, T> = (F: Kind.apply<F, T>) => T
+  type Coalgebra<F extends Kind, T> = (term: T) => Kind.apply<F, T>
+}

@@ -1,10 +1,23 @@
 import type { fc } from "@traversable/core"
 import type { any } from "any-ts"
 
+import type { prop } from "@traversable/data"
 import type { parameter } from "./parameter.js"
 import type { Schema } from "./schema.js"
 
 type inline<T> = T
+
+export interface Predicate<
+  S = {} | null | undefined, 
+  // T extends S = S
+> { (src: S, path: prop.any[]): boolean
+    // (src: S, path: prop.any[]): src is T 
+  }
+
+export type DocLike = { 
+  paths?: {}, 
+  components?: { schemas?: {} },
+}
 
 export declare namespace Arbitrary {
   export {

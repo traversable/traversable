@@ -1,5 +1,7 @@
 export * as Interpreter from "./interpreter.js"
-export { accessors, find, filter, normalize, query } from "./query.js"
+export { Functor, type Target, ana, cata, hylo, thin } from "./algebra.js"
+export { accessors, find, filter, query } from "./query.js"
+export { normalize } from "./normalize.js"
 export { fromJSON, toJSON } from "./json-adapter.js"
 export { openapi as doc, arbitrary } from "./document.js"
 export { VERSION } from "./version.js"
@@ -23,6 +25,7 @@ export {
   IntegerNode,
   NullNode,
   NumberNode,
+  // RecordNode,
   Schema_base,
   Schema,
   StringNode_date,

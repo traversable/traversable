@@ -1,5 +1,6 @@
-import { Invariant } from "@traversable/registry"
+import { Invariant, type Kind } from "@traversable/registry"
 import type { any, mut } from "any-ts"
+import type { Functor } from "../exports.js"
 import type { array_shift } from "./_array.js"
 
 export { fn }
@@ -777,4 +778,40 @@ function pipe(
       return ret
     }
   }
+}
+
+export namespace morphism {
+  export function ana<F extends Kind>(F: { map: Functor.map<F> }) {
+    return <T>(coalgebra: Functor.Coalgebra<F, T>) => {
+      return function loop(term: T): Kind.apply<F, F> {
+        return F.map(loop)(coalgebra(term))
+      }
+    }
+  }
+  export function cata<F extends Kind>(F: { map: Functor.map<F> }) {
+    return <T>(algebra: Functor.Algebra<F, T>) => {
+      return function loop(term: Kind.apply<F, T>): T {
+        return algebra(F.map(loop)(term))
+      }
+    }
+  }
+  export function hylo
+    <F extends Kind>(F: { map: Functor.map<F> }): 
+    <S, T>(
+      algebra: Functor.Algebra<F, S>, 
+      coalgebra: Functor.Coalgebra<F, S>
+    ) => (s: S) 
+      => T
+  export function hylo
+    <F extends Kind>(F: { map: Functor.map<F> }) {
+      return <S, T>(
+        algebra: Functor.Algebra<F, S>, 
+        coalgebra: Functor.Coalgebra<F, S>
+      ) => 
+        (s: S) => pipe(
+          coalgebra(s),
+          F.map(hylo(F)(algebra, coalgebra)),
+          algebra,
+        )
+    }
 }

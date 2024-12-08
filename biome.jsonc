@@ -52,6 +52,7 @@
         "noConfusingVoidType": "off",
         "noEmptyInterface": "off",
         "useValidTypeof": "off",
+        "useDefaultSwitchClauseLast": "off",
         "noAssignInExpressions": "off",
         "noMisleadingCharacterClass": "off"
       },

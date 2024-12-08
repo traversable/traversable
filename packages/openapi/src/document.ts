@@ -1,10 +1,9 @@
 import { core, fc, is, tree, zip } from "@traversable/core"
-import { array, fn, map, object, string } from "@traversable/data"
+import { fn, map, object } from "@traversable/data"
 import { http } from "@traversable/http"
 import { PATTERN } from "@traversable/registry"
-import type { newtype } from "any-ts"
 
-import { normalize } from "./query.js"
+import * as N from "./normalize.js"
 import { 
   BooleanNode,
   ExternalDocumentation,
@@ -13,20 +12,20 @@ import {
   Schema,
   StringNode,
 } from "./schema.js"
-import { type Arbitrary, lit } from "./types.js"
-
-//
-// - TODO: handle
-// 
-//   - [x] nested refs
-//   - [ ] contain circular refs
-//
+import type { Arbitrary } from "./types.js"
 
 /** @internal */
 type inline<T> = T
+/** @internal */
 type autocomplete<T> = T | (string & {})
 
+/** @internal */
+const predicate = tree.has("schemas", tree.has("type", is.string))
+/** @internal */
+const normalize = N.normalize(predicate)
+
 export function openapi() {} 
+
 openapi.is = {
   request: (u: openapi.requestBody): u is openapi.request => !("$ref" in u),
 }
@@ -263,43 +262,24 @@ export declare namespace arbitrary {
  * ### {@link arbitrary `openapi.arbitrary`}
  *
  * {@link arbitrary `openapi.arbitrary`} is the primary export of this module. It implements a
- * `fast-check` arbitrary that knows how to generate an arbitrary, 
- * [_pseudo-random_](https://en.wikipedia.org/wiki/Pseudorandomness) **OpenAPI document**.
+ * `fast-check` arbitrary that knows how to generate an arbitrary,
+ * [pseudo-random](https://en.wikipedia.org/wiki/Pseudorandomness) OpenAPI document.
  *
  * @example
  * import * as fc from "fast-check"
  * import { oas } from "@traversable/codegen"
  *
- * const oneHundredOpenAPISpecs = fc.sample(openapi.arbitrary, 100)
+ * const oneHundredOpenAPIDocuments = fc.sample(openapi.arbitrary, 100)
  */
 export function arbitrary(constraints?: arbitrary.Constraints): fc.Arbitrary<openapi.document>
 export function arbitrary(_: arbitrary.Constraints = defaults): fc.Arbitrary<{}> {
   const constraints = applyConstraints(_)
-  return fc.record(
-    {
-      openapi: fc.constantFrom("3.0.1"),
-      components: components(constraints),
-      paths: paths(constraints),
-      info: Info,
-    },
-    {
-      requiredKeys: [
-        "components",
-        "paths",
-        "openapi",
-      ],
-    },
-  ).map(
-    ({ components: { schemas, ...component }, paths, ...doc }) => {
-    return {
-      ...doc,
-      paths,
-      components: {
-        ...component,
-        schemas
-      }
-    }
-  }).map(normalize(tree.has("schemas", tree.has("type", is.string))))
+  return fc.record({
+    openapi: fc.constantFrom("3.0.1"),
+    components: components(constraints),
+    paths: paths(constraints),
+    info: Info,
+  }, { requiredKeys: [ "components", "paths", "openapi" ] }).map(normalize)
 }
 
 type AppliedConstraints = { [K in keyof arbitrary.Constraints]-?: Required<arbitrary.Constraints[K]> }
@@ -414,11 +394,11 @@ namespace Auth {
    */
   export const BearerHttpSecurityScheme = fc.record(
     {
-      type: fc.constant(lit("http")),
+      type: fc.constant("http"),
       scheme: fc.stringMatching(PATTERN.bearer),
       bearerFormat: fc.string(),
       description: fc.lorem(),
-      in: fc.constantFrom(lit("header"), lit("query"), lit("cookie")),
+      in: fc.constantFrom("header", "query", "cookie"),
     },
     { requiredKeys: ["scheme", "type", "bearerFormat"] },
   )
@@ -428,9 +408,9 @@ namespace Auth {
    */
   export const NonBearerHttpSecurityScheme = fc.record(
     {
-      type: fc.constant(lit("http")),
+      type: fc.constant("http"),
       description: fc.lorem(),
-      in: fc.constantFrom(lit("header"), lit("query"), lit("cookie")),
+      in: fc.constantFrom("header", "query", "cookie"),
     },
     { requiredKeys: ["type"] },
   )
@@ -515,7 +495,7 @@ namespace Auth {
    */
   export const OAuth2SecurityScheme = fc.record(
     {
-      type: fc.constant(lit("oauth2")),
+      type: fc.constant("oauth2"),
       flows: OAuthFlows,
       description: fc.lorem(),
     },
@@ -527,7 +507,7 @@ namespace Auth {
    */
   export const OpenIdConnectSecurityScheme = fc.record(
     {
-      type: fc.constant(lit("openIdConnectUrl")),
+      type: fc.constant("openIdConnectUrl"),
       description: fc.lorem(),
       openIdConnectUrl: fc.string(), // format: "uri-reference"
     },
@@ -692,7 +672,7 @@ export const Encoding = fc.record(
     contentType: fc.string(),
     // TODO: CIRCULAR IF YOU UNCOMMENT `Header`
     // headers: fc.dictionary(fc.string(), fc.oneof(Ref.typedef /* , Header */ )),
-    style: fc.constantFrom(lit("form"), lit("spaceDelimited"), lit("pipeDelimited"), lit("deepObject")),
+    style: fc.constantFrom("form", "spaceDelimited", "pipeDelimited", "deepObject"),
     explode: fc.boolean(),
     allowReserved: fc.boolean(), // default: false
   },
@@ -769,7 +749,7 @@ export namespace Header {
   /** ### {@link Header.shape `openapi.Header.shape`} */
   export const shape = {
     description: fc.lorem(),
-    style: fc.constant(lit("simple")),
+    style: fc.constant("simple"),
     explode: fc.boolean(),
     required: fc.boolean(), // default: false
     deprecated: fc.boolean(), // default: false

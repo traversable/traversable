@@ -4,6 +4,12 @@ import type { newtype } from "any-ts"
 export type inline<T> = T
 export type _ = {} | null | undefined
 
+export declare namespace Variance {
+  type invariant<T> = (_: T) => T
+  type contra<T> = (_: T) => void
+  type co<T> = (_: never) => T
+}
+
 /**
  * A neat (as in tidy), extensible implementation of HKTs in TypeScript.
  *

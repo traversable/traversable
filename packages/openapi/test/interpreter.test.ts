@@ -1,9 +1,10 @@
-import { fc, test } from "@traversable/core"
+import { fc, is, test, tree } from "@traversable/core"
 import * as vi from "vitest"
 
-import { Interpreter } from "@traversable/openapi"
+import { fn } from "@traversable/data"
+import { openapi } from "@traversable/openapi"
 
-const hooks = Interpreter.define({
+const [hooks] = openapi.Interpreter.define({
   /////////////////////////////////
   /// root hooks
   banner: "/** testing testing one, two, three... */",
@@ -44,29 +45,17 @@ const hooks = Interpreter.define({
     join: (out, ctx) => out.join(" | "),
   },
   oneOf: {
-    afterAll: (out, ctx) => out,
-    afterEach: (out, key, ctx) => [key, out],
-    beforeAll: (out, ctx) => out,
-    beforeEach: (out, index, ctx) => [out, index],
-    join: (out, ctx) => out.join(" | "),
+    beforeAll(out, ctx) { return out },
+    afterAll(out, ctx) { return out },
+    afterEach(out, key, ctx) { return [key, out] },
+    beforeEach(out, index, ctx) { return [out, index] },
+    join(out, ctx) { return out.join(" | ") },
   },
-  /////////////////////////////////
-  /// composites
-  // array: (out, ctx) => out,
-  // const: (out, ctx) => out,
-  // enum: (out, ctx) => out,
-  // export: (out, ctx) => out,
-  // import: (out, ctx) => out,
-  // object: (out, ctx) => out,
-  // record: (out, ctx) => out,
-  // ref: (out, ctx) => out,
-  // tuple: (out, ctx) => out,
 })
 
-
-vi.describe.skip("〖⛳️〗‹‹‹ ❲@traversable/openapi/interpreter❳", () => {
+vi.describe("〖⛳️〗‹‹‹ ❲@traversable/openapi/interpreter❳", () => {
   vi.test("〖⛳️〗› ❲Interpreter.inline❳", () => {
-    const interpret = Interpreter.inline({
+    const interpret = openapi.Interpreter.inline({
       moduleName: "TestName", 
       schemaName: "SchemaName",
       hooks, 
@@ -81,7 +70,7 @@ vi.describe.skip("〖⛳️〗‹‹‹ ❲@traversable/openapi/interpreter❳",
     vi.assert.equal(interpret({ type: "array", items: { type: "string" } }).out, "string")
 
     vi.assert.equal(
-     Interpreter.inline({ 
+     openapi.Interpreter.inline({ 
         moduleName: "TestingHookOverrides",
         schemaName: "ResolvesExamples",
         hooks: {

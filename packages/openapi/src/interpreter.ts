@@ -34,7 +34,7 @@ export {
 }
 
 type CompilationTarget = never | 
-  { refs: readonly string[], out: string }
+  { refs: { [x: string]: string }, out: string }
 
 declare namespace Codegen {
   export interface Tasks extends any.dict<UserDefinitions> {}
@@ -45,9 +45,25 @@ declare namespace Codegen {
   }
 }
 
-export const define
-  : <const T extends UserDefined>(definitions: T) => T
-  = fn.identity
+interface Refs { [x: string]: Schema.any }
+
+export declare namespace define {
+  interface Options {
+    refs?: Refs
+  }
+}
+
+export function define<const T extends UserDefined>(definitions: T): [T, { refs: {} }]
+export function define<const T extends UserDefined>(definitions: T, opts: define.Options): [T, refs: { [x: string]: Schema.any }]
+export function define<const T extends UserDefined>(definitions: T, opts?: define.Options): [T, { refs: { [K in string]+?: Schema.any }}]
+export function define<const T extends UserDefined>(
+  definitions: T, 
+  { refs = define.defaults.refs }: define.Options = define.defaults
+) { return [definitions, { refs }] }
+
+define.defaults = {
+  refs: {},
+} as const satisfies Required<define.Options>
 
 interface UserDefined extends UserDefinitions {}
 type UserDefinitions = evaluate<
@@ -96,12 +112,6 @@ const parseOptionality
     }
   }
 
-// type OptionalityGlyph = typeof OptionalityGlyph[keyof typeof OptionalityGlyph]
-// const OptionalityGlyph = {
-//   Nullable: "∅",
-//   Optional: "?",
-// } as const
-
 function matchOptionality
   <T extends { isNullable: boolean, isRequired: boolean }>(shape: T): (symbol.nullable | symbol.optional)[]
 function matchOptionality
@@ -131,7 +141,7 @@ const normalizeOptionality
   }
 
 const parseExample
-  : <T extends any.nonnullable>(guard?: (u: unknown) => u is T) => (node: Schema.any) => Option<T>
+  : <T extends any.nonnullable>(guard?: (u: unknown) => u is T) => (node: unknown) => Option<T>
   = (guard = core.is.nonnullable as never) => fn.flow(
     Option.guard(tree.has("example", guard)),
     Option.map(object.get.defer("example"))
@@ -163,10 +173,10 @@ export interface Context_string<
 export interface Context_oneOf<T extends { [x: string]: unknown } = { [x: string]: unknown }> extends Context<T> {}
 export interface Context_allOf<T extends { [x: string]: unknown } = { [x: string]: unknown }> extends Context<T> {}
 export interface Context_anyOf<T extends { [x: string]: unknown } = { [x: string]: unknown }> extends Context<T> {}
-export interface Context_object<T extends { [x: string]: unknown } = { [x: string]: unknown }> extends 
+export interface Context_object<T extends { [x: string]: unknown } = { [x: string]: unknown }, U = unknown> extends 
   Context<T>, 
-  id<{ required: Option<readonly string[]> }> 
-  { example: Option<unknown> }
+  id<{ required: Option<readonly string[]>, }> 
+  { example: Option<unknown>, additionalProperties: Option<string> }
 export interface Context_array<T extends { [x: string]: unknown } = { [x: string]: unknown }> extends 
   Context<T>, 
   globalThis.Pick<Schema.ArrayNode, "minItems" | "maxItems"> 
@@ -185,9 +195,31 @@ export interface Context_number<T extends { [x: string]: unknown } = { [x: strin
   Context_integer<T>, 
   globalThis.Pick<Schema.NumberNode, "multipleOf"> 
   { example: Option<number> }
-export interface Context_record<T extends { [x: string]: unknown } = { [x: string]: unknown }> extends 
+export interface Context_record<T extends Schema.any = Schema.any> extends 
   Context<T> 
   { example: Option<{ [x: string]: unknown }> }
+
+interface Context<T = {}> {
+  moduleName: string
+  schemaName: string
+  optionality: "opt-in" | "opt-out"
+  rootSchemaName: null | string
+  document: Schema.any
+  fileExtension: string
+  isReadonly: boolean
+  isRequired: boolean
+  isNullable: boolean
+  focusPath: readonly string[]
+  hooks: Hooks
+  barrelFile: null | string
+  path: readonly (key.any)[]
+  dependencies: readonly string[]
+  description: Option<string>
+  example: Option<unknown>
+  locals: Option<globalThis.Pick<Context, "example" | "description">>
+  userDefined: T
+}
+
 
 declare namespace Context {
   export { type PropsContext as Props }
@@ -208,27 +240,6 @@ declare namespace Context {
     & { moduleName: string, document: Schema.any, schemaName: string, hooks: Hooks } 
     & globalThis.Partial<Context<T>>
   )
-}
-
-interface Context<T extends { [x: string]: unknown } = { [x: string]: unknown }> {
-  moduleName: string
-  schemaName: string
-  optionality: "opt-in" | "opt-out"
-  rootSchemaName: null | string
-  document: Schema.any
-  fileExtension: string
-  isReadonly: boolean
-  isRequired: boolean
-  isNullable: boolean
-  focusPath: readonly string[]
-  hooks: Hooks
-  barrelFile: null | string
-  path: readonly (key.any)[]
-  dependencies: readonly string[]
-  description: Option<string>
-  example: Option<unknown>
-  locals: Option<globalThis.Pick<Context, "example" | "description">>
-  userDefined: T
 }
 
 namespace Context {
@@ -257,12 +268,18 @@ namespace Context {
     })
 
   export const handleObject 
-    : <T extends { [x: string]: unknown }>(node: Schema.ObjectNode, xf?: (prev: T) => T) => (prev: Context<T>) => Context.object<T>
-    = (node, xf = fn.identity) => (prev) => {
+    : <T extends { [x: string]: unknown }>(node: Schema.ObjectNode, loop: Continuation_, xf?: (prev: T) => T) => (prev: Context<T>) => Context.object<T>
+    = (node, loop, xf = fn.identity) => (prev) => {
+      const additionalProperties = fn.pipe(
+        Option.fromNullable(node.additionalProperties),
+        Option.map((additional) => loop([additional, prev]))
+      )
+
       return fn.pipe(
         prev,
         applyBaseContext(node, xf),
         object.intersect.defer({
+          additionalProperties,
           required: parseOptionality(node)(prev),
           example: parseExample(core.is.object.any)(node),
         }),
@@ -318,16 +335,6 @@ namespace Context {
         )
       }
 
-  export const handleRecord
-    : <T extends { [x: string]: unknown }>(node: Schema.ArrayNode, xf?: (prev: T) => T) => (prev: Context<T>) => Context.record<T>
-    = (node, xf = fn.identity) => (prev) => fn.pipe(
-      prev,
-      object.intersect.defer({
-        path: [...prev.path, symbol.string],
-        example: parseExample(core.is.record)(node),
-      }),
-    )
-    
   export const handleRefProperty
     : <T extends { [x: string]: unknown }>(prev: Context.object<T>) => (node: Schema.$ref, key: string, xf?: (prev: T) => T) => Context<T>
     = (prev) => 
@@ -612,10 +619,21 @@ const deref
       }
     }
 
+
+const builtins = { 
+  object: {
+    beforeEach(ctx: Context) { 
+      return (prop: Schema.any, key: string) => { 
+        return [prop, object.parseKey(key)] satisfies [Schema.any, string] 
+      }
+    }
+  }
+} as const
+
 const interpreted
   : (refs: { [x: string]: string }) => (out: string) => CompilationTarget 
   = (refs) => (out) => ({
-    refs: object.values(refs),
+    refs,
     out,
   })
 
@@ -744,18 +762,6 @@ const fromAST
          */
 
         /** 
-         * - [ ] TODO: first-class support for records
-         * @example
-         * case Schema.is.array(node): {
-         *   const next = prev
-         *   return fn.pipe(
-         *     userHook.anyArray(next).value,
-         *     userHook.afterEach(next),
-         *   )
-         * }
-         */
-
-        /** 
          * - [ ] TODO: do we need to keep supporting this?
          * @example
          * case isAnyObjectNode(node): {
@@ -810,36 +816,44 @@ const fromAST
 
         case Schema.is.anyOf(node): {
           const next = Context.handleAnyOf(prev, node)
-          return node.anyOf.length === 1
-            ? loop([node.anyOf[0], next(0)])
-            : fn.pipe(
-              node.anyOf,
-              userHook.anyOf.beforeAll(prev),
-              map(
-                fn.flow(
-                  userHook.anyOf.beforeEach(prev),
-                  ([node, ix]) => pair.of(loop([node, next(ix)]), globalThis.String(ix)),
-                  ([node, ix]) => userHook.anyOf.afterEach(next(ix))(node, ix),
-                  ([node, _x]) => node,
-                ),
+          return fn.pipe(
+            node.anyOf,
+            userHook.anyOf.beforeAll(prev),
+            map(
+              fn.flow(
+                userHook.anyOf.beforeEach(prev),
+                ([node, ix]) => pair.of(loop([node, next(ix)]), globalThis.String(ix)),
+                ([node, ix]) => userHook.anyOf.afterEach(next(ix))(node, ix),
+                ([node, _x]) => node,
               ),
-              userHook.anyOf.join(prev),
-              userHook.anyOf.afterAll(prev),
-              userHook.afterEach(prev),
-            )
+            ),
+            userHook.anyOf.join(prev),
+            userHook.anyOf.afterAll(prev),
+            userHook.afterEach(prev),
+          )
         }
+
+        // case Schema.is.record(node): {
+        //   const next = Context.handleRecord(node)(prev)
+        //   return fn.pipe(
+        //     node.additionalProperties,
+        //     userHook.record.before(prev),
+        //     (n) => loop([n, next]),
+        //     userHook.record.after(prev),
+        //     userHook.afterEach(next),
+        //   )
+        // }
 
         case Schema.is.oneOf(node): {
           const next = Context.handleOneOf(prev, node)
-          return node.oneOf.length === 1
-            ? loop([node.oneOf[0], next(0)])
-            : fn.pipe(
+          return (
+            fn.pipe(
               node.oneOf,
               userHook.oneOf.beforeAll(prev),
               map(
                 fn.flow(
-                  userHook.oneOf.beforeEach(prev),
-                  ([node, ix]) => pair.of(loop([node, next(ix)]), globalThis.String(ix)),
+                  (x, ix) => { return userHook.oneOf.beforeEach(prev)(x, ix) },
+                  ([node, ix]) => [loop([node, next(ix)]), ix + ""] satisfies [string, string],
                   ([node, ix]) => userHook.oneOf.afterEach(next(ix))(node, ix),
                   ([node, _x]) => node,
                 ),
@@ -848,31 +862,32 @@ const fromAST
               userHook.oneOf.afterAll(prev),
               userHook.afterEach(prev),
             )
+          )
         }
 
         case Schema.is.allOf(node): {
           const next = Context.handleAllOf(prev, node)
-          return node.allOf.length === 1 
-            ? loop([node.allOf[0], next(0)]) 
-            : fn.pipe(
-              node.allOf,
-              userHook.allOf.beforeAll(prev),
-              map(
-                fn.flow(
-                  userHook.allOf.beforeEach(prev),
-                  ([node, ix]) => pair.of(loop([node, next(ix)]), globalThis.String(ix)),
-                  ([node, ix]) => userHook.allOf.afterEach(next(ix))(node, ix),
-                  ([node, _x]) => node,
+          return (
+              fn.pipe(
+                node.allOf,
+                userHook.allOf.beforeAll(prev),
+                map(
+                  fn.flow(
+                    userHook.allOf.beforeEach(prev),
+                    ([node, ix]) => pair.of(loop([node, next(ix)]), globalThis.String(ix)),
+                    ([node, ix]) => userHook.allOf.afterEach(next(ix))(node, ix),
+                    ([node, _x]) => node,
+                  ),
                 ),
-              ),
-              userHook.allOf.join(prev),
-              userHook.allOf.afterAll(prev),
-              userHook.afterEach(prev),
+                userHook.allOf.join(prev),
+                userHook.allOf.afterAll(prev),
+                userHook.afterEach(prev),
+              )
             )
           }
 
         case Schema.is.object(node): {
-          const objectContext = Context.handleObject(node)(prev)
+          const objectContext = Context.handleObject(node, loop)(prev)
           const beforeEach = (n: Schema.any, k: prop.any) => [n, object.parseKey(k)] as const
           return fn.pipe(
             node.properties,
@@ -882,8 +897,10 @@ const fromAST
                 beforeEach,
                 ([childNode, childKey]) => {
                   const propertyContext = Context.handleProperty(objectContext)(childNode, childKey)
+
                   return fn.pipe(
-                    userHook.object.beforeEach(objectContext)(childNode, childKey),
+                    builtins.object.beforeEach(objectContext)(childNode, childKey),
+                    ([n, k]) => userHook.object.beforeEach(objectContext)(n, k),
                     ([n, k]) => pair.of(loop([n, propertyContext]), k),
                     ([s, k]) => userHook.object.afterEach(propertyContext)(s, k),
                     ([s, k]) => s.concat(k),
@@ -1387,3 +1404,22 @@ function defineHooks(hooks?: Partial<UserDefinitions>) {
     ...(Root.defineHooks(object.pick(hooks, "afterAll", "afterEach", "banner", "beforeAll", "canonical", "export", "identifier", "import", "imports", "ref"))),
   } satisfies Hooks
 }
+
+// export function handleRecord<T extends Schema.any>(
+//   node: RecordNode<T>, 
+//   xf?: (prev: T) => T
+// ): (prev: Context<{}>) => Context.record<T>
+
+// export function handleRecord<T extends Schema.any>(
+//   node: RecordNode<T>, 
+//   xf?: (prev: T) => T
+// ) {
+//   return (prev: Context) => fn.pipe(
+//     prev,
+//     object.intersect.defer({
+//       path: [...prev.path, symbol.string],
+//       example: parseExample(core.is.record)(node),
+//     }),
+//   )
+// }
+  
