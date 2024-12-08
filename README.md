@@ -1,4 +1,4 @@
-# traversable 🏝️
+# ❲🌳❳️ `@traversable`
 
 packages that belong to the [`@traversable`](https://www.npmjs.com/org/traversable) project.
 
@@ -23,7 +23,13 @@ flowchart TD
     core(@traversable/core) -.-> data(@traversable/data)
     core(@traversable/core) -.-> bench(@traversable/bench)
     http(@traversable/http) -.-> core(@traversable/core)
-    http(@traversable/http) -.depends on.-> data(@traversable/data)
+    http(@traversable/http) -.-> data(@traversable/data)
+    interpret(@traversable/interpret) -.-> bench(@traversable/bench)
+    interpret(@traversable/interpret) -.-> core(@traversable/core)
+    interpret(@traversable/interpret) -.-> data(@traversable/data)
+    interpret(@traversable/interpret) -.-> http(@traversable/http)
+    interpret(@traversable/interpret) -.-> openapi(@traversable/openapi)
+    interpret(@traversable/interpret) -.depends on.-> registry(@traversable/registry)
 ```
 
 From fewest to most dependencies:
@@ -35,6 +41,7 @@ From fewest to most dependencies:
 - [`@traversable/openapi@0.0.2`](./packages/openapi) - [CHANGELOG](https://github.com/traversable/shared/blob/main/packages/openapi/CHANGELOG.md)
 - [`@traversable/core@0.0.2`](./packages/core) - [CHANGELOG](https://github.com/traversable/shared/blob/main/packages/core/CHANGELOG.md)
 - [`@traversable/http@0.0.2`](./packages/http) - [CHANGELOG](https://github.com/traversable/shared/blob/main/packages/http/CHANGELOG.md)
+- [`@traversable/interpret@0.0.0`](./packages/interpret) - [CHANGELOG](https://github.com/traversable/shared/blob/main/packages/interpret/CHANGELOG.md)
 <!-- codegen:end -->
 
 

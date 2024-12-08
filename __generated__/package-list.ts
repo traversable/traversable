@@ -3,6 +3,7 @@ export const PACKAGES = [
 	"packages/core",
 	"packages/data",
 	"packages/http",
+	"packages/interpret",
 	"packages/openapi",
 	"packages/registry"
 ] as const
