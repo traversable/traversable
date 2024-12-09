@@ -59,7 +59,7 @@ export declare namespace Variance {
  *   pushes the name _down_ the list, which makes sure that the _user's_
  *   API is what gets seen first (rather than ours).
  */
-export interface Kind<in$ = _, out$ = _> extends newtype<{ ["~0"]: in$; ["~1"]: out$ }> {}
+export interface Kind<in$ = unknown, out$ = unknown> extends newtype<{ ["~0"]: in$; ["~1"]: out$ }> {}
 export type apply<F extends Kind, T extends F["~0"]> = (F & { ["~0"]: T })["~1"]
 
 export declare namespace Kind {
