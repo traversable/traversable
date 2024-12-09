@@ -1,7 +1,8 @@
-import { fn, map, object } from "@traversable/data"
-import { symbol } from "@traversable/registry";
+import { Functor, fn, object } from "@traversable/data"
+import { type Kind, symbol } from "@traversable/registry";
+import type { Bind, Bounded, Omit, Scalar, ScalarNode } from "./types.js"
 
-import type { UpperBound } from "./types.js"
+import Algebra = Functor.Algebra
 
 /** @internal */
 const Array_isArray 
@@ -11,7 +12,6 @@ const Array_isArray
 const Object_defineProperty = globalThis.Object.defineProperty
 
 export type URI = typeof URI[keyof typeof URI]
-
 export const URI = object.pick(
   symbol, 
   "union",
@@ -28,62 +28,70 @@ export const URI = object.pick(
   "tuple",
 )
 
+
+export type Untag<T> 
+  = T extends Scalar ? T 
+  : T extends ScalarNode ? Omit<T, symbol.tag>
+  : Omit<{ [x in keyof T]: Untag<T[x]> }, symbol.tag>
+  ;
 export type TagWith<S, Tag extends symbol = symbol> = S & { [symbol.tag]: Tag }
-export type Tagged =
+export type Tag =
   | { [symbol.tag]: symbol.null, type: "null", }
   | { [symbol.tag]: symbol.boolean, type: "boolean" }
   | { [symbol.tag]: symbol.number, type: "number" }
   | { [symbol.tag]: symbol.integer, type: "integer" }
   | { [symbol.tag]: symbol.string, type: "string" }
-  | { [symbol.tag]: symbol.tuple, type: "array", prefixItems: readonly Tagged[], items?: Tagged }
-  | { [symbol.tag]: symbol.object, type: "object", properties: { [x: string]: Tagged } }
-  | { [symbol.tag]: symbol.array, type: "array", items: Tagged }
-  | { [symbol.tag]: symbol.record, type: "object", additionalProperties: Tagged, properties?: { [x: string]: Tagged } }
-  | { [symbol.tag]: symbol.intersection, allOf: readonly Tagged[] }
-  | { [symbol.tag]: symbol.union, anyOf: readonly Tagged[] }
-  | { [symbol.tag]: symbol.disjoint, oneOf: readonly Tagged[] }
+  | { [symbol.tag]: symbol.tuple, type: "array", prefixItems: readonly Tag[], items?: Tag }
+  | { [symbol.tag]: symbol.object, type: "object", properties: { [x: string]: Tag } }
+  | { [symbol.tag]: symbol.array, type: "array", items: Tag }
+  | { [symbol.tag]: symbol.record, type: "object", additionalProperties: Tag, properties?: { [x: string]: Tag } }
+  | { [symbol.tag]: symbol.intersection, allOf: readonly Tag[] }
+  | { [symbol.tag]: symbol.union, anyOf: readonly Tag[] }
+  | { [symbol.tag]: symbol.disjoint, oneOf: readonly Tag[] }
   ;
 
-export type Fixed<T> =
+export type TagF<T> =
   | { [symbol.tag]: symbol.null, type: "null", }
   | { [symbol.tag]: symbol.boolean, type: "boolean" }
   | { [symbol.tag]: symbol.number, type: "number" }
   | { [symbol.tag]: symbol.integer, type: "integer" }
   | { [symbol.tag]: symbol.string, type: "string" }
-  | { [symbol.tag]: symbol.tuple, type: "array", prefixItems: readonly Fixed<T>[], items?: false | Fixed<T> }
-  | { [symbol.tag]: symbol.object, type: "object", properties: { [x: string]: Fixed<T> } }
-  | { [symbol.tag]: symbol.array, type: "array", items: Fixed<T> }
-  | { [symbol.tag]: symbol.record, type: "object", additionalProperties: Fixed<T>, properties?: { [x: string]: Fixed<T> } }
-  | { [symbol.tag]: symbol.intersection, allOf: readonly Fixed<T>[] }
-  | { [symbol.tag]: symbol.union, anyOf: readonly Fixed<T>[] }
-  | { [symbol.tag]: symbol.disjoint, oneOf: readonly Fixed<T>[] }
+  | { [symbol.tag]: symbol.tuple, type: "array", prefixItems: readonly TagF<T>[], items?: false | TagF<T> }
+  | { [symbol.tag]: symbol.object, type: "object", properties: { [x: string]: TagF<T> } }
+  | { [symbol.tag]: symbol.array, type: "array", items: TagF<T> }
+  | { [symbol.tag]: symbol.record, type: "object", additionalProperties: TagF<T>, properties?: { [x: string]: TagF<T> } }
+  | { [symbol.tag]: symbol.intersection, allOf: readonly TagF<T>[] }
+  | { [symbol.tag]: symbol.union, anyOf: readonly TagF<T>[] }
+  | { [symbol.tag]: symbol.disjoint, oneOf: readonly TagF<T>[] }
   ;
 
-function kmap<S, T>(f: (s: S) => T): (x: Fixed<S>) => Fixed<T>
-function kmap<S, T>(f: (s: Fixed<S>) => Fixed<T>) {
-  return (x: Fixed<S>) => {
-    switch (true) {
-      default: return x // fn.exhaustive(x)
-      case x[symbol.tag] === symbol.null: 
-      case x[symbol.tag] === symbol.boolean: 
-      case x[symbol.tag] === symbol.integer: 
-      case x[symbol.tag] === symbol.number: 
-      case x[symbol.tag] === symbol.string: return x
-      case x[symbol.tag] === symbol.disjoint: return map(x.oneOf, f)
-      case x[symbol.tag] === symbol.union: return map(x.anyOf, f)
-      case x[symbol.tag] === symbol.intersection: return map(x.allOf, f)
-      case x[symbol.tag] === symbol.array: return f(x.items)
-      case x[symbol.tag] === symbol.tuple: 
-        return map([...x.prefixItems, ...x.items ? [f(x.items)] : []], f)
-      case x[symbol.tag] === symbol.object: return { 
-        ...x, 
-        properties: map(x.properties, f) 
+interface K extends Kind { ["~1"]: TagF<this["~0"]> }
+
+function bmap<S, T>(f: (s: S) => T): (x: Bind<S>) => Bind<T> 
+function bmap<S, T>(f: (s: S) => T) {
+  return (x: Bind<S>) => {
+    if (!("type" in x)) switch (true) {
+      default: return fn.exhaustive(x)
+      case "allOf" in x: return { allOf: x.allOf.map(f) }
+      case "anyOf" in x: return { anyOf: x.anyOf.map(f) }
+      case "oneOf" in x: return { oneOf: x.oneOf.map(f) }
+    }
+    else switch (true) {
+      default: return fn.exhaustive(x)
+      case x.type === "null": return x as { type: "null" }
+      case x.type === "boolean": return x as { type: "boolean" }
+      case x.type === "integer": return x as { type: "integer" }
+      case x.type === "number": return x as { type: "number" }
+      case x.type === "string": return x as { type: "string" }
+      case x.type === "array": return {
+        ...x,
+        items: ([] as S[]).concat(x.items).map(f),
       }
-      case x[symbol.tag] === symbol.record: return { 
-        ...x, 
-        additionalProperties: f(x.additionalProperties),
-        ...x.properties && { properties: map(x.properties, f) },
-      }
+      case x.type === "object": return {
+        ...x,
+        ...x.additionalProperties && f(x.additionalProperties),
+        properties: Object.fromEntries(Object.entries(x.properties).map(([k, v]) => [k, f(v)])),
+      }        
     }
   }
 }
@@ -97,17 +105,16 @@ function assignTag(x: unknown, sym: symbol) {
   )
 }
 
-export function algebra(xs: Fixed<Tagged>): Fixed<Tagged>
-export function algebra(xs: Fixed<Tagged>) {
-  console.log("xs in tag algebra", xs)
+export function tagAlgebra<T>(xs: Bind<T>): T
+export function tagAlgebra<T>(xs: Bind<T>) {
   if (!("type" in xs)) switch (true) {
-    default: return xs // fn.exhaustive(xs)
+    default: return fn.exhaustive(xs)
     case "allOf" in xs: return assignTag(xs, symbol.intersection)
     case "anyOf" in xs: return assignTag(xs, symbol.union)
     case "oneOf" in xs: return assignTag(xs, symbol.disjoint)
   }
   else switch (true) {
-    default: return xs // fn.exhaustive(xs)
+    default: return fn.exhaustive(xs)
     case xs.type === "null": return assignTag(xs, symbol.null)
     case xs.type === "boolean": return assignTag(xs, symbol.boolean)
     case xs.type === "integer": return assignTag(xs, symbol.integer)
@@ -116,18 +123,33 @@ export function algebra(xs: Fixed<Tagged>) {
     case xs.type === "array": 
       return assignTag(xs, Array_isArray(xs.items) ? symbol.tuple : symbol.array)
     case xs.type === "object": {
-      console.log("xs.type === \"object\"", xs)
       return assignTag(xs, "additionalProperties" in xs ? symbol.record : symbol.object)
     }
   }
 }
 
-// export { Functor_ as Functor }
-// TODO: fix this with `Fix`
-interface Functor_<T extends Tagged = Tagged> {}
-const Functor_: Functor_ = { map: kmap as never }
+export function untagAlgebra<T>(x: TagF<T>): Untag<T>
+export function untagAlgebra<T>(x: TagF<T>) { 
+  delete x[symbol.tag as never]
+  return x
+}
+
+// TODO: might not need this
+export interface Binder extends Kind { ["~1"]: Bind<this["~0"]> }
+// TODO: might not need this
+export const functor: Functor<Binder> = { map: bmap }
+
+export function cata<T>(algebra: Algebra<Binder, T>): (term: Bounded) => T {
+  return function loop(term: Bounded): T { 
+    return algebra(bmap(loop)(term))
+  }
+}
 
 export const tag 
-  : (x: UpperBound) => Fixed<Tagged>
-  // TODO: fix this with `Fix`
-  = fn.morphism.cata(Functor_ as never)(algebra as never)
+  : <const T extends Bounded>(term: T) => TagF<T>
+  = cata(tagAlgebra)
+
+export const untag
+  : <const T>(term: TagF<T>) => Untag<T>
+  // TODO: fix these (use ana maybe?)
+  = cata(untagAlgebra as never) as never

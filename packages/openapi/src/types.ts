@@ -3,33 +3,62 @@ import type { any } from "any-ts"
 
 import type { prop } from "@traversable/data"
 import type { parameter } from "./parameter.js"
-import type { Schema } from "./schema.js"
+import type { Schema } from "./schema-old.js"
 
-type inline<T> = T
+export type inline<T> = T
+export type ScalarNode = { type: "null" | "boolean" | "integer" | "number" | "string" }
+export type Scalar = null | undefined | boolean | number | string | symbol
+export type Omit<T, K extends keyof any, _ extends keyof T = Exclude<keyof T, K>> = never | { [P in _]: T[P] }
 
-export type UpperBound =
+export type Bounded =
   | { type: "null" }
   | { type: "boolean" }
   | { type: "integer" }
   | { type: "number" }
   | { type: "string" }
-  | { oneOf: readonly UpperBound[] }
-  | { anyOf: readonly UpperBound[] }
-  | { allOf: readonly UpperBound[] }
-  | { type: "array", items: UpperBound | readonly UpperBound[] }
-  | { 
-    type: "object"
-    required?: readonly string[]
-    properties: { [x: string]: UpperBound }
-    additionalProperties?: UpperBound, 
-  }
+  | { oneOf: readonly Bounded[] }
+  | { anyOf: readonly Bounded[] }
+  | { allOf: readonly Bounded[] }
+  | BoundedArray<Bounded>
+  | BoundedObject<Bounded>
+
+export interface BoundedArray<T = Bounded> { 
+  type: "array", 
+  items: T | readonly T[] 
+}
+
+export interface BoundedTuple<T = Bounded, U = Bounded> { 
+  type: "array", 
+  prefixItems: readonly T[]
+  items?: U 
+}
+
+export interface BoundedObject<T = Bounded> { 
+  type: "object"
+  required?: readonly string[]
+  properties: { [x: string]: T }
+  additionalProperties?: T, 
+}
+
+export type Bind<T> =
+  | { type: "null" }
+  | { type: "boolean" }
+  | { type: "integer" }
+  | { type: "number" }
+  | { type: "string" }
+  | { oneOf: readonly T[] }
+  | { anyOf: readonly T[] }
+  | { allOf: readonly T[] }
+  | BoundedArray<T>
+  | BoundedObject<T>
+  ;
 
 export interface Predicate<
   S = {} | null | undefined, 
-  // T extends S = S
-> { (src: S, path: prop.any[]): boolean
-    // (src: S, path: prop.any[]): src is T 
-  }
+> { (src: S, path: prop.any[]): boolean }
+
+// T extends S = S
+// (src: S, path: prop.any[]): src is T 
 
 export type DocLike = { 
   paths?: {}, 
@@ -358,12 +387,12 @@ export declare namespace openapi {
     content?: openapi.content
     headers?: openapi.headers
   }
-  interface responses
-    extends inline<{ [x: `1${number}`]: openapi.response }>,
-      inline<{ [x: `2${number}`]: openapi.response }>,
-      inline<{ [x: `3${number}`]: openapi.response }>,
-      inline<{ [x: `4${number}`]: openapi.response }>,
-      inline<{ [x: `5${number}`]: openapi.response }> {}
+  interface responses extends 
+    inline<{ [x: `1${number}`]: openapi.response }>,
+    inline<{ [x: `2${number}`]: openapi.response }>,
+    inline<{ [x: `3${number}`]: openapi.response }>,
+    inline<{ [x: `4${number}`]: openapi.response }>,
+    inline<{ [x: `5${number}`]: openapi.response }> {}
 
   interface content {
     [http.MediaType.applicationJSON]?: openapi.mediatype
@@ -408,8 +437,17 @@ export declare namespace openapi {
 export const style = {
   cookie: ["form"] as const satisfies string[],
   header: ["simple"] as const satisfies string[],
-  path: ["simple", "matrix", "label"] as const satisfies string[],
-  query: ["form", "spaceDelimited", "pipeDelimited", "deepObject"] as const satisfies string[],
+  path: [
+    "simple", 
+    "matrix", 
+    "label",
+  ] as const satisfies string[],
+  query: [
+    "form", 
+    "spaceDelimited", 
+    "pipeDelimited", 
+    "deepObject",
+  ] as const satisfies string[],
 } as const
 
 export declare namespace style {

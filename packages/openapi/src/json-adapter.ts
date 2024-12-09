@@ -1,7 +1,7 @@
 import { type JSON, is } from "@traversable/core"
 import { Option, fn, type keys, map, number, object, pair } from "@traversable/data"
 import { Invariant } from "@traversable/registry"
-import { Schema } from "./schema.js"
+import { Schema } from "./schema-old.js"
 
 type Mutable<T> = never | { -readonly [K in keyof T]: T[K] }
 type Keep<T, K extends keyof T = never> 

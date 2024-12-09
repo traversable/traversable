@@ -16,9 +16,7 @@ export {
   fromAST,
 }
 
-import type { Partial, any } from "any-ts"
 import { core, tree } from "@traversable/core"
-import { symbol } from "@traversable/registry"
 import { 
   Option, 
   array, 
@@ -30,8 +28,10 @@ import {
   type prop, 
   string,
 } from "@traversable/data"
+import { symbol } from "@traversable/registry"
+import type { Partial, any } from "any-ts"
 
-import { Schema } from "./schema.js"
+import { Schema } from "./schema-old.js"
 
 type Force<T> = never | { [K in keyof T]: T[K] }
 type Part<T> = never | { [K in keyof T]+?: T[K] }

@@ -1,6 +1,6 @@
 import { fc } from "@traversable/core"
 
-import { BooleanNode, IntegerNode, NumberNode, Schema, StringNode } from "./schema.js"
+import { BooleanNode, IntegerNode, NumberNode, Schema, StringNode } from "./schema-old.js"
 import {
   applyConstraints,
   type arbitrary,
