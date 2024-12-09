@@ -5,6 +5,8 @@ export { normalize } from "./normalize.js"
 export { fromJSON, toJSON } from "./json-adapter.js"
 export { openapi as doc, arbitrary } from "./document.js"
 export { VERSION } from "./version.js"
+export { tag, untag } from "./tag.js"
+export * as schema from "./schema.js"
 export { 
   /// types
   type $ref,
@@ -38,4 +40,4 @@ export {
   StringNode,
   TupleNode,
   XML,
-} from "./schema.js"
+} from "./schema-old.js"

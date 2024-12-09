@@ -11,7 +11,7 @@ import {
   NumberNode,
   Schema,
   StringNode,
-} from "./schema.js"
+} from "./schema-old.js"
 import type { Arbitrary } from "./types.js"
 
 /** @internal */
