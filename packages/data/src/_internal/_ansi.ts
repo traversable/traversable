@@ -197,8 +197,9 @@ const ColorSpaceId = {
   ["CMYK"]: 4,
 } as const
 
+
 //////////////////////////////////////
-/// @traversable-specific palette
+/// @traversable-specific palettes
 const green = ANSI(175, 238, 87)
 const yellow = ANSI(250, 215, 21)
 const red = ANSI(251, 42, 33)
@@ -208,7 +209,8 @@ const mint = ANSI(2, 255, 82)
 /// leuven
 const Leuven = {
   body: ANSI(255, 255, 224),
-  bodyAlt: ANSI(226, 225, 213),
+  bodyAlt1: ANSI(226, 249, 226),
+  bodyAlt2: ANSI(226, 225, 213),
   comment: ANSI(175, 174, 176),
   glyph: ANSI(190, 58, 169),
   identifierTerm: ANSI(12, 11, 254),
@@ -218,6 +220,20 @@ const Leuven = {
   operator: ANSI(47, 148, 224),
   pragma: ANSI(255, 94, 95),
 }
+//////////////////////////////////////
+/// spacemacs (light)
+const Spacemacs = {
+  body: ANSI(252, 248, 239),
+  bodyAlt: ANSI(239, 234, 233),
+  comment: ANSI(211, 211, 231),
+  identifierTerm: ANSI(58, 138, 202),
+  identifierType: ANSI(78, 148, 126),
+  keyword: ANSI(185, 43, 86),
+  glyph: ANSI(101, 83, 112),
+  link: ANSI(108, 45, 96),
+  operator: ANSI(255, 164, 76),
+  pragma: ANSI(219, 144, 96),
+} as const
 const darkGreen  = ANSI(15, 130, 15)
 const lightGreen = ANSI(235, 245, 235)
 
@@ -238,6 +254,7 @@ const underline = format(`\x1B[4m`, `\x1B[24m`)
 
 const Hask = {
   body: ANSI(253, 246, 227),
+  bodyAlt: ANSI(238, 232, 213),
   comment: ANSI(138, 138, 138),
   glyph: ANSI(220, 50, 47),
   identifierTerm: ANSI(7, 54, 66),
@@ -269,6 +286,7 @@ declare namespace ANSI {
     green,
     Hask,
     Leuven,
+    Spacemacs,
     hush,
     invert,
     italic,
@@ -294,6 +312,7 @@ namespace ANSI {
   void (ANSI.green = green)
   void (ANSI.Hask = Hask)
   void (ANSI.Leuven = Leuven)
+  void (ANSI.Spacemacs = Spacemacs)
   void (ANSI.hush = hush)
   void (ANSI.invert = invert)
   void (ANSI.italic = italic)
