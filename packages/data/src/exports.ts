@@ -269,8 +269,8 @@ export interface Foldable<in out T> extends Concattable<T> { empty: T }
 /**
  * ## {@link Functor `data.Functor`}
  */
-export interface Functor extends Kind<Kind> {
-  map<S, T>(f: (s: S) => T): (F: any) => Kind.apply<this["~0"], T>
+export interface Functor<F extends Kind = Kind> {
+  map<S, T>(f: (s: S) => T): (F: Kind.apply<F, S>) => Kind.apply<F, T>
 }
 
 export declare namespace Functor {
@@ -279,5 +279,5 @@ export declare namespace Functor {
     <S, T>(F: Kind.apply<F, S>, f: (s: S) => T): Kind.apply<F, T>
   }
   type Algebra<F extends Kind, T> = (F: Kind.apply<F, T>) => T
-  type Coalgebra<F extends Kind, T> = (term: T) => Kind.apply<F, T>
+  type Coalgebra<F extends Kind, T> = (t: T) => Kind.apply<F, T>
 }

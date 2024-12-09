@@ -479,6 +479,7 @@ export function tee<T, A, B>(leftFn: (t: T) => A, rightFn: (t: T) => B) {
   return (value: T) => [leftFn(value), rightFn(value)]
 }
 
+
 /**
  * Adapted from:
  * {@link https://github.com/gcanti/fp-ts/blob/master/src/function.ts#L416-L689 `fp-ts`}
@@ -780,6 +781,18 @@ function pipe(
   }
 }
 
+export const log
+  : (msg: string, logger?: (...args: unknown[]) => void) => (x: unknown) => void 
+  = (msg, logger = globalThis.console.log) => (x) => logger(msg, x)
+
+export const chainFirst
+  : <const T>(x: T) => (eff: (x: T) => void) => T 
+  = (x) => (eff) => (void eff(x), x)
+
+export const tap
+  : (msg: string, logger?: (...args: unknown[]) => void) => <const T>(x: T) => T 
+  = (msg, logger = globalThis.console.log) => flow(chainFirst, apply(log(msg, logger)))
+
 export namespace morphism {
   export function ana<F extends Kind>(F: { map: Functor.map<F> }) {
     return <T>(coalgebra: Functor.Coalgebra<F, T>) => {
@@ -788,24 +801,26 @@ export namespace morphism {
       }
     }
   }
-  export function cata<F extends Kind>(F: { map: Functor.map<F> }) {
+
+  export function cata<F extends Kind>(F: Functor<F>) {
     return <T>(algebra: Functor.Algebra<F, T>) => {
       return function loop(term: Kind.apply<F, T>): T {
         return algebra(F.map(loop)(term))
       }
     }
   }
+
   export function hylo
-    <F extends Kind>(F: { map: Functor.map<F> }): 
+    <F extends Kind>(F: Functor<F>): 
     <S, T>(
-      algebra: Functor.Algebra<F, S>, 
+      algebra: Functor.Algebra<F, T>, 
       coalgebra: Functor.Coalgebra<F, S>
     ) => (s: S) 
       => T
   export function hylo
-    <F extends Kind>(F: { map: Functor.map<F> }) {
+  <F extends Kind>(F: Functor<F>) {
       return <S, T>(
-        algebra: Functor.Algebra<F, S>, 
+        algebra: Functor.Algebra<F, T>, 
         coalgebra: Functor.Coalgebra<F, S>
       ) => 
         (s: S) => pipe(

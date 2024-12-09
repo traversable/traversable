@@ -5,6 +5,7 @@ import {
   absorb,
   apply,
   call,
+  chainFirst,
   distribute,
   distributes,
   exhaustive,
@@ -14,8 +15,10 @@ import {
   hasOwn,
   identity,
   isUnusedParam,
+  log,
   morphism,
   pipe,
+  tap,
   tee,
   upcast,
 } from "./_internal/_function.js"
@@ -102,15 +105,3 @@ const assertExhaustive: <t extends any.array>(...impossible: t) => never = (...i
   else return void 0 as never
 }
 
-const chainFirst: <const type>(x: type) => (eff: (x: type) => void) => type 
-  = (x) => (eff) => (void eff(x), x)
-
-const log: (msg: string, logger?: (...args: unknown[]) => void) => (x: unknown) => void =
-  (msg, logger = globalThis.console.log) =>
-  (x) =>
-    logger(msg, x)
-
-const tap: (msg: string, logger?: (...args: unknown[]) => void) => <const type>(x: type) => type = (
-  msg,
-  logger = globalThis.console.log,
-) => flow(chainFirst, apply(log(msg, logger)))
