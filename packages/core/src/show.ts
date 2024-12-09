@@ -96,12 +96,14 @@ export declare namespace serialize {
     array(_: string): string
     bigint(_: string): string
     boolean(_: string): string
+    symbol(_: string): string
     circular(_: string): string
     key(_: string): string
     number(_: string): string
     object(_: string): string
     ref(_: string): string
     string(_: string): string
+    truncated(_: string): string
   }
 
   /**
@@ -117,6 +119,7 @@ export declare namespace serialize {
   interface Terminals {
     bigint: Hook<bigint>
     boolean: Hook<boolean>
+    symbol: Hook<symbol>
     circular: Hook<object>
     key: Hook<prop.any>
     null: Hook<Nullable>
@@ -176,9 +179,11 @@ const null_
   = globalThis.String
 const string
   : serialize.Hook<string>
-  = (s) => {
-    return '"' + char.escape(s) + '"'
-  }
+  = (s) => '"' + char.escape(s) + '"'
+const symbol
+  : serialize.Hook<symbol>
+  = globalThis.String
+
 const number
   : serialize.Hook<number>
   = (_) => _ + "" // Object_is(_, -0) ? "-0" : _ + ""
@@ -246,6 +251,7 @@ const loopRefs = fn.loopN<[_: Serializable, ctx: serialize.Context], void>(
       case (typeof  _) === "boolean":
       case (typeof  _) === "number":
       case (typeof  _) === "string":
+      case (typeof  _) === "symbol":
       case (typeof  _) === "bigint": return void 0
       case Array_isArray(_): {
         if ($.seen.has(_)) {
@@ -284,8 +290,9 @@ const loopRefs = fn.loopN<[_: Serializable, ctx: serialize.Context], void>(
 const loop = fn.loopN<[_: Serializable, $: serialize.Context], string>(
   (_, $, loop) => {
     switch (true) {
-      case $.maxDepth > 0 && $.currentDepth >= $.maxDepth: return $.hooks.truncate(_, $)
+      case $.maxDepth > 0 && $.currentDepth >= $.maxDepth: return $.colors.truncated($.hooks.truncate(_, $))
       case (_ == null): return $.hooks.null(_, $)
+      case (typeof  _) === "symbol": return $.colors.boolean($.hooks.boolean(_, $))
       case (typeof  _) === "boolean": return $.colors.boolean($.hooks.boolean(_, $))
       case (typeof  _) === "number": return $.colors.number($.hooks.number(_, $))
       case (typeof  _) === "string": return $.colors.string($.hooks.string(_, $))
@@ -304,13 +311,30 @@ const loop = fn.loopN<[_: Serializable, $: serialize.Context], string>(
     }
   })
 
+const getPrefix = ($: serialize.Context) => (key: prop.any) => {
+  const currentPath = $.path.concat(key)
+  const refPaths = $.refs.filter((ref) => pathsAreEqual(currentPath)(ref.pathToSeen))
+  return fn.pipe(
+    refPaths.reduce((refPath, { at }) => refPath + at.join("/"), ""),
+    (ref) => ref.length > 0 ? "<ref #/" + ref + ">" : ref,
+    $.colors.ref,
+  )
+}
+
 const truncate 
   : serialize.Hook<Serializable>
-  = (_, $) => {
-    return Array_isArray(_) ? $.colors.array("[") + _.map(() => "{…}").join(", ") + $.colors.array("]")
-    : Object_isObject(_) ? $.colors.object("[Object]")
+  = (_, $) => Array_isArray(_) 
+    ? $.colors.array("[") 
+      + _.map(() => $.colors.truncated("{…}")).join(", ") 
+      + $.colors.array("]")
+    : Object_isObject(_) 
+      ? $.colors.object("{") 
+      + Object_entries(_)
+        .map(([k]) => $.colors.key(parseKey(k)) + ": " + $.colors.truncated("{…}"))
+        .join(", ") 
+      + $.colors.object("}")
     : primitive(_, $)
-  }
+    ;
 
 const object 
   : serialize.HookWithContinuation<{ [x: string]: Serializable }>
@@ -337,20 +361,10 @@ const object
     )
   )
 
-const getPrefix = ($: serialize.Context) => (key: prop.any) => {
-  const currentPath = $.path.concat(key)
-  const refPaths = $.refs.filter((ref) => pathsAreEqual(currentPath)(ref.pathToSeen))
-  return fn.pipe(
-    refPaths.reduce((refPath, { at }) => refPath + at.join("/"), ""),
-    (ref) => ref.length > 0 ? "<ref #/" + ref + ">" : ref,
-    $.colors.ref,
-  )
-}
-
 const array 
   : serialize.HookWithContinuation<readonly Serializable[]>
   = (_, $, loop) => {
-    return fn.pipe(
+    return _.length === 0 ? "[]" : fn.pipe(
       _,
       (_) => ($.currentDepth++, _),
       map((_, ix) => loop(_, { ...$, offset: $.offset + $.tab.length, path: [...$.path, ix] })),
@@ -377,6 +391,7 @@ const hooks = {
   number,
   object,
   string,
+  symbol,
   truncate,
 } satisfies serialize.Hooks
 
@@ -392,9 +407,11 @@ const colors = {
   number: fn.identity,
   object: fn.identity,
   ref: fn.identity,
+  symbol: fn.identity,
+  truncated: fn.identity,
 } satisfies serialize.Colors
 
-const Hask = {
+const hask = {
   array(_) { return ANSI.Hask.body.bg(ANSI.Hask.identifierTerm.fg(_)) + ""},
   bigint(_) { return ANSI.Hask.body.bg(ANSI.Hask.pragma.fg(_)) + "" },
   boolean(_) { return ANSI.Hask.body.bg(ANSI.Hask.glyph.fg(_)) + "" },
@@ -404,9 +421,11 @@ const Hask = {
   string(_) { return ANSI.Hask.body.bg(ANSI.Hask.link.fg(_)) + "" },
   circular(_) { return ANSI.yellow.bg(ANSI.red.fg(_)) + "" },
   ref(_) { return ANSI.lightblue(_) },
+  symbol(_) { return ANSI.lightblue(_) },
+  truncated(_) { return ANSI.Hask.bodyAlt.bg(ANSI.Hask.identifierTerm.fg(_)) + "" },
 } satisfies serialize.Colors
 
-const HaskAlt = {
+const hask_alt = {
   array(_) { return ANSI.Hask.body.bg(ANSI.Hask.identifierType.fg(_)) + ""},
   bigint(_) { return ANSI.Hask.body.bg(ANSI.Hask.pragma.fg(_)) + "" },
   boolean(_) { return ANSI.Hask.body.bg(ANSI.Hask.link.fg(_)) + "" },
@@ -416,24 +435,45 @@ const HaskAlt = {
   object(_) { return ANSI.Hask.body.bg(ANSI.Hask.comment.fg(_ )) + "" },
   circular(_) { return ANSI.yellow.bg(ANSI.red.fg(_)) + "" },
   ref(_) { return ANSI.lightblue(_) },
+  symbol(_) { return ANSI.lightblue(_) },
+  truncated(_) { return ANSI.Hask.bodyAlt.bg(ANSI.Hask.identifierTerm.fg(_)) + ""},
 } satisfies serialize.Colors
 
-const Leuven = {
+const leuven = {
   array(_) { return ANSI.Leuven.body.bg(ANSI.Leuven.identifierType.fg(_)) + ""},
   bigint(_) { return ANSI.Leuven.body.bg(ANSI.Leuven.pragma.fg(_)) + "" },
   boolean(_) { return ANSI.Leuven.body.bg(ANSI.Leuven.link.fg(_)) + "" },
-  key(_) { return ANSI.Leuven.body.bg(ANSI.Leuven.identifierTerm.fg(_)) + "" },
+  // key(_) { return ANSI.Leuven.body.bg(ANSI.Leuven.pragma.fg(_)) + "" },
+  key(_) { return ANSI.Leuven.bodyAlt1.bg(ANSI.Leuven.glyph.fg(_)) + "" },
+  // key(_) { return ANSI.Leuven.body.bg(ANSI.Leuven.identifierTerm.fg(_)) + "" },
   number(_) { return ANSI.Leuven.body.bg(ANSI.Leuven.pragma.fg(_)) + "" },
   string(_) { return ANSI.Leuven.body.bg(ANSI.Leuven.glyph.fg(_)) + "" },
   object(_) { return ANSI.Leuven.body.bg(ANSI.Leuven.comment.fg(_ )) + "" },
   circular(_) { return ANSI.yellow.bg(ANSI.red.fg(_)) + "" },
   ref(_) { return ANSI.lightblue(_) },
+  symbol(_) { return ANSI.lightblue(_) },
+  truncated(_) { return ANSI.Leuven.bodyAlt2.bg(ANSI.Leuven.glyph.fg(_)) + "" },
+} satisfies serialize.Colors
+
+const spacemacs = {
+  array(_) { return ANSI.Spacemacs.body.bg(ANSI.Spacemacs.identifierType.fg(_)) + ""},
+  bigint(_) { return ANSI.Spacemacs.body.bg(ANSI.Spacemacs.pragma.fg(_)) + "" },
+  boolean(_) { return ANSI.Spacemacs.body.bg(ANSI.Spacemacs.link.fg(_)) + "" },
+  key(_) { return ANSI.Spacemacs.body.bg(ANSI.Spacemacs.identifierTerm.fg(_)) + "" },
+  number(_) { return ANSI.Spacemacs.body.bg(ANSI.Spacemacs.pragma.fg(_)) + "" },
+  string(_) { return ANSI.Spacemacs.body.bg(ANSI.Spacemacs.glyph.fg(_)) + "" },
+  object(_) { return ANSI.Spacemacs.body.bg(ANSI.Spacemacs.comment.fg(_ )) + "" },
+  circular(_) { return ANSI.yellow.bg(ANSI.red.fg(_)) + "" },
+  ref(_) { return ANSI.lightblue(_) },
+  symbol(_) { return ANSI.lightblue(_) },
+  truncated(_) { return ANSI.Spacemacs.bodyAlt.bg(ANSI.Spacemacs.glyph.fg(_)) + "" },
 } satisfies serialize.Colors
 
 const themes = {
-  Hask,
-  HaskAlt,
-  Leuven,
+  hask,
+  hask_alt,
+  leuven,
+  spacemacs,
 } satisfies Record<string, serialize.Colors>
 
 const defaults = {
@@ -463,21 +503,27 @@ const presets = {
   },
   pretty: {
     ...defaults,
-    colors: Hask,
+    colors: hask,
     newline: "\n",
     tab: "  ",
   },
   pretty_2: {
     ...defaults,
-    colors: HaskAlt,
+    colors: hask_alt,
     newline: "\n",
     tab: "  ",
   },
   leuven: {
     ...defaults,
-    colors: Leuven,
+    colors: leuven,
     newline: "\n",
-    tab: " ",
+    tab: "  ",
+  },
+  spacemacs: {
+    ...defaults,
+    colors: spacemacs,
+    newline: "\n",
+    tab: "  ",
   },
   readable: {
     ...defaults,
@@ -534,6 +580,7 @@ const contextFromOptions
           circular: fromUser.hooks.circular ?? fallback.hooks.circular,
           truncate: fromUser.hooks.truncate ?? fallback.hooks.truncate,
           array: fromUser.hooks.array ?? fallback.hooks.array,
+          symbol: fromUser.hooks.symbol ?? fallback.hooks.symbol,
           object: fromUser.hooks.object ?? fallback.hooks.object,
         }
       ) satisfies serialize.Hooks,
@@ -542,15 +589,17 @@ const contextFromOptions
         : typeof fromUser.colors === "string" 
           ? fromUser.colors in themes ? themes[fromUser.colors] : colors 
         : {
-          array: fromUser?.colors?.array ?? colors.array,
-          bigint: fromUser?.colors?.bigint ?? colors.bigint,
-          boolean: fromUser?.colors?.array ?? colors.boolean,
-          key: fromUser?.colors?.key ?? colors.key,
-          number: fromUser?.colors?.array ?? colors.number,
-          object: fromUser?.colors?.object ?? colors.object,
-          string: fromUser?.colors?.array ?? colors.string,
-          circular: fromUser?.colors?.circular ?? colors.circular,
-          ref: fromUser?.colors?.ref ?? colors.ref,
+          array: fromUser.colors.array ?? colors.array,
+          bigint: fromUser.colors.bigint ?? colors.bigint,
+          boolean: fromUser.colors.array ?? colors.boolean,
+          key: fromUser.colors.key ?? colors.key,
+          number: fromUser.colors.array ?? colors.number,
+          object: fromUser.colors.object ?? colors.object,
+          string: fromUser.colors.array ?? colors.string,
+          circular: fromUser.colors.circular ?? colors.circular,
+          ref: fromUser.colors.ref ?? colors.ref,
+          symbol: fromUser.colors.symbol ?? colors.symbol,
+          truncated: fromUser.colors.ref ?? colors.truncated,
         }
       ) satisfies serialize.Colors,
   }) satisfies serialize.Context
