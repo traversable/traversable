@@ -7,6 +7,23 @@ import type { Schema } from "./schema.js"
 
 type inline<T> = T
 
+export type UpperBound =
+  | { type: "null" }
+  | { type: "boolean" }
+  | { type: "integer" }
+  | { type: "number" }
+  | { type: "string" }
+  | { oneOf: readonly UpperBound[] }
+  | { anyOf: readonly UpperBound[] }
+  | { allOf: readonly UpperBound[] }
+  | { type: "array", items: UpperBound | readonly UpperBound[] }
+  | { 
+    type: "object"
+    required?: readonly string[]
+    properties: { [x: string]: UpperBound }
+    additionalProperties?: UpperBound, 
+  }
+
 export interface Predicate<
   S = {} | null | undefined, 
   // T extends S = S
