@@ -1,15 +1,14 @@
-export { isOpenApiSchema as is }
+export { 
+  isOpenApiSchema as is,
+  typeOf as typeof,
+}
 
 import { core, fc, tree } from "@traversable/core"
-import { Option, array, fn, type keys, object } from "@traversable/data"
+import { Option, array, type keys, object } from "@traversable/data"
 import type { newtype } from "any-ts"
-
-import * as fc_ from "fast-check"
 
 import { type Arbitrary, type arbitrary, lit, type openapi } from "./types.js"
 
-
-export { typeOf as typeof }
 
 /**
  * ## {@link typeOf `openapi.typeof`}
@@ -133,20 +132,20 @@ export namespace format {
   export const StringFormats = [...ExtendedStringFormats, ...KnownStringFormats] as const
   export const isStringFormat = core.is.literally(...StringFormats)
 
-  export const integerNative = fc_.constantFrom("int32", "int64") /* KnownIntegerFormats */
+  export const integerNative = fc.constantFrom("int32", "int64") /* KnownIntegerFormats */
 
-  export const numberNative = fc_.constantFrom("float", "double") /* KnownNumberFormats */
+  export const numberNative = fc.constantFrom("float", "double") /* KnownNumberFormats */
 
-  export const stringNative = fc_.constantFrom("password") /* KnownStringFormats */
+  export const stringNative = fc.constantFrom("password") /* KnownStringFormats */
 
-  export const stringExtended = fc_.constantFrom(
+  export const stringExtended = fc.constantFrom(
     ...KnownStringFormats,
     ...ExtendedStringFormats,
   )
 
-  export const integer = fc_.constantFrom("int32", "int64") /* IntegerFormats */
-  export const number = fc_.constantFrom("float", "double") /* NumberFormats */
-  export const string = fc_.constantFrom(
+  export const integer = fc.constantFrom("int32", "int64") /* IntegerFormats */
+  export const number = fc.constantFrom("float", "double") /* NumberFormats */
+  export const string = fc.constantFrom(
     ...KnownStringFormats,
     ...ExtendedStringFormats,
   )
@@ -420,15 +419,13 @@ type Schema_any =
 /** ### {@link Schema `openapi.Schema`} */
 export namespace Schema {
   /** ### {@link Constraints `openapi.Schema.Constraints`} */
-  export interface Constraints<T = unknown> extends 
-    optional<{
-      depthSize: fc.DepthSize
-      nullable: boolean
-      empty: T
-      include: arbitrary.Include
-      arbitrary: fc.Arbitrary<T>
-    }> 
-    { }
+  export interface Constraints<T = unknown> extends optional<{
+    depthSize: fc.DepthSize
+    nullable: boolean
+    empty: T
+    include: arbitrary.Include
+    arbitrary: fc.Arbitrary<T>
+  }> {}
 
   /** ### {@link defaults `openapi.Schema.defaults`} */
   export const defaults = {
@@ -949,7 +946,7 @@ function ObjectNode<T extends { [x: string]: Schema.any }, U extends Schema.any>
   properties: fc.Arbitrary<T>,
   additionalProperties?: fc.Arbitrary<U>,
   constraints?: Schema.Constraints,
-): fc.Arbitrary<ObjectNode<T> & Record<string, U>>
+): fc.Arbitrary<ObjectNode<T>>
 
 function ObjectNode<T extends { [x: string]: Schema.any }>(
   properties: T,
