@@ -1,4 +1,4 @@
-# ❲🌳❳️ `@traversable`
+#  🏔️ `@traversable`
 
 packages that belong to the [`@traversable`](https://www.npmjs.com/org/traversable) project.
 

@@ -131,4 +131,7 @@ export const EMOJI = {
   HUHH: `Σ (ﾟДﾟ;）`,
   WHYYY: `Σ(||ﾟДﾟ) `,
   O: `१|˚–˚|५`,
+  CAT: `/ᐠ - ˕ -マ`,
+  ADMIT_ONE: `🎟`,
+  FLAG: `🚩`,
 } as const

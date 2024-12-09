@@ -560,7 +560,8 @@ namespace write {
           "outDir": "build/src"
         },
         "references": [
-          { "path": "../data" }
+          { "path": "../data" },
+          ...make.refs($),
         ],
         "include": ["src"]
       },
