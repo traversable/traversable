@@ -1,39 +1,42 @@
 import type { 
   any, 
-  check, 
   mut, 
   nonempty, 
   some, 
 } from "any-ts"
-import type { Compare, Concattable, Foldable } from "../exports.js"
+import type { Compare, Concattable, Foldable, Predicate } from "../exports.js"
 import { identity, tuple } from "./_function.js"
 import { key, type keys } from "./_key.js"
 import type { prop } from "./_prop.js"
 import type { jsdoc } from "./_unicode.js"
 
-/**
- * ### {@link array_any `array.any`}
- * Greatest lower bound of the {@link array `array`} namespace
- */
-export type array_any<T extends readonly unknown[] = readonly unknown[]> = T
+/** @internal - pay the lookup cost once */
+const Math_min = globalThis.Math.min
 
 /**
- * ### {@link array_of `array.of`}
+ * ## {@link array_any `array.any`}
+ * [Least upper bound](https://en.wikipedia.org/wiki/Upper_and_lower_bounds)
+ * of the `array` namespace
+ */
+export type array_any<T extends readonly unknown[] = unknown[]> = T
+
+/**
+ * ## {@link array_of `array.of`}
  * Type constructor for the {@link array `array`} namespace
  */
 export type array_of<T> = readonly T[]
 
 /**
- * ### {@link finite `array.finite`}
+ * ## {@link array_finite `array.finite`}
  * 
- * {@link finite `array.finite`} constrains a type parameter to be a _finite_ 
+ * {@link array_finite `array.finite`} constrains a type parameter to be a _finite_ 
  * array (`[1, 2, 3]`, not `number[]` or `(1 | 2 | 3)[]`).
  * 
- * **Note:** For this to work, you need to apply {@link finite `array.finite`}
+ * **Note:** For this to work, you need to apply {@link array_finite `array.finite`}
  * to the type parameter you're _currently_ declaring, see example below.
  * 
  * See also:
- * - {@link finite `array.nonfinite`}
+ * - {@link array_nonfinite `array.nonfinite`}
  * 
  * @example
  *  import type { array } from "@traversable/data"
@@ -44,19 +47,19 @@ export type array_of<T> = readonly T[]
  *  onlyTuples([1, 2, 3])       // ✅
  *  onlyTuples(Object.keys({})) // 🚫
  */
-export type finite<T> = [T] extends [readonly unknown[]] ? [number] extends [T["length"]] ? never : readonly unknown[] : never
+export type array_finite<T> = [T] extends [readonly unknown[]] ? [number] extends [T["length"]] ? never : readonly unknown[] : never
 
 /**
- * ### {@link nonfinite `array.nonfinite`}
+ * ## {@link array_nonfinite `array.nonfinite`}
  * 
- * {@link nonfinite `array.nonfinite`} constrains a type parameter to be a _nonfinite_ 
+ * {@link array_nonfinite `array.nonfinite`} constrains a type parameter to be a _nonfinite_ 
  * array (`number[]` or `(1 | 2 | 3)[]`, but not `[1, 2, 3]`).
  * 
- * **Note:** For this to work, you need to apply {@link nonfinite `array.nonfinite`}
+ * **Note:** For this to work, you need to apply {@link array_nonfinite `array.nonfinite`}
  * to the type parameter you're _currently_ declaring, see example below.
  * 
  * See also:
- * - {@link finite `array.finite`}
+ * - {@link array_finite `array.finite`}
  * 
  * @example
  *  import type { array } from "@traversable/data"
@@ -67,7 +70,7 @@ export type finite<T> = [T] extends [readonly unknown[]] ? [number] extends [T["
  *  noTuples("a.b.c".split(".")) // ✅
  *  noTuples([1, 2, 3])          // 🚫
  */
-export type nonfinite<T> = [T] extends [readonly unknown[]] ? [number] extends [T["length"]] ? readonly unknown[] : never : never
+export type array_nonfinite<T> = [T] extends [readonly unknown[]] ? [number] extends [T["length"]] ? readonly unknown[] : never : never
 
 /** @internal */
 namespace local {
@@ -77,7 +80,7 @@ namespace local {
   export const isPrimitive: any.guard<any.primitive> = (u): u is never =>
     [`number`, `string`, `symbol`, `bigint`].includes(typeof u) || local.isNullable(u)
   /** @internal */
-  export const array_getEmpty = <T>() => [] as any.array<T>
+  export const array_getEmpty = <T>() => [] as readonly T[]
 }
 
 /** @internal */
@@ -88,7 +91,7 @@ declare namespace trap {
 }
 
 /**
- * ### {@link array_take `array.take`}
+ * ## {@link array_take `array.take`}
  * 
  * {@link array_take `array.take`} takes the first `n` elements of a tuple.
  * 
@@ -98,13 +101,13 @@ declare namespace trap {
  * 
  * See also: {@link array_split `array.split`}
  */
-export type array_take<xs extends any.array, n extends number> 
-  = xs extends { length: n | 0 } ? xs
-  : xs extends nonempty.pathLeft<infer lead, any> ? array_take<lead, n>
+export type array_take<T extends any.array, n extends number> 
+  = T extends { length: n | 0 } ? T
+  : T extends nonempty.pathLeft<infer lead, any> ? array_take<lead, n>
   : []
 
 /**
- * ### {@link array_split `array.split`}
+ * ## {@link array_split `array.split`}
  * 
  * {@link array_split `array.split`} splits a tuple into two parts. The
  * first tuple will have length {@link n `n`}.
@@ -120,19 +123,19 @@ export type array_take<xs extends any.array, n extends number>
  *  type Split = array.split<1, MyTuple>
  *  //   ^? type Split = [before: [a: 1], after: [b: 2, c: 3, d: 4, e: 5]]
  */
-export type array_split<xs extends any.array, ix extends number> 
-  = array_take<xs, ix> extends any.list<infer ys>
-  ? xs extends readonly [...ys, ...infer zs] 
+export type array_split<T extends any.array, ix extends number> 
+  = array_take<T, ix> extends any.list<infer ys>
+  ? T extends readonly [...ys, ...infer zs] 
   ? [ix, 1] extends [1, ix] ? [head: ys, tail: zs]
   : [before: ys, after: zs]
   : never
   : never
 
-/** ### {@link array_split `array.split`} */ 
-export type array_shift<xs extends mut.array> = array_split<xs, 1>
+/** ## {@link array_split `array.split`} */ 
+export type array_shift<T extends mut.array> = array_split<T, 1>
 
 /**
- * ### {@link array_is `array.is`}
+ * ## {@link array_is `array.is`}
  * 
  * {@link array_is `array.is`} is similar to `Array.isArray`, but fixes a significant problem
  * where the array that is passed is erased and replaced with
@@ -140,16 +143,16 @@ export type array_shift<xs extends mut.array> = array_split<xs, 1>
  */
 export const array_is: {
   <T extends trap.any<T>>(u: T): u is globalThis.Extract<any.array, T>
-  (u: unknown): u is any.array
+  (u: unknown): u is readonly unknown[]
 } = globalThis.Array.isArray
 
-/** ### {@link array_isArrayOf `array.isArrayOf`} */
+/** ## {@link array_isArrayOf `array.isArrayOf`} */
 export const array_isArrayOf 
   : <T>(guard: any.guard<T>) => (u: unknown) => u is any.array<T>
   = (guard) => (u): u is never => array_is(u) && u.every(guard)
 
 /**
- * ### {@link array_let `array.let`}
+ * ## {@link array_let `array.let`}
  * 
  * Given an array, {@link array_let `array.let`} gives you back the array in
  * mutable form, inferring types as narrowly as possible.
@@ -166,7 +169,7 @@ export const array_let
   = identity as never
 
 /** 
- * ### {@link array_of `array.of`} 
+ * ## {@link array_of `array.of`} 
  * 
  * {@link array_of `array.of`} is similar to {@link array_let `array.let`}, 
  * except that it takes any number of arguments, and returns them as an array.
@@ -182,7 +185,7 @@ export const array_of
   = tuple as never
 
 /** 
- * ### {@link array_emptyOf `array.emptyOf`}
+ * ## {@link array_emptyOf `array.emptyOf`}
  * 
  * @category constructors 
  */
@@ -190,12 +193,12 @@ export const array_emptyOf
   : <T = never>() => any.array<T>
   = () => []
 
-export function startsWith<T extends any.primitive>(...values: [T, ...T[]]): (xs: readonly T[]) => boolean
-export function startsWith<T>(predicate: (x: T) => boolean): (xs: readonly T[]) => boolean
-export function startsWith<T extends { [x: number]: unknown }>(reference: T): (xs: readonly T[]) => boolean
-export function startsWith<T extends any.primitive>(primitive: T): (xs: readonly T[]) => boolean
-export function startsWith<T>(...values: T[]): (xs: readonly T[]) => boolean
-export function startsWith(
+export function array_startsWith<T extends any.primitive>(...values: [T, ...T[]]): (xs: readonly T[]) => boolean
+export function array_startsWith<T>(predicate: (x: T) => boolean): (xs: readonly T[]) => boolean
+export function array_startsWith<T extends { [x: number]: unknown }>(reference: T): (xs: readonly T[]) => boolean
+export function array_startsWith<T extends any.primitive>(primitive: T): (xs: readonly T[]) => boolean
+export function array_startsWith<T>(...values: T[]): (xs: readonly T[]) => boolean
+export function array_startsWith(
   ...args: 
     | [predicate: (x: any, y: any) => boolean]
     | [value: unknown]
@@ -209,11 +212,11 @@ export function startsWith(
   return (xs) => predicate(xs[0])
 }
 
-export function endsWith<T extends any.primitive>(...values: [T, ...T[]]): (xs: readonly T[]) => boolean
-export function endsWith<T>(predicate: (x: T) => boolean): (xs: readonly T[]) => boolean
-export function endsWith<T extends { [x: number]: unknown }>(reference: T): (xs: readonly T[]) => boolean
-export function endsWith<T extends any.primitive>(primitive: T): (xs: readonly T[]) => boolean
-export function endsWith<T>(
+export function array_endsWith<T extends any.primitive>(...values: [T, ...T[]]): (xs: readonly T[]) => boolean
+export function array_endsWith<T>(predicate: (x: T) => boolean): (xs: readonly T[]) => boolean
+export function array_endsWith<T extends { [x: number]: unknown }>(reference: T): (xs: readonly T[]) => boolean
+export function array_endsWith<T extends any.primitive>(primitive: T): (xs: readonly T[]) => boolean
+export function array_endsWith<T>(
   ...args: 
   | [predicate: (x: any, y: any) => boolean]
   | [value: unknown]
@@ -228,7 +231,7 @@ export function endsWith<T>(
 }
 
 /** 
- * ### {@link unprepend `array.unprepend`}
+ * ## {@link array_unprepend `array.unprepend`}
  * 
  * Removes an element from the beginning of an array if it satisfies 
  * a condition you define.
@@ -244,7 +247,7 @@ export function endsWith<T>(
  * 4. an array of primitives to be tried, in order, to find a match
  * 
  * See also:
- * - {@link unappend `array.unappend`}
+ * - {@link array_unappend `array.unappend`}
  * 
  * @example
  *  import { array } from "@traversable/data"
@@ -259,11 +262,11 @@ export function endsWith<T>(
  *  log(ex_02)  //  =>  [                   { id: 2, B: "B" }, { id: 3, C: "C" }]
  * 
  */
-export function unprepend<T extends any.primitive>(...values: [T, ...T[]]): (xs: readonly T[]) => readonly T[] 
-export function unprepend<T>(predicate: (x: NoInfer<T>) => boolean): (xs: readonly T[]) => readonly T[] 
-export function unprepend<T extends { [x: number]: unknown }>(reference: T): (xs: readonly T[]) => readonly T[] 
-export function unprepend<T extends any.primitive>(primitive: T): (xs: readonly T[]) => readonly T[] 
-export function unprepend(
+export function array_unprepend<T extends any.primitive>(...values: [T, ...T[]]): (xs: readonly T[]) => readonly T[] 
+export function array_unprepend<T>(predicate: (x: NoInfer<T>) => boolean): (xs: readonly T[]) => readonly T[] 
+export function array_unprepend<T extends { [x: number]: unknown }>(reference: T): (xs: readonly T[]) => readonly T[] 
+export function array_unprepend<T extends any.primitive>(primitive: T): (xs: readonly T[]) => readonly T[] 
+export function array_unprepend(
   ...args: 
     | [predicate: (x: any, y: any) => boolean]
     | [reference: {}]
@@ -271,13 +274,13 @@ export function unprepend(
 ): (xs: readonly unknown[]) => readonly unknown[]  {
   const [h, ...t] = args
   const predicate = typeof h === "function" 
-    ? startsWith(h as never) 
-    : startsWith(...(t.length === 0 ? [(v: any) => globalThis.Object.is(h, v)] : [h, ...t]))
+    ? array_startsWith(h as never) 
+    : array_startsWith(...(t.length === 0 ? [(v: any) => globalThis.Object.is(h, v)] : [h, ...t]))
   return (xs) => predicate(xs as never) ? xs.slice(1) : xs
 }
 
 /** 
- * ### {@link unappend `array.unappend`}
+ * ## {@link array_unappend `array.unappend`}
  * 
  * Removes an element from the end of an array, if it satisfies a "condition"
  * you define.
@@ -293,7 +296,7 @@ export function unprepend(
  * 4. an array of primitives to be tried, in order, to find a match
  * 
  * See also:
- * - {@link unprepend `array.unprepend`}
+ * - {@link array_unprepend `array.unprepend`}
  * 
  * @example
  *  import { array } from "@traversable/data"
@@ -307,11 +310,11 @@ export function unprepend(
  *  const ex_02 = pop([{ id: 1, A: "A" }, { id: 2, B: "B" }, { id: 3, C: "C" }])
  *  log(ex_02)  // => [{ id: 2, B: "B" }, { id: 3, C: "C" }                   ]
  */
-export function unappend<T extends any.primitive>(...values: [T, ...T[]]): (xs: readonly T[]) => readonly T[] 
-export function unappend<T>(predicate: (x: T, y: T) => boolean): (xs: readonly T[]) => readonly T[] 
-export function unappend<T extends { [x: number]: unknown }>(reference: T): (xs: readonly T[]) => readonly T[] 
-export function unappend<T extends any.primitive>(value: T): (xs: readonly T[]) => readonly T[] 
-export function unappend(
+export function array_unappend<T extends any.primitive>(...values: [T, ...T[]]): (xs: readonly T[]) => readonly T[] 
+export function array_unappend<T>(predicate: (x: T, y: T) => boolean): (xs: readonly T[]) => readonly T[] 
+export function array_unappend<T extends { [x: number]: unknown }>(reference: T): (xs: readonly T[]) => readonly T[] 
+export function array_unappend<T extends any.primitive>(value: T): (xs: readonly T[]) => readonly T[] 
+export function array_unappend(
   ...args: 
     | [predicate: (x: any, y: any) => boolean]
     | [reference: {}]
@@ -319,23 +322,26 @@ export function unappend(
 ): (xs: readonly unknown[]) => readonly unknown[]  {
   const [h, ...t] = args
   const predicate = typeof h === "function" 
-    ? startsWith(h as never) 
-    : startsWith(...t.length === 0 ? [(v: any) => globalThis.Object.is(h, v)] : [h, ...t])
+    ? array_startsWith(h as never) 
+    : array_startsWith(...t.length === 0 ? [(v: any) => globalThis.Object.is(h, v)] : [h, ...t])
   return (xs) => predicate(xs as never) ? xs.slice(0, -(xs.length - 1)) : xs
 }
 
 /** 
- * ### {@link array_const `array.const`}
- * @category constructors 
+ * ## {@link array_const `array.const`}
  */
 export const array_const
   : <const T extends any.array>(xs: T) => T
   = identity
 
-/** ### {@link array_filter `array.filter`} */
+/** 
+ * ## {@link array_filter `array.filter`} 
+ */
 export type array_filter<T extends any.array, U> = globalThis.Extract<T[number], U>
 
-/** ### {@link array_filter `array.filter`} */
+/** 
+ * ## {@link array_filter `array.filter`} 
+ */
 export function array_filter(filterNullables: globalThis.BooleanConstructor): <const T extends any.array>(xs: T) => any.array<globalThis.NonNullable<T[number]>>
 export function array_filter<const T extends any.array, U>(guard: any.typeguard<T[number], U>): (xs: T) => mut.array<U>
 // impl.
@@ -345,7 +351,7 @@ export function array_filter(predicate: any.predicate) {
 }
 
 /** 
- * ### {@link array_reverse `array.reverse`} 
+ * ## {@link array_reverse `array.reverse`} 
  * 
  * {@link array_reverse `array.reverse`} has the same behavior as 
  * {@link globalThis.Array.prototype.reverse `Array.prototype.reverse`},
@@ -360,7 +366,7 @@ export const array_reverse
   = (xs) => globalThis.structuredClone(xs as [...typeof xs]).reverse() 
 
 /** 
- * ### {@link array_reduce `array.reduce`} 
+ * ## {@link array_reduce `array.reduce`} 
  * 
  * {@link array_reduce `array.reduce`} has the same behavior as 
  * {@link globalThis.Array.prototype.reduce `Array.prototype.reduce`},
@@ -388,7 +394,7 @@ export function array_reduce<T, U>(
 }
 
 /** 
- * ### {@link array_reduceRight `array.reduceRight`} 
+ * ## {@link array_reduceRight `array.reduceRight`} 
  * 
  * {@link array_reduceRight `array.reduceRight`} has the same behavior as 
  * {@link globalThis.Array.prototype.reduceRight `Array.prototype.reduceRight`},
@@ -400,11 +406,14 @@ export function array_reduce<T, U>(
  * - {@link globalThis.Array.prototype.reduceRight `Array.prototype.reduceRight`}
  * - {@link array_reduce `array.reduce`}
  */
-export function array_reduceRight<T, U>(reducer: (acc: NoInfer<U>, cur: T, ix: number, xs: T[]) => U, init: U): (xs: any.array<T>) => U
-export function array_reduceRight<T, U>(reducer: (acc: U, cur: T, ix: number, xs: T[]) => U, init: U) { return (xs: T[]) => xs.reduceRight(reducer, init) }
+export function array_reduceRight<T, U>
+  (reducer: (acc: NoInfer<U>, cur: T, ix: number, xs: T[]) => U, init: U): (xs: any.array<T>) => U
+export function array_reduceRight<T, U>
+  (reducer: (acc: U, cur: T, ix: number, xs: T[]) => U, init: U) /// impl.
+  { return (xs: T[]) => xs.reduceRight(reducer, init) }
 
 /** 
- * ### {@link array_sort `array.sort`} 
+ * ## {@link array_sort `array.sort`} 
  * 
  * {@link array_sort `array.sort`} has the same behavior as 
  * {@link globalThis.Array.prototype.sort `Array.prototype.sort`},
@@ -430,7 +439,7 @@ export function array_sort<T>(
 }
 
 /**
- * ### {@link array_includes `array.includes`}
+ * ## {@link array_includes `array.includes`}
  * 
  * {@link array_includes `array.includes`} is similar to 
  * 
@@ -448,7 +457,9 @@ export function array_includes<const T extends any.primitives>(xs: T) {
   return (u: unknown): u is T[number] => local.isPrimitive(u) && xs.includes(u) 
 }
 
-/** ### {@link array_every `array.every`} */
+/** 
+ * ## {@link array_every `array.every`}
+ */
 export function array_every<T, U extends T>(guard: any.guard<U>): (xs: any.array<T>) => xs is any.array<U>
 export function array_every<T>(predicate: some.predicate<T>): (xs: any.array<T>) => boolean
 /// impl.
@@ -456,9 +467,9 @@ export function array_every<T>(predicate: some.predicate<T>) {
   return (xs: any.array<T>) => xs.every(predicate) 
 }
 
-export type array_head<xs extends any.array> = xs[0]
+export type array_head<T extends any.array> = T[0]
 /** 
- * ### {@link array_head `array.head`}
+ * ## {@link array_head `array.head`}
  * 
  * {@link array_head `array.head`} gets the first element (or "head") out of an array 
  *
@@ -467,16 +478,19 @@ export type array_head<xs extends any.array> = xs[0]
  * - {@link array_tail `array.tail`}
  * - {@link array_heads `array.heads`}
  */
-export const array_head = <const T extends any.array>(xs: T): T[0] => xs[0]
+export const array_head 
+  : <const T extends any.array>(xs: T) => T[0]
+  = (xs) => xs[0]
 
-/** ### {@link array_fst `array.fst`} is an alias for {@link array_head `array.head`} */
-export type array_fst<xs extends any.array> = array_head<xs>
-/** {@link array_fst `array.fst`} is an alias for {@link array_head `array.head`} */
+/**
+ * ## {@link array_fst `array.fst`} is an alias for {@link array_head `array.head`} 
+ */
 export const array_fst = array_head
+export type array_fst<T extends any.array> = array_head<T>
 
-export type array_snd<xs extends any.array> = array_head<array_tail<xs>>
+export type array_snd<T extends any.array> = array_head<array_tail<T>>
 /** 
- * ### {@link array_snd `array.snd`}
+ * ## {@link array_snd `array.snd`}
  * 
  * {@link array_snd `array.snd`} gets the second element out of an array.
  *
@@ -485,11 +499,13 @@ export type array_snd<xs extends any.array> = array_head<array_tail<xs>>
  * - {@link array_tail `array.tail`}
  * - {@link array_snds `array.snds`}
  */
-export const array_snd = <const xs extends any.array>(xs: xs): array_snd<xs> => xs[1]
+export const array_snd 
+  : <const T extends array_any>(xs: T) => array_snd<T>
+  = (xs) => xs[1]
 
-export type array_tail<xs extends any.array> = xs extends [any, ...infer tail] ? tail : never
+export type array_tail<T extends any.array> = T extends [any, ...infer tail] ? tail : never
 /** 
- * ### {@link array_tail `array.tail`}
+ * ## {@link array_tail `array.tail`}
  * 
  * {@link array_tail `array.tail`} gets the second element out of an array.
  *
@@ -498,11 +514,13 @@ export type array_tail<xs extends any.array> = xs extends [any, ...infer tail] ?
  * - {@link array_snd `array.snd`}
  * - {@link array_tails `array.tails`}
  */
-export const array_tail = <const xs extends any.array>(xs: xs): array_tail<xs> => xs.slice(1) as never
+export const array_tail 
+  : <const T extends any.array>(xs: T) => array_tail<T>
+  = (xs) => xs.slice(1) as never
 
-export type array_heads<xss extends any.array<any.array>> = never | { [ix in keyof xss]: xss[ix][0] }
+export type array_heads<T extends any.array<array_any>> = never | { -readonly [ix in keyof T]: T[ix][0] }
 /** 
- * ### {@link array_heads `array.heads`} 
+ * ## {@link array_heads `array.heads`} 
  * 
  * {@link array_heads `array.heads`} takes an array of arrays (or "matrix"), and gets 
  * the first element out of each array.
@@ -519,9 +537,8 @@ export const array_heads: {
   <const T extends any.array<any.array>>(...xss: T): { [ix in keyof T]: T[ix][0] }
 } = (...xss) => xss.flat().map(array_head as never)
 
-export type array_snds<xss extends any.array<any.array>> = never | { [ix in keyof xss]: xss[ix][1] }
 /** 
- * ### {@link array_snds `array.snds`} 
+ * ## {@link array_snds `array.snds`} 
  * 
  * {@link array_snds `array.snds`} takes an array of arrays (or "matrix"), and gets 
  * the second element out of each array.
@@ -534,13 +551,16 @@ export type array_snds<xss extends any.array<any.array>> = never | { [ix in keyo
  * - {@link array_tails `array.tails`}
  */
 export const array_snds: {
-  <const xss extends any.array<any.array>>(xss: xss): { [ix in keyof xss]: xss[ix][1] }
-  <const xss extends any.array<any.array>>(...xss: xss): { [ix in keyof xss]: xss[ix][1] }
+  <const T extends any.array<any.array>>(xss: T): { [ix in keyof T]: T[ix][1] }
+  <const T extends any.array<any.array>>(...xss: T): { [ix in keyof T]: T[ix][1] }
 } = (...xss) => xss.flat().map(array_snd as never)
 
-export type array_tails<xss extends any.array<any.array>> = never | { [ix in keyof xss]: array_tail<xss[ix]> }
+export type array_snds<T extends any.array<any.array>> 
+  = never | { [ix in keyof T]: T[ix][1] }
+
+export type array_tails<T extends any.array<any.array>> = never | { -readonly [ix in keyof T]: array_tail<T[ix]> }
 /** 
- * ### {@link array_tails `array.tails`}
+ * ## {@link array_tails `array.tails`}
  * 
  * {@link array_tails `array.tails`} takes an array of arrays (or "matrix"), and gets 
  * the all but the first element from each array.
@@ -561,7 +581,7 @@ export type array_dequeue<queue extends any.array> = never
   : queue
   ;
 /**
- * ### {@link array_dequeue `array.dequeue`}
+ * ## {@link array_dequeue `array.dequeue`}
  * 
  * @example
  * import { array } from "@traversable/data/array"
@@ -572,62 +592,101 @@ export type array_dequeue<queue extends any.array> = never
  * const doremi = array.dequeue({ a: 1 }, { b: 2 }, { c: 3 })
  * //    ^? doremi: [left: [{ a: 1 }, { b: 2 }], last: { c: 3 }]
  *
- * const niner = array.dequeue("did", "i", "catch", "a", "niner", "in", "there")
- * //    ^? const niner: [left: ["did", "i", "catch", "a", "niner", "in"], last: "there"]
+ * const niner = array.dequeue("did", "i", "hear", "a", "niner", "in", "there")
+ * //    ^? const niner: [left: ["did", "i", "hear", "a", "niner", "in"], last: "there"]
  */
 export function array_dequeue<const Q extends any.array>(queue: Q): array_dequeue<Q>
 export function array_dequeue<const Q extends any.array>(...queue: Q): array_dequeue<Q>
-/** @category impl. */
-export function array_dequeue(...queue: any.array | [any.array]) {
+export function array_dequeue(...queue: any.array | [any.array]) { /// impl.
   let xs = queue.flat(1)
   const z = xs.pop()
   return [xs, z]
 }
 
-/** ### {@link array_append `array.append`} */
-export const array_append
-  : <const U>(y: U) => <const T extends any.array>(xs: T) => [...T, U] 
-  = (y) => (xs) => [...xs, y]
+/** 
+ * ## {@link array_append `array.append`}
+ */
+export function array_append<const U>(y: U): 
+  <const T extends any.array>(xs: T) => [...T, U]
+  { return (xs) => [...xs, y] }
 
-/** ### {@link array_prepend `array.prepend`} */
-export const array_prepend: <const T>(x: T) => <const U extends any.array>(ys: U) => [T, ...U] 
-  = (x) => (ys) => [x, ...ys]
+/** 
+ * ## {@link array_prepend `array.prepend` 
+ */
+export function array_prepend<const T>(x: T): 
+  <const U extends any.array>(ys: U) => [T, ...U] /// impl.
+  { return (ys) => [x, ...ys] }
 
-/** ### {@link array_flattenOnce `array.flattenOnce`} */
-export type array_flattenOnce<xs extends any.array, acc extends any.array = []>
-  = [xs] extends [nonempty.array<infer head, infer tail>] 
-  ? array_flattenOnce<tail, [...acc, ...([head] extends [any.array] ? head : [head])]>
-  : acc
+/** 
+ * ## {@link array_flattenOnce `array.flattenOnce`} 
+ */
+export type array_flattenOnce<S extends any.array, Out extends any.array = []>
+  = [S] extends [nonempty.array<infer H, infer T>] 
+  ? array_flattenOnce<T, [...Out, ...([H] extends [any.array] ? H : [H])]>
+  : Out
 
-/** ### {@link array_flatMap `array.flatMap`} */
-export const array_flatMap
-  : <const T, U>(fn: (input: T) => any.array<U>) => (xs: readonly T[]) => readonly U[]
-  = (fn) => (xs) => xs.flatMap(fn)
+/** 
+ * ## {@link array_flatMap `array.flatMap`}
+ * 
+ * Monadic-join semantics
+ */
+export function array_flatMap<const T, U>
+  (xs: readonly T[], fn: (input: T) => any.array<U>): readonly U[]
+export function array_flatMap<const T, U>
+  (xs: readonly T[], fn: (input: T) => any.array<U>) /// impl.
+  { return xs.flatMap(fn) }
 
-/** ### {@link array_flatten `array.flatten`} */
-export const array_flatten
-  : <const T extends any.array>(xs: T) => array_flattenOnce<T, []>
-  = (xs) => xs.flat(1) as never
+void (array_flatMap.defer = array_flatMap_defer)
+
+
+/** 
+ * ## {@link array_flatMap_defer `array.flatMap.defer`}
+ * 
+ * Data-last variant of {@link array_flatMap `array.flatMap`}
+ */
+function array_flatMap_defer<const T, U>
+  (fn: (input: T, ix: number, xs: readonly T[]) => any.array<U>): 
+    (xs: readonly T[]) 
+      => readonly U[]
+function array_flatMap_defer<const T, U>
+  (fn: (input: T, ix: number, xs: readonly T[]) => any.array<U>) /// impl.
+  { return (xs: readonly T[]) => xs.flatMap(fn) } 
+
+/** 
+ * ## {@link array_flatten `array.flatten`} 
+ */
+export function array_flatten<const T extends any.array>(xs: T): array_flattenOnce<T, []>
+export function array_flatten<const T extends any.array>(xs: T) /// impl.
+  { return xs.flat(1) }
 
 // TODO: improve types
-/** ### {@link array_join `array.join`} */
-export const array_join = <S extends any.showable>(separator: S) => <const T extends any.array>(xs: T) => xs.join(`${separator}`)
+/** 
+ * ## {@link array_join `array.join`} 
+ */
+export const array_join 
+  : <S extends any.showable>(separator: S) => <const T extends any.array>(xs: T) => string
+  = (separator) => (xs) => xs.join(`${separator}`)
 
-export type array_last<T extends any.array> = [T] extends [readonly [...any, infer last]] ? last : never
+export type array_last<T extends any.array> 
+  = [T] extends [readonly [...any, infer last]] ? last : never
 
 export type array_lead<T extends any.array> 
   = [T] extends [[...infer Lead, any]] ? Lead
   : [T] extends [readonly [...infer Lead, any]] ? globalThis.Readonly<Lead>
   : never
 
-/** ### {@link array_last `array.last`} */
-export function array_last<const T extends check.isTuple<T>>(xs: T): array_last<T>
+/** 
+ * ## {@link array_last `array.last`} 
+ */
+export function array_last<const T extends array_finite<T>>(xs: T): array_last<T>
 export function array_last<const T extends nonempty.array>(xs: T): T[number]
 export function array_last<const T extends any.array>(xs: T): T[number] | undefined // last<xs>
 export function array_last<const T extends any.array>(xs: T) { return xs[xs.length - 1] }
 
-/** ### {@link array_lead `array.lead`} */
-export function array_lead<const T extends check.isTuple<T>>(xs: T): array_lead<T>
+/** 
+ * ## {@link array_lead `array.lead`} 
+ */
+export function array_lead<const T extends array_finite<T>>(xs: T): array_lead<T>
 export function array_lead<const T extends nonempty.mut.array>(xs: T): [T[0], ...(T[number])[]]
 export function array_lead<const T extends mut.array>(xs: T): [] | T[number][]
 export function array_lead<const T extends nonempty.array>(xs: T): readonly [T[0], ...(T[number])[]]
@@ -638,7 +697,7 @@ export type array_indexBy<K extends any.key, T extends any.indexableBy<K>>
   = never | { [U in T[K]]: globalThis.Extract<{ -readonly [x in keyof T]: T[x] }, { [P in K]: U }> }
 
 /**
- * ### {@link array_indexBy `array.indexBy`}
+ * ## {@link array_indexBy `array.indexBy`}
  *
  * @example
  * const ex_01 = array.indexBy("tag")([
@@ -650,7 +709,7 @@ export type array_indexBy<K extends any.key, T extends any.indexableBy<K>>
  */
 export function array_indexBy<K extends string | number>(index: K):
   <const T extends { -readonly [P in K]: string | number }>(list: readonly T[])
-    => { [U in T[K]]: globalThis.Extract<{ -readonly [K in keyof T]: T[K] }, { [P in K]: U }> }
+  => { [U in T[K]]: globalThis.Extract<{ -readonly [K in keyof T]: T[K] }, { [P in K]: U }> }
 /// impl.
 export function array_indexBy<K extends string | number>(index: K) {
   return <const T extends { [P in K]: string | number }>(list: T[]) => {
@@ -661,42 +720,86 @@ export function array_indexBy<K extends string | number>(index: K) {
   }
 }
 
-/** ### {@link array_find `array.find`} */
-export function array_find<S, T>(guard: any.typeguard<S, T>): (xs: any.array<S>) => T | undefined
-export function array_find<T>(pred: some.predicate<T>): (xs: any.array<T>) => T | undefined
-export function array_find<T>(pred: some.predicate<T>) { return (xs: any.array<T>) => xs.find(pred) }
-
-/** ### {@link array_getConcattable `array.getConcattable`} */
-export const array_getConcattable = <T = never>(): Concattable<any.array<T>> => ({
-  concat: (left, right) => 
-    left.length === 0 ? right 
-    : right.length === 0 ? left 
-    : left.concat(right)
-})
-
-/** ### {@link array_getFoldable `array.getFoldable`} */
-export const array_getFoldable
-  : <T = never>() => Foldable<any.array<T>> 
-  = () => ({
-    concat: array_getConcattable().concat,
-    empty: local.array_getEmpty()
-  })
+/** 
+ * ## {@link array_find `array.find`} 
+ */
+export function array_find<S, T extends S>(guard: (src: S) => src is T): (xs: readonly S[]) => T | undefined
+export function array_find<T>(pred: Predicate<T>): (xs: readonly T[]) => T | undefined
+export function array_find<T>(pred: some.predicate<T>) { return (xs: readonly T[]) => xs.find(pred) }
 
 /** 
- * ### {@link array_prefix `array.prefix`} 
+ * ## {@link array_findLast `array.findLast`} 
+ */
+export function array_findLast<T>(predicate: (u: T) => boolean): (xs: readonly T[]) => number
+export function array_findLast<T>(predicate: (u: T) => boolean) {
+  return (xs: readonly T[]): T | undefined => {
+    for (let ix = xs.length - 1; ix >= 0; ix--)
+      if (predicate(xs[ix])) return xs[ix]
+    return undefined
+  }
+} 
+
+/** 
+ * ## {@link array_indexOf `array.indexOf`} 
+ */
+export function array_indexOf<T>(predicate: (x: T) => boolean): (xs: readonly T[]) => number
+export function array_indexOf<T>(needle: T): (xs: readonly T[]) => number
+export function array_indexOf<T>(_: ((x: T) => boolean) | T) {
+  const predicate = typeof _ === "function" ? _ as never : (x: T) => x === _
+  return (xs: readonly T[]) => {
+    for (let ix = 0, len = xs.length; ix < len; ix++)
+      if (predicate(xs[ix])) return ix
+    return -1
+  }
+}
+
+/** 
+ * ## {@link array_lastIndexOf `array.lastIndexOf`} 
+ */
+export function array_lastIndexOf<T>(predicate: (x: T) => boolean): (xs: readonly T[]) => number
+export function array_lastIndexOf<T>(needle: T): (xs: readonly T[]) => number
+export function array_lastIndexOf<T>(_: ((x: T) => boolean) | T) {
+  const predicate = typeof _ === "function" ? _ as never : (x: T) => x === _
+  return (xs: readonly T[]): number => {
+    for (let ix = xs.length - 1; ix >= 0; ix--)
+      if (predicate(xs[ix])) return ix
+    return -1
+  }
+} 
+
+/** 
+ * ## {@link array_getConcattable `array.getConcattable`} 
+ */
+export function array_getConcattable<T = never>(): Concattable<readonly T[]> {
+  return ({ concat: (l, r) => l.length === 0 ? r : r.length === 0 ? l : l.concat(r) })
+}
+
+/** 
+ * ## {@link array_getFoldable `array.getFoldable`} 
+ */
+export const array_getFoldable
+  : <T = never>() => Foldable<readonly T[]> 
+  = () => ({ concat: array_getConcattable().concat, empty: local.array_getEmpty() })
+
+/** 
+ * ## {@link array_prefix `array.prefix`} 
  * 
  * @example
  *  import { array } from "@traversable/data"
  * 
  *  const ex_01 = array
  */
-export type array_prefix<T extends keys.any, Add extends prop.any> = never | { -readonly [ix in keyof T]: key.prefix<T[ix], Add> }
-export function array_prefix<const T extends keys.any, Add extends prop.any>(keys: T, prefix: Add): { -readonly [ix in keyof T]: key.prefix<T[ix], Add> }
-export function array_prefix(keys: keys.any, prefix: prop.any) { return keys.map(key.prefix(prefix)) }
+export function array_prefix<const T extends keys.any, Add extends prop.any>
+  (keys: T, prefix: Add): { -readonly [ix in keyof T]: key.prefix<T[ix], Add> }
+export function array_prefix(keys: keys.any, prefix: prop.any) 
+  { return keys.map(key.prefix(prefix)) }
+
+export type array_prefix<T extends keys.any, Add extends prop.any> 
+  = never | { -readonly [ix in keyof T]: key.prefix<T[ix], Add> }
 
 /** 
- * ### {@link array_prefix.defer `array.prefix.defer`} 
- * #### ｛ {@link jsdoc.curried ` ️🍛‍ ` } ｝
+ * ## {@link array_prefix.defer `array.prefix.defer`} 
+ * ### ｛ {@link jsdoc.curried ` ️🍛‍ ` } ｝
  * 
  * In cases where you need to append the same prefix in more than one place,
  * {@link array_prefix.defer `array.prefix.defer`} provides support for
@@ -727,24 +830,29 @@ export function array_prefix(keys: keys.any, prefix: prop.any) { return keys.map
  */
 array_prefix.defer = 
   <P extends prop.any>(prefix: P) => 
-  <const T extends keys.any>(keys: T) => 
+  <const KS extends keys.any>(keys: KS) => 
   array_prefix(keys, prefix)
 
+
 /** 
- * ### {@link array_unprefix `array.unprefix`} 
+ * ## {@link array_unprefix `array.unprefix`} 
  * 
  * @example
  *  import { array } from "@traversable/data"
  * 
  *  const ex_01 = array
  */
-export type array_unprefix<T extends keys.any, Rm extends prop.any> = never | { -readonly [x in keyof T]: key.unprefix<T[x], Rm> }
-export function array_unprefix<const T extends keys.any, Rm extends prop.any>(keys: T, remove: Rm): { -readonly [x in keyof T]: key.unprefix<T[x], Rm> }
-export function array_unprefix(keys: keys.any, remove: prop.any) { return keys.map(key.unprefix(remove)) }
+export function array_unprefix<const T extends keys.any, Rm extends prop.any>
+  (keys: T, remove: Rm): { -readonly [x in keyof T]: key.unprefix<T[x], Rm> }
+export function array_unprefix(keys: keys.any, remove: prop.any) 
+  { return keys.map(key.unprefix(remove)) }
+
+export type array_unprefix<T extends keys.any, Rm extends prop.any> 
+  = never | { -readonly [x in keyof T]: key.unprefix<T[x], Rm> }
 
 /** 
- * ### {@link array_unprefix.defer `array.unprefix.defer`} 
- * #### ｛ {@link jsdoc.curried ` ️🍛‍ ` } ｝
+ * ## {@link array_unprefix.defer `array.unprefix.defer`} 
+ * ### ｛ {@link jsdoc.curried ` ️🍛‍ ` } ｝
  * 
  * In cases where you need to remove the same prefix in more than one place,
  * {@link array_unprefix.defer `array.unprefix.defer`} provides support for
@@ -775,70 +883,85 @@ export function array_unprefix(keys: keys.any, remove: prop.any) { return keys.m
  */
 array_unprefix.defer = 
   <P extends prop.any>(prefix: P) => 
-  <const T extends keys.any>(keys: T) => 
+  <const KS extends keys.any>(keys: KS) => 
   array_unprefix(keys, prefix)
 
 /** 
- * ### {@link array_capitalize `array.capitalize`} 
+ * ## {@link array_capitalize `array.capitalize`} 
  * 
  * @example
  *  import { array } from "@traversable/data"
  * 
  *  const ex_01 = array
  */
-export function array_capitalize<const T extends keys.any>(keys: T): { -readonly [x in keyof T]: key.capitalize<T[x]> }
-export function array_capitalize(keys: keys.any) { return keys.map(key.capitalize) }
+export function array_capitalize<const T extends keys.any>(keys: T): 
+  { -readonly [x in keyof T]: key.capitalize<T[x]> }
+export function array_capitalize(keys: keys.any) 
+  { return keys.map(key.capitalize) }
+
 export type array_capitalize<T extends keys.any> = never | { -readonly [x in keyof T]: key.capitalize<T[x]> }
 
 /** 
- * ### {@link array_uncapitalize `array.uncapitalize`} 
+ * ## {@link array_uncapitalize `array.uncapitalize`} 
  * 
  * @example
  *  import { array } from "@traversable/data"
  * 
  *  const ex_01 = array
  */
-export function array_uncapitalize<const T extends keys.any>(keys: T): { -readonly [x in keyof T]: key.uncapitalize<T[x]> }
-export function array_uncapitalize(keys: keys.any) { return keys.map(key.uncapitalize) }
-export type array_uncapitalize<T extends keys.any> = never | { -readonly [x in keyof T]: key.uncapitalize<T[x]> }
+export function array_uncapitalize<const T extends keys.any>(keys: T): 
+  { -readonly [x in keyof T]: key.uncapitalize<T[x]> }
+export function array_uncapitalize(keys: keys.any) 
+  { return keys.map(key.uncapitalize) }
+export type array_uncapitalize<T extends keys.any> 
+  = never | { -readonly [x in keyof T]: key.uncapitalize<T[x]> }
 
 /** 
- * ### {@link array_toLower `array.toLower`} 
+ * ## {@link array_lowercase `array.lowercase`} 
  * 
  * @example
  *  import { array } from "@traversable/data"
  * 
- *  const ex_01 = array
+ *  const ex_01 = array.lowercase("YES", "NO", "MAYBE", "I", "DON'T", "KNOW")
+ *  //     ^?     const ex_01: ["yes", "no", "maybe", "i", "don't", "know"]
+ *  console.log(ex_01)   // => ["yes", "no", "maybe", "i", "don't", "know"]
+ * 
+ *  const ex_02 = array.lowercase(["Can", "you", "repeat", "the", "question"])
+ *  //     ^?     const ex_02: ["can", "you", "repeat", "the", "question"]
+ *  console.log(ex_02)   // => ["CAN", "YOU", "REPEAT", "THE", "QUESTION"]
+ *  
+ *  const ex_03 = array.lowercase(["Smells", "Like", "Teen", "Spirit",  1991])
+ *  //     ^?      const ex_03: ["smells", "like", "teen", "spirit", "1991"]
+ *  console.log(ex_03)    // => ["smells", "like", "teen", "spirit", "1991"]
  */
-export function array_toLower<const T extends keys.any>(keys: T): { -readonly [x in keyof T]: key.toLower<T[x]> }
-export function array_toLower(...args: keys.any | [keys.any]) { return args.flat(1).map(key.toLower) }
-export type array_toLower<T extends keys.any> = never | { -readonly [x in keyof T]: key.toLower<T[x]> }
+export function array_lowercase<const T extends keys.any>(keys: T): { -readonly [x in keyof T]: key.lowercase<T[x]> }
+export function array_lowercase(...args: keys.any | [keys.any]) { return args.flat(1).map(key.lowercase) }
+export type array_lowercase<T extends keys.any> = never | { -readonly [x in keyof T]: key.lowercase<T[x]> }
 
 /** 
- * ### {@link array_toUpper `array.toUpper`} 
+ * ## {@link array_uppercase `array.uppercase`} 
  * 
  * @example
  *  import { array } from "@traversable/data"
  * 
- *  const ex_01 = array.toUpper("yes", "no", "maybe", "i", "don't", "know")
+ *  const ex_01 = array.uppercase("yes", "no", "maybe", "i", "don't", "know")
  *  //     ^?     const ex_01: ["YES", "NO", "MAYBE", "I", "DON'T", "KNOW"]
  *  console.log(ex_01)   // => ["YES", "NO", "MAYBE", "I", "DON'T", "KNOW"]
  * 
- *  const ex_02 = array.toUpper(["can", "you", "repeat", "the", "question"])
+ *  const ex_02 = array.uppercase(["can", "you", "repeat", "the", "question"])
  *  //     ^?     const ex_02: ["CAN", "YOU", "REPEAT", "THE", "QUESTION"]
- *  console.log(ex_03)   // => ["CAN", "YOU", "REPEAT", "THE", "QUESTION"]
+ *  console.log(ex_02)   // => ["CAN", "YOU", "REPEAT", "THE", "QUESTION"]
  *  
- *  const ex_03 = array.toUpper(["smells", "Like", "Teen", "Spirit",  1991])
+ *  const ex_03 = array.uppercase(["smells", "Like", "Teen", "Spirit",  1991])
  *  //     ^?      const ex_03: ["SMELLS", "LIKE", "TEEN", "SPIRIT", "1991"]
- *  console.log(ex_02)    // => ["SMELLS", "LIKE", "TEEN", "SPIRIT", "1991"]
- * 
+ *  console.log(ex_03)    // => ["SMELLS", "LIKE", "TEEN", "SPIRIT", "1991"]
  */
-export function array_toUpper<const T extends keys.any>(keys: T): { -readonly [x in keyof T]: key.toUpper<T[x]> }
-export function array_toUpper(keys: keys.any) { return keys.map(key.toUpper) }
-export type array_toUpper<T extends keys.any> = never | { -readonly [x in keyof T]: key.toUpper<T[x]> }
+export function array_uppercase<const T extends keys.any>(keys: T): { -readonly [x in keyof T]: key.uppercase<T[x]> }
+export function array_uppercase(keys: keys.any) { return keys.map(key.uppercase) }
+export type array_uppercase<T extends keys.any> = never | { -readonly [x in keyof T]: key.uppercase<T[x]> }
 
 /** 
- * ### {@link array_camel `array.camel`} 
+ * ## {@link array_camel `array.camel`} 
  * 
  * @example
  *  import { array } from "@traversable/data"
@@ -853,7 +976,7 @@ export type array_camel<T extends keys.any, Sep extends string = "_"> = never | 
 
 
 /** 
- * ### {@link array_pascal `array.pascal`} 
+ * ## {@link array_pascal `array.pascal`} 
  * 
  * @example
  *  import { array } from "@traversable/data"
@@ -865,3 +988,69 @@ export const array_pascal: {
   <const T extends keys.any, Sep extends string>(keys: T, separator: Sep): { -readonly [x in keyof T]: key.pascal<T[x], Sep> }
 } = (keys: keys.any, separator = "_") => keys.map((k) => key.pascal(k, separator))
 export type array_pascal<T extends keys.any, Sep extends string = "_"> = never | { -readonly [x in keyof T]: key.pascal<T[x], Sep> }
+
+/**
+ * ## {@link array_zip `array.zip`}
+ * ### ｛ {@link jsdoc.combining ` 🪢 `} , {@link jsdoc.preserves_structure ` 🌿‍ ` } ｝
+ * 
+ * Takes 2 arrays (`L` and `R`), and returns an array of 2-tuples whose length 
+ * is the _shorter_ of the two input arrays, where the element at index `n` in the 
+ * output array is contains the elements in `L` and `R` at `n` joined pairwise.
+ * 
+ * {@link array_zip `array.zip`} __preserves__ as much __structure__ as possible at 
+ * the type-level, without needing to resort to recursion. This works because the
+ * output type is homomorphic with regard to its inputs.
+ * 
+ * @example
+* 
+*  import { array } from "@traversable/array"
+*  
+*  const ex_01 = array.zip(["L1", "L2", "L3"], ["R1", "R2", "R3"])
+*  //     ^? const ex_01: [[x: "L1", y: "R1"], [x: "L2", y: "R2"], [x: "L3", y: "R3"]]
+* 
+*  const ex_02 = array.zip(["L1", "L2", "L3"], ["R1"])
+*  //     ^? const ex_02: [[x: "L1", y: "R1"]]
+* 
+*  const ex_03 = array.zip(["L1", "L2", "L3", "L4", "L5", "L6"], ["R1", "R2"])
+*  //     ^? const ex_03: [[x: "L1", y: "R1"], [x: "L2", y: "R2"]]
+*  
+*  const ex_04 = array.zip(Array.from({ length: Math.random() * 100 }), Array.from({ length: Math.random() * 100 }))
+*  //     ^? const ex_04: [x: unknown, y: unknown][]
+*/
+
+export function array_zip<
+ const L extends readonly unknown[],
+ const R extends any.indexedBy<keyof L>
+> (left: L, right: R): { -readonly [I in keyof L]: [x: L[I], y: R[I]] }
+export function array_zip<
+ const L extends any.indexedBy<keyof R>,
+ const R extends readonly unknown[]
+> (left: L, right: R): { -readonly [I in keyof R]: [x: L[I], y: R[I]] }
+export function array_zip<
+ const L extends readonly unknown[], 
+ const R extends readonly unknown[]
+> (left: L, right: R): [x: L[number], y: R[number]][]
+/// impl.
+export function array_zip(xs: readonly unknown[], ys: readonly unknown[]): [unknown, unknown][] {
+ let out: [unknown, unknown][] = []
+ for (let ix = 0; ix < Math_min(xs.length, ys.length); ix++)
+   void (out[ix] = [xs[ix], ys[ix]]);
+ return out
+}
+
+export type array_zip<
+  L extends { [x: number]: unknown }, 
+  R extends { [y: number]: unknown },
+  _ = L extends any.indexedBy<keyof R> ? R 
+    : R extends any.indexedBy<keyof L> ? L : never
+> = [_] extends [never] ? [x: L[number], y: R[number]][]
+  : { -readonly [I in keyof _]: [x: L[I & keyof L], y: R[I & keyof R]] }
+
+/** 
+ * ## {@link array_forEach `array.forEach`}
+ * ### ｛ {@link jsdoc.empty ` ️🕳️‍ ` } ｝
+ * 
+ * Same semantics as {@link globalThis.Array.prototype.forEach `Array.prototype.forEach`}.
+ */
+export function array_forEach<T extends array_any>(xs: T, effect: (x: T[number], ix: number) => void): void
+  { return xs.forEach(effect) }

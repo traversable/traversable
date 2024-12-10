@@ -14,7 +14,7 @@ export declare const emoji: {
   optimization: `🔥`
   preserves_reference: `🧩`
   preserves_structure: `🌿`
-  roundtrip: `🌐`,
+  roundtrip: `🪃`,
 }
 
 export type gitmoji = typeof gitmoji
@@ -24,6 +24,13 @@ export declare const gitmoji: {
   docs: "📝"
   types: "️🏷️"
   perf: "⚡️"
+  break: "💥"
+  refactor: "♻️"
+  infra: "🧱"
+  add: "➕"
+  rm: "➖"
+  up: "⬆️"
+  down: "⬇️"
 }
 
 export type math = typeof math

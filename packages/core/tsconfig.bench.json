@@ -9,7 +9,8 @@
 	"references": [
 		{ "path": "tsconfig.src.json" }, 
 		{ "path": "../bench" },
-		{ "path": "../data" }
+		{ "path": "../data" },
+		{ "path": "../registry" }
 	],
 	"include": ["bench"]
 }

@@ -8,7 +8,7 @@ import { type ParseError } from "effect/ParseResult"
 import type { any } from "any-ts"
 import { flow } from "effect"
 import { tap, Transform } from "./util.js"
-import { EMOJI } from "./metadata.js"
+import { EMOJI } from "./constants.js"
 
 export * from "node:fs"
 
@@ -35,6 +35,57 @@ export namespace config {
     export interface options extends fs.CopyOptions {}
     export const defaults = { recursive: true } satisfies config.copy.options
   }
+}
+
+/** 
+ * ## {@link map `fs.map`} 
+ * 
+ * Given a schema describing the JSON you expect to parse out of a file,
+ * and a function to run on the parsed JSON, {@link file.map `file.map`}
+ * returns a function a single argument, which is the path to the file
+ * you want to apply the function to.
+ * 
+ * **Note:** unlike {@link writer `fs.writer`}, {@link map `fs.map`} is pure.
+ * 
+ * **Note:** if the file at `pathspec` fails to parse with the provided
+ * schema, by default, an error will be thrown. Error handling is configurable
+ * via {@link map.Options `fs.map.Options`}.
+ * 
+ * - When **1 argument is provided**, the mapping function will be applied to
+ * the file at `pathspec`'s contents, the output is stringified, and `pathspec`
+ * is overwritten.
+ * 
+ * - When **2 arguments are provided**, the mapping function will be applied to
+ * the file at `sourcePath`'s contents, and the output will be stringified and 
+ * written to `targetPath`.
+ */
+export function map<T, U>(schema: S.Schema<T>, fn: (t: T) => U): (pathspec: string) => U
+export function map<T, U, E = never>(schema: S.Schema<T>, fn: (t: T) => U, options: map.Options<T, E>): (pathspec: string) => U
+export function map<T, U, E = never>(schema: S.Schema<T>, fn: (t: T) => U, options?: map.Options<T, E>): (pathspec: string) => U
+/// impl.
+export function map<T, U, E>(
+  schema: S.Schema<T>, 
+  fn: (t: T) => U, {
+    deserialize = map.defaults.deserialize,
+    handleFileNotFound = map.defaults.handleFileNotFound,
+    handleParseError = map.defaults.handleParseError,
+  }: map.Options<T, E> = map.defaults
+): (pathspec: string) => U {
+  return (pathspec: string) => pipe(
+    Effect.try({
+      try: () => fs.readFileSync(pathspec).toString("utf8"),
+      catch: () => handleFileNotFound(pathspec),
+    }),
+    Effect.flatMap(
+      flow(
+        deserialize,
+        S.decode(schema, { onExcessProperty: "preserve" }),
+        Effect.mapError(handleParseError),
+      )
+    ),
+    Effect.map(fn),
+    Effect.runSync,
+  )
 }
 
 export function mkdir<T extends string>(dirpath: T, options?: config.mkdir.options): void
@@ -145,57 +196,6 @@ export function rmAndCopy(
   return void (
     rmdir(target, config.rmdir.defaults),
     copy(source, target)
-  )
-}
-
-/** 
- * ## {@link map `fs.map`} 
- * 
- * Given a schema describing the JSON you expect to parse out of a file,
- * and a function to run on the parsed JSON, {@link file.map `file.map`}
- * returns a function a single argument, which is the path to the file
- * you want to apply the function to.
- * 
- * **Note:** unlike {@link writer `fs.writer`}, {@link map `fs.map`} is pure.
- * 
- * **Note:** if the file at `pathspec` fails to parse with the provided
- * schema, by default, an error will be thrown. Error handling is configurable
- * via {@link map.Options `fs.map.Options`}.
- * 
- * - When **1 argument is provided**, the mapping function will be applied to
- * the file at `pathspec`'s contents, the output is stringified, and `pathspec`
- * is overwritten.
- * 
- * - When **2 arguments are provided**, the mapping function will be applied to
- * the file at `sourcePath`'s contents, and the output will be stringified and 
- * written to `targetPath`.
- */
-export function map<T, U>(schema: S.Schema<T>, fn: (t: T) => U): (pathspec: string) => U
-export function map<T, U, E = never>(schema: S.Schema<T>, fn: (t: T) => U, options: map.Options<T, E>): (pathspec: string) => U
-export function map<T, U, E = never>(schema: S.Schema<T>, fn: (t: T) => U, options?: map.Options<T, E>): (pathspec: string) => U
-/// impl.
-export function map<T, U, E>(
-  schema: S.Schema<T>, 
-  fn: (t: T) => U, {
-    deserialize = map.defaults.deserialize,
-    handleFileNotFound = map.defaults.handleFileNotFound,
-    handleParseError = map.defaults.handleParseError,
-  }: map.Options<T, E> = map.defaults
-): (pathspec: string) => U {
-  return (pathspec: string) => pipe(
-    Effect.try({
-      try: () => fs.readFileSync(pathspec).toString("utf8"),
-      catch: () => handleFileNotFound(pathspec),
-    }),
-    Effect.flatMap(
-      flow(
-        deserialize,
-        S.decode(schema, { onExcessProperty: "preserve" }),
-        Effect.mapError(handleParseError),
-      )
-    ),
-    Effect.map(fn),
-    Effect.runSync,
   )
 }
 

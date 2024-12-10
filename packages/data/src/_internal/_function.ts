@@ -1,4 +1,6 @@
-import type { any, mut, nonempty, some } from "any-ts"
+import { Invariant, type Kind } from "@traversable/registry"
+import type { any, mut } from "any-ts"
+import type { Functor } from "../exports.js"
 import type { array_shift } from "./_array.js"
 
 export { fn }
@@ -11,8 +13,8 @@ export {
   apply,
   call,
   exhaustive,
-  fanout,
-  fansout,
+  distribute,
+  distributes,
   flow,
   free,
   hasOwn,
@@ -20,11 +22,13 @@ export {
   isUnusedParam,
   identity,
   loop,
+  loopN,
   pipe,
   tuple,
   tupled,
   untupled,
   UnusedParam,
+  upcast,
 }
 
 /** @internal */
@@ -156,6 +160,10 @@ const identity
   : <const T>(x: T) => T 
   = (x) => x
 
+const upcast
+  : <I extends O, O>(i: I) => O
+  = identity
+
 const absorb
   : <T>(x: T) => never 
   = (x) => x as never
@@ -182,18 +190,27 @@ const call
  * @category optimization
  */
 const loop
-  : <A, B>(f: (a: A, next: (a: A) => B) => B) => (a: A) => B
-  = (f) => (a) => {
-  const next = (a_: typeof a) => f(a_, next)
-  return f(a, next)
+  : <A, B>(fn: (a: A, next: (a: A) => B) => B) => (a: A) => B
+  = (fn) => (a) => {
+    const next = (a_: typeof a) => fn(a_, next)
+    return fn(a, next)
+  }
+
+type ContinuationFn<A extends readonly unknown[], B> = (...params: [...args: A, loop: (...args: A) => B]) => B
+
+function loopN<A extends readonly unknown[], B>(fn: ContinuationFn<A, B>): (...a: A) => B {
+  return (...a: A) => {
+    const next = (...a_: typeof a) => fn(...a_, next)
+    return fn(...a, next)
+  }
 }
 
 /**
  * Checks to make sure a function's implementation is total
  */
 const exhaustive
-  : <_>(_: never) => _ 
-  = () => { throw Error(`\`exhaustive\` was called, which should never happen`) }
+  : <_ extends never = never>(..._: _[]) => _ 
+  = (..._) => Invariant.FailedToExhaustivelyMatch("@traversable/data/fn.exhaustive", _)
 
 const free
   : <T = never>(type: T) => T 
@@ -412,52 +429,37 @@ function flow(
 }
 
 /**
- * ### {@link fanout `fn.fanout`}
+ * ### {@link distribute `fn.distribute`}
  * 
- * {@link globalThis.Array.prototype.map `Array.prototype.map`} solves for when
- * you have a __single function__ to apply to __many inputs__ (0+).
- * 
- * {@link fanout `fn.fanout`} solves for when you have __many functions__ (0+)
- * that you need to apply to a __single input__.
- * 
- * At their core, both problems are about preserving structure:
- * 
- * - {@link globalThis.Array.prototype.map `Array.prototype.map`} takes a function
- *   accepting a single input, and returns a function capable of handling many inputs, 
- *   and _preserves their structure_: if you give the function an array of 3 elements,
- *   you will get an array of 3 elements back.
- * 
- * - {@link fanout `fn.fanout`} takes some structure (such as an array or object) whose
- *   elements are all functions waiting for a single input, and returns a function that
- *   is capable of applying its argument [across](https://en.wikipedia.org/wiki/Fan-out_(software)) 
- *   those functions, _preserving their structure_.
+ * Distributes an argument to many (0 or more) functions.
  */
-function fanout<const T extends { [x: number]: fn.any }>(fns: T): 
+function distribute<const T extends { [x: number]: fn.any }>(fns: T): 
   (param: fn.param<T[number]>) => { -readonly [K in keyof T]: fn.return<T[K]> }
-function fanout<const T extends { [x: string]: fn.any }>(fns: T): 
+function distribute<const T extends { [x: string]: fn.any }>(fns: T): 
   (param: fn.param<T[keyof T]>) => { -readonly [K in keyof T]: fn.return<T[K]> }
 /// impl.
-function fanout<T extends { [x: string]: fn.any }>(fns: T) {
-  return (arg: fn.param<T[keyof T]>) => {
+function distribute<T extends { [x: string]: fn.any }>(fns: T) {
+  return (...arg: [fn.param<T[keyof T]>]) => {
     if (globalThis.Array.isArray(fns)) {
       let out: unknown[] = []
-      for (const fn of fns) out.push(fn(arg))
+      for (let ix = 0, len = fns.length; ix < len; ix++) 
+        out.push(fns[ix](...arg))
       return out
     }
     else {
       let out: { [x: string]: unknown } = {}
-      for (const k in fns) out[k] = fns[k](arg)
+      for (const k in fns) out[k] = fns[k](...arg)
       return out
     }
   }
 } 
 
-function fansout<const T extends { [x: string]: fn.any }>(fns: T): 
+function distributes<const T extends { [x: string]: fn.any }>(fns: T): 
   (...params: fn.params<T[keyof T]>) => { -readonly [K in keyof T]: fn.return<T[K]> }
-function fansout<const T extends { [x: number]: fn.any }>(fns: T): 
+function distributes<const T extends { [x: number]: fn.any }>(fns: T): 
   (...params: fn.params<T[number]>) => { -readonly [K in keyof T]: fn.return<T[K]> }
 /// impl.
-function fansout<T extends { [x: string]: fn.any }>(fns: T) {
+function distributes<T extends { [x: string]: fn.any }>(fns: T) {
   return (...args: fn.params<T[keyof T]>) => {
     if (globalThis.Array.isArray(fns)) {
       let out: unknown[] = []
@@ -476,6 +478,7 @@ export function tee<T, A, B>(leftFn: (t: T) => A, rightFn: (t: T) => B): (t: T) 
 export function tee<T, A, B>(leftFn: (t: T) => A, rightFn: (t: T) => B) { 
   return (value: T) => [leftFn(value), rightFn(value)]
 }
+
 
 /**
  * Adapted from:
@@ -760,48 +763,70 @@ function pipe(
     case a.length === 15:
       return a[14](a[13](a[12](a[11](a[10](a[9](a[8](a[7](a[6](a[5](a[4](a[3](a[2](a[1](a[0]))))))))))))))
     case a.length === 16:
-      return a[15](
-        a[14](a[13](a[12](a[11](a[10](a[9](a[8](a[7](a[6](a[5](a[4](a[3](a[2](a[1](a[0])))))))))))))),
-      )
+      return a[15](a[14](a[13](a[12](a[11](a[10](a[9](a[8](a[7](a[6](a[5](a[4](a[3](a[2](a[1](a[0])))))))))))))))
     case a.length === 17:
-      return a[16](
-        a[15](a[14](a[13](a[12](a[11](a[10](a[9](a[8](a[7](a[6](a[5](a[4](a[3](a[2](a[1](a[0]))))))))))))))),
-      )
+      return a[16](a[15](a[14](a[13](a[12](a[11](a[10](a[9](a[8](a[7](a[6](a[5](a[4](a[3](a[2](a[1](a[0]))))))))))))))))
     case a.length === 18:
-      return a[17](
-        a[16](
-          a[15](
-            a[14](a[13](a[12](a[11](a[10](a[9](a[8](a[7](a[6](a[5](a[4](a[3](a[2](a[1](a[0])))))))))))))),
-          ),
-        ),
-      )
+      return a[17](a[16](a[15](a[14](a[13](a[12](a[11](a[10](a[9](a[8](a[7](a[6](a[5](a[4](a[3](a[2](a[1](a[0])))))))))))))))))
     case a.length === 19:
-      return a[18](
-        a[17](
-          a[16](
-            a[15](
-              a[14](a[13](a[12](a[11](a[10](a[9](a[8](a[7](a[6](a[5](a[4](a[3](a[2](a[1](a[0])))))))))))))),
-            ),
-          ),
-        ),
-      )
+      return a[18](a[17](a[16](a[15](a[14](a[13](a[12](a[11](a[10](a[9](a[8](a[7](a[6](a[5](a[4](a[3](a[2](a[1](a[0]))))))))))))))))))
     case a.length === 20:
-      return a[19](
-        a[18](
-          a[17](
-            a[16](
-              a[15](
-                a[14](a[13](a[12](a[11](a[10](a[9](a[8](a[7](a[6](a[5](a[4](a[3](a[2](a[1](a[0])))))))))))))),
-              ),
-            ),
-          ),
-        ),
-      )
+      return a[19](a[18](a[17](a[16](a[15](a[14](a[13](a[12](a[11](a[10](a[9](a[8](a[7](a[6](a[5](a[4](a[3](a[2](a[1](a[0])))))))))))))))))))
     default: {
       const args: any.functions = a
       let ret: unknown = args[0]
-      for (let i = 1; i < args.length; i++) ret = args[i](ret)
+      for (let ix = 1, len = args.length; ix < len; ix++) ret = args[ix](ret)
       return ret
     }
   }
+}
+
+export const log
+  : (msg: string, logger?: (...args: unknown[]) => void) => (x: unknown) => void 
+  = (msg, logger = globalThis.console.log) => (x) => logger(msg, x)
+
+export const chainFirst
+  : <const T>(x: T) => (eff: (x: T) => void) => T 
+  = (x) => (eff) => (void eff(x), x)
+
+export const tap
+  : (msg: string, logger?: (...args: unknown[]) => void) => <const T>(x: T) => T 
+  = (msg, logger = globalThis.console.log) => flow(chainFirst, apply(log(msg, logger)))
+
+export namespace morphism {
+  export function ana<F extends Kind>(F: { map: Functor.map<F> }) {
+    return <T>(coalgebra: Functor.Coalgebra<F, T>) => {
+      return function loop(term: T): Kind.apply<F, F> {
+        return F.map(loop)(coalgebra(term))
+      }
+    }
+  }
+
+  export function cata<F extends Kind>(F: Functor<F>) {
+    return <T>(algebra: Functor.Algebra<F, T>) => {
+      return function loop(term: Kind.apply<F, T>): T {
+        return algebra(F.map(loop)(term))
+      }
+    }
+  }
+
+  export function hylo
+    <F extends Kind>(F: Functor<F>): 
+    <S, T>(
+      algebra: Functor.Algebra<F, T>, 
+      coalgebra: Functor.Coalgebra<F, S>
+    ) => (s: S) 
+      => T
+  export function hylo
+  <F extends Kind>(F: Functor<F>) {
+      return <S, T>(
+        algebra: Functor.Algebra<F, T>, 
+        coalgebra: Functor.Coalgebra<F, S>
+      ) => 
+        (s: S) => pipe(
+          coalgebra(s),
+          F.map(hylo(F)(algebra, coalgebra)),
+          algebra,
+        )
+    }
 }

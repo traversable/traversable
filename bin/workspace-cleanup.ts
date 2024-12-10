@@ -3,13 +3,16 @@ import { Command, Prompt } from "@effect/cli"
 import { NodeContext, NodeRuntime } from "@effect/platform-node"
 import { Effect } from "effect"
 
-import { PACKAGES } from "./metadata.js"
+import { PACKAGES } from "./constants.js"
 import { main } from "./workspace.js"
-
 
 const pkgToRm = Prompt.select({
   message: `Which package would you like to cleanup (remove)?`,
-  choices: [...PACKAGES].sort().map(pkg => pkg.slice("packages/".length)).map((pkg) => ({ title: pkg, value: pkg }))
+  choices: 
+    [...PACKAGES]
+      .sort()
+      .map(pkg => pkg.slice("packages/".length))
+      .map((pkg) => ({ title: pkg, value: pkg }))
 })
 
 const cleanup = Command.prompt(

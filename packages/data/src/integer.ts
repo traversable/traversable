@@ -1,16 +1,18 @@
-import type { None, Option, Some, integer } from "./exports.js"
+import { URI } from "@traversable/registry"
+import type { integer, number } from "@traversable/registry"
+import type { None, Option, Some } from "./exports.js"
 import type { numeric } from "./number.js"
 
 /** @internal */
-const none = (): None => ({ _tag: "@traversable/data/Option::None" })
+const none = (): None => ({ _tag: URI.None })
 /** @internal */
-const some = <T>(value: T): Some<T> => ({ _tag: "@traversable/data/Option::Some", value })
+const some = <T>(value: T): Some<T> => ({ _tag: URI.Some, value })
 
 export {
   /**
    * ### {@link integer `integer.any`}
-   * 
-   * Greatest lower bound of the {@link integer `integer`} namespace
+   * [Least upper bound](https://en.wikipedia.org/wiki/Upper_and_lower_bounds)
+   * for the set of representable {@link integer `integer`}s
    */
   integer as any,
   /** 
@@ -31,7 +33,7 @@ export {
  * type From = integer.from<"a" | [1, 2, 3] | 1 | typeof myInteger>
  * //   ^? type From = typeof myInteger
  */
-export type from<T, N extends T extends integer ? T : never = T extends integer ? T : never> = N
+export type from<T, N extends T extends number.integer ? T : never = T extends integer ? T : never> = N
 
 /**
  * ### {@link and `integer.and`}
@@ -101,6 +103,6 @@ namespace integer_ {
       : globalThis.Number.isFinite(parsed) ? some(parsed) : none()
   }
 
-  export function isOdd(x: integer): boolean { return !!(+x % 2) }
-  export function isEven(x: integer): boolean { return !isOdd(x) }
+  export function isOdd(x: integer): boolean { return (+x & 1) === 1 }
+  export function isEven(x: integer): boolean { return (+x & 1) === 0 }
 }

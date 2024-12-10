@@ -1,7 +1,8 @@
 import type { any, nonempty } from "any-ts"
 
-import type { Predicate } from "@traversable/data/exports"
-import { escapeChar, isEscapable, startsWithEscapable } from "./_char.js"
+import { PATTERN } from "@traversable/registry"
+import type { Predicate } from "../exports.js"
+import { escapeChar, startsWithEscapable } from "./_char.js"
 
 /**
  * ### {@link finite `string.finite`}
@@ -48,18 +49,6 @@ export type finite<T> = string extends T ? never : [T] extends [string] ? string
  *  onlyNonLiteralsAllowed("hi how are you?")           // 🚫
  */
 export type nonfinite<T> = string extends T ? string : never
-
-export const PATTERN = {
-  between: /(?<=\{).+?(?=\})/g,
-  doubleQuoted: /(?<=^").+?(?="$)/,
-  singleQuoted: /(?<=^').+?(?='$)/,
-  graveQuoted: /(?<=^`).+?(?=`$)/,
-  /**
-   * [source](https://util.unicode.org/UnicodeJsps/list-unicodeset.jsp?a=%5Cp%7BID_Start%7D)
-   */
-  identifier: /^[$_\p{ID_Start}][$\u200c\u200d\p{ID_Continue}]*$/u,
-  // identifier: /^[a-z$_][a-z$_0-9]*$/i,
-}
 
 export type replace<
   T extends string,

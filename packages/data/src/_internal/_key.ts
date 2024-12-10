@@ -1,13 +1,14 @@
 import type { newtype } from "any-ts"
 
+import { PATTERN } from "@traversable/registry"
 import * as fn from "./_function.js"
 import { prop } from "./_prop.js"
-import { PATTERN, escape as escapeString, isQuoted } from "./_string.js"
+import { escape as escapeString, isQuoted } from "./_string.js"
 
 /** @internal */
-type matchUppercaseAlpha<T extends string> = key.toUpper<T> extends T ? key.toLower<T> extends T ? never : T : never
+type matchUppercaseAlpha<T extends string> = key.uppercase<T> extends T ? key.lowercase<T> extends T ? never : T : never
 /** @internal */
-type matchLowercaseAlpha<T extends string> = key.toLower<T> extends T ? key.toUpper<T> extends T ? never : T : never
+type matchLowercaseAlpha<T extends string> = key.lowercase<T> extends T ? key.uppercase<T> extends T ? never : T : never
 /** @internal */
 type takeUppercaseChars<T extends string, Out extends string = never>
   = [T] extends [never] ? [match: never, nonmatch: never]
@@ -51,14 +52,119 @@ namespace char {
   export const isNonAlphaNumeric = (c: string) => !isAlpha(c) && !isDigit(c)
 }
 
+/** 
+ * ## {@link nonfinite `key.nonfinite`} 
+ * 
+ * Constrains a type parameter to be "non-finite" (as opposed to "finite").
+ * 
+ * Prior art: 
+ * - Originally inspired by a 
+ *   [Stack Overflow question](https://stackoverflow.com/questions/54261967/what-is-representable-used-for-in-haskell)
+ *   about the purpose of indexed / representable functors
+ * 
+ * See also:
+ * - {@link finite `key.finite`}
+ * 
+ * @example
+ *  import { key } from "@traversable/data"
+ * 
+ *  const RNDM = () => globalThis.Math.random()
+ * 
+ *  //         This is the trick to get it working ↓↓↓ make sure you're constraining `T` in `T`'s extends clause
+ *  const myNonFiniteKey = <T extends key.nonfinite<T>>(key: T): T => key
+ * 
+ *  const ok_01 = myNonFiniteKey(RNDOM())
+ *  //    ^? const ok_01: number                                                               // ✅ No TypeError
+ *  const ok_02 = myNonFiniteKey(RNDM() > 0.5 ? RNDM() : RNDM() + "")                          // ✅ No TypeError
+ *  //    ^? const ok_02: string | number                                                      // ✅ No TypeError
+ * 
+ *  // **Note:** the `myNonFiniteKey` constructor is equivalent to the `key.nonfinite` function
+ *  const ok_03 = key.nonfinite(RNDM() > 0.5 ? Symbol() : RNDM())                              // ✅ No TypeError
+ *  //    ^? const ok_03: number | symbol                                                      // ✅ No TypeError
+ *
+ *  // **Note:** works with raw types too (not just values)
+ *  type Ok_04 = key.nonfinite<globalThis.PropertyKey>                                         // ✅ No TypeError
+ *  //    ^? type Ok_04 = string | number | symbol
+ *  
+ *  // **Note:** `key.nonfinite` is satisfied so long as any member of the union is nonfinite
+ *  const ok_05 = key.nonfinite(RNDM() > 0.5 ? RNDM() : "a")                                   // ✅ No TypeError
+ *  //    ^? const ok_05: number | "a"
+ *  
+ *  const err_06 = key.nonfinite("a")                         // 🚫 [TypeError]: 'string' is not assignable
+ *  //    ^? const err_06: never                              //                 to parameter of type 'never'
+ *  const err_07 = key.nonfinite(RNDM() > 0.5 ? "a" : 1)      // 🚫 [TypeError]: 'string | number' is not assignable
+ *  //    ^? const err_07: never                              //                 to parameter of type 'never'
+ *  type Never_01 = key.nonfinite<symbol>
+ *  //    ^? type Never_01 = never
+ */
+const nonfinite
+  : <T extends nonfinite<T>>(key: T) => T
+  = fn.identity
 
-export declare namespace key {
+// would happily accept a PR that simplifies this type? 🤷
+// but I'll take it for now -- IMO, it's pretty damn cool that it works at all
+type nonfinite<T> = never | (
+  [T] extends [infer U] 
+  ? [globalThis.PropertyKey] extends [T] ? U
+  : [string] extends [T] ? U 
+  : [number] extends [T] ? U
+  : [symbol] extends [T] ? U
+  : [string | number] extends [T] ? U
+  : [string | symbol] extends [T] ? U
+  : [symbol | number] extends [T] ? U
+  : never
+  : never
+) & globalThis.PropertyKey
+
+/** 
+ * ## {@link finite `key.finite`} 
+ * 
+ * See also:
+ * - {@link nonfinite `key.nonfinite`}
+ * 
+ * @example
+ *  import { key } from "@traversable/data"
+ * 
+ *  const RNDM = () => globalThis.Math.random()
+ * 
+ *  //   This is the trick to get it working ↓↓↓ make sure you're constraining `T` in `T`'s extends clause
+ *  const myFiniteKey = <T extends key.finite<T>>(key: T): T => key
+ * 
+ *  const ok_01 = myFiniteKey(1)
+ *  //    ^? const ok_01: 1                               // ✅ No TypeError
+ * 
+ *  // **Note:** the `myFiniteKey` constructor is equivalent to the `key.finite` function
+ *  const ok_02 = myFiniteKey(RNDM() > 0.5 ? "a" : "b")   // ✅ No TypeError
+ *  //    ^? const ok_02: "a" | "b"
+ * 
+ *  const err_03 = key.finite("a")                        // 🚫 [TypeError]: 'string' is not assignable
+ *  //    ^? const err_03: never                          //                 to parameter of type 'never'
+ *  const err_04 = key.finite(RNDM() > 0.5 ? "a" : 1)     // 🚫 [TypeError]: 'string | number' is not assignable
+ *  //    ^? const err_04: never                          //                 to parameter of type 'never'
+ * 
+ *  // **Note:** `key.finite` complains if **any** member of the union is nonfinite
+ *  const err_05 = key.finite(RNDM() > 0.5 ? 1 : RNDOM() > 0.5 ? 2 : Symbol()) // 🚫 [TypeError]: '1 | 2 | symbol' is not
+ *  //    ^? const err_05: number | "a"                                        // assignable to parameter of type 'never'
+ */
+const finite
+  : <const T extends finite<T>>(key: T) => T
+  = fn.identity
+
+type finite<T> 
+  = [nonfinite<T>] extends [never] 
+  ? [T] extends [infer U extends keyof any] ? U 
+  : never
+  : never
+
+export declare namespace key{
   export {
+    finite,
     /**
      * ### {@link key_any `key.any`}
      * Greatest lower bound of the {@link key `key`} namespace
      */
-    key_any as any
+    key_any as any,
+    nonfinite,
   }
   export type key_any<T extends keyof never = keyof never> = T
 
@@ -118,6 +224,7 @@ export declare namespace key {
   export type nonnumber<T extends symbol | string = symbol | string> = T
   export type nonsymbol<T extends number | string = number | string> = T
   export type nonstring<T extends symbol | number = symbol | number> = T
+  export type nonKeyOf<T, K extends key.any> = never | [K] extends [keyof T] ? never : key.any
 
   /** 
    * A higher-kinded type (HKT) is just a type that you can pass around as a reference, without applying it (yet).
@@ -139,8 +246,8 @@ export declare namespace key {
     interface camel extends Kind<key.any> { [-1]: key.camel<this[0]> }
     interface kebab extends Kind<key.any> { [-1]: key.kebab<this[0]> }
     interface pascal extends Kind<key.any> { [-1]: key.pascal<this[0]> }
-    interface upper extends Kind<key.any> { [-1]: key.toUpper<this[0]> }
-    interface lower extends Kind<key.any> { [-1]: key.toLower<this[0]> }
+    interface upper extends Kind<key.any> { [-1]: key.uppercase<this[0]> }
+    interface lower extends Kind<key.any> { [-1]: key.lowercase<this[0]> }
     interface prefix extends Kind<Pair> { [-1]: key.prefix<this[0][0], this[0][1]> }
     interface unprefix extends Kind<Pair> { [-1]: key.unprefix<this[0][0], this[0][1]> }
     interface postfix extends Kind<Pair> { [-1]: key.postfix<this[0][0], this[0][1]> }
@@ -224,9 +331,9 @@ export namespace key {
    * - `number`: coerce the number to a string
    * - `symbol`: return the symbol
    */
-  export function toUpper<K extends key.any>(k: K): key.toUpper<K>
-  export function toUpper(k: key.any) { return isSymbol(k) ? k : `${k}`.toUpperCase() }
-  export type toUpper<K extends key.any> = K extends symbol ? K : globalThis.Uppercase<`${K & (string | number)}`>
+  export function uppercase<K extends key.any>(k: K): key.uppercase<K>
+  export function uppercase(k: key.any) { return isSymbol(k) ? k : `${k}`.toUpperCase() }
+  export type uppercase<K extends key.any> = K extends symbol ? K : globalThis.Uppercase<`${K & (string | number)}`>
 
   /** 
    * ### {@link toLower `key.toLower`} 
@@ -237,9 +344,9 @@ export namespace key {
    * - `number`: coerce the number to a string
    * - `symbol`: return the symbol
    */
-  export function toLower<K extends key.any>(k: K): key.toLower<K>
-  export function toLower(k: key.any) { return isSymbol(k) ? k : `${k}`.toLowerCase() }
-  export type toLower<K extends key.any> = K extends symbol ? K : globalThis.Lowercase<`${K & (string | number)}`>
+  export function lowercase<K extends key.any>(k: K): key.lowercase<K>
+  export function lowercase(k: key.any) { return isSymbol(k) ? k : `${k}`.toLowerCase() }
+  export type lowercase<K extends key.any> = K extends symbol ? K : globalThis.Lowercase<`${K & (string | number)}`>
 
   /** 
    * ### {@link prefix `key.prefix`} 
@@ -316,7 +423,7 @@ export namespace key {
       = S extends `${infer L}${_}${infer R}${infer T}`
       ? camel.loop<
         T, 
-        O extends "" ? `${toLower<L>}${toUpper<R>}` : `${O}${toLower<L>}${toUpper<R>}`, _
+        O extends "" ? `${lowercase<L>}${uppercase<R>}` : `${O}${lowercase<L>}${uppercase<R>}`, _
       > : `${O}${S}`
   }
 
@@ -370,9 +477,9 @@ export namespace key {
       ? H extends " " ? loop<key.capitalize<T>, O, _>
       : snake.loop<
         T,
-        O extends "" ? toLower<H> 
+        O extends "" ? lowercase<H> 
         : H extends `${number}` ? `${O}${H}` 
-        : toUpper<H> extends H ? `${O}${_}${toLower<H>}` 
+        : uppercase<H> extends H ? `${O}${_}${lowercase<H>}` 
         : `${O}${H}`,
         _ 
       > : `${O}${S & (string | number)}`
@@ -529,15 +636,6 @@ export namespace key {
       delimiter: " ",
       separator: " ",
     } as const satisfies titlecase.Options
-    //  export type Article = typeof Article
-    //  export const Article = { a: "a", an: "an", the: "the" }
-    //  export type Preposition = typeof Preposition
-    //  export const Preposition = { as: "as", at: "at", by: "by", for: "for", in: "in", of: "of", off: "off", on: "on", per: "per", to: "to", up: "up", via: "via" }
-    //  export type Conjunction = typeof Conjunction
-    //  export const Conjunction = { and: "and", as: "as", but: "but", for: "for", if: "if", nor: "nor", or: "or", so: "so", yet: "yet" }
-    /** TODO: implement special handling of minor words */
-    //  export type MinorWord = typeof MinorWord
-    //  export const MinorWord = { ...Article, ...Conjunction, ...Preposition }
   }
 
   /** 
@@ -639,6 +737,9 @@ export namespace key {
     throw globalThis.Error("'key.normalize' does not support symbols, got: " + globalThis.String(key))
   })
 }
+
+void (key.finite = finite)
+void (key.nonfinite = nonfinite)
 
 export declare namespace keys {
   export { keys_any as any }

@@ -3,6 +3,8 @@ export const PACKAGES = [
 	"packages/core",
 	"packages/data",
 	"packages/http",
-	"packages/openapi"
+	"packages/interpret",
+	"packages/openapi",
+	"packages/registry"
 ] as const
 export type PACKAGES = typeof PACKAGES

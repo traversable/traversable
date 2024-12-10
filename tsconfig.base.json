@@ -36,8 +36,12 @@
       "@traversable/data/*": ["packages/data/src/*.js"],
       "@traversable/http": ["packages/http/src/index.js"],
       "@traversable/http/*": ["packages/http/*.js"],
+      "@traversable/interpret": ["packages/interpret/src/index.js"],
+      "@traversable/interpret/*": ["packages/interpret/*.js"],
       "@traversable/openapi": ["packages/openapi/src/index.js"],
-      "@traversable/openapi/*": ["packages/openapi/src/*.js"]
+      "@traversable/openapi/*": ["packages/openapi/src/*.js"],
+      "@traversable/registry": ["packages/registry/src/index.js"],
+      "@traversable/registry/*": ["packages/registry/*.js"]
     }
   }
 }

@@ -1,0 +1,3122 @@
+{
+  "openapi": "3.0.1",
+  "info": {
+    "description": "Nexus - Limited Non-CUG Endpoints",
+    "title": "Hotel Engine API Non-CUG",
+    "version": "1.0.0",
+    "contact": { "email": "engineering@hotelengine.com" }
+  },
+  "paths": {
+    "/api/v2/limited/bookings": {
+      "get": {
+        "parameters": [
+          {
+            "name": "search[]",
+            "in": "query",
+            "required": false,
+            "description": "Keyword(s) search for bookings",
+            "example": ["wee", "woo"],
+            "schema": { "type": "array" }
+          },
+          {
+            "name": "status[]",
+            "in": "query",
+            "required": false,
+            "description": "Filters search based on the following statuses visiting, booked, completed, cancelled",
+            "example": ["booked"],
+            "schema": { "type": "array" }
+          },
+          {
+            "name": "sort",
+            "in": "query",
+            "required": false,
+            "description": "Determines the sorting order of bookings",
+            "example": "total",
+            "schema": { "type": "string" }
+          },
+          {
+            "name": "order",
+            "in": "query",
+            "required": false,
+            "description": "Determines if returned bookings are ascending or descending",
+            "example": "desc",
+            "schema": { "type": "string" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Index bookings",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/bookings_index_response_serializer" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v2/limited/bookings/{id}": {
+      "get": {
+        "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }],
+        "responses": {
+          "401": { "description": "invalid credentials" },
+          "404": { "description": "booking not found" },
+          "200": {
+            "description": "booking found",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/bookings_show_response_serializer" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v2/limited/group_rate_quote": {
+      "post": {
+        "parameters": [],
+        "responses": {
+          "401": { "description": "invalid credentials" },
+          "404": { "description": "not found" },
+          "201": { "description": "Returns the job_id" },
+          "422": { "description": "Returns the error messages" }
+        },
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/group_rate_quote_create_params" }
+            }
+          }
+        }
+      }
+    },
+    "/api/v2/limited/locations": {
+      "get": {
+        "parameters": [
+          {
+            "name": "query",
+            "in": "query",
+            "description": "Location query",
+            "required": true,
+            "schema": { "type": "string" }
+          },
+          {
+            "name": "include_address",
+            "in": "query",
+            "description": "include address boolean",
+            "required": false,
+            "schema": { "type": "boolean" }
+          }
+        ],
+        "responses": {
+          "401": { "description": "invalid credentials" },
+          "404": { "description": "not found" },
+          "200": {
+            "description": "Returns Locations",
+            "headers": { "Cache-Control": { "schema": { "type": "string" }, "description": "Cache TTL" } },
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/locations_index_response_serializer" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v2/limited/properties/{id}": {
+      "get": {
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Property id",
+            "required": true,
+            "schema": { "type": "integer", "format": "int64" }
+          }
+        ],
+        "responses": {
+          "401": { "description": "invalid credentials" },
+          "404": { "description": "Property not found" },
+          "200": {
+            "description": "Property is returned successfully",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/properties_show_response_serializer" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v2/limited/special_booking_requests/{sbr_id}/hotel_options": {
+      "get": {
+        "parameters": [
+          {
+            "name": "sbr_id",
+            "in": "path",
+            "description": "Special Booking Request ID",
+            "required": true,
+            "schema": { "type": "string" }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "description": "status of hotel option",
+            "required": false,
+            "schema": { "type": "string" }
+          }
+        ],
+        "responses": {
+          "401": { "description": "invalid credentials" },
+          "404": { "description": "Special Booking Request not found" },
+          "200": {
+            "description": "Hotel options found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    { "$ref": "#/components/schemas/collection_response" },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "data": {
+                          "type": "array",
+                          "items": {
+                            "$ref": "#/components/schemas/special_booking_requests_hotel_options_index_response_serializer"
+                          }
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v2/limited/special_booking_requests/{sbr_id}/hotel_options/{id}": {
+      "get": {
+        "parameters": [
+          {
+            "name": "sbr_id",
+            "in": "path",
+            "description": "Special Booking Request ID",
+            "required": true,
+            "schema": { "type": "integer", "format": "int64" }
+          },
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Hotel Option ID",
+            "required": true,
+            "schema": { "type": "integer", "format": "int64" }
+          }
+        ],
+        "responses": {
+          "401": { "description": "invalid credentials" },
+          "404": { "description": "Hotel Option not found" },
+          "200": {
+            "description": "Hotel Option Found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/special_booking_requests_hotel_options_show_response_serializer"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v2/limited/special_booking_requests/{sbr_id}/hotel_options/{id}/accept": {
+      "put": {
+        "parameters": [
+          {
+            "name": "sbr_id",
+            "in": "path",
+            "description": "Special Booking Request ID",
+            "required": true,
+            "schema": { "type": "integer", "format": "int64" }
+          },
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Hotel Option ID",
+            "required": true,
+            "schema": { "type": "integer", "format": "int64" }
+          }
+        ],
+        "responses": {
+          "200": { 
+            "description": "Hotel Option accepted",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "401": { "description": "invalid credentials" },
+          "404": { "description": "not found" },
+          "422": {
+            "description": "other Hotel Option already approved",
+            "content": {
+              "application/json": { "schema": { "$ref": "#/components/schemas/error_presenter" } }
+            }
+          },
+          "409": {
+            "description": "Hotel Option already approved",
+            "content": {
+              "application/json": { "schema": { "$ref": "#/components/schemas/error_presenter" } }
+            }
+          }
+        }
+      }
+    },
+    "/api/v2/limited/special_booking_requests/{sbr_id}/hotel_options/{id}/reconsider": {
+      "put": {
+        "parameters": [
+          {
+            "name": "sbr_id",
+            "in": "path",
+            "description": "Special Booking Request ID",
+            "required": true,
+            "schema": { "type": "integer", "format": "int64" }
+          },
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Hotel Option ID",
+            "required": true,
+            "schema": { "type": "integer", "format": "int64" }
+          }
+        ],
+        "responses": {
+          "401": { "description": "invalid credentials" },
+          "404": { "description": "not found" },
+          "200": { "description": "Hotel Option did transition" },
+          "409": {
+            "description": "Hotel Option didnt transition",
+            "content": {
+              "application/json": { "schema": { "$ref": "#/components/schemas/error_presenter" } }
+            }
+          }
+        }
+      }
+    },
+    "/api/v2/limited/special_booking_requests/{sbr_id}/hotel_options/{id}/decline": {
+      "put": {
+        "parameters": [
+          {
+            "name": "sbr_id",
+            "in": "path",
+            "description": "Special Booking Request ID",
+            "required": true,
+            "schema": { "type": "integer", "format": "int64" }
+          },
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Hotel Option ID",
+            "required": true,
+            "schema": { "type": "integer", "format": "int64" }
+          }
+        ],
+        "responses": {
+          "401": { "description": "invalid credentials" },
+          "404": { "description": "Hotel Option not found" },
+          "200": { "description": "Hotel Option Declined Successfully" },
+          "422": {
+            "description": "Invalid Params",
+            "content": {
+              "application/json": { "schema": { "$ref": "#/components/schemas/error_presenter" } }
+            }
+          }
+        },
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "decline_reasons": {
+                    "type": "array",
+                    "example": ["location", "reviews"],
+                    "description": "Collection of reasons customer declined this Hotel Option"
+                  },
+                  "notes": {
+                    "type": "string",
+                    "example": "No fast food within 10 miles, please rectify",
+                    "description": "Optional Customer notes on why they declined this Hotel Option"
+                  }
+                },
+                "required": ["decline_reasons"]
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v2/limited/special_booking_requests/{special_booking_request_id}/properties": {
+      "get": {
+        "parameters": [
+          {
+            "name": "special_booking_request_id",
+            "in": "path",
+            "description": "Special Booking Request ID",
+            "required": true,
+            "schema": { "type": "integer", "format": "int64" }
+          },
+          { "name": "limit", "in": "query", "required": false, "schema": { "type": "integer" } },
+          { "name": "offset", "in": "query", "required": false, "schema": { "type": "integer" } },
+          { "name": "query", "in": "query", "required": false, "schema": { "type": "string" } },
+          { "name": "max_distance", "in": "query", "required": false, "schema": { "type": "integer" } },
+          { "name": "sort", "in": "query", "required": false, "schema": { "type": "string" } },
+          { "name": "order", "in": "query", "required": false, "schema": { "type": "string" } },
+          { "name": "min_star_rating", "in": "query", "required": false, "schema": { "type": "integer" } },
+          {
+            "name": "amenities[]",
+            "in": "query",
+            "style": "form",
+            "explode": true,
+            "schema": { "type": "array", "items": { "type": "string" } },
+            "required": false
+          }
+        ],
+        "responses": {
+          "401": { "description": "invalid credentials" },
+          "404": { "description": "and does not own sbr and is not in business" },
+          "200": {
+            "description": "and is in business",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    { "$ref": "#/components/schemas/collection_response" },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "data": {
+                          "type": "array",
+                          "items": {
+                            "$ref": "#/components/schemas/special_booking_requests_list_properties_serializer"
+                          }
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v2/limited/special_booking_requests": {
+      "get": {
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": { "type": "integer", "default": 50 }
+          },
+          { "name": "offset", "in": "query", "required": false, "schema": { "type": "integer" } },
+          {
+            "name": "buckets[]",
+            "in": "query",
+            "description": "List of buckets to filter by",
+            "required": false,
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "enum": [
+                  "draft",
+                  "submitted",
+                  "ready_for_review",
+                  "hotel_reviewing",
+                  "upcoming",
+                  "completed",
+                  "cancelled"
+                ]
+              }
+            }
+          },
+          {
+            "name": "search",
+            "in": "query",
+            "description": "Search for city, state, or name of SBR",
+            "required": false,
+            "schema": { "type": "string" }
+          },
+          {
+            "name": "sort",
+            "in": "query",
+            "description": "How to sort by SBRs",
+            "required": false,
+            "schema": { "type": "string", "default": "check_in", "enum": ["check_in"] }
+          },
+          {
+            "name": "order",
+            "in": "query",
+            "description": "In what order should SBRs be sorted",
+            "required": false,
+            "schema": { "type": "string", "default": "asc", "enum": ["asc", "desc"] }
+          }
+        ],
+        "responses": {
+          "401": { "description": "invalid credentials" },
+          "404": { "description": "not found" },
+          "200": {
+            "description": "List this user only SBRs",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    { "$ref": "#/components/schemas/collection_response" },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "data": {
+                          "type": "array",
+                          "items": {
+                            "$ref": "#/components/schemas/special_booking_requests_index_response_serializer"
+                          }
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "parameters": [],
+        "responses": {
+          "401": { "description": "invalid credentials" },
+          "404": { "description": "not found" },
+          "201": {
+            "description": "Special Booking Request created",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/special_booking_requests_show_response_serializer" }
+              }
+            }
+          },
+          "422": {
+            "description": "Invalid Params",
+            "content": {
+              "application/json": { "schema": { "$ref": "#/components/schemas/error_presenter" } }
+            }
+          }
+        },
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/special_booking_requests_create_params" }
+            }
+          }
+        }
+      }
+    },
+    "/api/v2/limited/special_booking_requests/{id}": {
+      "get": {
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Special Booking Request ID",
+            "required": true,
+            "schema": { "type": "integer", "format": "int64" }
+          }
+        ],
+        "responses": {
+          "401": { "description": "invalid credentials" },
+          "404": { "description": "Not Found" },
+          "200": {
+            "description": "Returns the user's Special Booking Request",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/special_booking_requests_show_response_serializer" }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Special Booking Request ID",
+            "required": true,
+            "schema": { "type": "integer", "format": "int64" }
+          }
+        ],
+        "responses": {
+          "401": { "description": "invalid credentials" },
+          "404": { "description": "Special booking request not found" },
+          "200": {
+            "description": "Special Booking Request updated",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/special_booking_requests_show_response_serializer" }
+              }
+            }
+          },
+          "422": {
+            "description": "Special booking request update fails",
+            "content": {
+              "application/json": { "schema": { "$ref": "#/components/schemas/error_presenter" } }
+            }
+          }
+        },
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/special_booking_requests_update_params" }
+            }
+          }
+        }
+      }
+    },
+    "/api/v2/limited/special_booking_requests/{id}/submit": {
+      "put": {
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Special Booking Request ID",
+            "required": true,
+            "schema": { "type": "integer", "format": "int64" }
+          }
+        ],
+        "responses": {
+          "401": { "description": "invalid credentials" },
+          "404": { "description": "Special booking request not found" },
+          "200": {
+            "description": "Special booking request submitted successfully",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/special_booking_requests_show_response_serializer" }
+              }
+            }
+          },
+          "409": { "description": "Special booking request already submitted" }
+        },
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/special_booking_requests_update_params" }
+            }
+          }
+        }
+      }
+    },
+    "/api/v2/limited/special_booking_requests/{id}/cancel": {
+      "put": {
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "Special Booking Request ID",
+            "required": true,
+            "schema": { "type": "integer", "format": "int64" }
+          }
+        ],
+        "responses": {
+          "401": { "description": "invalid credentials" },
+          "404": { "description": "SBR not found" },
+          "200": { "description": "Successfully cancelled SBR" },
+          "422": { "description": "Could not transition to cancelled." }
+        },
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/special_booking_requests_cancel_params" }
+            }
+          }
+        }
+      }
+    },
+    "/api/v2/limited/user": {
+      "get": {
+        "responses": {
+          "401": { "description": "invalid credentials" },
+          "404": { "description": "not found" },
+          "200": {
+            "description": "User found",
+            "content": {
+              "application/json": { "schema": { "$ref": "#/components/schemas/user_show_serializer" } }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": { "bearer_auth": { "type": "http", "scheme": "bearer" } },
+    "schemas": {
+      "collection_response": {
+        "type": "object",
+        "properties": {
+          "meta": {
+            "type": "object",
+            "properties": {
+              "limit": { "type": "integer" },
+              "total": { "type": "integer" },
+              "offset": { "type": "integer" }
+            }
+          }
+        }
+      },
+      "error_presenter": {
+        "type": "object",
+        "properties": {
+          "title": { "type": "string" },
+          "invalid_params": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "key": { "type": "string", "description": "Errored attribute name" },
+                "value": {
+                  "anyOf": [
+                    { "type": "string" },
+                    { "type": "integer" },
+                    { "type": "number" },
+                    { "type": "boolean" },
+                    { "type": "array" },
+                    { "type": "object" },
+                    { "nullable": true }
+                  ],
+                  "description": "Parameter submitted for errored attribute"
+                },
+                "reasons": {
+                  "oneOf": [{ "type": "string" }, { "type": "array" }],
+                  "description": "Error messages for errored attribute",
+                  "items": { "type": "string" }
+                }
+              }
+            }
+          }
+        }
+      },
+      "forbidden_presenter": {
+        "type": "object",
+        "properties": { "errors": { "type": "array", "items": { "type": "string" } } }
+      },
+      "definitions_amenity": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "integer", "example": 1, "description": "The id of the amenity", "nullable": true },
+          "name": { "type": "string", "example": "Pool", "description": "The name of the amenity" },
+          "cost": { "type": "string", "example": "12.34", "description": "The cost of the amenity" },
+          "cost_type": {
+            "type": "string",
+            "example": "paid",
+            "description": "The cost type of the amenity",
+            "enum": ["paid", "free", "n/a", "Paid", "Free"]
+          },
+          "frequency": {
+            "type": "string",
+            "example": "nightly",
+            "enum": ["nightly", "one-time", "Nightly", "One-time", "n/a"],
+            "description": "The frequency the amenity occurs"
+          },
+          "_destroy": {
+            "type": "boolean",
+            "example": false,
+            "description": "if the item exists and needs to be deleted, set to true"
+          }
+        }
+      },
+      "definitions_fee": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "number",
+            "nullable": true,
+            "example": 123,
+            "description": "Unique Identifier for the Fee"
+          },
+          "name": { "type": "string", "example": "Pet Fee", "description": "The name of the Fee" },
+          "cost": { "type": "string", "example": "12.34", "description": "The cost of the Fee" },
+          "frequency": {
+            "type": "string",
+            "example": "nightly",
+            "enum": ["nightly", "one-time", "Nightly", "One-time"],
+            "description": "The frequency the fee occurs"
+          },
+          "charged_by": {
+            "type": "string",
+            "nullable": true,
+            "example": "Hotel",
+            "enum": ["Hotel", "Hotel Engine"],
+            "description": "Who the fee is charged by"
+          },
+          "taxable": {
+            "type": "boolean",
+            "example": true,
+            "description": "Whether or not the fee is taxable"
+          },
+          "_destroy": {
+            "type": "boolean",
+            "example": false,
+            "description": "if the item exists and needs to be deleted, set to true"
+          }
+        }
+      },
+      "definitions_hotel_contact": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["name", "email", "phone"],
+        "properties": {
+          "name": { "type": "string", "example": "Cool Guy Mike", "description": "The name of the person" },
+          "email": {
+            "type": "string",
+            "example": "xXcoolguymikeXx@geocities.com",
+            "description": "The email of the person"
+          },
+          "phone": {
+            "nullable": true,
+            "type": "string",
+            "example": "555-555-5555",
+            "description": "The phone number of the person"
+          }
+        }
+      },
+      "definitions_hotel_option": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "id": { "type": "number", "example": 123, "description": "Unique Identifier for the Hotel Option" },
+          "special_booking_request_id": {
+            "type": "number",
+            "example": 123,
+            "description": "Unique Identifier for the Special Booking Request"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "example": "2023-03-13T00:00:00.000Z",
+            "description": "Timestamp indicating when the object was originally created in the system."
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time",
+            "example": "2023-03-13T00:00:00.000Z",
+            "description": "Timestamp indicating when the object was updated in the system."
+          },
+          "status": {
+            "type": "string",
+            "example": "approved",
+            "enum": [
+              "draft",
+              "awaiting_proposal",
+              "more_info_needed",
+              "denied_by_hotel",
+              "hotel_unavailable",
+              "awaiting_pm_approval",
+              "denied_by_pm",
+              "ready_for_review",
+              "approved",
+              "denied"
+            ],
+            "description": "The status of the Hotel Option"
+          },
+          "sfid": {
+            "type": "string",
+            "example": "a0K1U00000XZQ2SUAX",
+            "description": "The Salesforce ID for the Hotel Option",
+            "nullable": true
+          },
+          "property_id": {
+            "type": "number",
+            "example": 123,
+            "description": "Unique Identifier for the Property"
+          },
+          "total_cost": {
+            "type": "string",
+            "example": "123.45",
+            "description": "The total cost of the Hotel Option"
+          },
+          "nightly_rate": {
+            "type": "string",
+            "example": "123.45",
+            "description": "The nightly rate of the Hotel Option"
+          },
+          "strike_price": {
+            "type": "string",
+            "example": "123.45",
+            "description": "The strike price of the Hotel Option"
+          },
+          "account_manager_note": {
+            "type": "string",
+            "example": "This is a note from the Account Manager",
+            "description": "The Account Manager's note for the Hotel Option",
+            "nullable": true
+          },
+          "checklist": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "label": {
+                  "type": "string",
+                  "example": "Check in",
+                  "description": "The label for the checklist item"
+                },
+                "meets": {
+                  "type": "boolean",
+                  "example": true,
+                  "description": "Whether or not the checklist item is met"
+                }
+              }
+            }
+          },
+          "deny_reasons": {
+            "type": "array",
+            "example": ["location", "price", "reviews"],
+            "description": "The reasons for denying the Hotel Option",
+            "items": {
+              "type": "string",
+              "enum": ["location", "price", "reviews", "notInterested"],
+              "example": "location",
+              "description": "The reason for denying the Hotel Option"
+            }
+          },
+          "deny_notes": {
+            "type": "string",
+            "example": "This is a note for denying the Hotel Option",
+            "description": "The note for denying the Hotel Option"
+          },
+          "room_type_number_one_rate": {
+            "type": "string",
+            "example": "123.45",
+            "description": "The room type number one rate for the Hotel Option"
+          },
+          "room_type_number_two_rate": {
+            "type": "string",
+            "example": "123.45",
+            "description": "The room type number two rate for the Hotel Option"
+          },
+          "room_type_number_three_rate": {
+            "type": "string",
+            "example": "123.45",
+            "description": "The room type number three rate for the Hotel Option"
+          },
+          "room_type_one_description": {
+            "type": "string",
+            "example": "Standard King Bed",
+            "description": "The room type one description for the Hotel Option"
+          },
+          "room_type_two_description": {
+            "type": "string",
+            "example": "Standard Two Queen Beds",
+            "description": "The room type two description for the Hotel Option"
+          },
+          "room_type_three_description": {
+            "type": "string",
+            "example": "Suite with Balcony",
+            "description": "The room type three description for the Hotel Option"
+          },
+          "number_of_room_type_one": {
+            "type": "number",
+            "example": 123,
+            "description": "The number of room type one for the Hotel Option"
+          },
+          "number_of_room_type_two": {
+            "type": "number",
+            "example": 123,
+            "description": "The number of room type two for the Hotel Option"
+          },
+          "number_of_room_type_three": {
+            "type": "number",
+            "example": 123,
+            "description": "The number of room type three for the Hotel Option"
+          },
+          "breakfast_included_in_rate": {
+            "type": "boolean",
+            "example": true,
+            "description": "Whether or not breakfast is included in the rate for the Hotel Option"
+          },
+          "breakfast_rate": {
+            "type": "string",
+            "example": "123.45",
+            "description": "The breakfast rate for the Hotel Option"
+          },
+          "parking_included_in_rate": {
+            "type": "boolean",
+            "example": true,
+            "description": "Whether or not parking is included in the rate for the Hotel Option"
+          },
+          "parking_rate": {
+            "type": "string",
+            "example": "123.45",
+            "description": "The parking rate for the Hotel Option"
+          },
+          "flat_fee_type": {
+            "type": "string",
+            "example": "Pet Fee",
+            "description": "The flat fee type for the Hotel Option"
+          },
+          "flat_fee_nightly_rate": {
+            "type": "string",
+            "example": "123.45",
+            "description": "The flat fee nightly rate for the Hotel Option"
+          },
+          "is_cancelable": {
+            "type": "boolean",
+            "example": true,
+            "description": "Whether or not the Hotel Option is cancelable"
+          },
+          "individual_cancellation_policy": {
+            "type": "string",
+            "example": "This is the individual cancellation policy for the Hotel Option",
+            "description": "The individual cancellation policy for the Hotel Option",
+            "nullable": true
+          },
+          "tiered_group_cancellation_policy": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "days": {
+                  "type": "number",
+                  "description": "The amount of time in days before a certain percentage is charged for cancellation",
+                  "example": 10.1
+                },
+                "percentage_due": {
+                  "type": "number",
+                  "example": 99.1,
+                  "description": "The amount due for cancellation"
+                }
+              }
+            }
+          },
+          "group_cancellation_policy": {
+            "type": "string",
+            "example": "This is the group cancellation policy for the Hotel Option",
+            "description": "The group cancellation policy for the Hotel Option"
+          },
+          "early_departure_allowed": {
+            "type": "boolean",
+            "example": true,
+            "description": "Whether or not early departure is allowed for the Hotel Option"
+          },
+          "early_departure_policy": {
+            "type": "string",
+            "example": "This is the early departure policy for the Hotel Option",
+            "description": "The early departure policy for the Hotel Option"
+          },
+          "early_checkout_penalty": {
+            "type": "string",
+            "example": "123.45",
+            "description": "The early checkout penalty for the Hotel Option"
+          },
+          "cut_off_date": {
+            "type": "string",
+            "format": "date",
+            "example": "2022-10-11",
+            "description": "The cut off date for the Hotel Option"
+          },
+          "rate_expiration_date": {
+            "type": "string",
+            "format": "date-time",
+            "example": "2022-08-13T00:00:00.000Z",
+            "description": "The rate expiration date for the Hotel Option"
+          },
+          "meeting_space_availability": {
+            "type": "string",
+            "example": "Monday through Friday, 7AM to 6PM. Saturday, 8AM to 5PM",
+            "description": "The meeting space availability for the Hotel Option"
+          },
+          "meeting_space_blackout": {
+            "type": "string",
+            "example": "Sunday",
+            "description": "The meeting space blackout for the Hotel Option"
+          },
+          "meeting_space_max_attendees": {
+            "type": "number",
+            "example": 123,
+            "description": "The meeting space max attendees for the Hotel Option"
+          },
+          "meeting_space_square_footage": {
+            "type": "number",
+            "example": 123,
+            "description": "The meeting space square footage for the Hotel Option"
+          },
+          "meeting_space_food_bev_available": {
+            "type": "boolean",
+            "example": true,
+            "description": "Whether or not meeting space food and beverage is available for the Hotel Option"
+          },
+          "meeting_space_av_capabilities": {
+            "type": "boolean",
+            "example": true,
+            "description": "Whether or not meeting space AV capabilities are available for the Hotel Option"
+          },
+          "meeting_space_additional_notes": {
+            "type": "string",
+            "example": "Coffee is available all day for the meeting space",
+            "description": "The meeting space additional notes for the Hotel Option"
+          },
+          "include_meeting_space_details": {
+            "type": "boolean",
+            "example": true,
+            "description": "Whether or not to include meeting space details for the Hotel Option"
+          },
+          "taxes_and_fees": {
+            "type": "string",
+            "example": "123.45",
+            "description": "The taxes and fees for the Hotel Option"
+          },
+          "attrition_percent": {
+            "type": "number",
+            "example": 12.45,
+            "description": "The attrition percent for the Hotel Option"
+          },
+          "attrition_policy": {
+            "type": "string",
+            "example": "This is the attrition policy for the Hotel Option",
+            "description": "The attrition policy for the Hotel Option"
+          },
+          "meeting_space_pricing": {
+            "type": "string",
+            "example": "$100 per hour",
+            "description": "The meeting space pricing for the Hotel Option"
+          },
+          "notes": {
+            "type": "string",
+            "example": "This is the notes for the Hotel Option",
+            "description": "The notes for the Hotel Option"
+          },
+          "alternative": {
+            "type": "boolean",
+            "example": true,
+            "description": "Whether or not the Hotel Option is an alternative"
+          },
+          "owner_id": { "type": "number", "example": 123, "description": "Unique Identifier for the Owner" },
+          "quote_method": {
+            "type": "string",
+            "example": "This is the quote method for the Hotel Option",
+            "description": "The quote method for the Hotel Option"
+          },
+          "margin": { "type": "number", "example": 12, "description": "The margin for the Hotel Option" },
+          "margin_recommended": {
+            "type": "number",
+            "example": 12,
+            "description": "The recommended margin for the Hotel Option",
+            "nullable": true
+          },
+          "front_desk_email": {
+            "type": "string",
+            "example": "email@frontdesk.com",
+            "description": "The front desk email for the Hotel Option"
+          },
+          "hotel_contacts": {
+            "type": "array",
+            "items": { "$ref": "#/components/schemas/definitions_hotel_contact" }
+          },
+          "commission_percent": {
+            "type": "string",
+            "example": "12.45",
+            "description": "The commission percent for the Hotel Option",
+            "nullable": true
+          },
+          "rebate_percent": {
+            "type": "number",
+            "example": 12,
+            "description": "The rebate percent for the Hotel Option",
+            "nullable": true
+          },
+          "flat_tax": {
+            "type": "string",
+            "example": "123.45",
+            "description": "The flat tax for the Hotel Option"
+          },
+          "accepted_total_cost": {
+            "type": "string",
+            "example": "123.45",
+            "description": "The accepted total cost for the Hotel Option"
+          },
+          "accepted_taxes_and_fees": {
+            "type": "string",
+            "example": "123.45",
+            "description": "The accepted taxes and fees for the Hotel Option"
+          },
+          "taxes_and_fees_percent": {
+            "type": "string",
+            "example": "123.45",
+            "description": "The taxes and fees percent for the Hotel Option"
+          },
+          "room_type_number_one_raw_rate": {
+            "type": "string",
+            "example": "123.45",
+            "description": "The room type number one raw rate for the Hotel Option"
+          },
+          "room_type_number_two_raw_rate": {
+            "type": "string",
+            "example": "123.45",
+            "description": "The room type number two raw rate for the Hotel Option"
+          },
+          "room_type_number_three_raw_rate": {
+            "type": "string",
+            "example": "123.45",
+            "description": "The room type number three raw rate for the Hotel Option"
+          },
+          "suggested_property_id": {
+            "type": "integer",
+            "example": 123,
+            "description": "Unique Identifier for the Suggested Property"
+          },
+          "margin_metadata": {
+            "type": "object",
+            "properties": {
+              "weighted_rate": {
+                "type": "string",
+                "example": "101.0",
+                "description": "The weighted rate for the Hotel Option"
+              },
+              "discounted_bar": {
+                "type": "string",
+                "example": "100.0",
+                "description": "The discounted bar for the Hotel Option"
+              },
+              "alpha": {
+                "type": "string",
+                "example": "0.17",
+                "description": "The alpha for the Hotel Option"
+              },
+              "beta": { "type": "string", "example": "26.0", "description": "The beta for the Hotel Option" },
+              "bar_savings": {
+                "type": "string",
+                "example": "-0.0099",
+                "description": "The bar savings for the Hotel Option"
+              },
+              "x0": { "type": "string", "example": "0.11", "description": "The x0 for the Hotel Option" },
+              "recommended_margin": {
+                "type": "string",
+                "example": "0.08",
+                "description": "The recommended margin for the Hotel Option"
+              },
+              "true_margin": {
+                "type": "string",
+                "example": "0.0072",
+                "description": "The true margin for the Hotel Option"
+              },
+              "within_three": {
+                "type": "boolean",
+                "example": true,
+                "description": "Whether or not the Hotel Option is within three"
+              }
+            }
+          }
+        }
+      },
+      "definitions_hotel_policy": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "attrition_percent": {
+            "$ref": "#/components/schemas/definitions_hotel_option/properties/attrition_percent"
+          },
+          "attrition_policy": {
+            "$ref": "#/components/schemas/definitions_hotel_option/properties/attrition_policy"
+          },
+          "cut_off_date": { "$ref": "#/components/schemas/definitions_hotel_option/properties/cut_off_date" },
+          "cancellation": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "tiered_group_cancellation": {
+                "$ref": "#/components/schemas/definitions_hotel_option/properties/tiered_group_cancellation_policy"
+              },
+              "is_cancelable": {
+                "$ref": "#/components/schemas/definitions_hotel_option/properties/is_cancelable"
+              },
+              "individual": {
+                "$ref": "#/components/schemas/definitions_hotel_option/properties/individual_cancellation_policy"
+              },
+              "group": {
+                "$ref": "#/components/schemas/definitions_hotel_option/properties/group_cancellation_policy"
+              }
+            }
+          },
+          "early_departure": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "allowed": {
+                "$ref": "#/components/schemas/definitions_hotel_option/properties/early_departure_allowed"
+              },
+              "policy": {
+                "$ref": "#/components/schemas/definitions_hotel_option/properties/early_departure_policy"
+              },
+              "penalty": {
+                "$ref": "#/components/schemas/definitions_hotel_option/properties/early_checkout_penalty"
+              }
+            }
+          }
+        }
+      },
+      "definitions_location": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["city", "state", "country", "latitude", "longitude", "street"],
+        "properties": {
+          "street": { "$ref": "#/components/schemas/definitions_special_booking_request/properties/street" },
+          "city": { "$ref": "#/components/schemas/definitions_special_booking_request/properties/city" },
+          "state": { "$ref": "#/components/schemas/definitions_special_booking_request/properties/state" },
+          "country": {
+            "$ref": "#/components/schemas/definitions_special_booking_request/properties/country"
+          },
+          "latitude": {
+            "$ref": "#/components/schemas/definitions_special_booking_request/properties/latitude"
+          },
+          "longitude": {
+            "$ref": "#/components/schemas/definitions_special_booking_request/properties/longitude"
+          }
+        }
+      },
+      "definitions_meeting_space": {
+        "type": "object",
+        "nullable": true,
+        "description": "Meeting Space",
+        "properties": {
+          "availability": {
+            "type": "string",
+            "nullable": true,
+            "description": "Meeting Space Availability",
+            "example": "Meeting Space Availability"
+          },
+          "blackout": {
+            "type": "string",
+            "nullable": true,
+            "description": "Meeting Space Blackout",
+            "example": "Meeting Space Blackout"
+          },
+          "price": {
+            "type": "string",
+            "nullable": true,
+            "description": "Meeting Space Price",
+            "example": "12.34"
+          },
+          "max_attendees": {
+            "type": "string",
+            "nullable": true,
+            "description": "Meeting Space Max Attendees",
+            "example": "12"
+          },
+          "square_footage": {
+            "type": "string",
+            "nullable": true,
+            "description": "Meeting Space Square Footage",
+            "example": "12"
+          },
+          "food_bev_available": {
+            "type": "boolean",
+            "nullable": true,
+            "description": "Meeting Space Food and Beverage Available",
+            "example": true
+          },
+          "av_capabilities": {
+            "type": "boolean",
+            "description": "Meeting Space AV Capabilities",
+            "example": true
+          },
+          "additional_notes": {
+            "type": "string",
+            "nullable": true,
+            "description": "Meeting Space Additional Notes",
+            "example": "Meeting Space Additional Notes"
+          }
+        }
+      },
+      "definitions_property": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "id": { "type": "integer", "example": 13, "description": "Unique ID" },
+          "name": { "type": "string", "example": "Embassy suites Austin", "description": "Property name" },
+          "latitude": { "type": "number", "example": 80.0, "description": "The property's latitude" },
+          "longitude": { "type": "number", "example": 80.0, "description": "The property's longitude" },
+          "postal_code": {
+            "type": "string",
+            "nullable": true,
+            "description": "Property postal code",
+            "example": "80202"
+          },
+          "state": { "type": "string", "nullable": true, "description": "Property state", "example": "CO" },
+          "city": { "type": "string", "nullable": true, "description": "Property city", "example": "Denver" },
+          "street": {
+            "type": "string",
+            "nullable": true,
+            "description": "Property street",
+            "example": "123 Main St"
+          },
+          "country": { "type": "string", "example": "US", "description": "Country name" },
+          "rating": { "type": "number", "example": 3.0, "description": "Property rating", "nullable": true },
+          "star_rating": {
+            "type": "number",
+            "nullable": true,
+            "example": 3,
+            "description": "The star rating of the property"
+          },
+          "review_count": {
+            "type": "number",
+            "example": 10,
+            "description": "The amount of reviews for the property"
+          },
+          "property_type": {
+            "type": "string",
+            "example": "Hotel",
+            "description": "The type of property",
+            "nullable": true
+          },
+          "status": {
+            "type": "string",
+            "example": "active",
+            "enum": ["abandoned", "active", "candidate", "dupe", "inactive", "junk", "unmatched"],
+            "description": "The status of the property"
+          }
+        }
+      },
+      "definitions_room_type": {
+        "type": "object",
+        "description": "Room Type name",
+        "properties": {
+          "number_available": { "type": "integer", "description": "Number of Rooms", "example": 12 },
+          "description": {
+            "type": "string",
+            "description": "Description for the current room type",
+            "example": "King bed with a sofa"
+          },
+          "rate": { "type": "string", "description": "Room Type Rate", "example": "12.34" }
+        }
+      },
+      "definitions_special_booking_request": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "custom_nights": {
+            "type": "array",
+            "description": "JSONB column for amenities requested and the priority of the amenity",
+            "nullable": true,
+            "items": {
+              "type": "object",
+              "required": [],
+              "properties": {
+                "date": {
+                  "type": "string",
+                  "format": "date",
+                  "example": "2023-10-10",
+                  "description": "The date of the custom night"
+                },
+                "standard_rooms": {
+                  "type": "integer",
+                  "example": 10,
+                  "description": "Number of standard rooms needed for the custom night"
+                },
+                "double_rooms": {
+                  "type": "integer",
+                  "example": 15,
+                  "description": "Number of double rooms needed for the custom night"
+                },
+                "suites": {
+                  "type": "integer",
+                  "example": 5,
+                  "description": "Number of suites needed for the custom night"
+                }
+              }
+            }
+          },
+          "id": {
+            "type": "number",
+            "example": 123,
+            "description": "Unique Identifier for the Special Booking Request"
+          },
+          "user_id": {
+            "type": "number",
+            "example": 98,
+            "description": "Unique Identifier for the user who created/owns the SBR"
+          },
+          "name": {
+            "type": "string",
+            "example": "Spring Conference",
+            "description": "User given name for the SBR trip"
+          },
+          "street": {
+            "type": "string",
+            "example": "950 S Cherry St",
+            "description": "The street address for the SBR requested location"
+          },
+          "city": {
+            "type": "string",
+            "example": "Denver",
+            "description": "The city for the SBR requested location"
+          },
+          "state": {
+            "type": "string",
+            "example": "CO",
+            "description": "The state for the SBR requested location"
+          },
+          "country": {
+            "type": "string",
+            "example": "USA",
+            "description": "The country for the SBR requested location"
+          },
+          "latitude": {
+            "oneOf": [{ "type": "number" }, { "type": "string" }],
+            "example": 39.742043,
+            "description": "The latitude for the SBR requested location"
+          },
+          "longitude": {
+            "oneOf": [{ "type": "number" }, { "type": "string" }],
+            "example": -104.991531,
+            "description": "The latitude for the SBR requested location"
+          },
+          "check_in": {
+            "type": "string",
+            "format": "date",
+            "example": "2022-10-11",
+            "description": "Requested check in date"
+          },
+          "check_out": {
+            "type": "string",
+            "format": "date",
+            "example": "2022-10-15",
+            "description": "Requested check out date"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "example": "2023-03-13T00:00:00.000Z",
+            "description": "Timestamp indicating when the object was originally created in the system."
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time",
+            "example": "2023-03-13T00:00:00.000Z",
+            "description": "Timestamp indicating when the object was updated in the system."
+          },
+          "trip_reason": {
+            "nullable": true,
+            "type": "string",
+            "example": "I need a break from society",
+            "description": "User given reason for the SBR trip"
+          },
+          "suites": {
+            "nullable": true,
+            "type": "integer",
+            "example": 10,
+            "description": "The amount of suites the user requested"
+          },
+          "max_nightly_rate": {
+            "nullable": true,
+            "oneOf": [{ "type": "string" }, { "type": "number" }],
+            "example": 140,
+            "description": "The max amount a user would like to spend per night for a hotel room"
+          },
+          "max_distance": {
+            "nullable": true,
+            "oneOf": [{ "type": "string" }, { "type": "number" }],
+            "example": 10,
+            "description": "Unit of measure of how far the user is willing to stay from the desired location."
+          },
+          "preferred_hotel_brand": {
+            "nullable": true,
+            "type": "string",
+            "example": "Four Seasons",
+            "description": "Chain hotel brand that the user prefers"
+          },
+          "minimum_star_rating": {
+            "nullable": true,
+            "oneOf": [{ "type": "string" }, { "type": "integer" }],
+            "example": 4,
+            "minimum": 1,
+            "maximum": 5,
+            "description": "Minimum review rating for the hotel that the user prefers"
+          },
+          "top_priority": {
+            "nullable": true,
+            "type": "string",
+            "example": "Nightly Rate",
+            "description": "The users most desired amenity"
+          },
+          "preferences_notes": {
+            "nullable": true,
+            "type": "string",
+            "example": "Race car rentals, free popcorn",
+            "description": "Notes in addition to the top priority that may be given from the user"
+          },
+          "preferred_payment_type": {
+            "nullable": true,
+            "type": "string",
+            "example": "creditCard",
+            "enum": ["directBill", "creditCard", "payAtHotel"],
+            "description": "The form of payment the user chooses to use"
+          },
+          "sfid": {
+            "type": "string",
+            "example": "a0SR000000B0iTWMAZ",
+            "description": "The Unique Identifier SalesForce gave the synced object"
+          },
+          "status": {
+            "type": "string",
+            "example": "pending",
+            "description": "Customer facing status in which the SBR is currently in"
+          },
+          "amenities": {
+            "type": "object",
+            "nullable": true,
+            "required": [],
+            "properties": {
+              "abc": { "type": "object", "required": ["def"], "description": "blah 1", "nullable": true, "properties": { "def": { "type": "integer", "nullable": true, "description": "blah 2" } } }
+            },
+            "description": "JSONB column for amenities requested and the priority of the amenity",
+            "example": {
+              "pool": "Must Have",
+              "kitchen": "Don't Need",
+              "parking": "Must Have",
+              "breakfast": "Nice to Have",
+              "other_notes": "There has to be a dog walker",
+              "meeting_room": "Don't Need",
+              "pet_friendly": "Nice to Have",
+              "laundry_services": "Don't Need"
+            }
+          },
+          "double_rooms": {
+            "nullable": true,
+            "type": "integer",
+            "example": 10,
+            "description": "The amount of double rooms requested by the user"
+          },
+          "standard_rooms": {
+            "nullable": true,
+            "type": "integer",
+            "example": 10,
+            "description": "The amount of standard rooms requested by the user"
+          },
+          "email": {
+            "nullable": true,
+            "type": "string",
+            "example": "jeff@travelershaven.com",
+            "description": "Email of the primary contact user"
+          },
+          "phone": {
+            "nullable": true,
+            "type": "string",
+            "example": "(916) 555-1234",
+            "description": "Phone number of the primary contact user"
+          },
+          "notes": {
+            "type": "string",
+            "nullable": true,
+            "example": "The hotel doesn’t have my preferred amenities",
+            "description": "Notes written by the internal Groups™ team about the SBR"
+          },
+          "cancel_reasons": {
+            "type": "array",
+            "example": ["plansChanged", "distance"],
+            "description": "A list of predefined items a user can select when cancelling a SBR order\n",
+            "items": { "type": "string", "example": "plansChanged" }
+          },
+          "meeting_room_details": {
+            "type": "object",
+            "properties": {
+              "budget": {
+                "type": "string",
+                "example": "110",
+                "description": "The amount the user is willing to spend on a meeting space"
+              },
+              "meeting_attendees": {
+                "type": "number",
+                "example": 45,
+                "description": "Amount of people needing to be supported within the meeting space"
+              },
+              "time_and_dates": {
+                "type": "string",
+                "example": "Monday and Tuesday, 8am - 5pm",
+                "description": "User input for when they will need the meeting space"
+              },
+              "av_required": {
+                "type": "boolean",
+                "example": true,
+                "description": "Whether the user needs TV/projector/etc equipment in the meeting space"
+              },
+              "sustenance_required": {
+                "type": "boolean",
+                "example": true,
+                "description": "Whether the user will require food/beverages for the people attending the meeting space"
+              },
+              "other": {
+                "type": "string",
+                "example": "Must be elegant and sound proof",
+                "description": "Any additional notes/comments about the needs of the meeting space"
+              }
+            }
+          },
+          "hotel_order_name": {
+            "nullable": true,
+            "type": "string",
+            "example": "HE-07784",
+            "description": "A unique name for the SBR given by SalesForce"
+          },
+          "project_manager_id": {
+            "type": "number",
+            "nullable": true,
+            "example": 89,
+            "description": "The Unique Identifier for the User who is the current Project Manager"
+          },
+          "sourcing_coordinator_id": {
+            "type": "number",
+            "nullable": true,
+            "example": 89,
+            "description": "The Unique Identifier for the User who is the current Sourcing Coordinator"
+          },
+          "revenue": {
+            "type": "string",
+            "example": "28000.0",
+            "description": "The estimated revenue generated from the SBR",
+            "nullable": true
+          },
+          "internal_status": {
+            "type": "string",
+            "example": "open",
+            "description": "The current internal facing status the SBR is in, used by the Groups™ team"
+          },
+          "contracting_specialist_id": {
+            "type": "number",
+            "example": 89,
+            "nullable": true,
+            "description": "The Unique Identifier for the User who is the current Contracting Specialist"
+          },
+          "reconciliation_manager_id": {
+            "type": "number",
+            "example": 89,
+            "nullable": true,
+            "description": "The Unique Identifier for the User who is the current Reconciliation Manager"
+          },
+          "hotel_order_full_name": {
+            "type": "string",
+            "example": "HE-07355 9R Denver, Colorado 1/18/2023 - 1/20/2023",
+            "description": "A mixture of hotel order name, amount of rooms and location with dates given to the SBR on submission"
+          },
+          "decision_date": {
+            "type": "string",
+            "example": "2023-06-22",
+            "format": "date",
+            "description": "The date in which the user must have an option to choose",
+            "nullable": true
+          },
+          "lost_reason": {
+            "type": "string",
+            "example": "No response from client",
+            "description": "Groups™ inputted reason for why the SBR was moved to the internal status of lost",
+            "nullable": true
+          },
+          "order_score": {
+            "type": "number",
+            "example": 6,
+            "description": "A score given by Salesforce for the order",
+            "nullable": true
+          },
+          "business_id": {
+            "type": "number",
+            "example": 89,
+            "description": "The Unique Identifier for the Business who is associated/assigned to the SBR"
+          },
+          "project_id": {
+            "type": "number",
+            "example": 89,
+            "description": "The Unique Identifier for the Project that the SBR is related to",
+            "nullable": true
+          },
+          "internally_created": {
+            "type": "boolean",
+            "example": false,
+            "description": "Whether or not the SBR was created by the Groups™ team"
+          },
+          "is_demo": {
+            "type": "boolean",
+            "example": false,
+            "description": "Whether or not the SBR is a demo SBR"
+          },
+          "entered_internal_status_at": {
+            "type": "string",
+            "format": "date-time",
+            "example": "2023-03-13T00:00:00.000Z",
+            "description": "When the SBR has changed internal status to any other internal status"
+          },
+          "reservation_method": {
+            "type": "string",
+            "example": "Booking Link",
+            "enum": ["Booking Link", "Call-In", "Rooming List", null],
+            "description": "How the User reserved a SBR"
+          },
+          "record_type": {
+            "type": "string",
+            "example": "Commissionable Rate",
+            "enum": [
+              "Commissionable Rate",
+              "HE Paid Commissionable Rate",
+              "Non-Traditional Stay",
+              "Paid to HE",
+              "Project Accounts",
+              null
+            ],
+            "description": "How the SBR was used or captured"
+          }
+        }
+      },
+      "bookings_index_response_serializer": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "limit",
+          "offset",
+          "reservations",
+          "total",
+          "total_booked",
+          "total_cancelled",
+          "total_completed",
+          "total_visiting"
+        ],
+        "properties": {
+          "limit": { "type": "integer", "description": "Total number of reservations return", "example": 10 },
+          "offset": {
+            "type": "integer",
+            "description": "Specifies offset of returned reservations",
+            "example": 4
+          },
+          "total": { "type": "integer", "description": "The total count of trips", "example": 4 },
+          "reservations": {
+            "type": "array",
+            "items": {
+              "properties": {
+                "check_in": {
+                  "type": "string",
+                  "description": "The trip check in date",
+                  "example": "2024-06-20"
+                },
+                "check_out": {
+                  "type": "string",
+                  "description": "The trip check out date",
+                  "example": "2024-07-21"
+                },
+                "guest_count": {
+                  "type": "integer",
+                  "description": "The number of guests the trip includes",
+                  "example": 4
+                },
+                "occupants": {
+                  "type": "array",
+                  "items": {
+                    "properties": {
+                      "email": {
+                        "type": "string",
+                        "description": "The occupant's email",
+                        "example": "person@email.com"
+                      },
+                      "last_name": {
+                        "type": "string",
+                        "description": "The occupant's last name",
+                        "example": "Jobs"
+                      },
+                      "first_name": {
+                        "type": "string",
+                        "description": "The occupant's first name",
+                        "example": "Steve"
+                      }
+                    }
+                  }
+                },
+                "property": {
+                  "type": "object",
+                  "properties": {
+                    "city": { "$ref": "#/components/schemas/definitions_property/properties/city" },
+                    "country": { "$ref": "#/components/schemas/definitions_property/properties/country" },
+                    "id": { "$ref": "#/components/schemas/definitions_property/properties/id" },
+                    "name": { "$ref": "#/components/schemas/definitions_property/properties/name" },
+                    "state": { "$ref": "#/components/schemas/definitions_property/properties/state" },
+                    "photo_url": {
+                      "type": "string",
+                      "example": "wwww.hotel.com",
+                      "description": "Property thumbnail url"
+                    }
+                  }
+                },
+                "room_count": { "type": "integer", "example": 10, "description": "The number of rooms" },
+                "booked_by": {
+                  "type": "string",
+                  "description": "The full name of the user who booked this trip",
+                  "example": "Scooby Doo"
+                },
+                "id": {
+                  "type": "string",
+                  "description": "The contract number for the trip",
+                  "example": "G-6NSVB2"
+                },
+                "total": { "type": "string", "description": "The cost of the trip", "example": "38.29" },
+                "status": {
+                  "type": "string",
+                  "description": "The current status of the trip",
+                  "example": "booked"
+                }
+              }
+            }
+          },
+          "total_booked": {
+            "type": "integer",
+            "description": "The total number of trips that are in status of \"booked\"",
+            "example": 1
+          },
+          "total_cancelled": {
+            "type": "integer",
+            "description": "The total number of trips that are in status of \"cancelled\"",
+            "example": 0
+          },
+          "total_completed": {
+            "type": "integer",
+            "description": "The total number of trips that are in status of \"completed\"",
+            "example": 2
+          },
+          "total_visiting": {
+            "type": "integer",
+            "description": "The total number of trips that are in status of \"visiting\"",
+            "example": 1
+          }
+        }
+      },
+      "bookings_show_response_serializer": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "booked_by",
+          "cancellation_policy",
+          "check_in",
+          "check_out",
+          "id",
+          "created_at",
+          "date_booked",
+          "guest_count",
+          "night_count",
+          "property_confirmation_number",
+          "room_count",
+          "status",
+          "charges",
+          "fee_details",
+          "property",
+          "rooms"
+        ],
+        "properties": {
+          "booked_by": {
+            "type": "string",
+            "description": "The full name of the user who booked this trip",
+            "example": "Scooby Doo"
+          },
+          "cancellation_policy": {
+            "type": "string",
+            "nullable": true,
+            "description": "The cancellation policy for the booking",
+            "example": "24 hours before check-in"
+          },
+          "check_in": { "type": "string", "description": "The trip check in date", "example": "2024-07-19" },
+          "check_out": {
+            "type": "string",
+            "description": "The trip check out date",
+            "example": "2024-07-21"
+          },
+          "id": {
+            "type": "string",
+            "description": "The contract number for the booking",
+            "example": "G-6NSVB2"
+          },
+          "created_at": {
+            "type": "string",
+            "description": "The date and time the booking was created",
+            "example": "2024-07-19T15:00:00.000Z"
+          },
+          "date_booked": {
+            "type": "string",
+            "description": "The date and time the booking was made",
+            "example": "2024-07-19T15:00:00.000Z"
+          },
+          "guest_count": {
+            "type": "integer",
+            "nullable": true,
+            "description": "The number of guests the trip includes",
+            "example": 4
+          },
+          "night_count": {
+            "type": "integer",
+            "nullable": true,
+            "description": "The number of nights the trip includes",
+            "example": 2
+          },
+          "property_confirmation_number": {
+            "type": "string",
+            "nullable": true,
+            "description": "The property confirmation number for the booking",
+            "example": "HSB2G"
+          },
+          "room_count": { "type": "integer", "description": "The number of rooms", "example": 10 },
+          "status": { "type": "string", "description": "The status of the booking", "example": "confirmed" },
+          "charges": {
+            "type": "object",
+            "properties": {
+              "payment_type": {
+                "type": "string",
+                "description": "The payment type for the booking",
+                "example": "Credit Card"
+              },
+              "room_charges": {
+                "type": "number",
+                "description": "The total room charges for the booking",
+                "example": 1000.0
+              },
+              "room_subtotal": {
+                "type": "number",
+                "description": "The subtotal of the room charges",
+                "example": 1000.0
+              },
+              "subtotal": {
+                "type": "number",
+                "description": "The subtotal of the booking",
+                "example": 1000.0
+              },
+              "taxes": {
+                "type": "number",
+                "description": "The total taxes for the booking",
+                "example": 100.0
+              },
+              "total_customer_charge": {
+                "type": "number",
+                "description": "The total customer charge for the booking",
+                "example": 1100.0
+              }
+            }
+          },
+          "fee_details": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "amount": { "type": "number", "description": "The base amount of the fee", "example": 100.0 },
+                "fee_type": {
+                  "type": "string",
+                  "description": "The type of fee (flat or nightly)",
+                  "example": "flat"
+                },
+                "id": { "type": "integer", "description": "The id of the fee", "example": 1 },
+                "is_hotel_fee": {
+                  "type": "boolean",
+                  "description": "Whether the fee is a hotel fee",
+                  "example": true
+                },
+                "name": { "type": "string", "description": "The name of the fee", "example": "Resort Fee" },
+                "subtotal": { "type": "number", "description": "The subtotal of the fee", "example": 100.0 },
+                "tax": { "type": "number", "description": "The tax amount of the fee", "example": 10.0 },
+                "taxable": {
+                  "type": "boolean",
+                  "description": "Whether the fee is taxable",
+                  "example": true
+                },
+                "total": { "type": "number", "description": "The total amount of the fee", "example": 110.0 }
+              }
+            }
+          },
+          "property": {
+            "type": "object",
+            "properties": {
+              "city": { "$ref": "#/components/schemas/definitions_property/properties/city" },
+              "country": { "$ref": "#/components/schemas/definitions_property/properties/country" },
+              "id": { "$ref": "#/components/schemas/definitions_property/properties/id" },
+              "latitude": { "$ref": "#/components/schemas/definitions_property/properties/latitude" },
+              "longitude": { "$ref": "#/components/schemas/definitions_property/properties/longitude" },
+              "name": { "$ref": "#/components/schemas/definitions_property/properties/name" },
+              "photo_url": {
+                "type": "string",
+                "nullable": true,
+                "description": "Property thumbnail url",
+                "example": "wwww.hotel.com/photo.jpg"
+              },
+              "postal_code": { "$ref": "#/components/schemas/definitions_property/properties/postal_code" },
+              "state": { "$ref": "#/components/schemas/definitions_property/properties/state" },
+              "street": { "$ref": "#/components/schemas/definitions_property/properties/street" }
+            }
+          },
+          "rooms": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "check_in": {
+                  "type": "string",
+                  "description": "The room check in date",
+                  "example": "2024-07-19"
+                },
+                "check_out": {
+                  "type": "string",
+                  "description": "The room check out date",
+                  "example": "2024-07-21"
+                },
+                "contract_number": {
+                  "type": "string",
+                  "description": "The contract number for the room",
+                  "example": "6NSVB2"
+                },
+                "property_confirmation_number": {
+                  "type": "string",
+                  "nullable": true,
+                  "description": "The property confirmation number for the room",
+                  "example": "HSB2G"
+                },
+                "room_description": {
+                  "type": "string",
+                  "nullable": true,
+                  "description": "Description of the type of room",
+                  "example": "Suite"
+                },
+                "status": {
+                  "type": "string",
+                  "description": "The status of the room",
+                  "example": "confirmed"
+                },
+                "occupants": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "first_name": {
+                        "type": "string",
+                        "description": "The occupant's first name",
+                        "example": "Steve"
+                      },
+                      "last_name": {
+                        "type": "string",
+                        "description": "The occupant's last name",
+                        "example": "Jobs"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "group_rate_quote_create_params": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "latitude": { "type": "number", "format": "float", "example": 37.7749 },
+          "longitude": { "type": "number", "format": "float", "example": -122.4194 },
+          "check_in_date": { "type": "string", "format": "date", "example": "2031-01-01" },
+          "check_out_date": { "type": "string", "format": "date", "example": "2031-01-02" }
+        }
+      },
+      "locations_index_response_serializer": {
+        "type": "array",
+        "items": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["id", "location_name", "description", "latitude", "longitude", "types", "market"],
+          "properties": {
+            "id": { "type": "string", "example": "neighborhood.288244", "description": "ID from mapbox" },
+            "location_name": { "type": "string", "example": "Days Inn", "description": "location Name" },
+            "description": {
+              "type": "string",
+              "example": "Days Inn, 7030 Tower Rd, Denver, Colorado 80249, United States",
+              "description": "Description"
+            },
+            "latitude": { "type": "number", "example": 29.26828, "description": "latitude" },
+            "longitude": { "type": "number", "example": -104.770399, "description": "longitude" },
+            "types": {
+              "type": "array",
+              "example": ["poi", "government agency", "office"],
+              "description": "types of places"
+            },
+            "market": { "type": "string", "example": "", "nullable": true, "description": "market" }
+          }
+        }
+      },
+      "properties_show_response_serializer": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "address",
+          "allow_incidentals",
+          "amenities",
+          "badges",
+          "check_in_time",
+          "check_out_time",
+          "city",
+          "country",
+          "double_rewards",
+          "freebies",
+          "image_count",
+          "latitude",
+          "longitude",
+          "name",
+          "parent_brand_name",
+          "postal_code",
+          "property_type",
+          "reviews",
+          "review_count",
+          "rating",
+          "rating_description",
+          "star_rating",
+          "state",
+          "status",
+          "street",
+          "themes",
+          "thumbnail_url",
+          "timezone",
+          "walkscore",
+          "walkscore_description",
+          "images"
+        ],
+        "properties": {
+          "id": { "type": "integer", "example": 90152, "description": "The integer ID for the Property" },
+          "address": {
+            "type": "string",
+            "example": "298 Queen City Ave, Manchester, NH, 03100",
+            "description": "The address of the Property"
+          },
+          "allow_incidentals": {
+            "type": "boolean",
+            "example": true,
+            "description": "This indicates whether incidentals are allowed"
+          },
+          "amenities": {
+            "type": "array",
+            "example": ["24 hour front desk", "Gift Shop"],
+            "description": "The amenities on the Property"
+          },
+          "badges": {
+            "type": "object",
+            "example": { "eco_friendly": true },
+            "description": "Certificates that have been awarded to the property"
+          },
+          "chain_name": {
+            "type": "string",
+            "example": "Comforting Inn",
+            "description": "The name of the chain that the Property belongs to",
+            "nullable": true
+          },
+          "check_in_time": {
+            "type": "string",
+            "example": "2000-01-01T16:00:00.000Z",
+            "nullable": true,
+            "description": "The check-in time for the Property"
+          },
+          "check_out_time": {
+            "type": "string",
+            "example": "2000-01-10T16:00:00.000Z",
+            "nullable": true,
+            "description": "The check-out time for the Property"
+          },
+          "city": {
+            "type": "string",
+            "example": "Manchester",
+            "description": "The city the property is located in"
+          },
+          "country": {
+            "type": "string",
+            "example": "US",
+            "description": "The country the property is located in"
+          },
+          "description": {
+            "type": "string",
+            "example": "With a stay at Comforting Inn, you'll be centrally located in Liverpool",
+            "description": "The description of the property",
+            "nullable": true
+          },
+          "double_rewards": {
+            "type": "boolean",
+            "example": true,
+            "description": "This indicates if the property is eligible for double rewards"
+          },
+          "fax": {
+            "type": "integer",
+            "example": 55555555,
+            "description": "The property fax number",
+            "nullable": true
+          },
+          "freebies": {
+            "type": "object",
+            "example": { "wifi": true, "parking": true, "breakfast": true },
+            "description": "The included property freebies"
+          },
+          "image_count": {
+            "type": "integer",
+            "example": 13,
+            "description": "The number of images available for this property"
+          },
+          "images": {
+            "type": "array",
+            "example": [
+              {
+                "url": "https://q-xx.bstatic.com/xdata/images/hotel/max1024x768/169885083.jpg?k=8484470a84c464aa5507428746ebcc655925b6e6e50225ae725a1afd24433eb2&o="
+              },
+              {
+                "url": "https://q-xx.bstatic.com/xdata/images/hotel/max1024x768/169884275.jpg?k=814129565f76d79aab879f98b5cb4541c160901aed06f97cf3f64b9bce7f4086&o="
+              }
+            ],
+            "description": "Links to the property's images"
+          },
+          "latitude": {
+            "type": "number",
+            "example": 36.223471852998,
+            "description": "The property's latitude"
+          },
+          "longitude": {
+            "type": "number",
+            "example": -75.770450192452,
+            "description": "The property's longitude"
+          },
+          "loyalty_reward_name": {
+            "type": "string",
+            "example": "Choice Privileges",
+            "description": "The name of the property's LoyaltyReward entry",
+            "nullable": true
+          },
+          "loyalty_reward_id": {
+            "type": "integer",
+            "example": 3,
+            "description": "The id of the property's LoyaltyReward entry",
+            "nullable": true
+          },
+          "loyalty_reward_program_number_length": {
+            "type": "integer",
+            "example": 12,
+            "description": "The number length of the property's LoyaltyReward entry",
+            "nullable": true
+          },
+          "name": {
+            "type": "string",
+            "example": "Comforting Inn Premier",
+            "description": "The name of the property"
+          },
+          "parent_brand_name": {
+            "type": "string",
+            "example": "Best Hotels",
+            "description": "The property's parent chain brand name"
+          },
+          "phone": {
+            "type": "string",
+            "example": "(111)1111111",
+            "description": "The property's phone number",
+            "nullable": true
+          },
+          "postal_code": {
+            "type": "string",
+            "example": "03102",
+            "description": "The property's postal code"
+          },
+          "property_type": { "type": "string", "example": "Hotel", "description": "The type of property" },
+          "reviews": {
+            "type": "array",
+            "example": [
+              {
+                "id": 19533547,
+                "property_id": 90152,
+                "author": "Verified Hotel Guest",
+                "rating": "10.0",
+                "review_date": "2020-11-01T12:00:00.000Z",
+                "review_text": "The room was clean and well maintained.",
+                "source": "priceline"
+              }
+            ],
+            "description": "The property's reviews"
+          },
+          "review_count": {
+            "type": "integer",
+            "example": 10,
+            "description": "The amount of reviews for the property"
+          },
+          "rating": { "type": "number", "example": 7.9, "description": "The property's rating" },
+          "rating_description": {
+            "type": "string",
+            "nullable": true,
+            "example": "Great",
+            "description": "The description of the hotels rating"
+          },
+          "star_rating": {
+            "type": "integer",
+            "nullable": true,
+            "example": 3,
+            "description": "The star rating of the property"
+          },
+          "state": {
+            "type": "string",
+            "example": "NH",
+            "description": "The state the property is located in"
+          },
+          "status": {
+            "type": "string",
+            "example": "active",
+            "description": "The active status of the property"
+          },
+          "street": {
+            "type": "string",
+            "example": "298 Queen City Ave",
+            "description": "The street the property is located in"
+          },
+          "themes": {
+            "type": "array",
+            "example": ["Golf property", "Pet-friendly property", "Adventure sport property"],
+            "description": "Themes for the property"
+          },
+          "thumbnail_url": {
+            "nullable": true,
+            "type": "object",
+            "example": { "url": "https://q-xx.bstatic.com/xdata/images/hotel/max1024x768" },
+            "description": "The link to the property's thumbnail"
+          },
+          "timezone": {
+            "type": "string",
+            "example": "America/New_York",
+            "description": "The timezone the property is in"
+          },
+          "walkscore": { "type": "integer", "example": 68, "description": "The property's walkscore" },
+          "walkscore_description": {
+            "type": "string",
+            "example": "Somewhat Walkable",
+            "description": "The description of the property's walkscore"
+          }
+        }
+      },
+      "special_booking_requests_cancel_params": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "cancel_reasons": {
+            "$ref": "#/components/schemas/definitions_special_booking_request/properties/cancel_reasons"
+          },
+          "notes": { "$ref": "#/components/schemas/definitions_special_booking_request/properties/notes" }
+        }
+      },
+      "special_booking_requests_create_params": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "name": { "$ref": "#/components/schemas/definitions_special_booking_request/properties/name" },
+          "check_in": {
+            "$ref": "#/components/schemas/definitions_special_booking_request/properties/check_in"
+          },
+          "check_out": {
+            "$ref": "#/components/schemas/definitions_special_booking_request/properties/check_out"
+          },
+          "location": { "$ref": "#/components/schemas/definitions_location" }
+        }
+      },
+      "special_booking_requests_hotel_options_index_response_serializer": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "estimated_cost",
+          "status",
+          "account_manager_note",
+          "account_manager",
+          "checklist",
+          "property"
+        ],
+        "properties": {
+          "id": { "$ref": "#/components/schemas/definitions_hotel_option/properties/id" },
+          "estimated_cost": {
+            "nullable": true,
+            "type": "number",
+            "example": 100.2,
+            "description": "Estimated Total Cost of the Hotel Option"
+          },
+          "status": {
+            "type": "string",
+            "example": "approved",
+            "enum": ["ready_for_review", "approved", "denied"],
+            "description": "The status of the Hotel Option"
+          },
+          "account_manager_note": {
+            "nullable": true,
+            "type": "string",
+            "example": "Please confirm the booking with the hotel",
+            "description": "Account Manager Notes"
+          },
+          "account_manager": {
+            "nullable": true,
+            "type": "object",
+            "properties": {
+              "name": { "type": "string", "example": "John Doe", "description": "Account Manager Name" }
+            }
+          },
+          "checklist": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "label": { "type": "string", "example": "Hotel Booking", "description": "Checklist Label" },
+                "meets": { "type": "boolean", "example": true, "description": "Checklist Meets requirement" }
+              }
+            }
+          },
+          "property": {
+            "type": "object",
+            "properties": {
+              "id": { "$ref": "#/components/schemas/definitions_property/properties/id" },
+              "thumbnail_url": {
+                "nullable": true,
+                "type": "object",
+                "properties": {
+                  "url": {
+                    "type": "string",
+                    "example": "https://example.com/hotel_thumbnail.jpg",
+                    "description": "Thumbnail URL"
+                  }
+                }
+              },
+              "rating": { "$ref": "#/components/schemas/definitions_property/properties/rating" },
+              "star_rating": { "$ref": "#/components/schemas/definitions_property/properties/star_rating" },
+              "name": { "$ref": "#/components/schemas/definitions_property/properties/name" },
+              "latitude": { "$ref": "#/components/schemas/definitions_property/properties/latitude" },
+              "longitude": { "$ref": "#/components/schemas/definitions_property/properties/longitude" }
+            }
+          }
+        }
+      },
+      "special_booking_requests_hotel_options_show_meeting_space": {
+        "type": "object",
+        "nullable": true,
+        "additionalProperties": false,
+        "required": [
+          "availability",
+          "blackout",
+          "pricing",
+          "max_attendees",
+          "square_footage",
+          "food_bev_available",
+          "additional_notes",
+          "av_capabilities"
+        ],
+        "properties": {
+          "availability": {
+            "type": "string",
+            "description": "The meeting space availability",
+            "nullable": true,
+            "example": "some availability"
+          },
+          "blackout": {
+            "type": "string",
+            "description": "The meeting space blackout",
+            "nullable": true,
+            "example": "some blackout"
+          },
+          "pricing": {
+            "type": "string",
+            "description": "The meeting space pricing",
+            "nullable": true,
+            "example": "it costs 100"
+          },
+          "max_attendees": {
+            "type": "string",
+            "description": "The meeting space max attendees",
+            "nullable": true,
+            "example": "100 people, 10 animals"
+          },
+          "square_footage": {
+            "type": "string",
+            "description": "The meeting space square footage",
+            "nullable": true,
+            "example": "1000 sq ft"
+          },
+          "food_bev_available": {
+            "type": "boolean",
+            "description": "The meeting space food and beverage availability",
+            "nullable": true,
+            "example": true
+          },
+          "additional_notes": {
+            "type": "string",
+            "description": "The meeting space additional notes",
+            "nullable": true,
+            "example": "some additional notes"
+          },
+          "av_capabilities": {
+            "type": "boolean",
+            "description": "The meeting space av capabilities",
+            "nullable": true,
+            "example": true
+          }
+        }
+      },
+      "special_booking_requests_hotel_options_show_policies": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "individual_cancellation_policy",
+          "group_cancellation_policy",
+          "early_departure_policy",
+          "early_checkout_penalty",
+          "attrition_policy"
+        ],
+        "properties": {
+          "individual_cancellation_policy": {
+            "type": "string",
+            "description": "The individual cancellation policy",
+            "nullable": true,
+            "example": "This is the individual cancellation policy"
+          },
+          "group_cancellation_policy": {
+            "type": "string",
+            "description": "The group cancellation policy",
+            "nullable": true,
+            "example": "This is the group cancellation policy"
+          },
+          "early_departure_policy": {
+            "type": "string",
+            "description": "The early departure policy",
+            "nullable": true,
+            "example": "This is the early departure policy"
+          },
+          "early_checkout_penalty": {
+            "type": "string",
+            "description": "The early checkout policy",
+            "nullable": true,
+            "example": "This is the early checkout policy"
+          },
+          "attrition_policy": {
+            "type": "string",
+            "description": "The attrition policy",
+            "nullable": true,
+            "example": "This is the attrition policy"
+          }
+        }
+      },
+      "special_booking_requests_hotel_options_show_response_serializer": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "account_manager_note",
+          "account_manager",
+          "rooms",
+          "meeting_space",
+          "policies",
+          "cut_off_date",
+          "rate_expiration_date",
+          "status",
+          "checklist",
+          "estimated_total",
+          "taxes_and_fees",
+          "average_nightly_rate",
+          "average_strike_price"
+        ],
+        "properties": {
+          "account_manager_note": {
+            "type": "string",
+            "description": "The account manager's note",
+            "nullable": true,
+            "example": "This is a note"
+          },
+          "account_manager": {
+            "type": "object",
+            "nullable": true,
+            "properties": {
+              "name": { "type": "string", "description": "The account manager's name", "example": "John Doe" }
+            }
+          },
+          "rooms": {
+            "type": "array",
+            "nullable": true,
+            "items": { "$ref": "#/components/schemas/special_booking_requests_hotel_options_show_room_type" }
+          },
+          "meeting_space": {
+            "$ref": "#/components/schemas/special_booking_requests_hotel_options_show_meeting_space"
+          },
+          "policies": { "$ref": "#/components/schemas/special_booking_requests_hotel_options_show_policies" },
+          "cut_off_date": { "type": "string", "description": "The cut off date", "example": "2024-06-20" },
+          "rate_expiration_date": {
+            "type": "string",
+            "description": "The rate expiration date",
+            "example": "2024-07-21"
+          },
+          "status": {
+            "type": "string",
+            "example": "approved",
+            "enum": ["ready_for_review", "approved", "denied"]
+          },
+          "checklist": {
+            "type": "array",
+            "items": {
+              "properties": {
+                "label": { "type": "string", "description": "The checklist item", "example": "Pool" },
+                "meets": { "type": "boolean", "description": "The checklist status", "example": true }
+              }
+            }
+          },
+          "estimated_total": { "type": "number", "description": "The estimated total", "example": 1000.0 },
+          "taxes_and_fees": { "type": "number", "description": "The taxes and fees", "example": 12.5 },
+          "average_nightly_rate": {
+            "type": "number",
+            "description": "The average nightly rate",
+            "example": 120.0
+          },
+          "average_strike_price": {
+            "type": "number",
+            "description": "The average strike price",
+            "example": 140.0
+          },
+          "amenities": {
+            "type": "array",
+            "items": {
+              "properties": {
+                "name": { "type": "string", "description": "The amenity name", "example": "Pool" },
+                "cost": { "type": "number", "description": "The amenity cost", "example": 7.0 },
+                "cost_type": { "type": "string", "description": "The amenity cost type", "example": "Paid" },
+                "frequency": {
+                  "type": "string",
+                  "description": "The amenity frequency",
+                  "example": "Nightly"
+                }
+              }
+            }
+          }
+        }
+      },
+      "special_booking_requests_hotel_options_show_room_type": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["description", "number_available", "rate"],
+        "properties": {
+          "description": {
+            "type": "string",
+            "description": "The room type description",
+            "example": "This is a room type"
+          },
+          "number_available": {
+            "type": "integer",
+            "description": "The number of rooms available",
+            "example": 10
+          },
+          "rate": { "type": "string", "description": "The room type rate", "example": "100.0" }
+        }
+      },
+      "special_booking_requests_index_response_serializer": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "name",
+          "check_in",
+          "check_out",
+          "bucket",
+          "location",
+          "proposals_count",
+          "proposals_thumbnail_url",
+          "requested_properties_count",
+          "requested_properties_thumbnail_url",
+          "room_count"
+        ],
+        "properties": {
+          "id": { "$ref": "#/components/schemas/definitions_special_booking_request/properties/id" },
+          "name": { "$ref": "#/components/schemas/definitions_special_booking_request/properties/name" },
+          "check_in": {
+            "$ref": "#/components/schemas/definitions_special_booking_request/properties/check_in"
+          },
+          "check_out": {
+            "$ref": "#/components/schemas/definitions_special_booking_request/properties/check_out"
+          },
+          "bucket": {
+            "type": "string",
+            "example": "draft",
+            "description": "Customer facing categorization in which the SBR is currently in",
+            "enum": [
+              "draft",
+              "submitted",
+              "ready_for_review",
+              "hotel_reviewing",
+              "upcoming",
+              "completed",
+              "deleted",
+              "cancelled"
+            ]
+          },
+          "location": { "$ref": "#/components/schemas/definitions_location" },
+          "accepted_hotel_property": {
+            "nullable": true,
+            "type": "object",
+            "description": "Name and thumbnail link of the approved hotel option property",
+            "properties": {
+              "name": { "$ref": "#/components/schemas/definitions_property/properties/name" },
+              "thumbnail_url": {
+                "type": "object",
+                "properties": {
+                  "url": {
+                    "type": "string",
+                    "example": "https://example.com/hotel_thumbnail.jpg",
+                    "description": "The link to the property's thumbnail"
+                  }
+                }
+              }
+            }
+          },
+          "proposals_count": {
+            "nullable": true,
+            "type": "integer",
+            "example": 3,
+            "description": "Total amount of hotel options that are 'ready to review'"
+          },
+          "proposals_thumbnail_url": {
+            "nullable": true,
+            "type": "object",
+            "description": "URL for the first 'ready to review' hotel option",
+            "properties": {
+              "url": {
+                "type": "string",
+                "example": "https://example.com/hotel_thumbnail.jpg",
+                "description": "The link to the property's thumbnail"
+              }
+            }
+          },
+          "requested_properties_count": {
+            "nullable": true,
+            "type": "integer",
+            "example": 2,
+            "description": "Total number of customer requested properties"
+          },
+          "requested_properties_thumbnail_url": {
+            "nullable": true,
+            "type": "object",
+            "description": "URL for the first customer request property",
+            "properties": {
+              "url": {
+                "type": "string",
+                "example": "https://example.com/hotel_thumbnail.jpg",
+                "description": "The link to the property's thumbnail"
+              }
+            }
+          },
+          "room_count": { "type": "integer", "example": 3, "description": "The number of rooms requested" }
+        }
+      },
+      "special_booking_requests_list_properties_serializer": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "distance",
+          "thumbnail_url",
+          "rating",
+          "star_rating",
+          "review_count",
+          "name",
+          "latitude",
+          "longitude",
+          "image_count",
+          "images",
+          "loyalty_reward_name",
+          "loyalty_reward_id"
+        ],
+        "properties": {
+          "id": { "type": "integer", "example": 90152, "description": "The integer ID for the Property" },
+          "distance": {
+            "type": "number",
+            "example": 1.234,
+            "description": "Distance from RFP lat/long using Business' units (km/mi)"
+          },
+          "thumbnail_url": {
+            "nullable": true,
+            "type": "object",
+            "example": { "url": "https://q-xx.bstatic.com/xdata/images/hotel/max1024x768" },
+            "description": "The link to the property's thumbnail"
+          },
+          "rating": { "type": "number", "example": 7.9, "description": "The property's rating" },
+          "star_rating": {
+            "type": "integer",
+            "nullable": true,
+            "example": 3,
+            "description": "The star rating of the property"
+          },
+          "review_count": {
+            "type": "number",
+            "example": 10,
+            "description": "The amount of reviews for the property"
+          },
+          "name": {
+            "type": "string",
+            "example": "Comforting Inn Premier",
+            "description": "The name of the property"
+          },
+          "latitude": {
+            "type": "number",
+            "example": 36.223471852998,
+            "description": "The property's latitude"
+          },
+          "longitude": {
+            "type": "number",
+            "example": -75.770450192452,
+            "description": "The property's longitude"
+          },
+          "image_count": {
+            "type": "integer",
+            "example": 13,
+            "description": "The number of images available for this property"
+          },
+          "images": {
+            "type": "array",
+            "example": [
+              {
+                "url": "https://q-xx.bstatic.com/xdata/images/hotel/max1024x768/169885083.jpg?k=8484470a84c464aa5507428746ebcc655925b6e6e50225ae725a1afd24433eb2&o="
+              },
+              {
+                "url": "https://q-xx.bstatic.com/xdata/images/hotel/max1024x768/169884275.jpg?k=814129565f76d79aab879f98b5cb4541c160901aed06f97cf3f64b9bce7f4086&o="
+              }
+            ],
+            "description": "Links to the property's images"
+          },
+          "loyalty_reward_name": {
+            "nullable": true,
+            "type": "string",
+            "example": "Choice Privileges",
+            "description": "The name of the property's LoyaltyReward entry"
+          },
+          "loyalty_reward_id": { "nullable": true, "type": "integer", "example": 3 }
+        }
+      },
+      "special_booking_requests_show_response_serializer": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "bucket",
+          "name",
+          "check_in",
+          "check_out",
+          "location",
+          "trip_reason",
+          "standard_rooms",
+          "double_rooms",
+          "hotel_order_name",
+          "suites",
+          "max_nightly_rate",
+          "max_distance",
+          "preferred_hotel_brand",
+          "minimum_star_rating",
+          "top_priority",
+          "preferences_notes",
+          "preferred_payment_type",
+          "requested_properties",
+          "custom_nights",
+          "amenities",
+          "meeting_room_details",
+          "user",
+          "phone",
+          "email"
+        ],
+        "properties": {
+          "id": { "$ref": "#/components/schemas/definitions_special_booking_request/properties/id" },
+          "check_in": {
+            "$ref": "#/components/schemas/definitions_special_booking_request/properties/check_in"
+          },
+          "check_out": {
+            "$ref": "#/components/schemas/definitions_special_booking_request/properties/check_out"
+          },
+          "location": { "$ref": "#/components/schemas/definitions_location" },
+          "name": { "$ref": "#/components/schemas/definitions_special_booking_request/properties/name" },
+          "email": { "$ref": "#/components/schemas/definitions_special_booking_request/properties/email" },
+          "trip_reason": {
+            "$ref": "#/components/schemas/definitions_special_booking_request/properties/trip_reason"
+          },
+          "standard_rooms": {
+            "$ref": "#/components/schemas/definitions_special_booking_request/properties/standard_rooms"
+          },
+          "double_rooms": {
+            "$ref": "#/components/schemas/definitions_special_booking_request/properties/double_rooms"
+          },
+          "hotel_order_name": {
+            "$ref": "#/components/schemas/definitions_special_booking_request/properties/hotel_order_name"
+          },
+          "suites": { "$ref": "#/components/schemas/definitions_special_booking_request/properties/suites" },
+          "max_nightly_rate": {
+            "$ref": "#/components/schemas/definitions_special_booking_request/properties/max_nightly_rate"
+          },
+          "max_distance": {
+            "$ref": "#/components/schemas/definitions_special_booking_request/properties/max_distance"
+          },
+          "preferred_hotel_brand": {
+            "$ref": "#/components/schemas/definitions_special_booking_request/properties/preferred_hotel_brand"
+          },
+          "minimum_star_rating": {
+            "$ref": "#/components/schemas/definitions_special_booking_request/properties/minimum_star_rating"
+          },
+          "top_priority": {
+            "$ref": "#/components/schemas/definitions_special_booking_request/properties/top_priority"
+          },
+          "phone": { "$ref": "#/components/schemas/definitions_special_booking_request/properties/phone" },
+          "preferences_notes": {
+            "$ref": "#/components/schemas/definitions_special_booking_request/properties/preferences_notes"
+          },
+          "preferred_payment_type": {
+            "$ref": "#/components/schemas/definitions_special_booking_request/properties/preferred_payment_type"
+          },
+          "requested_properties": {
+            "type": "array",
+            "description": "A list of properties that the user has requested the sourcing team to attempt to source first",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": { "$ref": "#/components/schemas/definitions_property/properties/id" },
+                "thumbnail_url": {
+                  "nullable": true,
+                  "type": "object",
+                  "properties": { "url": { "type": "string", "example": "http://www.newegg.com/" } }
+                },
+                "rating": { "$ref": "#/components/schemas/definitions_property/properties/rating" },
+                "review_count": {
+                  "$ref": "#/components/schemas/definitions_property/properties/review_count"
+                },
+                "name": { "$ref": "#/components/schemas/definitions_property/properties/name" }
+              }
+            }
+          },
+          "custom_nights": {
+            "$ref": "#/components/schemas/definitions_special_booking_request/properties/custom_nights"
+          },
+          "amenities": {
+            "$ref": "#/components/schemas/definitions_special_booking_request/properties/amenities"
+          },
+          "meeting_room_details": {
+            "$ref": "#/components/schemas/definitions_special_booking_request/properties/meeting_room_details"
+          },
+          "user": {
+            "type": "object",
+            "description": "JSON containing basic info of SBR's user/owner",
+            "example": { "name": "Calvin 'the senior' Cartano", "id": 98 },
+            "properties": {
+              "id": {
+                "type": "number",
+                "example": 98,
+                "description": "Unique Identifier for the user who created/owns the SBR"
+              },
+              "name": {
+                "type": "string",
+                "example": "Calvin 'the senior' Cartano",
+                "description": "User name for the user"
+              }
+            }
+          },
+          "bucket": {
+            "type": "string",
+            "example": "draft",
+            "description": "Customer facing categorization in which the SBR is currently in"
+          }
+        }
+      },
+      "special_booking_requests_update_params": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [],
+        "properties": {
+          "name": { "$ref": "#/components/schemas/definitions_special_booking_request/properties/name" },
+          "check_in": { "$ref": "#/components/schemas/definitions_special_booking_request/properties/check_in" },
+          "check_out": { "$ref": "#/components/schemas/definitions_special_booking_request/properties/check_out" },
+          "location": { "$ref": "#/components/schemas/definitions_location" },
+          "trip_reason": { "$ref": "#/components/schemas/definitions_special_booking_request/properties/trip_reason" },
+          "suites": { "$ref": "#/components/schemas/definitions_special_booking_request/properties/suites" },
+          "standard_rooms": { "$ref": "#/components/schemas/definitions_special_booking_request/properties/standard_rooms" },
+          "double_rooms": { "$ref": "#/components/schemas/definitions_special_booking_request/properties/double_rooms" },
+          "max_distance": { "$ref": "#/components/schemas/definitions_special_booking_request/properties/max_distance" },
+          "max_nightly_rate": { "$ref": "#/components/schemas/definitions_special_booking_request/properties/max_nightly_rate" },
+          "amenities": { "$ref": "#/components/schemas/definitions_special_booking_request/properties/amenities" },
+          "custom_nights": { "$ref": "#/components/schemas/definitions_special_booking_request/properties/custom_nights" },
+          "meeting_room_details": { "$ref": "#/components/schemas/definitions_special_booking_request/properties/meeting_room_details" },
+          "requested_property_ids": {
+            "type": "array",
+            "items": { "type": "number" },
+            "example": [1, 2, 3],
+            "description": "The Unique Identifier for the Properties that the customer is requesting suggested properties for."
+          }
+        }
+      },
+      "user_show_serializer": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "distance_unit",
+          "email",
+          "first_name",
+          "last_name",
+          "phone",
+          "role",
+          "business_info"
+        ],
+        "properties": {
+          "id": {
+            "type": "number",
+            "example": 123,
+            "description": "Unique Identifier for the Special Booking Request"
+          },
+          "distance_unit": {
+            "type": "string",
+            "example": "mi",
+            "description": "The unit of distance used in the request"
+          },
+          "email": {
+            "type": "string",
+            "example": "jim@hotelengine.com",
+            "nullable": true,
+            "description": "The email address of the user"
+          },
+          "first_name": { "type": "string", "example": "Jim", "description": "The first name of the user" },
+          "last_name": {
+            "type": "string",
+            "example": "Ploskonklement",
+            "description": "The last name of the user"
+          },
+          "phone": {
+            "type": "string",
+            "example": "555-555-5555",
+            "nullable": true,
+            "description": "The phone number of the user"
+          },
+          "role": { "type": "string", "example": "admin", "description": "The role of the user" },
+          "business_info": {
+            "type": "object",
+            "properties": {
+              "preferred_date_format": {
+                "type": "string",
+                "example": "mdy",
+                "description": "The preferred date format for the user"
+              },
+              "currency_code": {
+                "type": "string",
+                "example": "USD",
+                "description": "The currency code for the user's business"
+              },
+              "direct_bill_allowed": {
+                "type": "boolean",
+                "example": true,
+                "description": "Whether direct bill is enabled for the user's business"
+              },
+              "organization_id": {
+                "type": "number",
+                "nullable": true,
+                "example": 123,
+                "description": "The organization ID for the user's business"
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

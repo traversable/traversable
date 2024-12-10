@@ -17,7 +17,7 @@ import { std } from "./data.js"
 import Country = std.Country
 import Currency = std.Currency
 import Digit = std.Digit
-import State = std.State
+import State = std.UnitedStateOfAmerica
 
 /** @internal */
 const PATTERN = {
@@ -333,6 +333,37 @@ export function recordOf(object: { [x: string]: unknown }, valuesArbitrary: fc.A
     ).map(globalThis.Object.fromEntries)
   )
 }
+
+declare namespace record {
+  type Keep<T, K extends keyof T> = never | { [P in K]: T[P] }
+  type Part<T, K extends keyof T = keyof T> = never | { [P in K]+?: T[P] }
+  type Forget<T> = never | { [K in keyof T]: T[K] }
+  type Require<T, K extends keyof T = never> = [K] extends [never] ? T : Forget<
+    & Keep<T, K>
+    & Part<T, globalThis.Exclude<keyof T, K>>
+  >
+}
+
+export function record<T>(model: { [K in keyof T]: fc.Arbitrary<T[K]> }): fc.Arbitrary<T>
+export function record<T, K extends keyof T>(
+  model: { [K in keyof T]: fc.Arbitrary<T[K]> }, 
+  constraints: { requiredKeys?: K[] }
+): fc.Arbitrary<record.Require<T, K>>
+
+export function record<T, K extends keyof T>(
+  model: { [K in keyof T]: fc.Arbitrary<T[K]> }, 
+  constraints: { withDeletedKeys?: boolean, requiredKeys?: never }
+): fc.Arbitrary<record.Require<T, K>>
+
+export function record<T, K extends keyof T>(
+  model: { [K in keyof T]: fc.Arbitrary<T[K]> }, 
+  constraints: { withDeletedKeys: never, requiredKeys: never }
+): fc.Arbitrary<record.Require<T, K>>
+
+export function record(
+  model: { [x: string]: fc.Arbitrary<unknown> }, 
+  constraints = {}
+) { return fc.record(model, constraints) }
 
 export declare namespace key {
   /** 
@@ -905,16 +936,16 @@ export namespace country {
 export function state(): fc.Arbitrary<State>
 export function state() {
   return fc
-    .nat(std.States.length - 1)
-    .map((ix) => std.States[ix])
+    .nat(std.UnitedStatesOfAmerica.length - 1)
+    .map((ix) => std.UnitedStatesOfAmerica[ix])
 }
 
 export namespace state {
   export const _internal = fc
-    .nat(std.States.length - 1)
-    .map((ix) => std.States[ix])
+    .nat(std.UnitedStatesOfAmerica.length - 1)
+    .map((ix) => std.UnitedStatesOfAmerica[ix])
 
-  export type Code = std.State["code"]
+  export type Code = std.UnitedStateOfAmerica["code"]
   /**
    * ### {@link code `fc.state.code`}
    *
@@ -925,7 +956,7 @@ export namespace state {
    *  console.log(fc.peek(fc.state.code())) // => "AZ"
    *  console.log(fc.peek(fc.state.code())) // => "TX"
    */
-  export function code(): fc.Arbitrary<std.State["code"]> {
+  export function code(): fc.Arbitrary<std.UnitedStateOfAmerica["code"]> {
     return state().map((s) => s.code)
   }
 }

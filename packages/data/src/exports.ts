@@ -1,22 +1,32 @@
-import type { newtype } from "any-ts";
+import type { Kind, URI } from "@traversable/registry"
 
 export type { nonempty } from "./nonempty.js"
+export type { any } from "./any.js"
 
-export * from "./version.js";
+export * from "./version.js"
+export * as Equal from "./equal.js"
+export * as Option from "./option.js"
+export * as Result from "./result.js"
+
 export * as array from "./array.js"
-export * as Equal from "./equal.js";
 export * as fn from "./function.js"
-export * as integer from "./integer.js"
 export * as number from "./number.js"
 export * as string from "./string.js"
-export * as unicode from "./_internal/_unicode.js"
+export * as pair from "./pair.js"
 
+export { type Ansi, ANSI } from "./ansi.js"
 export { boolean } from "./boolean.js"
+export { char } from "./char.js"
 export { entry, entries } from "./entry.js"
 export { key, keys } from "./key.js"
-export { map } from "./map.js"
+export { forEach, map } from "./map.js"
 export { object } from "./object.js"
 export { prop, props } from "./prop.js"
+export { record } from "./record.js"
+export { jsdoc, unicode } from "./unicode.js"
+
+export * as integer from "./integer.js"
+export type integer<_ = number> = import("@traversable/registry").integer<_>
 
 /**
  * ## {@link Predicate `data.Predicate`}
@@ -35,12 +45,12 @@ export { prop, props } from "./prop.js"
  * - the Wikipedia page on
  * [first-order logic](https://en.wikipedia.org/wiki/First-order_logic)
  */
-export type Predicate<in T = any> = (value: T) => boolean;
+export type Predicate<in T = any> = (value: T) => boolean
 
 /**
  * ## {@link Predicate `data.Predicate`}
  */
-export type Equal<in T> = (left: T, right: T) => boolean;
+export type Equal<in T> = (left: T, right: T) => boolean
 
 /**
  * ## {@link Compare `data.Compare`}
@@ -56,20 +66,24 @@ export type Equal<in T> = (left: T, right: T) => boolean;
  * - {@link Equal `data.Equal`}
  * - the Wikipedia page for [total orders](https://en.wikipedia.org/wiki/Total_order)
  */
-export type Compare<in T> = (left: T, right: T) => -1 | 0 | 1;
+export interface Compare<in T> { 
+	// (left: T, right: T): -1 | 0 | 1 
+	(left: T, right: T): number 
+}
+
 export declare namespace Compare {
 	export {
 		Compare_any as any,
 		Compare_object as object,
 		Compare_infer as infer,
-	};
+	}
 }
 export declare namespace Compare {
-	type Compare_any = Compare<any>;
+	type Compare_any = Compare<any>
 	type Compare_object<T> =
 		| never
-		| Compare<{ -readonly [K in keyof T]: Compare.infer<T[K]> }>;
-	type Compare_infer<T> = [T] extends [Compare<infer U>] ? U : never;
+		| Compare<{ -readonly [K in keyof T]: Compare.infer<T[K]> }>
+	type Compare_infer<T> = [T] extends [Compare<infer U>] ? U : never
 }
 
 /**
@@ -81,7 +95,7 @@ export declare namespace Compare {
  * Like the built-in utility, this implementation is homomorphic
  * (structure-preserving)
  */
-export type Pick<T, K extends keyof T> = never | { -readonly [x in K]: T[x] };
+export type Pick<T, K extends keyof T> = never | { -readonly [x in K]: T[x] }
 
 /**
  * ## {@link Omit `data.Omit`}
@@ -92,7 +106,49 @@ export type Pick<T, K extends keyof T> = never | { -readonly [x in K]: T[x] };
  * Like the built-in utility, this implementation is homomorphic
  * (structure-preserving)
  */
-export type Omit<T, K extends keyof any> = never | Pick<T, Exclude<keyof T, K>>;
+export type Omit<T, K extends keyof any> = never | Pick<T, Exclude<keyof T, K>>
+
+/**
+ * ### {@link Force `data.Force`}
+ *
+ * There are a few use cases for the {@link Force `data.Force`} operation:
+ *
+ * - forcing evaluation
+ * - "forgetting" the differences between intersections, by merging them into a single type
+ * - to break an interface open so you can see the properties it contains
+ */
+export type Force<T> = never | { [K in keyof T]: T[K] }
+
+/**
+ * ### {@link Spread `Spread`}
+ *
+ * Preserves JSDoc annotations. If a property is has JSDoc annotations in both
+ * {@link T `T`} and {@link U `U`}, the docs for the property in {@link U `U`}
+ * are concatenated onto the end of the docs for the property in {@link T `T`}.
+ */
+export type Spread<T, U, _K extends keyof (T | U) = keyof (T | U)> =
+	| never
+	| (Pick<T | U, _K> & Omit<T, _K> & Omit<U, _K>)
+
+/**
+ * ### {@link Merge `Merge`}
+ *
+ * Preserves JSDoc annotations. If a property is has JSDoc annotations in both
+ * {@link T `T`} and {@link U `U`}, the docs for the property in {@link U `U`}
+ * are concatenated onto the end of the docs for the property in {@link T `T`}.
+ */
+export type Merge<T, U> = never | Force<Spread<T, U>>
+
+export type Part<T, K extends keyof T = never> = [K] extends [never]
+	? Optional<T>
+	: Force<Omit<T, K> & Optional<T, K>>
+
+export type Require<T, K extends keyof T = never> = [K] extends [never]
+	? Optional<T>
+	: Force<Pick<T, K> & Optional<T, Exclude<keyof T, K>>>
+
+export type Optional<T, K extends keyof T = keyof T> = never | 
+  { [P in K]+?: T[P] }
 
 /**
  * ## {@link Sort `data.Sort`}
@@ -104,11 +160,11 @@ export type Omit<T, K extends keyof any> = never | Pick<T, Exclude<keyof T, K>>;
  * See also:
  * - {@link Compare `data.Compare`}
  */
-export type Sort<in out T> = (array: readonly T[]) => readonly T[];
+export type Sort<in out T> = (array: readonly T[]) => readonly T[]
 export declare namespace Sort {
-	export type infer<T> = [T] extends [Sort<infer U>] ? U : never;
-	export type { Sort_any as any };
-	export type Sort_any<T extends Sort<any> = Sort<any>> = T;
+	export type infer<T> = [T] extends [Sort<infer U>] ? U : never
+	export type { Sort_any as any }
+	export type Sort_any<T extends Sort<any> = Sort<any>> = T
 }
 
 /**
@@ -131,15 +187,15 @@ export declare namespace Sort {
  *   https://en.wikipedia.org/wiki/Covariance_and_contravariance_(computer_science)
  * )
  */
-export type MapSort<in T> = <S>(fn: (s: S) => T) => Sort<S>;
+export type MapSort<in T> = <S>(fn: (s: S) => T) => Sort<S>
 export declare namespace MapSort {
 	/**
 	 * ### {@link infer `data.MapSort.infer`}
 	 * Type-level utility that extracts
 	 */
-	export type infer<T> = [T] extends [MapSort<infer U>] ? U : never;
-	export type { MapSort_any as any };
-	export type MapSort_any<T extends MapSort<any> = MapSort<any>> = T;
+	export type infer<T> = [T] extends [MapSort<infer U>] ? U : never
+	export type { MapSort_any as any }
+	export type MapSort_any<T extends MapSort<any> = MapSort<any>> = T
 }
 
 /**
@@ -160,14 +216,9 @@ export declare namespace MapSort {
  * - the Wikipedia page for the
  * [option type](https://en.wikipedia.org/wiki/Option_type)
  */
-export type Option<T> = None | Some<T>;
-export interface None {
-	_tag: "@traversable/data/Option::None";
-}
-export interface Some<T> {
-	_tag: "@traversable/data/Option::Some";
-	value: T;
-}
+export type Option<T> = None | Some<T>
+export interface None { _tag: URI.None }
+export interface Some<T> { _tag: URI.Some, value: T }
 
 /**
  * ## {@link Result `data.Result`}
@@ -187,15 +238,9 @@ export interface Some<T> {
  * - {@link Option `data.Option`}
  * - Rust's docs on [`Result`](https://doc.rust-lang.org/std/result/)
  */
-export type Result<T, E = never> = Ok<T> | Err<E>;
-export interface Ok<T> {
-	_tag: `@traversable/data/Result::Ok`;
-	ok: T;
-}
-export interface Err<T> {
-	_tag: `@traversable/data/Result::Err`;
-	err: T;
-}
+export type Result<T = unknown, E = never> = Ok<T> | Err<E>
+export interface Ok<T> { _tag: URI.Ok, ok: T }
+export interface Err<T> { _tag: URI.Err, err: T }
 
 /**
  * ## {@link Concattable `data.Concattable`}
@@ -207,7 +252,7 @@ export interface Err<T> {
  * - the Wikipedia page on [semigroups](https://en.wikipedia.org/wiki/Semigroup)
  */
 export interface Concattable<in out T> {
-	concat(left: T, right: T): T;
+	concat(left: T, right: T): T
 }
 
 /**
@@ -219,113 +264,20 @@ export interface Concattable<in out T> {
  * - {@link Concattable `data.Concattable`}
  * - the Wikipedia page on [monoids](https://en.wikipedia.org/wiki/Monoid)
  */
-export interface Foldable<in out T> extends Concattable<T> {
-	empty: T;
+export interface Foldable<in out T> extends Concattable<T> { empty: T }
+
+/**
+ * ## {@link Functor `data.Functor`}
+ */
+export interface Functor<F extends Kind = Kind> {
+  map<S, T>(f: (s: S) => T): (F: Kind.apply<F, S>) => Kind.apply<F, T>
 }
 
-/**
- * ### {@link Force `data.Force`}
- *
- * There are a few use cases for the {@link Force `data.Force`} operation:
- *
- * - forcing evaluation
- * - "forgetting" the differences between intersections, by merging them into a single type
- * - to break an interface open so you can see the properties it contains
- */
-export type Force<T> = never | { [K in keyof T]: T[K] };
-
-/**
- * ### {@link Spread `Spread`}
- *
- * Preserves JSDoc annotations. If a property is has JSDoc annotations in both
- * {@link T `T`} and {@link U `U`}, the docs for the property in {@link U `U`}
- * are concatenated onto the end of the docs for the property in {@link T `T`}.
- */
-export type Spread<T, U, _K extends keyof (T | U) = keyof (T | U)> =
-	| never
-	| (Pick<T | U, _K> & Omit<T, _K> & Omit<U, _K>);
-
-/**
- * ### {@link Merge `Merge`}
- *
- * Preserves JSDoc annotations. If a property is has JSDoc annotations in both
- * {@link T `T`} and {@link U `U`}, the docs for the property in {@link U `U`}
- * are concatenated onto the end of the docs for the property in {@link T `T`}.
- */
-export type Merge<T, U> = never | Force<Spread<T, U>>;
-
-export type Part<T, K extends keyof T = never> = [K] extends [never]
-	? Optional<T>
-	: Force<Omit<T, K> & Optional<T, K>>;
-
-export type Require<T, K extends keyof T = never> = [K] extends [never]
-	? Optional<T>
-	: Force<Pick<T, K> & Optional<T, Exclude<keyof T, K>>>;
-
-export type Optional<T, K extends keyof T = keyof T> =
-	| never
-	| { [P in K]+?: T[P] };
-
-/**
- * ### {@link integer `number.integer`}
- * * #### ｛ {@link jsdoc.integer `ℤ`}  ｝
- * -----
- *
- * See also: [Integer](https://en.wikipedia.org/wiki/Integer_(computer_science))
- *
- * A signed, 64-bit number representation.
- *
- * > **Note:** to convert a {@link integer `number.integer`} to a regular TypeScript number, use the
- *   [unary plus](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Operators/Unary_plus)
- *   operator (e.g., `+ myInteger`).
- *
- * **Note:** `number -> integer` is _lossy_. For a constructor that preserves the integer exponent
- * of its argument, see {@link float `number.float`.}
- *
- * 1. {@link integer `integer`} is a [newtype](https://doc.rust-lang.org/rust-by-example/generics/new_types.html)
- * that inherits from {@link globalThis.Number.prototype `Number.prototype`}, but
- * preserves (at the type-level) what is otherwise lost: that the value it represents
- * is a whole number.
- *
- * 2. The {@link integer `integer`} function constructs an {@link integer `integer`} from
- * an arbitrary JavaScript number.
- *
- * In most contexts, an {@link integer `integer`} and a regular number can be used
- * interchangably, but sometimes you'll need to explicitly "unwrap" an {@link integer `integer`}
- * to "forget" that information -- see the example below.
- *
- * - [Reference](https://en.wikipedia.org/wiki/Integer_(computer_science))
- *
- * @example
- *  import { integer } from "@traversable/data"
- *
- *  const coinToss = () => integer(Math.random())
- *
- *  const ex_01 = coinToss()
- *  //    ^? const ex_01: integer
- *
- *  const ex_02 = coinToss()
- *  //    ^? const ex_02: integer
- *
- *  // integers can be compared using infix operators like `>`, `>=`, `<` and `<=`, like regular numbers:
- *  if (ex_01 > ex_02) {
- *    // integers can be interpolated:
- *    console.log(`${ex_01} > ${ex_02}`)
- *  }
- *
- *  // if you need to pass an integer to a function that expects a number, use the _unary plus operator_ (a.k.a.
- *  // ["prefix plus"](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Operators/Unary_plus):
- *  const ex_03 = Math.max(ex_01, ex_02)
- *  //                     ^^^^ 🚫 Argument of type 'integer' is not assignable to parameter of type 'number'
- *
- *  //                     ↓ ✅     ↓ ✅
- *  const ex_04 = Math.max(+ ex_01, + ex_02)
- *  //    ^? const ex_04: number
- *
- *  // you can also use `valueOf`:
- *  //                     ↓ ✅    ↓ ✅
- *  const ex_05 = Math.max(+ex_01, +ex_02)
- *  //    ^? const ex_05: number
- */
-export interface integer extends newtype<number> {}
-
+export declare namespace Functor {
+  type map<F extends Kind> = never | {
+    <S, T>(f: (s: S) => T): { (F: Kind.apply<F, S>): Kind.apply<F, T> }
+    <S, T>(F: Kind.apply<F, S>, f: (s: S) => T): Kind.apply<F, T>
+  }
+  type Algebra<F extends Kind, T> = (F: Kind.apply<F, T>) => T
+  type Coalgebra<F extends Kind, T> = (t: T) => Kind.apply<F, T>
+}

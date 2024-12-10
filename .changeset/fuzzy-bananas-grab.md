@@ -1,0 +1,5 @@
+---
+"@traversable/data": patch
+---
+
+stub

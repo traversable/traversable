@@ -1,6 +1,6 @@
 import { fc } from "@traversable/core"
 
-import { BooleanNode, IntegerNode, NumberNode, Schema, StringNode } from "./schema.js"
+import { BooleanNode, IntegerNode, NumberNode, Schema, StringNode } from "./schema-old.js"
 import {
   applyConstraints,
   type arbitrary,
@@ -34,7 +34,7 @@ export namespace parameter {
     )
   }
 
-  export function pathSchema(constraints: Schema.Constraints = Schema.defaultConstraints) {
+  export function pathSchema(constraints: Schema.Constraints = Schema.defaults) {
     return fc.oneof(
       NumberNode(constraints),
       StringNode(constraints),

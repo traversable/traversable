@@ -3,7 +3,7 @@ import { Command, Prompt } from "@effect/cli"
 import { NodeContext, NodeRuntime } from "@effect/platform-node"
 import { Effect } from "effect"
 
-import { PACKAGES } from "./metadata.js"
+import { PACKAGES } from "./constants.js"
 import { main } from "./workspace.js"
 
 const pkgName = Prompt.text({

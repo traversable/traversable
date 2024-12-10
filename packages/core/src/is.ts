@@ -1,11 +1,62 @@
-import type { empty as Empty, nonempty as NonEmpty, any, has, some } from "any-ts"
-import { createFromFactories, fromFactories, symbol, withPrefixes } from "./guard.js"
+export {
+  anything,
+  anyOf,
+  allOf,
+  oneOf,
+  array,
+  isBigInt as bigint,
+  isBoolean as boolean,
+  isFalse as false,
+  isTrue as true,
+  isDate as date,
+  defined,
+  isFunction as function,
+  isIndex as index,
+  isInteger as integer,
+  partial,
+  isKey as key,
+  isLiteral as literal,
+  isLiterally as literally,
+  isNull as null,
+  isNullable as nullable,
+  isNumber as number,
+  object,
+  isPath as path,
+  isPrimitive as primitive,
+  isRecord as record,
+  isRecordOf as recordOf,
+  isScalar as scalar,
+  isShowable as showable,
+  isString as string,
+  isSymbol as symbol,
+  isUndefined as undefined,
+  nonnullable,
+  notNull,
+  optional,
+  or,
+  tuple,
+} from "./guard.js"
 
-export const guards = {
-  fromFactories,
-  createFromFactories,
-  withPrefixes,
-} as const
+import type { key, prop } from "@traversable/data"
+import type { empty as Empty, nonempty as NonEmpty, has } from "any-ts"
+
+import { 
+  array,
+  object,
+} from "./guard.js"
+
+export declare namespace any {
+  export {
+    any_object as object,
+    any_array as array,
+  }
+}
+const any_object = object.any
+const any_array = array.any
+export namespace any {
+  void (any.object = any_object)
+  void (any.array = any_array)
+}
 
 export declare namespace nonempty {
   export type object_<T> = Extract<T, has.oneProperty<T>>
@@ -14,21 +65,13 @@ export declare namespace nonempty {
 export namespace nonempty {
   export const object = <T extends Record<string, any>>(u: T): u is nonempty.object<T> =>
     globalThis.Object.keys(u).length > 0
-  export const array: <T>(u: any.array<T>) => u is NonEmpty.array<T> = (u): u is NonEmpty.array<never> =>
+  export const array: <T>(u: readonly T[]) => u is NonEmpty.array<T> = (u): u is NonEmpty.array<never> =>
     u.length > 0
   export function string<T extends string>(u: T): u is T & NonEmpty.string
   export function string(u: unknown): u is NonEmpty.string
   export function string(u: unknown): u is never {
     return typeof u === "string" && u.length > 0
   }
-}
-
-export function and<L, R>(left: any.guard<L>, right: any.guard<R>): any.typeguard<unknown, L & R> {
-  return (u): u is never => left(u) && right(u)
-}
-
-export function or<L, R>(left: any.guard<L>, right: any.guard<R>): any.typeguard<unknown, L | R> {
-  return (u): u is never => left(u) || right(u)
 }
 
 export declare namespace empty {
@@ -43,47 +86,9 @@ export namespace empty {
 
 export const keyof: {
   <K extends string, const T extends {}>(struct: T): (key: K) => key is K & keyof T
-  <K extends any.key, const T extends {}>(struct: T): (key: K) => key is K & keyof T
-  <K extends any.index, const T extends {}>(struct: T): (key: K) => key is K & keyof T
+  <K extends prop.any, const T extends {}>(struct: T): (key: K) => key is K & keyof T
+  <K extends key.any, const T extends {}>(struct: T): (key: K) => key is K & keyof T
 } =
   (struct: {}) =>
-  (key: any.index): key is never =>
+  (key: key.any): key is never =>
     key in struct
-
-export {
-  has,
-  isArray as array,
-  isArrayOf as arrayOf,
-  isBigint as bigint,
-  isBoolean as boolean,
-  isFalse as false,
-  isTrue as true,
-  isDate as date,
-  notUndefined as defined,
-  isFunction as function,
-  isIndex as index,
-  integer,
-  isPartial as partial,
-  isKey as key,
-  isLiteral as literal,
-  isLiterally as literally,
-  isNull as null,
-  isNullable as nullable,
-  isNumber as number,
-  isObject as object,
-  isPath as path,
-  isPrimitive as primitive,
-  isRecord as record,
-  isRecordOf as recordOf,
-  isScalar as scalar,
-  isShowable as showable,
-  isString as string,
-  isSymbol as symbol,
-  symbol as SYMBOL,
-  isUndefined as undefined,
-  not,
-  nonNullable,
-  notNull,
-  notNullable,
-  notUndefined,
-} from "./guard.js"

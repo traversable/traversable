@@ -45,4 +45,5 @@
   - bench
   - core
   - data
-  - http -openapi
+  - http 
+  - openapi

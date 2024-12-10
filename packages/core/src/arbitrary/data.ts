@@ -7,7 +7,7 @@ import {
 export namespace std {
   export type Digit = Digits[number]
   export type Digits = typeof std.Digits
-  export const Digits = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9] as const
+  export const Digits = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9] as const satisfies number[]
 
   export const MonthsWithDurations = entries.of(
     ["January", 31],
@@ -27,10 +27,10 @@ export namespace std {
   export const Month = object.fromKeys(Months)
   export type Month = typeof Month[keyof typeof Month]
 
-  export const SizeShorthand = array.of("sm", "md", "lg")
+  export const SizeShorthand = ["sm", "md", "lg"] as const satisfies string[]
 
-  export type States = typeof std.States
-  export const States = [
+  export type UnitedStatesOfAmerica = typeof UnitedStatesOfAmerica
+  export const UnitedStatesOfAmerica = [
     { name: "Alabama", code: "AL" },
     { name: "Alaska", code: "AK" },
     { name: "American Samoa", code: "AS" },
@@ -90,10 +90,10 @@ export namespace std {
     { name: "West Virginia", code: "WV" },
     { name: "Wisconsin", code: "WI" },
     { name: "Wyoming", code: "WY" }
-  ] as const satisfies (typeof docs.state)[]
+  ] as const satisfies (typeof jsdocs.us_state)[]
 
-  export const State = array.indexBy("code")(States)
-  export type State<T extends States[number] = States[number]> = T & typeof docs.state
+  export const UnitedStateOfAmerica = array.indexBy("code")(UnitedStatesOfAmerica)
+  export type UnitedStateOfAmerica<T extends UnitedStatesOfAmerica[number] = UnitedStatesOfAmerica[number]> = T & typeof jsdocs.us_state
 
   export type Countries = typeof std.Countries
   export const Countries = [
@@ -350,9 +350,9 @@ export namespace std {
     { name: "Zambia", code: "ZM" },
     { name: "Zimbabwe", code: "ZW" },
     { name: "Åland Islands", code: "AX" }
-  ] as const satisfies (typeof docs.country)[]
+  ] as const satisfies (typeof jsdocs.country)[]
   export const Country = array.indexBy("code")(Countries)
-  export type Country<T extends Countries[number] = Countries[number]> = T & typeof docs.country
+  export type Country<T extends Countries[number] = Countries[number]> = T & typeof jsdocs.country
 
   export type Currencies = typeof std.Currencies
   export const Currencies = [
@@ -365,9 +365,9 @@ export namespace std {
   ] as const
 
   export const Currency = array.indexBy("countryCode")(Currencies)
-  export type Currency<T extends Currencies[number] = Currencies[number]> = T & typeof docs.currency
+  export type Currency<T extends Currencies[number] = Currencies[number]> = T & typeof jsdocs.currency
 
-  export declare const docs: {
+  export declare const jsdocs: {
     currency: {
       /**
        * ### {@link Currency.code `Currency.code`}
@@ -400,14 +400,14 @@ export namespace std {
      * Integer between 0-9, inclusive.
      */
     digit: Digit
-    state: {
+    us_state: {
       /**
-       * ### {@link State.name `State.name`}
+       * ### {@link jsdocs.us_state.name `USState.name`}
        *
        * The full name of the US state, as defined in [ISO 3166-2](https://en.wikipedia.org/wiki/ISO_3166-2)
        *
        * @example
-       *  const Colorado = "Colorado" satisfies typeof State.name // ✅
+       *  const Colorado = "Colorado" satisfies typeof USState.name // ✅
        */
       name: string
       /**
@@ -422,7 +422,7 @@ export namespace std {
     }
     country: {
       /**
-       * ### {@link Country.name `Country.name`}
+       * ### {@link jsdocs.country.name `Country.name`}
        *
        * The country's full name, as it is included in [ISO 3166-2](https://en.wikipedia.org/wiki/ISO_3166-2)
        *
@@ -431,7 +431,7 @@ export namespace std {
        */
       name: string
       /**
-       * ### {@link Country.code `Country.code`}
+       * ### {@link jsdocs.country.code `Country.code`}
        *
        * 2-digit country code, as defined in [ISO 3166-2](https://en.wikipedia.org/wiki/ISO_3166-2)
        *
@@ -441,31 +441,4 @@ export namespace std {
       code: string
     }
   }
-
-  type UnitTuple<
-    Name extends string = string,
-    Short extends string = string
-  > = [unitName: Name, shortName: Short]
-
-  interface Unit<Metric extends UnitTuple, Imperial extends UnitTuple> {
-    metric: Metric;
-    imperial: Imperial;
-  }
-
-  const unitTuple
-    : <const Unit extends UnitTuple>(...args: Unit) => UnitTuple<Unit[0], Unit[1]>
-    = (...args) => args
-
-  const unit
-    : <const Metric extends UnitTuple, const Imperial extends UnitTuple> (metric: Metric, imperial: Imperial) => Unit<Metric, Imperial>
-    = (metric, imperial) => ({ metric, imperial })
-
-  export const Units = entries.of(
-    [
-      "distance", unit(
-        unitTuple("mi", "miles"),
-        unitTuple("km", "kilometers"),
-      )
-    ],
-  )
 }

@@ -8,6 +8,7 @@
 		"stripInternal": true
 	},
 	"references": [
-		{ "path": "../data" }
+		{ "path": "../data" },
+		{ "path": "../registry" }
 	]
 }

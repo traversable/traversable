@@ -1,2 +1,2 @@
-export * from "./exports.js";
-export * as bench from "./exports.js";
+export * from "./exports.js"
+export * as bench from "./exports.js"

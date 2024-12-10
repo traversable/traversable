@@ -1,14 +1,15 @@
 {
-	"extends": "../../tsconfig.base.json",
-	"compilerOptions": {
-		"tsBuildInfoFile": ".tsbuildinfo/test.tsbuildinfo",
-		"rootDir": "test",
-		"types": ["node"],
-		"noEmit": true
-	},
-	"references": [
-		{ "path": "tsconfig.src.json" },
-		{ "path": "../data" }
-	],
-	"include": ["test"]
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "tsBuildInfoFile": ".tsbuildinfo/test.tsbuildinfo",
+    "rootDir": "test",
+    "types": ["node"],
+    "noEmit": true
+  },
+  "include": ["test"],
+  "references": [
+    { "path": "tsconfig.src.json" },
+    { "path": "../data" },
+    { "path": "../registry" }
+  ]
 }

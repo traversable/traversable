@@ -6,6 +6,8 @@
     { "path": "packages/core" },
     { "path": "packages/data" },
     { "path": "packages/http" },
-    { "path": "packages/openapi" }
+    { "path": "packages/interpret" },
+    { "path": "packages/openapi" },
+    { "path": "packages/registry" }
   ]
 }

@@ -6,5 +6,8 @@
 		"declarationDir": "build/dts",
 		"outDir": "build/esm",
 		"stripInternal": true
-	}
+	},
+	"references": [
+		{ "path": "../registry" }
+	]
 }
