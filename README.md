@@ -55,12 +55,6 @@ $ pnpm workspace:new
 
 The command will walk you through a few prompts to make sure it wires things up correctly.
 
-<div align="left">
-  <img src="./bin/assets/pnpm-workspace-new-dialog.png" height="248px" />
-  <h3>Running the package generator</h3>
-</div>
-
-
 If you choose `private: false`, you can publish the package to the GitHub registry immediately after running `workspace:new`.
 
 **Note:** The name of your package should be **unprefixed** (don't prepend `@traversable/` or `packages/`).
