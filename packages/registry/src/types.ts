@@ -4,8 +4,25 @@ import type { newtype } from "any-ts"
 export type inline<T> = T
 export type _ = {} | null | undefined
 
-type Parameter<T> = T extends (_: infer I) => unknown ? I : never
-type Returns<T> = T extends (_: never) => infer O ? O : never
+export type Parameter<T> = T extends (_: infer I) => unknown ? I : never
+export type Returns<T> = T extends (_: never) => infer O ? O : never
+
+export type Pick<T, K extends keyof T> = never | { [P in K]: T[P] }
+export type Omit<T, K extends keyof never> = never | Pick<T, Exclude<keyof T, K>>
+export type Partial<T> = never | { [K in keyof T]+?: T[K] } 
+export type Required<T> = never | { [K in keyof T]-?: T[K] }
+export type Require<T, K extends keyof T = never>
+  = [K] extends [never] ? never | Required<T>
+  : KeepLast<T, { [P in K]-?: T[P] }>
+export type Part<T, K extends keyof T = never>
+  = [K] extends [never] ? never | Partial<T>
+  : KeepLast<T, { [P in K]+?: T[P] }>
+export type KeepFirst<S, T> = never | KeepLast<T, S>
+export type KeepLast<S, T, _ extends keyof (S | T) = keyof (S | T)> = never | (
+  & Omit<S, _>
+  & T
+)
+
 interface Covariant<T extends (_: never) => unknown> {
   (_: never): Returns<T>
 }
@@ -15,6 +32,7 @@ interface Invariant<T extends (_: never) => unknown> {
 interface Contravariant<T extends (_: never) => unknown> {
   (_: Parameter<T>): void
 }
+
 interface Bivariant<T extends { (_: never): unknown }> extends newtype<{ _(_: Parameter<T>): Returns<T> }> {}
 
 export declare namespace Position {

@@ -3,6 +3,8 @@ export const PATTERN = {
   doubleQuoted: /(?<=^").+?(?="$)/,
   singleQuoted: /(?<=^').+?(?='$)/,
   graveQuoted: /(?<=^`).+?(?=`$)/,
+  quoteCharacter: /['"`]/g,
+  startsWithDigit: /^\d.+/,
   /**
    * [source](https://util.unicode.org/UnicodeJsps/list-unicodeset.jsp?a=%5Cp%7BID_Start%7D)
    */
@@ -13,11 +15,10 @@ export const PATTERN = {
   nonemptyDelimitedAlphanumeric: /^[a-zA-Z0-9\.\-_]+$/,
   bearer: /^[Bb][Ee][Aa][Rr][Ee][Rr]$/,
   // identifier: /^[a-z$_][a-z$_0-9]*$/i,
+  // identifier: /^[$_a-zA-Z][$_a-zA-Z0-9]*$/,
+  pathParameterLocal: /\{(.+?)\}\/?/,
+  pathParameter: /\{(.+?)\}\/?/g,
+  pathParameterCapture: /(.+?){(.+?)\}(.+?)/g,
+  pathParameterCaptureEnd: /(.+?){(.+?)\}/g,
+  pathParameterCaptureStart: /{(.+?)\}(.+?)/g,
 }
-
-// BearerCaseInsensitive: /^[Bb][Ee][Aa][Rr][Ee][Rr]$/,
-// NonemptyAlphaNumericWithDelimiters: /^[a-zA-Z0-9\.\-_]+$/,
-// Identifier: /^[$_a-zA-Z][$_a-zA-Z0-9]*$/,
-// PrefixedByForwardSlash: /^\/[a-zA-Z0-9_\$]+$/g,
-// StatusCode: /^[1-5][0-9][0-9]$/,
-// StatusCodeNonInfo: /^[2-5][0-9][0-9]$/,
