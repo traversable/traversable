@@ -67,7 +67,7 @@ export type Equal<in T> = (left: T, right: T) => boolean
  * - the Wikipedia page for [total orders](https://en.wikipedia.org/wiki/Total_order)
  */
 export interface Compare<in T> { 
-	// (left: T, right: T): -1 | 0 | 1 
+	(left: T, right: T): -1 | 0 | 1 
 	(left: T, right: T): number 
 }
 

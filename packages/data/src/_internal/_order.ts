@@ -1,6 +1,5 @@
 import type { integer } from "@traversable/data"
 import type { Compare } from "../exports.js"
-import { flow } from "./_function.js"
 
 /** @internal */
 type NoInfer<T> = [T][T extends T ? 0 : never]
