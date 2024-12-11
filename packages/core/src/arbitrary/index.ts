@@ -1,4 +1,4 @@
-export * as fc from "./arbitrary.js"
+export * as fc from "./exports.js"
 
 import { type fc, test } from "@fast-check/vitest"
 import * as vi from "vitest"
