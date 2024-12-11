@@ -4,10 +4,64 @@ import type { newtype } from "any-ts"
 export type inline<T> = T
 export type _ = {} | null | undefined
 
-export declare namespace Variance {
-  type invariant<T> = (_: T) => T
-  type contra<T> = (_: T) => void
-  type co<T> = (_: never) => T
+type Parameter<T> = T extends (_: infer I) => unknown ? I : never
+type Returns<T> = T extends (_: never) => infer O ? O : never
+interface Covariant<T extends (_: never) => unknown> {
+  (_: never): Returns<T>
+}
+interface Invariant<T extends (_: never) => unknown> {
+  (_: Parameter<T>): Returns<T>
+}
+interface Contravariant<T extends (_: never) => unknown> {
+  (_: Parameter<T>): void
+}
+interface Bivariant<T extends { (_: never): unknown }> extends newtype<{ _(_: Parameter<T>): Returns<T> }> {}
+
+export declare namespace Position {
+  type covariant<T> = never | Covariant<{ (_: never): T }>
+  type invariant<T> = never | Invariant<{ (_: T): T }>
+  type contra<T> = never | Contravariant<{ (_: T): void }>
+  /**
+   * ## {@link bivariant `Position.bivariant`}
+   *
+   * When TypeScript checks a _function_ for assignability, the normal rules
+   * are totally reversed: in that context, the _wider_ function is the one
+   * that _depends_ on "less" (assuming return types are the same).
+   *
+   * This is not TypeScript being weird -- this is true in other languages
+   * as well: Java, Haskell, TypeScript all take a type parameter's _variance_
+   * into account like this.
+   *
+   * But what _is_ weird about TypeScript is the escape hatch they created:
+   * expecting JavaScript developers to be confused about this counter-intuitive
+   * behavior, they made an exception to the rule:
+   *
+   * When it comes to _methods_, the rules don't apply.
+   *
+   * To be more precise, when the compiler checks a method's type for assignability,
+   * it puts the arguments in _bivariant_ position.
+   *
+   * It seems like the compiler does the same when comparing a function's implementation
+   * to its overloads, so my guess is that the same mechanism is responsible for both
+   * behaviors.
+   *
+   * @example
+   * import type { Position } from "@traversable/registry"
+   *
+   * declare const bivariant: Position.bivariant<number>
+   * //            ^? const bivariant: Bivariant<(_: number) => number>
+   *
+   * type ok_01 = typeof bivariant extends { _(_: unknown): unknown } ? true : false
+   * //   ^? type ok_01 = true
+   * type ok_02 = typeof bivariant["_"] extends { _(_: unknown): unknown }["_"] ? true : false
+   * //   ^? type ok_02 = true
+   *
+   * type ko_03 = typeof bivariant extends { _: (_: unknown) => unknown } ? true : false
+   * //   ^? type ko_03 = false
+   * type ko_04 = typeof bivariant["_"] extends (_: unknown) => unknown ? true : false
+   * //   ^? type ko_04 = false
+   */
+  type bivariant<T> = never | Bivariant<(_: T) => T>
 }
 
 /**
