@@ -70,7 +70,7 @@ export namespace sign {
  * you a function that can sort two elements of type `T`".
  * 
  * @example
- *  import { order, Compare } from "@hotelengine/data"
+ *  import { order, Compare } from "@traversable/data"
  * 
  *  ////////////////
  *  /// example 1
@@ -398,7 +398,7 @@ export function order_date(left: globalThis.Date, right: globalThis.Date): sign 
  * [Reference](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Statements/for...in#:~:text=keys%20in%20ascending-,chronological,-order%20of%20property)
  * 
  * @example
- *  import { order } from "@hotelengine/data"
+ *  import { order } from "@traversable/data"
  *
  *  type Table = {
  *    id: number
@@ -425,7 +425,7 @@ export function order_object<const T extends { [x: string]: Compare.any }>(compa
  * [Reference](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Statements/for...in#:~:text=keys%20in%20ascending-,chronological,-order%20of%20property)
  * 
  * @example
- *  import { order } from "@hotelengine/data"
+ *  import { order } from "@traversable/data"
  *
  *  type Table = {
  *    id: number
