@@ -360,6 +360,11 @@ export function record<T, K extends keyof T>(
   constraints: { withDeletedKeys: never, requiredKeys: never }
 ): fc.Arbitrary<record.Require<T, K>>
 
+export function record<T, K extends keyof T>(
+  model: { [K in keyof T]: fc.Arbitrary<T[K]> }, 
+  constraints?: fc.RecordConstraints<T>
+): fc.Arbitrary<record.Require<T, K>>
+
 export function record(
   model: { [x: string]: fc.Arbitrary<unknown> }, 
   constraints = {}
