@@ -6,22 +6,20 @@ export type _ = {} | null | undefined
 
 export type Parameter<T> = T extends (_: infer I) => unknown ? I : never
 export type Returns<T> = T extends (_: never) => infer O ? O : never
-
-export type Pick<T, K extends keyof T> = never | { [P in K]: T[P] }
+export type Pick<T, K extends keyof T> = never | { -readonly [P in K]: T[P] }
 export type Omit<T, K extends keyof never> = never | Pick<T, Exclude<keyof T, K>>
-export type Partial<T> = never | { [K in keyof T]+?: T[K] } 
-export type Required<T> = never | { [K in keyof T]-?: T[K] }
-export type Require<T, K extends keyof T = never>
-  = [K] extends [never] ? never | Required<T>
-  : KeepLast<T, { [P in K]-?: T[P] }>
-export type Part<T, K extends keyof T = never>
-  = [K] extends [never] ? never | Partial<T>
-  : KeepLast<T, { [P in K]+?: T[P] }>
+export type Partial<T> = never | { -readonly [K in keyof T]+?: T[K] }
+export type Required<T> = never | { -readonly [K in keyof T]-?: T[K] }
 export type KeepFirst<S, T> = never | KeepLast<T, S>
-export type KeepLast<S, T, _ extends keyof (S | T) = keyof (S | T)> = never | (
-  & Omit<S, _>
-  & T
-)
+export type KeepLast<S, T> = never | Force<Omit<S, keyof (S | T)> & T>
+export type Mutable<T> = never | { -readonly [K in keyof T]: T[K] }
+export type Force<T> = never | { -readonly [K in keyof T]: T[K] }
+export type Require<T, K extends keyof T = never> = [K] extends [never]
+  ? never | Required<T>
+  : KeepLast<T, { [P in K]-?: T[P] }>
+export type Part<T, K extends keyof T = never> = [K] extends [never]
+  ? never | Partial<T>
+  : KeepLast<T, { [P in K]+?: T[P] }>
 
 interface Covariant<T extends (_: never) => unknown> {
   (_: never): Returns<T>
@@ -62,6 +60,9 @@ export declare namespace Position {
    * It seems like the compiler does the same when comparing a function's implementation
    * to its overloads, so my guess is that the same mechanism is responsible for both
    * behaviors.
+   *
+   * Once you've put your type in bivariant position, the type is available under
+   * the `_` (underscore) prop.
    *
    * @example
    * import type { Position } from "@traversable/registry"
