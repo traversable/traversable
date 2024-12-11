@@ -135,8 +135,9 @@ export declare namespace record {
   }
 }
 export declare namespace record {
-  type and<T> = record & T
-  type from<T> = T extends record & infer V ? unknown extends V ? record : V : never
+  type and<T> = never | (record & T)
+  type from<T> = never | (T extends record & infer V ? unknown extends V ? record : V : never)
+  type of<T> = never | record<string, T>
 }
 
 export namespace record {
