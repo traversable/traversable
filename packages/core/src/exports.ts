@@ -17,6 +17,7 @@ export {
   and, 
   anyOf,
   array,
+  not,
   object,
   or,
 } from "./guard.js"

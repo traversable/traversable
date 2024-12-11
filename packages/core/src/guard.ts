@@ -302,6 +302,11 @@ export function or<L, R>(
   return (u): u is never => left(u) || right(u)
 }
 
+export function not<S, T extends S>(guard: (s: S) => s is T): (s: S) => s is Exclude<S, T>
+export function not<T>(predicate: (t: T) => boolean): (t: T) => boolean
+export function not<T>(p: (t: T) => boolean) 
+  { return (t: T): t is never => !p(t) }
+
 export function anyOf<const T extends readonly unknown[]>(
   ...guards: { [x in keyof T]: (u: unknown) => u is T[x] }
 ): (u: unknown) => u is T[number] { 
