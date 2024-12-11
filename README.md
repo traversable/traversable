@@ -71,13 +71,7 @@ Any toplevel folder in the `packages` directory whose `package.json` file does n
 
 1. Make a change in the target package
 2. Run `pnpm changes` from the monorepo root
-3. When prompted, select the target package:
-
-<div align="left">
-  <img src="./bin/assets/pnpm-changes-dialog.png" height="248px" />
-  <h4 margin-left="64px">Publishing a package</h4>
-</div>
-
+3. When prompted, select the target package.
 4. Commit the markdown file that [changesets](https://github.com/changesets/changesets) generates
 5. After you merge, a 2nd PR will be created for you automatically
 6. Merge _that_ PR, and a new version will be published [here](https://github.com/traversable/traversable/releases)
