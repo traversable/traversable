@@ -2,9 +2,9 @@
   "openapi": "3.0.1",
   "info": {
     "description": "Nexus - Limited Non-CUG Endpoints",
-    "title": "Hotel Engine API Non-CUG",
+    "title": "Engine API Non-CUG",
     "version": "1.0.0",
-    "contact": { "email": "engineering@hotelengine.com" }
+    "contact": { "email": "engineering@ngine.com" }
   },
   "paths": {
     "/api/v2/limited/bookings": {
@@ -148,7 +148,7 @@
         }
       }
     },
-    "/api/v2/limited/special_booking_requests/{sbr_id}/hotel_options": {
+    "/api/v2/limited/special_booking_requests/{sbr_id}/ions": {
       "get": {
         "parameters": [
           {
@@ -161,7 +161,7 @@
           {
             "name": "status",
             "in": "query",
-            "description": "status of hotel option",
+            "description": "status of option",
             "required": false,
             "schema": { "type": "string" }
           }
@@ -170,7 +170,7 @@
           "401": { "description": "invalid credentials" },
           "404": { "description": "Special Booking Request not found" },
           "200": {
-            "description": "Hotel options found",
+            "description": "ptions found",
             "content": {
               "application/json": {
                 "schema": {
@@ -182,7 +182,7 @@
                         "data": {
                           "type": "array",
                           "items": {
-                            "$ref": "#/components/schemas/special_booking_requests_hotel_options_index_response_serializer"
+                            "$ref": "#/components/schemas/special_booking_requests_lizer"
                           }
                         }
                       }
@@ -195,7 +195,7 @@
         }
       }
     },
-    "/api/v2/limited/special_booking_requests/{sbr_id}/hotel_options/{id}": {
+    "/api/v2/limited/special_booking_requests/{sbr_id}/ions/{id}": {
       "get": {
         "parameters": [
           {
@@ -208,20 +208,20 @@
           {
             "name": "id",
             "in": "path",
-            "description": "Hotel Option ID",
+            "description": "Option ID",
             "required": true,
             "schema": { "type": "integer", "format": "int64" }
           }
         ],
         "responses": {
           "401": { "description": "invalid credentials" },
-          "404": { "description": "Hotel Option not found" },
+          "404": { "description": "Option not found" },
           "200": {
-            "description": "Hotel Option Found",
+            "description": "Option Found",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/special_booking_requests_hotel_options_show_response_serializer"
+                  "$ref": "#/components/schemas/special_booking_requests_lizer"
                 }
               }
             }
@@ -229,7 +229,7 @@
         }
       }
     },
-    "/api/v2/limited/special_booking_requests/{sbr_id}/hotel_options/{id}/accept": {
+    "/api/v2/limited/special_booking_requests/{sbr_id}/ions/{id}/accept": {
       "put": {
         "parameters": [
           {
@@ -242,14 +242,14 @@
           {
             "name": "id",
             "in": "path",
-            "description": "Hotel Option ID",
+            "description": "Option ID",
             "required": true,
             "schema": { "type": "integer", "format": "int64" }
           }
         ],
         "responses": {
           "200": { 
-            "description": "Hotel Option accepted",
+            "description": "Option accepted",
             "content": {
               "application/json": {
                 "schema": {
@@ -261,13 +261,13 @@
           "401": { "description": "invalid credentials" },
           "404": { "description": "not found" },
           "422": {
-            "description": "other Hotel Option already approved",
+            "description": "other Option already approved",
             "content": {
               "application/json": { "schema": { "$ref": "#/components/schemas/error_presenter" } }
             }
           },
           "409": {
-            "description": "Hotel Option already approved",
+            "description": "Option already approved",
             "content": {
               "application/json": { "schema": { "$ref": "#/components/schemas/error_presenter" } }
             }
@@ -275,7 +275,7 @@
         }
       }
     },
-    "/api/v2/limited/special_booking_requests/{sbr_id}/hotel_options/{id}/reconsider": {
+    "/api/v2/limited/special_booking_requests/{sbr_id}/ions/{id}/reconsider": {
       "put": {
         "parameters": [
           {
@@ -288,7 +288,7 @@
           {
             "name": "id",
             "in": "path",
-            "description": "Hotel Option ID",
+            "description": "Option ID",
             "required": true,
             "schema": { "type": "integer", "format": "int64" }
           }
@@ -296,9 +296,9 @@
         "responses": {
           "401": { "description": "invalid credentials" },
           "404": { "description": "not found" },
-          "200": { "description": "Hotel Option did transition" },
+          "200": { "description": "Option did transition" },
           "409": {
-            "description": "Hotel Option didnt transition",
+            "description": "Option didnt transition",
             "content": {
               "application/json": { "schema": { "$ref": "#/components/schemas/error_presenter" } }
             }
@@ -306,7 +306,7 @@
         }
       }
     },
-    "/api/v2/limited/special_booking_requests/{sbr_id}/hotel_options/{id}/decline": {
+    "/api/v2/limited/special_booking_requests/{sbr_id}/ions/{id}/decline": {
       "put": {
         "parameters": [
           {
@@ -319,15 +319,15 @@
           {
             "name": "id",
             "in": "path",
-            "description": "Hotel Option ID",
+            "description": "Option ID",
             "required": true,
             "schema": { "type": "integer", "format": "int64" }
           }
         ],
         "responses": {
           "401": { "description": "invalid credentials" },
-          "404": { "description": "Hotel Option not found" },
-          "200": { "description": "Hotel Option Declined Successfully" },
+          "404": { "description": "Option not found" },
+          "200": { "description": "Option Declined Successfully" },
           "422": {
             "description": "Invalid Params",
             "content": {
@@ -344,12 +344,12 @@
                   "decline_reasons": {
                     "type": "array",
                     "example": ["location", "reviews"],
-                    "description": "Collection of reasons customer declined this Hotel Option"
+                    "description": "Collection of reasons customer declined this Option"
                   },
                   "notes": {
                     "type": "string",
                     "example": "No fast food within 10 miles, please rectify",
-                    "description": "Optional Customer notes on why they declined this Hotel Option"
+                    "description": "Optional Customer notes on why they declined this Option"
                   }
                 },
                 "required": ["decline_reasons"]
@@ -437,7 +437,7 @@
                   "draft",
                   "submitted",
                   "ready_for_review",
-                  "hotel_reviewing",
+                  "wing",
                   "upcoming",
                   "completed",
                   "cancelled"
@@ -756,8 +756,8 @@
           "charged_by": {
             "type": "string",
             "nullable": true,
-            "example": "Hotel",
-            "enum": ["Hotel", "Hotel Engine"],
+            "example": "otel",
+            "enum": ["otel", "Engine"],
             "description": "Who the fee is charged by"
           },
           "taxable": {
@@ -772,7 +772,7 @@
           }
         }
       },
-      "definitions_hotel_contact": {
+      "definitions_tact": {
         "type": "object",
         "additionalProperties": false,
         "required": ["name", "email", "phone"],
@@ -791,11 +791,11 @@
           }
         }
       },
-      "definitions_hotel_option": {
+      "definitions_tion": {
         "type": "object",
         "additionalProperties": false,
         "properties": {
-          "id": { "type": "number", "example": 123, "description": "Unique Identifier for the Hotel Option" },
+          "id": { "type": "number", "example": 123, "description": "Unique Identifier for the Option" },
           "special_booking_request_id": {
             "type": "number",
             "example": 123,
@@ -820,20 +820,20 @@
               "draft",
               "awaiting_proposal",
               "more_info_needed",
-              "denied_by_hotel",
-              "hotel_unavailable",
+              "denied_by_otel",
+              "able",
               "awaiting_pm_approval",
               "denied_by_pm",
               "ready_for_review",
               "approved",
               "denied"
             ],
-            "description": "The status of the Hotel Option"
+            "description": "The status of the Option"
           },
           "sfid": {
             "type": "string",
             "example": "a0K1U00000XZQ2SUAX",
-            "description": "The Salesforce ID for the Hotel Option",
+            "description": "The Salesforce ID for the Option",
             "nullable": true
           },
           "property_id": {
@@ -844,22 +844,22 @@
           "total_cost": {
             "type": "string",
             "example": "123.45",
-            "description": "The total cost of the Hotel Option"
+            "description": "The total cost of the Option"
           },
           "nightly_rate": {
             "type": "string",
             "example": "123.45",
-            "description": "The nightly rate of the Hotel Option"
+            "description": "The nightly rate of the Option"
           },
           "strike_price": {
             "type": "string",
             "example": "123.45",
-            "description": "The strike price of the Hotel Option"
+            "description": "The strike price of the Option"
           },
           "account_manager_note": {
             "type": "string",
             "example": "This is a note from the Account Manager",
-            "description": "The Account Manager's note for the Hotel Option",
+            "description": "The Account Manager's note for the Option",
             "nullable": true
           },
           "checklist": {
@@ -883,103 +883,103 @@
           "deny_reasons": {
             "type": "array",
             "example": ["location", "price", "reviews"],
-            "description": "The reasons for denying the Hotel Option",
+            "description": "The reasons for denying the Option",
             "items": {
               "type": "string",
               "enum": ["location", "price", "reviews", "notInterested"],
               "example": "location",
-              "description": "The reason for denying the Hotel Option"
+              "description": "The reason for denying the Option"
             }
           },
           "deny_notes": {
             "type": "string",
-            "example": "This is a note for denying the Hotel Option",
-            "description": "The note for denying the Hotel Option"
+            "example": "This is a note for denying the Option",
+            "description": "The note for denying the Option"
           },
           "room_type_number_one_rate": {
             "type": "string",
             "example": "123.45",
-            "description": "The room type number one rate for the Hotel Option"
+            "description": "The room type number one rate for the Option"
           },
           "room_type_number_two_rate": {
             "type": "string",
             "example": "123.45",
-            "description": "The room type number two rate for the Hotel Option"
+            "description": "The room type number two rate for the Option"
           },
           "room_type_number_three_rate": {
             "type": "string",
             "example": "123.45",
-            "description": "The room type number three rate for the Hotel Option"
+            "description": "The room type number three rate for the Option"
           },
           "room_type_one_description": {
             "type": "string",
             "example": "Standard King Bed",
-            "description": "The room type one description for the Hotel Option"
+            "description": "The room type one description for the Option"
           },
           "room_type_two_description": {
             "type": "string",
             "example": "Standard Two Queen Beds",
-            "description": "The room type two description for the Hotel Option"
+            "description": "The room type two description for the Option"
           },
           "room_type_three_description": {
             "type": "string",
             "example": "Suite with Balcony",
-            "description": "The room type three description for the Hotel Option"
+            "description": "The room type three description for the Option"
           },
           "number_of_room_type_one": {
             "type": "number",
             "example": 123,
-            "description": "The number of room type one for the Hotel Option"
+            "description": "The number of room type one for the Option"
           },
           "number_of_room_type_two": {
             "type": "number",
             "example": 123,
-            "description": "The number of room type two for the Hotel Option"
+            "description": "The number of room type two for the Option"
           },
           "number_of_room_type_three": {
             "type": "number",
             "example": 123,
-            "description": "The number of room type three for the Hotel Option"
+            "description": "The number of room type three for the Option"
           },
           "breakfast_included_in_rate": {
             "type": "boolean",
             "example": true,
-            "description": "Whether or not breakfast is included in the rate for the Hotel Option"
+            "description": "Whether or not breakfast is included in the rate for the Option"
           },
           "breakfast_rate": {
             "type": "string",
             "example": "123.45",
-            "description": "The breakfast rate for the Hotel Option"
+            "description": "The breakfast rate for the Option"
           },
           "parking_included_in_rate": {
             "type": "boolean",
             "example": true,
-            "description": "Whether or not parking is included in the rate for the Hotel Option"
+            "description": "Whether or not parking is included in the rate for the Option"
           },
           "parking_rate": {
             "type": "string",
             "example": "123.45",
-            "description": "The parking rate for the Hotel Option"
+            "description": "The parking rate for the Option"
           },
           "flat_fee_type": {
             "type": "string",
             "example": "Pet Fee",
-            "description": "The flat fee type for the Hotel Option"
+            "description": "The flat fee type for the Option"
           },
           "flat_fee_nightly_rate": {
             "type": "string",
             "example": "123.45",
-            "description": "The flat fee nightly rate for the Hotel Option"
+            "description": "The flat fee nightly rate for the Option"
           },
           "is_cancelable": {
             "type": "boolean",
             "example": true,
-            "description": "Whether or not the Hotel Option is cancelable"
+            "description": "Whether or not the Option is cancelable"
           },
           "individual_cancellation_policy": {
             "type": "string",
-            "example": "This is the individual cancellation policy for the Hotel Option",
-            "description": "The individual cancellation policy for the Hotel Option",
+            "example": "This is the individual cancellation policy for the Option",
+            "description": "The individual cancellation policy for the Option",
             "nullable": true
           },
           "tiered_group_cancellation_policy": {
@@ -1002,174 +1002,174 @@
           },
           "group_cancellation_policy": {
             "type": "string",
-            "example": "This is the group cancellation policy for the Hotel Option",
-            "description": "The group cancellation policy for the Hotel Option"
+            "example": "This is the group cancellation policy for the Option",
+            "description": "The group cancellation policy for the Option"
           },
           "early_departure_allowed": {
             "type": "boolean",
             "example": true,
-            "description": "Whether or not early departure is allowed for the Hotel Option"
+            "description": "Whether or not early departure is allowed for the Option"
           },
           "early_departure_policy": {
             "type": "string",
-            "example": "This is the early departure policy for the Hotel Option",
-            "description": "The early departure policy for the Hotel Option"
+            "example": "This is the early departure policy for the Option",
+            "description": "The early departure policy for the Option"
           },
           "early_checkout_penalty": {
             "type": "string",
             "example": "123.45",
-            "description": "The early checkout penalty for the Hotel Option"
+            "description": "The early checkout penalty for the Option"
           },
           "cut_off_date": {
             "type": "string",
             "format": "date",
             "example": "2022-10-11",
-            "description": "The cut off date for the Hotel Option"
+            "description": "The cut off date for the Option"
           },
           "rate_expiration_date": {
             "type": "string",
             "format": "date-time",
             "example": "2022-08-13T00:00:00.000Z",
-            "description": "The rate expiration date for the Hotel Option"
+            "description": "The rate expiration date for the Option"
           },
           "meeting_space_availability": {
             "type": "string",
             "example": "Monday through Friday, 7AM to 6PM. Saturday, 8AM to 5PM",
-            "description": "The meeting space availability for the Hotel Option"
+            "description": "The meeting space availability for the Option"
           },
           "meeting_space_blackout": {
             "type": "string",
             "example": "Sunday",
-            "description": "The meeting space blackout for the Hotel Option"
+            "description": "The meeting space blackout for the Option"
           },
           "meeting_space_max_attendees": {
             "type": "number",
             "example": 123,
-            "description": "The meeting space max attendees for the Hotel Option"
+            "description": "The meeting space max attendees for the Option"
           },
           "meeting_space_square_footage": {
             "type": "number",
             "example": 123,
-            "description": "The meeting space square footage for the Hotel Option"
+            "description": "The meeting space square footage for the Option"
           },
           "meeting_space_food_bev_available": {
             "type": "boolean",
             "example": true,
-            "description": "Whether or not meeting space food and beverage is available for the Hotel Option"
+            "description": "Whether or not meeting space food and beverage is available for the Option"
           },
           "meeting_space_av_capabilities": {
             "type": "boolean",
             "example": true,
-            "description": "Whether or not meeting space AV capabilities are available for the Hotel Option"
+            "description": "Whether or not meeting space AV capabilities are available for the Option"
           },
           "meeting_space_additional_notes": {
             "type": "string",
             "example": "Coffee is available all day for the meeting space",
-            "description": "The meeting space additional notes for the Hotel Option"
+            "description": "The meeting space additional notes for the Option"
           },
           "include_meeting_space_details": {
             "type": "boolean",
             "example": true,
-            "description": "Whether or not to include meeting space details for the Hotel Option"
+            "description": "Whether or not to include meeting space details for the Option"
           },
           "taxes_and_fees": {
             "type": "string",
             "example": "123.45",
-            "description": "The taxes and fees for the Hotel Option"
+            "description": "The taxes and fees for the Option"
           },
           "attrition_percent": {
             "type": "number",
             "example": 12.45,
-            "description": "The attrition percent for the Hotel Option"
+            "description": "The attrition percent for the Option"
           },
           "attrition_policy": {
             "type": "string",
-            "example": "This is the attrition policy for the Hotel Option",
-            "description": "The attrition policy for the Hotel Option"
+            "example": "This is the attrition policy for the Option",
+            "description": "The attrition policy for the Option"
           },
           "meeting_space_pricing": {
             "type": "string",
             "example": "$100 per hour",
-            "description": "The meeting space pricing for the Hotel Option"
+            "description": "The meeting space pricing for the Option"
           },
           "notes": {
             "type": "string",
-            "example": "This is the notes for the Hotel Option",
-            "description": "The notes for the Hotel Option"
+            "example": "This is the notes for the Option",
+            "description": "The notes for the Option"
           },
           "alternative": {
             "type": "boolean",
             "example": true,
-            "description": "Whether or not the Hotel Option is an alternative"
+            "description": "Whether or not the Option is an alternative"
           },
           "owner_id": { "type": "number", "example": 123, "description": "Unique Identifier for the Owner" },
           "quote_method": {
             "type": "string",
-            "example": "This is the quote method for the Hotel Option",
-            "description": "The quote method for the Hotel Option"
+            "example": "This is the quote method for the Option",
+            "description": "The quote method for the Option"
           },
-          "margin": { "type": "number", "example": 12, "description": "The margin for the Hotel Option" },
+          "margin": { "type": "number", "example": 12, "description": "The margin for the Option" },
           "margin_recommended": {
             "type": "number",
             "example": 12,
-            "description": "The recommended margin for the Hotel Option",
+            "description": "The recommended margin for the Option",
             "nullable": true
           },
           "front_desk_email": {
             "type": "string",
             "example": "email@frontdesk.com",
-            "description": "The front desk email for the Hotel Option"
+            "description": "The front desk email for the Option"
           },
-          "hotel_contacts": {
+          "acts": {
             "type": "array",
-            "items": { "$ref": "#/components/schemas/definitions_hotel_contact" }
+            "items": { "$ref": "#/components/schemas/definitions_ntact" }
           },
           "commission_percent": {
             "type": "string",
             "example": "12.45",
-            "description": "The commission percent for the Hotel Option",
+            "description": "The commission percent for the Option",
             "nullable": true
           },
           "rebate_percent": {
             "type": "number",
             "example": 12,
-            "description": "The rebate percent for the Hotel Option",
+            "description": "The rebate percent for the Option",
             "nullable": true
           },
           "flat_tax": {
             "type": "string",
             "example": "123.45",
-            "description": "The flat tax for the Hotel Option"
+            "description": "The flat tax for the Option"
           },
           "accepted_total_cost": {
             "type": "string",
             "example": "123.45",
-            "description": "The accepted total cost for the Hotel Option"
+            "description": "The accepted total cost for the Option"
           },
           "accepted_taxes_and_fees": {
             "type": "string",
             "example": "123.45",
-            "description": "The accepted taxes and fees for the Hotel Option"
+            "description": "The accepted taxes and fees for the Option"
           },
           "taxes_and_fees_percent": {
             "type": "string",
             "example": "123.45",
-            "description": "The taxes and fees percent for the Hotel Option"
+            "description": "The taxes and fees percent for the Option"
           },
           "room_type_number_one_raw_rate": {
             "type": "string",
             "example": "123.45",
-            "description": "The room type number one raw rate for the Hotel Option"
+            "description": "The room type number one raw rate for the Option"
           },
           "room_type_number_two_raw_rate": {
             "type": "string",
             "example": "123.45",
-            "description": "The room type number two raw rate for the Hotel Option"
+            "description": "The room type number two raw rate for the Option"
           },
           "room_type_number_three_raw_rate": {
             "type": "string",
             "example": "123.45",
-            "description": "The room type number three raw rate for the Hotel Option"
+            "description": "The room type number three raw rate for the Option"
           },
           "suggested_property_id": {
             "type": "integer",
@@ -1182,70 +1182,70 @@
               "weighted_rate": {
                 "type": "string",
                 "example": "101.0",
-                "description": "The weighted rate for the Hotel Option"
+                "description": "The weighted rate for the Option"
               },
               "discounted_bar": {
                 "type": "string",
                 "example": "100.0",
-                "description": "The discounted bar for the Hotel Option"
+                "description": "The discounted bar for the Option"
               },
               "alpha": {
                 "type": "string",
                 "example": "0.17",
-                "description": "The alpha for the Hotel Option"
+                "description": "The alpha for the Option"
               },
-              "beta": { "type": "string", "example": "26.0", "description": "The beta for the Hotel Option" },
+              "beta": { "type": "string", "example": "26.0", "description": "The beta for the Option" },
               "bar_savings": {
                 "type": "string",
                 "example": "-0.0099",
-                "description": "The bar savings for the Hotel Option"
+                "description": "The bar savings for the Option"
               },
-              "x0": { "type": "string", "example": "0.11", "description": "The x0 for the Hotel Option" },
+              "x0": { "type": "string", "example": "0.11", "description": "The x0 for the Option" },
               "recommended_margin": {
                 "type": "string",
                 "example": "0.08",
-                "description": "The recommended margin for the Hotel Option"
+                "description": "The recommended margin for the Option"
               },
               "true_margin": {
                 "type": "string",
                 "example": "0.0072",
-                "description": "The true margin for the Hotel Option"
+                "description": "The true margin for the Option"
               },
               "within_three": {
                 "type": "boolean",
                 "example": true,
-                "description": "Whether or not the Hotel Option is within three"
+                "description": "Whether or not the Option is within three"
               }
             }
           }
         }
       },
-      "definitions_hotel_policy": {
+      "definitions_licy": {
         "type": "object",
         "additionalProperties": false,
         "properties": {
           "attrition_percent": {
-            "$ref": "#/components/schemas/definitions_hotel_option/properties/attrition_percent"
+            "$ref": "#/components/schemas/definitions_ption/properties/attrition_percent"
           },
           "attrition_policy": {
-            "$ref": "#/components/schemas/definitions_hotel_option/properties/attrition_policy"
+            "$ref": "#/components/schemas/definitions_ption/properties/attrition_policy"
           },
-          "cut_off_date": { "$ref": "#/components/schemas/definitions_hotel_option/properties/cut_off_date" },
+          "cut_off_date": { "$ref": "#/components/schemas/definitions_ption/properties/cut_off_date" },
           "cancellation": {
             "type": "object",
             "additionalProperties": false,
             "properties": {
               "tiered_group_cancellation": {
-                "$ref": "#/components/schemas/definitions_hotel_option/properties/tiered_group_cancellation_policy"
+                "$ref": "#/components/schemas/definitions_ption/properties/tiered_group_cancellation_policy"
               },
               "is_cancelable": {
-                "$ref": "#/components/schemas/definitions_hotel_option/properties/is_cancelable"
+                "$ref": "#/components/schemas/definitions_ption/properties/is_cancelable"
               },
               "individual": {
-                "$ref": "#/components/schemas/definitions_hotel_option/properties/individual_cancellation_policy"
+                "$ref": "#/components/schemas/definitions_ption/properties/individual_cancellation_policy"
               },
               "group": {
-                "$ref": "#/components/schemas/definitions_hotel_option/properties/group_cancellation_policy"
+                "$ref": "#/components/schemas/definitions_ption/properties/group_cancellation_policy"
               }
             }
           },
@@ -1254,13 +1254,13 @@
             "additionalProperties": false,
             "properties": {
               "allowed": {
-                "$ref": "#/components/schemas/definitions_hotel_option/properties/early_departure_allowed"
+                "$ref": "#/components/schemas/definitions_ption/properties/early_departure_allowed"
               },
               "policy": {
-                "$ref": "#/components/schemas/definitions_hotel_option/properties/early_departure_policy"
+                "$ref": "#/components/schemas/definitions_ption/properties/early_departure_policy"
               },
               "penalty": {
-                "$ref": "#/components/schemas/definitions_hotel_option/properties/early_checkout_penalty"
+                "$ref": "#/components/schemas/definitions_ption/properties/early_checkout_penalty"
               }
             }
           }
@@ -1376,7 +1376,7 @@
           },
           "property_type": {
             "type": "string",
-            "example": "Hotel",
+            "example": "otel",
             "description": "The type of property",
             "nullable": true
           },
@@ -1447,7 +1447,7 @@
             "example": 98,
             "description": "Unique Identifier for the user who created/owns the SBR"
           },
-          "name": {
+          "_name": {
             "type": "string",
             "example": "Spring Conference",
             "description": "User given name for the SBR trip"
@@ -1522,7 +1522,7 @@
             "nullable": true,
             "oneOf": [{ "type": "string" }, { "type": "number" }],
             "example": 140,
-            "description": "The max amount a user would like to spend per night for a hotel room"
+            "description": "The max amount a user would like to spend per night for a l room"
           },
           "max_distance": {
             "nullable": true,
@@ -1530,11 +1530,11 @@
             "example": 10,
             "description": "Unit of measure of how far the user is willing to stay from the desired location."
           },
-          "preferred_hotel_brand": {
+          "preferred_rand": {
             "nullable": true,
             "type": "string",
             "example": "Four Seasons",
-            "description": "Chain hotel brand that the user prefers"
+            "description": "Chain  brand that the user prefers"
           },
           "minimum_star_rating": {
             "nullable": true,
@@ -1542,7 +1542,7 @@
             "example": 4,
             "minimum": 1,
             "maximum": 5,
-            "description": "Minimum review rating for the hotel that the user prefers"
+            "description": "Minimum review rating for the l that the user prefers"
           },
           "top_priority": {
             "nullable": true,
@@ -1560,7 +1560,7 @@
             "nullable": true,
             "type": "string",
             "example": "creditCard",
-            "enum": ["directBill", "creditCard", "payAtHotel"],
+            "enum": ["directBill", "creditCard", "payAttel"],
             "description": "The form of payment the user chooses to use"
           },
           "sfid": {
@@ -1619,7 +1619,7 @@
           "notes": {
             "type": "string",
             "nullable": true,
-            "example": "The hotel doesn’t have my preferred amenities",
+            "example": "The  doesn’t have my preferred amenities",
             "description": "Notes written by the internal Groups™ team about the SBR"
           },
           "cancel_reasons": {
@@ -1663,7 +1663,7 @@
               }
             }
           },
-          "hotel_order_name": {
+          "__name": {
             "nullable": true,
             "type": "string",
             "example": "HE-07784",
@@ -1704,10 +1704,10 @@
             "nullable": true,
             "description": "The Unique Identifier for the User who is the current Reconciliation Manager"
           },
-          "hotel_order_full_name": {
+          "name": {
             "type": "string",
             "example": "HE-07355 9R Denver, Colorado 1/18/2023 - 1/20/2023",
-            "description": "A mixture of hotel order name, amount of rooms and location with dates given to the SBR on submission"
+            "description": "A mixture of  order name, amount of rooms and location with dates given to the SBR on submission"
           },
           "decision_date": {
             "type": "string",
@@ -1848,7 +1848,7 @@
                     "state": { "$ref": "#/components/schemas/definitions_property/properties/state" },
                     "photo_url": {
                       "type": "string",
-                      "example": "wwww.hotel.com",
+                      "example": "wwwwotel.com",
                       "description": "Property thumbnail url"
                     }
                   }
@@ -2016,9 +2016,9 @@
                   "example": "flat"
                 },
                 "id": { "type": "integer", "description": "The id of the fee", "example": 1 },
-                "is_hotel_fee": {
+                "is__fee": {
                   "type": "boolean",
-                  "description": "Whether the fee is a hotel fee",
+                  "description": "Whether the fee is a el fee",
                   "example": true
                 },
                 "name": { "type": "string", "description": "The name of the fee", "example": "Resort Fee" },
@@ -2046,7 +2046,7 @@
                 "type": "string",
                 "nullable": true,
                 "description": "Property thumbnail url",
-                "example": "wwww.hotel.com/photo.jpg"
+                "example": "wwwwotel.com/photo.jpg"
               },
               "postal_code": { "$ref": "#/components/schemas/definitions_property/properties/postal_code" },
               "state": { "$ref": "#/components/schemas/definitions_property/properties/state" },
@@ -2266,10 +2266,10 @@
             "type": "array",
             "example": [
               {
-                "url": "https://q-xx.bstatic.com/xdata/images/hotel/max1024x768/169885083.jpg?k=8484470a84c464aa5507428746ebcc655925b6e6e50225ae725a1afd24433eb2&o="
+                "url": "https://q-xx.bstatic.com/xdata/imagesotel/max1024x768/169885083.jpg?k=8484470a84c464aa5507428746ebcc655925b6e6e50225ae725a1afd24433eb2&o="
               },
               {
-                "url": "https://q-xx.bstatic.com/xdata/images/hotel/max1024x768/169884275.jpg?k=814129565f76d79aab879f98b5cb4541c160901aed06f97cf3f64b9bce7f4086&o="
+                "url": "https://q-xx.bstatic.com/xdata/imagesotel/max1024x768/169884275.jpg?k=814129565f76d79aab879f98b5cb4541c160901aed06f97cf3f64b9bce7f4086&o="
               }
             ],
             "description": "Links to the property's images"
@@ -2309,7 +2309,7 @@
           },
           "parent_brand_name": {
             "type": "string",
-            "example": "Best Hotels",
+            "example": "Best tels",
             "description": "The property's parent chain brand name"
           },
           "phone": {
@@ -2323,14 +2323,14 @@
             "example": "03102",
             "description": "The property's postal code"
           },
-          "property_type": { "type": "string", "example": "Hotel", "description": "The type of property" },
+          "property_type": { "type": "string", "example": "otel", "description": "The type of property" },
           "reviews": {
             "type": "array",
             "example": [
               {
                 "id": 19533547,
                 "property_id": 90152,
-                "author": "Verified Hotel Guest",
+                "author": "Verified  Guest",
                 "rating": "10.0",
                 "review_date": "2020-11-01T12:00:00.000Z",
                 "review_text": "The room was clean and well maintained.",
@@ -2349,7 +2349,7 @@
             "type": "string",
             "nullable": true,
             "example": "Great",
-            "description": "The description of the hotels rating"
+            "description": "The description of the rating"
           },
           "star_rating": {
             "type": "integer",
@@ -2380,7 +2380,7 @@
           "thumbnail_url": {
             "nullable": true,
             "type": "object",
-            "example": { "url": "https://q-xx.bstatic.com/xdata/images/hotel/max1024x768" },
+            "example": { "url": "https://q-xx.bstatic.com/xdata/imagesotel/max1024x768" },
             "description": "The link to the property's thumbnail"
           },
           "timezone": {
@@ -2420,7 +2420,7 @@
           "location": { "$ref": "#/components/schemas/definitions_location" }
         }
       },
-      "special_booking_requests_hotel_options_index_response_serializer": {
+      "__special_booking_requests_izer": {
         "type": "object",
         "additionalProperties": false,
         "required": [
@@ -2433,23 +2433,23 @@
           "property"
         ],
         "properties": {
-          "id": { "$ref": "#/components/schemas/definitions_hotel_option/properties/id" },
+          "id": { "$ref": "#/components/schemas/definitions_ption/properties/id" },
           "estimated_cost": {
             "nullable": true,
             "type": "number",
             "example": 100.2,
-            "description": "Estimated Total Cost of the Hotel Option"
+            "description": "Estimated Total Cost of the Option"
           },
           "status": {
             "type": "string",
             "example": "approved",
             "enum": ["ready_for_review", "approved", "denied"],
-            "description": "The status of the Hotel Option"
+            "description": "The status of the Option"
           },
           "account_manager_note": {
             "nullable": true,
             "type": "string",
-            "example": "Please confirm the booking with the hotel",
+            "example": "Please confirm the booking with the otel",
             "description": "Account Manager Notes"
           },
           "account_manager": {
@@ -2464,7 +2464,7 @@
             "items": {
               "type": "object",
               "properties": {
-                "label": { "type": "string", "example": "Hotel Booking", "description": "Checklist Label" },
+                "label": { "type": "string", "example": "ooking", "description": "Checklist Label" },
                 "meets": { "type": "boolean", "example": true, "description": "Checklist Meets requirement" }
               }
             }
@@ -2479,7 +2479,7 @@
                 "properties": {
                   "url": {
                     "type": "string",
-                    "example": "https://example.com/hotel_thumbnail.jpg",
+                    "example": "https://example.com/bnail.jpg",
                     "description": "Thumbnail URL"
                   }
                 }
@@ -2493,7 +2493,7 @@
           }
         }
       },
-      "special_booking_requests_hotel_options_show_meeting_space": {
+      "special_booking_requests_pace": {
         "type": "object",
         "nullable": true,
         "additionalProperties": false,
@@ -2558,7 +2558,7 @@
           }
         }
       },
-      "special_booking_requests_hotel_options_show_policies": {
+      "special_booking_requests_cies": {
         "type": "object",
         "additionalProperties": false,
         "required": [
@@ -2601,7 +2601,7 @@
           }
         }
       },
-      "special_booking_requests_hotel_options_show_response_serializer": {
+      "special_booking_requests_izer": {
         "type": "object",
         "additionalProperties": false,
         "required": [
@@ -2636,12 +2636,12 @@
           "rooms": {
             "type": "array",
             "nullable": true,
-            "items": { "$ref": "#/components/schemas/special_booking_requests_hotel_options_show_room_type" }
+            "items": { "$ref": "#/components/schemas/special_booking_requests__type" }
           },
           "meeting_space": {
-            "$ref": "#/components/schemas/special_booking_requests_hotel_options_show_meeting_space"
+            "$ref": "#/components/schemas/special_booking_requests_space"
           },
-          "policies": { "$ref": "#/components/schemas/special_booking_requests_hotel_options_show_policies" },
+          "policies": { "$ref": "#/components/schemas/special_booking_requests_icies" },
           "cut_off_date": { "type": "string", "description": "The cut off date", "example": "2024-06-20" },
           "rate_expiration_date": {
             "type": "string",
@@ -2691,7 +2691,7 @@
           }
         }
       },
-      "special_booking_requests_hotel_options_show_room_type": {
+      "special_booking_requests_type": {
         "type": "object",
         "additionalProperties": false,
         "required": ["description", "number_available", "rate"],
@@ -2742,7 +2742,7 @@
               "draft",
               "submitted",
               "ready_for_review",
-              "hotel_reviewing",
+              "wing",
               "upcoming",
               "completed",
               "deleted",
@@ -2750,10 +2750,10 @@
             ]
           },
           "location": { "$ref": "#/components/schemas/definitions_location" },
-          "accepted_hotel_property": {
+          "accepted_erty": {
             "nullable": true,
             "type": "object",
-            "description": "Name and thumbnail link of the approved hotel option property",
+            "description": "Name and thumbnail link of the approved option property",
             "properties": {
               "name": { "$ref": "#/components/schemas/definitions_property/properties/name" },
               "thumbnail_url": {
@@ -2761,7 +2761,7 @@
                 "properties": {
                   "url": {
                     "type": "string",
-                    "example": "https://example.com/hotel_thumbnail.jpg",
+                    "example": "https://example.com/bnail.jpg",
                     "description": "The link to the property's thumbnail"
                   }
                 }
@@ -2772,16 +2772,16 @@
             "nullable": true,
             "type": "integer",
             "example": 3,
-            "description": "Total amount of hotel options that are 'ready to review'"
+            "description": "Total amount of ptions that are 'ready to review'"
           },
           "proposals_thumbnail_url": {
             "nullable": true,
             "type": "object",
-            "description": "URL for the first 'ready to review' hotel option",
+            "description": "URL for the first 'ready to review' option",
             "properties": {
               "url": {
                 "type": "string",
-                "example": "https://example.com/hotel_thumbnail.jpg",
+                "example": "https://example.com/bnail.jpg",
                 "description": "The link to the property's thumbnail"
               }
             }
@@ -2799,7 +2799,7 @@
             "properties": {
               "url": {
                 "type": "string",
-                "example": "https://example.com/hotel_thumbnail.jpg",
+                "example": "https://example.com/bnail.jpg",
                 "description": "The link to the property's thumbnail"
               }
             }
@@ -2835,7 +2835,7 @@
           "thumbnail_url": {
             "nullable": true,
             "type": "object",
-            "example": { "url": "https://q-xx.bstatic.com/xdata/images/hotel/max1024x768" },
+            "example": { "url": "https://q-xx.bstatic.com/xdata/imagesotel/max1024x768" },
             "description": "The link to the property's thumbnail"
           },
           "rating": { "type": "number", "example": 7.9, "description": "The property's rating" },
@@ -2874,10 +2874,10 @@
             "type": "array",
             "example": [
               {
-                "url": "https://q-xx.bstatic.com/xdata/images/hotel/max1024x768/169885083.jpg?k=8484470a84c464aa5507428746ebcc655925b6e6e50225ae725a1afd24433eb2&o="
+                "url": "https://q-xx.bstatic.com/xdata/imagesotel/max1024x768/169885083.jpg?k=8484470a84c464aa5507428746ebcc655925b6e6e50225ae725a1afd24433eb2&o="
               },
               {
-                "url": "https://q-xx.bstatic.com/xdata/images/hotel/max1024x768/169884275.jpg?k=814129565f76d79aab879f98b5cb4541c160901aed06f97cf3f64b9bce7f4086&o="
+                "url": "https://q-xx.bstatic.com/xdata/imagesotel/max1024x768/169884275.jpg?k=814129565f76d79aab879f98b5cb4541c160901aed06f97cf3f64b9bce7f4086&o="
               }
             ],
             "description": "Links to the property's images"
@@ -2904,11 +2904,11 @@
           "trip_reason",
           "standard_rooms",
           "double_rooms",
-          "hotel_order_name",
+          "name",
           "suites",
           "max_nightly_rate",
           "max_distance",
-          "preferred_hotel_brand",
+          "preferred_rand",
           "minimum_star_rating",
           "top_priority",
           "preferences_notes",
@@ -2930,7 +2930,7 @@
             "$ref": "#/components/schemas/definitions_special_booking_request/properties/check_out"
           },
           "location": { "$ref": "#/components/schemas/definitions_location" },
-          "name": { "$ref": "#/components/schemas/definitions_special_booking_request/properties/name" },
+          "___name": { "$ref": "#/components/schemas/definitions_special_booking_request/properties/name" },
           "email": { "$ref": "#/components/schemas/definitions_special_booking_request/properties/email" },
           "trip_reason": {
             "$ref": "#/components/schemas/definitions_special_booking_request/properties/trip_reason"
@@ -2941,8 +2941,8 @@
           "double_rooms": {
             "$ref": "#/components/schemas/definitions_special_booking_request/properties/double_rooms"
           },
-          "hotel_order_name": {
-            "$ref": "#/components/schemas/definitions_special_booking_request/properties/hotel_order_name"
+          "name": {
+            "$ref": "#/components/schemas/definitions_special_booking_request/properties/_name"
           },
           "suites": { "$ref": "#/components/schemas/definitions_special_booking_request/properties/suites" },
           "max_nightly_rate": {
@@ -2951,8 +2951,8 @@
           "max_distance": {
             "$ref": "#/components/schemas/definitions_special_booking_request/properties/max_distance"
           },
-          "preferred_hotel_brand": {
-            "$ref": "#/components/schemas/definitions_special_booking_request/properties/preferred_hotel_brand"
+          "preferred_rand": {
+            "$ref": "#/components/schemas/definitions_special_booking_request/properties/preferred_brand"
           },
           "minimum_star_rating": {
             "$ref": "#/components/schemas/definitions_special_booking_request/properties/minimum_star_rating"
@@ -3072,7 +3072,7 @@
           },
           "email": {
             "type": "string",
-            "example": "jim@hotelengine.com",
+            "example": "jim@ngine.com",
             "nullable": true,
             "description": "The email address of the user"
           },
