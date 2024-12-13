@@ -33,9 +33,7 @@ export default {
     "clean:deps": "rm -rf node_modules",
     "test": "vitest"
   },
-  "dependencies": {
-    "@traversable/registry": "workspace:^"
-  },
+  "dependencies": { "@traversable/registry": "workspace:^" },
   "peerDependencies": {
     "@traversable/core": "workspace:^",
     "@traversable/data": "workspace:^",

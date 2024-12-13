@@ -7,8 +7,11 @@
     "outDir": "build/src"
   },
   "references": [
+    { "path": "../core" },
     { "path": "../data" },
+    { "path": "../http" },
     { "path": "../openapi" },
+    { "path": "../registry" }
   ],
   "include": ["src"]
 }

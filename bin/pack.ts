@@ -63,6 +63,8 @@ const getModules = (pkgName: string) => {
   )
 }
 
+const extractModuleName = (path: string) => path.slice(path.lastIndexOf(`/`) + 1, path.lastIndexOf(`.`))
+
 export const workspaceTasks 
   : (pkgName: string) => IO
   = (pkgName) => {
@@ -134,7 +136,7 @@ export const workspaceTasks
     () => modules
       .map(extractModuleName)
       .forEach((_) => (
-        void fs.mkdirSync(`${ws}/dist/${_}`),
+        !fs.existsSync(`${ws}/dist/${_}`) && fs.mkdirSync(`${ws}/dist/${_}`),
         void pipe(
           {
             main: path.relative(`dist/${_}`, `dist/dist/cjs/${_}.js`),

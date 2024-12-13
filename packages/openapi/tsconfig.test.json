@@ -9,9 +9,9 @@
 	},
 	"references": [
 		{ "path": "tsconfig.src.json" },
+		{ "path": "../core" },
 		{ "path": "../data" },
 		{ "path": "../http" },
-		{ "path": "../core" },
 		{ "path": "../registry" }
 	],
 	"include": ["test"]
