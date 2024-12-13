@@ -372,7 +372,7 @@ export declare namespace has {
   type path<KS extends keys.any, T = {}> 
     = KS extends nonempty.propsLeft<infer Todo, infer K>
     ? has.path<Todo, { [P in K]: T }>
-    : T extends infer U extends {} ? has<U> : never
+    : T extends infer U extends {} ? U : never // has<U> : never
   type maybe<KS extends props.any, T = {}>
     = KS extends nonempty.propsLeft<infer Todo, infer K>
     ? has.path<Todo, { [P in K]+?: T }>

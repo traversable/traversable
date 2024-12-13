@@ -794,9 +794,9 @@ export const tap
   = (msg, logger = globalThis.console.log) => flow(chainFirst, apply(log(msg, logger)))
 
 export namespace morphism {
-  export function ana<F extends Kind>(F: { map: Functor.map<F> }) {
+  export function ana<F extends Kind>(F: Functor<F>) {
     return <T>(coalgebra: Functor.Coalgebra<F, T>) => {
-      return function loop(term: T): Kind.apply<F, F> {
+      return function loop(term: T): Kind.apply<F, T> {
         return F.map(loop)(coalgebra(term))
       }
     }

@@ -1637,7 +1637,8 @@ export function object_parseKey(k: keyof any, _ = globalThis.String(k)) {
   return (
     typeof k === "symbol" ? _ 
     : isQuoted(k) ? escape(_)
-    : isValidIdentifier(k) ? escape(_) : `"` + escape(_) + `"`
+    : `"` + escape(_) + `"`
+    /* isValidIdentifier(k) ? escape(_) */ 
   )
 }
 
