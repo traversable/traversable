@@ -18,7 +18,7 @@ export declare namespace any {
   > = T
 
   interface enumerable<T = unknown> { [x: number]: T }
-  type indexedBy<K extends keyof any, T extends { [x in K]: unknown } = { [x in K]: unknown }> = T
+  type indexedBy<K extends keyof any, T extends { [x in K]: unknown } = { -readonly [x in K]: unknown }> = never | T
   type keysOf<T, K extends readonly (keyof T)[] = readonly (keyof T)[]> = K
 
   type keyOf<T, K extends keyof T = keyof T> = K

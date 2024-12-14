@@ -1,8 +1,7 @@
-import { Invariant, type Kind } from "@traversable/registry"
-import type { any, mut } from "any-ts"
-import type { Functor } from "../exports.js"
-import type { array_shift } from "./_array.js"
+import { type Functor, Invariant, type Kind } from "@traversable/registry"
 
+import type { any, mut } from "any-ts"
+import type { array_shift } from "./_array.js"
 export { fn }
 export type {
   fn_any as any,

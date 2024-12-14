@@ -1,7 +1,7 @@
 import { fc, test } from "@fast-check/vitest"
 import * as vi from "vitest"
 
-import { fn, object, type props } from "@traversable/data"
+import { fn, type key, object, type props } from "@traversable/data"
 import { URI, symbol } from "@traversable/registry"
 
 const PATTERN = {
@@ -21,7 +21,6 @@ export const propsComparator = (l: props.any, r: props.any) => {
 }
 export const withIndex = <K, V>(xss: [K[], V][]): [[number, ...K[]], V][] => 
   xss.map(([path, leaf], ix) => [[ix, ...path], leaf])
-
 /// UTILS
 //////////////
 
@@ -331,4 +330,54 @@ vi.describe(`〖️🚑〗‹‹‹ @traversable/data/object`, () => {
   //   vi.assert.isTrue(object.flatten(object.flatten({ a: { b: { c: [{ d: 1, e: 2, f: { g: [3, 4, 5], h: [7, { i: 9000 } ], j: [{ k: 10 }]}}]}}})))
   // })
 
+  vi.it(`〖️🚑〗› ❲object.titlecase.values❳`, () => {
+    const ex_01 = fn.pipe(
+      { a: 1, b: 2, c: 3, d: 4 },
+      object.pullback({ b: 1000, c: 9000 }),
+    )
+    vi.assert.deepEqual({ b: 2, c: 3 }, ex_01)
+  })
+
+  const invertible: fc.Arbitrary<object.invertible> = fc
+    .array(fc.string({ unit: "grapheme-ascii" }), { minLength: 1 })
+    .map((ss) => {
+      let out: { [x: key.any]: key.any } = Object.create(null)
+      for (const s of ss) {
+        const sym = Symbol.for(s)
+        void (out[sym] = s)
+        // Object.defineProperty(out, sym, { value: s, enumerable: true })
+      }
+      return out
+    }
+  )
+
+  test.prop([invertible], {
+    examples: [
+      [
+        Object.assign(
+          Object.create(null),
+          { 
+            [Symbol.for("")]: "",
+            [Symbol.for("__proto__")]: "__proto__"
+          }
+        )
+      ],
+    ]
+  })(
+    `〖️🚑〗› ❲object.invertible❳`, (a) => {
+      const z = object.invert(a)
+      vi.assert.notDeepEqual(a, z)
+      vi.assert.deepEqual(a, object.invert(z))
+      for (const sym in z) {
+        vi.assert(sym in z)
+        vi.assert(z[sym] in a)
+        vi.assert(!(z[sym] in z))
+        vi.assert(a[z[sym]] in z)
+        vi.assert(!(a[z[sym]] in a))
+        vi.assert(z[a[z[sym]]] in a)
+        vi.assert(!(z[a[z[sym]]] in z))
+      }
+    }
+  )
 })
+

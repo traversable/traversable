@@ -8,21 +8,6 @@ const none = (): None => ({ _tag: URI.None })
 /** @internal */
 const some = <T>(value: T): Some<T> => ({ _tag: URI.Some, value })
 
-export {
-  /**
-   * ### {@link integer `integer.any`}
-   * [Least upper bound](https://en.wikipedia.org/wiki/Upper_and_lower_bounds)
-   * for the set of representable {@link integer `integer`}s
-   */
-  integer as any,
-  /** 
-   * ### {@link integer `integer.ℤ`}
-   * 
-   * Alias for {@link integer `integer`}
-   */
-  integer as ℤ,
-}
-
 /**
  * ### {@link from `integer.from`}
  *

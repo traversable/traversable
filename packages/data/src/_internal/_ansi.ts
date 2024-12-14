@@ -1,6 +1,4 @@
 import type { newtype } from "any-ts"
-import * as Option from "../option.js"
-import { slurpUntil } from "../string.js"
 
 export { 
   ANSI,

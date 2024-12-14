@@ -8,7 +8,6 @@ import type { any } from "./_any.js"
 import type { prop, props } from "./_prop.js"
 import type { to } from "./_to.js"
 import type { jsdoc } from "./_unicode.js"
-
 // actual dependencies
 import * as fn from "./_function.js"
 import { key, type keys } from "./_key.js"
@@ -16,7 +15,6 @@ import { map } from "./_map.js"
 import { 
   escape, 
   isQuoted, 
-  isValidIdentifier, 
   toString,
 } from "./_string.js"
 
@@ -54,6 +52,8 @@ const Object_getPrototypeOf = globalThis.Object.getPrototypeOf
 const Object_fromEntries = globalThis.Object.fromEntries
 /** @internal */
 const Object_getOwnPropertySymbols = globalThis.Object.getOwnPropertySymbols
+/** @internal */
+const Object_defineProperty = globalThis.Object.defineProperty
 /** @internal */
 const Object_hasOwnProperty 
   : (object: {}, property: keyof any) => boolean
@@ -762,8 +762,14 @@ export const object_isNonEmpty
 export function object_invert<const T extends { [x: number]: key.any }>(object: T): object_invert<T>
 /// impl.
 export function object_invert<const T extends object_invertible>(object: T) {
-  let out: { [x: key.nonnumber]: string } = {}
-  for (const k of Object_keys(object)) out[object[k]] = k
+  let out: { [x: key.nonnumber]: key.nonnumber } = Object_create(null)
+  let keys = Object_keys(object)
+  let syms = Object_getOwnPropertySymbols(object)
+  let k: key.nonnumber | undefined
+  while ((k = keys.pop()) !== undefined)
+    Object_defineProperty(out, object[k], { value: k, enumerable: true, writable: true, configurable: false })
+  while ((k = syms.pop()) !== undefined)
+    Object_defineProperty(out, object[k], { value: k, enumerable: true, writable: true, configurable: false })
   return out
 }
 

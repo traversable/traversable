@@ -1,4 +1,4 @@
-import { URI } from "@traversable/registry"
+import { type Force, Omit, Partial, URI } from "@traversable/registry"
 import type { any } from "any-ts"
 import type { Concattable, Foldable, None, Option, Predicate, Some } from "./exports.js"
 
@@ -11,19 +11,33 @@ export {
 }
 
 export type Option_any = Option<unknown>
-export type Option_infer<option extends Option_any> = [option] extends [Option<infer type>] ? type : never
+export type Option_infer<T extends Option_any> = [T] extends [Option<infer _>] ? _ : never
+export type Option_infer$<T> = [T] extends [Option<infer _>] ? _ : T
+
+/** @internal */
+const Object_keys = globalThis.Object.keys
+/** @internal */
+const clone = globalThis.structuredClone
+const Object_hasOwn = (u: unknown, k: keyof any): u is { [x: string]: unknown } => 
+  u !== null && typeof u === "object" &&
+  globalThis.Object.prototype.hasOwnProperty.call(u, k)
 
 export const none 
   : () => None
   = () => ({ _tag: URI.None })
 
-export const isNone
-  : <T>(option: Option<T>) => option is None
-  = (option): option is never => option && option._tag === URI.None
+export const isSome: {
+  <T>(option: Option<T>): option is Some<T>
+  <T>(u: unknown): u is Some<T>
+} = (u): u is never => Object_hasOwn(u, "_tag") && u["_tag"] === URI.Some
 
-export const isSome
-  : <T>(option: Option<T>) => option is Some<T>
-  = (option): option is never => option && option._tag === URI.Some
+export const isNone: {
+  <T>(option: Option<T>): option is None
+  (u: unknown): u is None
+} = (u: unknown): u is never => Object_hasOwn(u, "_tag") && u["_tag"] === URI.None
+
+  // = (option): option is never => option && option._tag === URI.None
+// (option): option is never => option && option._tag === URI.Some
 
 export const is
   : (u: unknown) => u is Option<unknown>
@@ -312,6 +326,56 @@ export const fromBoolean
 export function toArray<T>(option: Option<T>): T[]
 export function toArray<T>(option: Option<T>): T[] /// impl.
   { return isSome(option) ? [option.value] : [] }
+
+export type fromPartial<
+  T, 
+  K extends keyof T = keyof T, 
+  Opt extends keyof T
+  = K extends K ? {} extends Pick<T, K> ? K : never : never,
+  Req extends keyof T
+  = Exclude<keyof T, Opt>
+> = never | Force<
+  & { [K in Opt]-?: Option<T[K] & {}> }
+  & { [K in Req]: T[K] }
+>
+
+const noopPredicate = (_: unknown): _ is typeof _ => true
+
+// export function fromPartial<const S extends { [x: string]: (u: unknown) => u is unknown }>(guards: S) {
+//   return <K extends keyof S, T extends { [P in K]+?: InferTarget<S[P]> }>(partial: T): Omit<T, K> & { [P in K]: Option<InferTarget<S[P]>> } => {
+//     let 
+//       out: { [x: string]: unknown },
+//       k: string,
+//       x: unknown,
+//       p: (u: unknown) => boolean
+//     const ks = globalThis.Object.keys(guards)
+//     try { out = clone(partial) } catch (e) { out = { ...partial } }
+//     for (let ix = 0, len = ks.length; ix < len; ix++) {
+//       k = ks[ix]
+//       p = guards[k] ?? noopPredicate
+//       x = partial[k as keyof T]
+//       out[k] = (console.log("p(x) for ", k, " ", p(x)), p(x) ? some(x) : none())
+//     }
+    
+//     return (out ?? partial) as never
+//   }
+// }
+
+export type toPartial<T> = never | { [K in keyof T]: Option_infer$<T[K]> }
+export function toPartial<const T extends { [x: string]: unknown }>(partiallyPartial: T): toPartial<T>
+export function toPartial(_: { [x: string]: Option_any }) {
+  const ks = Object_keys(_)
+  let out: { [x: string]: unknown } = {},
+      k: string,
+      v: unknown
+  for (let ix = 0, len = ks.length; ix < len; ix++) {
+    void (k = ks[ix])
+    void (v = _[k])
+    if (isNone(v)) continue
+    out[k] = isSome(v) ? v.value : v
+  }
+  return out
+}
 
 export function fromArray<T>(xs: T[]): Option<[T, ...T[]]>
 export function fromArray<T>(xs: T[]) ///impl.

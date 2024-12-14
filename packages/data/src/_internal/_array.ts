@@ -1,10 +1,10 @@
+import type { Compare, Concattable, Foldable, Predicate } from "@traversable/registry"
 import type { 
   any, 
   mut, 
   nonempty, 
   some, 
 } from "any-ts"
-import type { Compare, Concattable, Foldable, Predicate } from "../exports.js"
 import { identity, tuple } from "./_function.js"
 import { key, type keys } from "./_key.js"
 import type { prop } from "./_prop.js"

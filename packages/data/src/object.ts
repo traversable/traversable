@@ -43,11 +43,13 @@ import {
   type object_optionalKeys as optionalKeys,
   object_parseEntry as parseEntry,
   object_parseKey as parseKey,
+  object_partial as partial,
   object_pascal as pascal,
   object_pick as pick,
   object_pluck as pluck,
   object_postfix as postfix,
   object_prefix as prefix,
+  object_pullback as pullback,
   type object_required as required,
   type object_requiredKeys as requiredKeys,
   object_snake as snake,
@@ -111,8 +113,10 @@ export declare namespace object {
     parseEntry,
     parseKey,
     pascal,
+    partial,
     pick,
     pluck,
+    pullback,
     postfix,
     prefix,
     required,
@@ -289,10 +293,12 @@ export namespace object {
   object.parseEntry = parseEntry
   object.parseKey = parseKey
   object.pascal = pascal
+  object.partial = partial
   object.pick = pick
   object.pluck = pluck
   object.postfix = postfix
   object.prefix = prefix
+  object.pullback = pullback
   object.snake = snake
   object.some = some
   object.stringifyValues = stringifyValues
