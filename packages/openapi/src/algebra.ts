@@ -2,7 +2,13 @@ import { fn, map } from "@traversable/data"
 
 export { Functor_ as Functor }
 
-// TODO: rename this to `F` or maybe `fAlgebra` and implement a proper `Functor` instance
+const Array_isArray 
+  : <T>(u: unknown) => u is readonly T[]
+  = globalThis.Array.isArray
+
+// TODO: 
+// - implement a proper `Functor` instance
+// - rename this to `F` or maybe `fAlgebra`
 interface Functor_<T extends Target = Target> {}
 type F<T> =
   | { type: "null" }
@@ -10,7 +16,8 @@ type F<T> =
   | { type: "number" }
   | { type: "integer" }
   | { type: "string" }
-  | { type: "array", items: T, prefixItems?: readonly T[] }
+  | { type: "array", items: T }
+  | { type: "array", items: readonly T[] }
   | { type: "object", properties: { [x: string]: T }, additionalProperties?: T, required?: string[] }
   | { oneOf: readonly T[] }
   | { anyOf: readonly T[] }
@@ -23,7 +30,8 @@ export type Target =
   | { type: "integer" }
   | { type: "number" }
   | { type: "string" }
-  | { type: "array", items: Target, prefixItems?: readonly Target[] }
+  // | { type: "array", items: Target }
+  | { type: "array", items: Target | readonly Target[] }
   | { type: "object", properties: { [x: string]: Target }, additionalProperties?: Target, required?: string[] }
   | { oneOf: readonly Target[] }
   | { anyOf: readonly Target[] }
@@ -32,7 +40,7 @@ export type Target =
 
 function fmap<S, T>(f: (s: S) => T): (x: F<S>) => F<T> 
 function fmap<S, T>(f: (s: S) => T) {
-  return (x: F<S>): F<S | T> => {
+  return (x: F<S>): {} => {
     if (!("type" in x)) switch (true) {
       default:return fn.exhaustive(x)
       case "allOf" in x: return { allOf: x.allOf.map(f) }
@@ -49,8 +57,7 @@ function fmap<S, T>(f: (s: S) => T) {
       case x.type === "array": return { 
         ...x, 
         type: "array", 
-        ...x.items && { items: f(x.items) }, 
-        ...x.prefixItems && { prefixItems: map(x.prefixItems, f) },
+        items: Array_isArray(x.items) ? map(x.items, f) : f(x.items),
       }
       case x.type === "object": return { 
         ...x, 
@@ -85,12 +92,8 @@ export const thinAlgebra = (x: F<Target>): Target => {
     case x.type === "integer": return { type: x.type }
     case x.type === "number": return { type: x.type }
     case x.type === "string": return { type: x.type }
-    case x.type === "array": return { 
-      type: x.type, 
-      ...x.items && { items: x.items }, 
-      ...x.prefixItems && { prefixItems: x.prefixItems },
-    }
-    case x.type === "object": return { 
+    case x.type === "array": return { type: x.type, items: x.items }
+    case x.type === "object": return {
       type: x.type,
       ...x.required && { required: x.required },
       ...x.properties && { properties: x.properties },
@@ -99,6 +102,6 @@ export const thinAlgebra = (x: F<Target>): Target => {
   }
 }
 
-export const thin 
+export const forget 
   : (x: unknown) => Target
   = cata(thinAlgebra as never)

@@ -75,9 +75,7 @@ vi.describe("〖⛳️〗‹‹‹ ❲@traversable/openapi/interpreter❳", () =
         schemaName: "ResolvesExamples",
         hooks: {
           ...hooks,
-          string: (ctx) => ctx.example._tag === "@traversable/registry/URI::Option.Some" 
-            ? ctx.example.value 
-            : "",
+          string: (ctx) => ctx.example ?? "",
         }, 
       })({ type: "string", example: "\"hi, i'm a string!\"", }).out,
       "\"hi, i'm a string!\"",

@@ -16,7 +16,7 @@ export function normalize<R>(...predicates: readonly Predicate<R>[]) {
     let refs: { [x: string]: {} } = {}
     for (const k in access) {
       // clone the element so the new value doesn't point to a pointer -- 
-      // otherwise the mutation will propogate, and we'll lose the original
+      // otherwise the mutation will propogate, and we lose the original
       void (refs[k + "/schema"] = globalThis.structuredClone(access[k].schema)!)
     }
 
@@ -67,7 +67,7 @@ export function normalize<R>(...predicates: readonly Predicate<R>[]) {
      *  let refs: { [x: string]: unknown } = {}
      *  for (const k in accessors) {
      *    // clone the element so the new value doesn't point to a pointer -- otherwise
-     *    // the mutation will propogate, and we lose the original value
+     *    // the mutation will propogate, and we lose the original
      *    void (refs[Qualifier.to(k)] = globalThis.structuredClone(accessors[k]))
      *  }
      *

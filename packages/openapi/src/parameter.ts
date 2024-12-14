@@ -1,6 +1,6 @@
 import { fc } from "@traversable/core"
 
-import { BooleanNode, IntegerNode, NumberNode, Schema, StringNode } from "./schema-old.js"
+import { Schema } from "./schema/exports.js"
 import {
   applyConstraints,
   type arbitrary,
@@ -34,12 +34,12 @@ export namespace parameter {
     )
   }
 
-  export function pathSchema(constraints: Schema.Constraints = Schema.defaults) {
+  export function pathSchema(constraints: Schema.Constraints = Schema.Constraints.defaults) {
     return fc.oneof(
-      NumberNode(constraints),
-      StringNode(constraints),
-      IntegerNode(constraints),
-      BooleanNode(constraints),
+      Schema.number(constraints),
+      Schema.string(constraints),
+      Schema.integer(constraints),
+      Schema.boolean(constraints),
     )
   }
 
@@ -53,7 +53,7 @@ export namespace parameter {
       {
         in: fc.constant("path"),
         required: fc.constant(true),
-        schema: pathSchema(constraints),
+        schema: pathSchema(Schema.Constraints.defaults),
         style: fc.constantFrom(...style.path),
         explode: fc.boolean(),
       },
@@ -71,7 +71,7 @@ export namespace parameter {
       {
         in: fc.constant("query"),
         name: fc.identifier(),
-        schema: Schema.any(constraints),
+        schema: Schema.any(),
         required: fc.boolean(),
         style: fc.constantFrom(...style.query),
         explode: fc.boolean(),
@@ -93,7 +93,7 @@ export namespace parameter {
         name: fc.identifier(),
         style: fc.constant(...style.header),
         required: fc.boolean(),
-        schema: Schema.StringNode({ ...constraints, nullable: false }),
+        schema: Schema.string({ ...constraints, ...Schema.Constraints.defaults }),
         deprecated: fc.boolean(),
       },
       {
@@ -112,7 +112,7 @@ export namespace parameter {
         name: fc.identifier(),
         style: fc.constant(...style.cookie),
         required: fc.boolean(),
-        schema: Schema.any(constraints),
+        schema: Schema.any(),
         deprecated: fc.boolean(),
       },
       { requiredKeys: ["in", "name", "schema"] },

@@ -1,85 +1,478 @@
-import type { fc } from "@traversable/core"
-import type { any } from "any-ts"
-
+import { core, fc, tree } from "@traversable/core";
 import type { prop } from "@traversable/data"
+import { object } from "@traversable/data"
+import type { KeepLast, Kind, Mutable, Partial } from "@traversable/registry";
+import { symbol } from "@traversable/registry";
+import type { any, newtype } from "any-ts"
+
 import type { parameter } from "./parameter.js"
-import type { Schema } from "./schema-old.js"
 
 export type inline<T> = T
-export type ScalarNode = { type: "null" | "boolean" | "integer" | "number" | "string" }
 export type Scalar = null | undefined | boolean | number | string | symbol
-export type Omit<T, K extends keyof any, _ extends keyof T = Exclude<keyof T, K>> = never | { [P in _]: T[P] }
+export type Autocomplete<T> = T | (string & {})
 
-export type Bounded =
-  | { type: "null" }
-  | { type: "boolean" }
-  | { type: "integer" }
-  | { type: "number" }
-  | { type: "string" }
-  | { oneOf: readonly Bounded[] }
-  | { anyOf: readonly Bounded[] }
-  | { allOf: readonly Bounded[] }
-  | BoundedArray<Bounded>
-  | BoundedObject<Bounded>
+export interface $ref<T extends string = string> { $ref?: T }
 
-export interface BoundedArray<T = Bounded> { 
-  type: "array", 
-  items: T | readonly T[] 
+const Array_isArray = globalThis.Array.isArray
+
+export type DataTypes = typeof DataTypes
+export const DataTypes = [
+  "null",
+  "boolean", 
+  "integer", 
+  "number", 
+  "string", 
+  "object",
+  "array", 
+] as const satisfies string[]
+export const DataType = object.fromKeys(DataTypes)
+export type DataType = typeof DataType
+export type DataType_null = typeof DataType.null
+export type DataType_boolean = typeof DataType.boolean
+export type DataType_integer = typeof DataType.integer
+export type DataType_number = typeof DataType.number
+export type DataType_string = typeof DataType.string
+export type DataType_object = typeof DataType.object
+export type DataType_array = typeof DataType.array
+export declare namespace DataType {
+  export {
+    DataType_null as null,
+    DataType_boolean as boolean,
+    DataType_integer as integer,
+    DataType_number as number,
+    DataType_string as string,
+    DataType_object as object,
+    DataType_array as array,
+  }
 }
 
-export interface BoundedTuple<T = Bounded, U = Bounded> { 
-  type: "array", 
-  prefixItems: readonly T[]
-  items?: U 
+///////////////
+/// FORMATS
+/** See also: https://spec.openapis.org/registry/format/ */
+export declare namespace format {
+  export { number_ as number, string_ as string }
 }
+export namespace format {
+  export type KnownIntegerFormat = (typeof KnownIntegerFormats)[number]
+  export const KnownIntegerFormats = ["int32", "int64"] as const satisfies string[]
+  export const isKnownIntegerFormat = core.is.literally(...KnownIntegerFormats)
 
-export interface BoundedObject<T = Bounded> { 
-  type: "object"
-  required?: readonly string[]
-  properties: { [x: string]: T }
-  additionalProperties?: T, 
+  export type ExtendedIntegerFormat = (typeof ExtendedIntegerFormats)[number]
+  export const ExtendedIntegerFormats = [] as const satisfies string[]
+  export const isExtendedIntegerFormat = core.is.literally(...ExtendedIntegerFormats)
+
+  export type integer = (typeof IntegerFormats)[number]
+  export const IntegerFormats = [...KnownIntegerFormats, ...ExtendedIntegerFormats] as const
+  export const isIntegerFromat = core.is.literally(...IntegerFormats)
+
+  export type KnownNumberFormat = (typeof KnownNumberFormats)[number]
+  export const KnownNumberFormats = ["float", "double"] as const satisfies string[]
+  export const isKnownNumberFormat = core.is.literally(...KnownNumberFormats)
+
+  export type number_ = (typeof NumberFormats[number])[number]
+  export const ExtendedNumberFormats = core.is.literally(...KnownNumberFormats)
+
+  export type NumberFormat = (typeof NumberFormats)[number]
+  export const NumberFormats = [...KnownNumberFormats] as const satisfies string[]
+  export const isNumberFormat = core.is.literally(...KnownNumberFormats)
+
+  export type KnownStringFormat = (typeof KnownStringFormats)[number]
+  export const KnownStringFormats = ["password"] as const satisfies string[]
+  export const isKnownStringFormat = core.is.literally(...KnownStringFormats)
+
+  export type ExtendedStringFormat = (typeof ExtendedStringFormats)[number]
+  export const ExtendedStringFormats = [
+    "date",
+    "datetime",
+    "email",
+    "uuid",
+    "ulid",
+    "uri",
+    "uri-reference",
+  ] as const satisfies string[]
+
+  export const isExtendedStringFormat = core.is.literally(...ExtendedStringFormats)
+
+  export type string_ = (typeof StringFormats)[number]
+  export const StringFormats = [...ExtendedStringFormats, ...KnownStringFormats] as const satisfies string[]
+  export const isStringFormat = core.is.literally(...StringFormats)
+  export const integerNative = fc.constantFrom(...KnownIntegerFormats)
+  export const numberNative = fc.constantFrom(...KnownNumberFormats)
+  export const stringNative = fc.constantFrom(...KnownStringFormats)
+
+  export const stringExtended = fc.constantFrom(
+    ...KnownStringFormats,
+    ...ExtendedStringFormats,
+  )
+
+  export const integer = fc.constantFrom(...KnownIntegerFormats)
+  export const number = fc.constantFrom(...NumberFormats)
+  export const string = fc.constantFrom(
+    ...KnownStringFormats,
+    ...ExtendedStringFormats,
+  )
+  export const any = fc.lorem({ mode: "words", maxCount: 1 })
 }
+export interface Schema_Items {
+  maxItems: number
+  minItems: number
+  uniqueItems: boolean
+}
+/// FORMATS
+///////////////
 
-export type Bind<T> =
-  | { type: "null" }
-  | { type: "boolean" }
-  | { type: "integer" }
-  | { type: "number" }
-  | { type: "string" }
-  | { oneOf: readonly T[] }
-  | { anyOf: readonly T[] }
-  | { allOf: readonly T[] }
-  | BoundedArray<T>
-  | BoundedObject<T>
+
+/**
+ * ## {@link typeOf `openapi.typeof`}
+ * 
+ * Get a string that describes and discriminates the type of
+ * OpenAPI node you're inspecting. Works at the term- and
+ * type-level.
+ * 
+ * Useful as an entrypoint into a pattern matching expression.
+ */
+export function typeOf<T extends Schema>(u: T): typeOf<T>
+export function typeOf<T extends Schema>(u: T) {
+  switch (true) {
+    case "type" in u: switch (true) {
+      case "additionalProperties" in u: return "record"
+      case "items" in u && Array_isArray(u.items): return "tuple"
+      default: return u.type
+    }
+    case "allOf" in u: return "allOf"
+    case "anyOf" in u: return "anyOf"
+    case "oneOf" in u: return "oneOf"
+    default: return "$ref"
+  }
+}
+export type typeOf<T, K extends keyof T = keyof T> 
+  = "additionalProperties" extends K ? "record"
+  : T extends { items: readonly unknown[] } ? "tuple"
+  : T extends { type: infer U extends HasType["type"] } ? U
+  : K extends "allOf" ? "allOf"
+  : K extends "anyOf" ? "anyOf"
+  : K extends "oneOf" ? "oneOf"
+  : "$ref"
   ;
+type HasType = 
+  | Schema_scalar
+  | Schema_array 
+  | Schema_object
+  | Schema_record
+  | Schema_array
+  | Schema_tuple
+  ;
+
+export type Schema =
+  | Schema_null
+  | Schema_boolean
+  | Schema_integer
+  | Schema_number
+  | Schema_string
+  | Schema_allOf<Schema>
+  | Schema_anyOf<Schema>
+  | Schema_oneOf<Schema>
+  | Schema_array<Schema>
+  | Schema_record<Schema>
+  | Schema_tuple<Schema>
+  | Schema_object<Schema>
+  ;
+
+export const Schema_is
+  : (u: unknown) => u is Schema
+  = core.anyOf(
+    tree.has("type", core.is.literally(...DataTypes)),
+    tree.has("$ref", core.is.string),
+    Schema_isAllOf,
+    Schema_isAnyOf,
+    Schema_isOneOf,
+  ) as never
+
+export const Schema_isRef
+  : (u: unknown) => u is $ref
+  = tree.has("$ref", core.is.string)
+
+export function Schema_isOneOf(u: Schema | $ref): u is Schema_oneOf<Schema>
+export function Schema_isOneOf<T>(u: unknown): u is Schema_oneOf<T>
+export function Schema_isOneOf(u: unknown): u is Schema_oneOf<Schema> {
+  return tree.has("oneOf", core.is.array(Schema_is))(u)
+}
+
+export function Schema_isAnyOf(u: Schema | $ref): u is Schema_anyOf<Schema>
+export function Schema_isAnyOf<T>(u: unknown): u is Schema_anyOf<T>
+export function Schema_isAnyOf(u: unknown): u is Schema_anyOf<Schema> {
+  return tree.has("anyOf", core.is.array(Schema_is))(u)
+}
+
+export function Schema_isAllOf(u: Schema | $ref): u is Schema_allOf<Schema>
+export function Schema_isAllOf<T>(u: unknown): u is Schema_allOf<T>
+export function Schema_isAllOf(u: unknown): u is Schema_allOf<Schema> {
+  return tree.has("allOf", core.is.array(Schema_is))(u)
+}
+
+export const Schema_isNull: {
+  (u: Schema | $ref): u is Schema_null
+  (u: unknown): u is Schema_null
+} = core.allOf(
+  tree.has("type", core.is.literally(DataType.null)),
+  // tree.has("enum", 0, core.is.literally(null)),
+  // tree.has("nullable", core.is.literally(true)),
+) as never
+
+export const Schema_isConst = tree.has("const")
+
+export const Schema_isBoolean: {
+  (u: Schema | $ref): u is Schema_boolean
+  (u: unknown): u is Schema_boolean
+} = tree.has("type", core.is.literally(DataType.boolean))
+
+export const Schema_isInteger: {
+  (u: Schema | $ref): u is Schema_integer
+  (u: unknown): u is Schema_integer
+} = tree.has("type", core.is.literally(DataType.integer))
+
+export const Schema_isNumber: {
+  (u: Schema | $ref): u is Schema_number
+  (u: unknown): u is Schema_number
+} = tree.has("type", core.is.literally(DataType.number))
+
+export const Schema_isString: {
+  (u: Schema | $ref): u is Schema_string
+  (u: unknown): u is Schema_string
+} = tree.has("type", core.is.literally(DataType.string))
+
+export const Schema_isObject: {
+  (u: Schema | $ref): u is Schema_object<Schema>
+  (u: unknown): u is Schema_object
+} = core.allOf(
+  tree.has("type", core.is.literally(DataType.object)),
+  tree.has("properties", core.is.recordOf(Schema_is)),
+  // (u): u is never => u !== null && typeof u === "object" && !("additionalProperties" in u),
+)
+
+export const Schema_isRecord: {
+  (u: Schema | $ref): u is Schema_record<Schema>
+  (u: unknown): u is Schema_record
+} = core.allOf(
+  tree.has("type", core.is.literally(DataType.object)),
+  (u): u is never => u !== null && typeof u === "object" && !("properties" in u),
+  // tree.has("properties"),
+  tree.has("additionalProperties", Schema_is),
+)
+
+export const Schema_isArray: {
+  (u: Schema | $ref): u is Schema_array<Schema>
+  (u: unknown): u is Schema_array
+} = core.allOf(
+  tree.has("type", core.is.literally(DataType.array)),
+  tree.has("items", Schema_is)
+)
+
+export const Schema_isTuple: {
+  (u: Schema | $ref): u is Schema_tuple<Schema>
+  (u: unknown): u is Schema_tuple
+} = core.allOf(
+  tree.has("type", core.is.literally(DataType.array)),
+  tree.has("items", core.is.array(Schema_is)),
+)
+
+export function Schema_isCombinator(u: Schema | $ref): u is Schema_combinator<Schema>
+export function Schema_isCombinator(u: unknown): u is Schema_combinator
+export function Schema_isCombinator(u: unknown): u is Schema_combinator {
+  return core.anyOf(
+    Schema_isAllOf,
+    Schema_isAnyOf,
+    Schema_isOneOf,
+  )(u)
+}
+
+export const Schema_isScalar: {
+  (u: Schema | $ref): u is Schema_scalar
+  (u: unknown): u is Schema_scalar
+} = core.anyOf(
+  Schema_isNull,
+  Schema_isBoolean,
+  Schema_isInteger,
+  Schema_isNumber,
+  Schema_isString,
+)
+
+export interface Schema_base<T = unknown> { nullable?: boolean, example?: T }
+export interface Schema_null extends inline<{ type: DataType.null }>, Schema_base { enum?: { [0]: null }, nullable?: true }
+export interface Schema_boolean extends inline<{ type: DataType.boolean }>, Schema_base {}
+export interface Schema_integer extends inline<{ type: DataType.integer }>, Schema_base {
+  format?: string
+  exclusiveMaximum?: boolean
+  exclusiveMinimum?: boolean
+  multipleOf?: number
+  maximum?: number
+  minimum?: number
+}
+export interface Schema_number extends inline<{ type: "number" }>, Schema_base  {
+  format?: Autocomplete<format.number>
+  minimum?: number
+  maximum?: number
+  exclusiveMinimum?: boolean
+  exclusiveMaximum?: boolean
+  multipleOf?: number
+}
+export interface Schema_string extends inline<{ type: "string" }>, Schema_base  {
+  pattern?: Autocomplete<format.string>
+  format?: string
+  minLength?: number
+  maxLength?: number
+}
+
+export type Schema_scalar = 
+  | Schema_null 
+  | Schema_boolean 
+  | Schema_integer 
+  | Schema_number 
+  | Schema_string 
+  ;
+
+export interface Schema_allOf<T = unknown> { readonly allOf: readonly T[] }
+export interface Schema_anyOf<T = unknown> { readonly anyOf: readonly T[] }
+export interface Schema_oneOf<T = unknown> { readonly oneOf: readonly T[] }
+export type Schema_combinator<T = unknown> =
+  | Schema_allOf<T>
+  | Schema_anyOf<T>
+  | Schema_oneOf<T>
+  ;
+
+export interface Schema_array<T = unknown> extends Partial<Schema_Items> {
+  readonly type: "array", 
+  readonly items: T
+}
+export interface Schema_tuple<T = unknown> extends Partial<Schema_Items> {
+  readonly type: "array", 
+  readonly items: readonly T[]
+}
+
+export interface Schema_record<T = unknown> { 
+  readonly type: "object"
+  // readonly required?: readonly string[]
+  readonly additionalProperties: T
+  // readonly properties?: { [x: string]: T }
+}
+export interface Schema_object<T = unknown> { 
+  readonly type: "object"
+  readonly required?: readonly string[]
+  readonly properties: { [x: string]: T }
+  readonly additionalProperties?: T
+}
+
+export type Schema_composite<T = unknown> =
+  | Schema_array<T>
+  | Schema_tuple<T>
+  | Schema_object<T>
+  | Schema_record<T>
+  ;
+
+export interface Schema_Null<T extends {}> extends newtype<T>, Schema_base { [symbol.tag]: symbol.null }
+export interface Schema_Boolean<T extends {}> extends newtype<T>, Schema_base { [symbol.tag]: symbol.boolean }
+export interface Schema_Integer<T extends {}> extends newtype<T>, Schema_base { [symbol.tag]: symbol.integer }
+export interface Schema_Number<T extends {}> extends newtype<T>, Schema_base { [symbol.tag]: symbol.number }
+export interface Schema_String<T extends {}> extends newtype<T>, Schema_base { [symbol.tag]: symbol.string }
+
+export type Schema_F<T> =
+  | Schema_null
+  | Schema_boolean
+  | Schema_integer
+  | Schema_number
+  | Schema_string
+  | Schema_anyOf<T>
+  | Schema_allOf<T>
+  | Schema_oneOf<T>
+  | Schema_array<T>
+  | Schema_object<T>
+  | Schema_tuple<T>
+  | Schema_record<T>
+  ;
+
+export interface Schema_AllOf<T extends {}> extends newtype<T> { [symbol.tag]: symbol.intersection }
+export interface Schema_AnyOf<T extends {}> extends newtype<T> { [symbol.tag]: symbol.union }
+export interface Schema_OneOf<T extends {}> extends newtype<T> { [symbol.tag]: symbol.disjoint }
+export interface Schema_Object<T extends {}> extends newtype<T> { [symbol.tag]: symbol.object }
+export interface Schema_Array<T extends {}> extends newtype<T> { [symbol.tag]: symbol.array }
+export interface Schema_Tuple<T extends {}> extends newtype<T> { [symbol.tag]: symbol.tuple }
+export interface Schema_Record<T extends {}> extends newtype<T> { [symbol.tag]: symbol.record }
+
+export interface Schema_NullF extends Kind<{}> { ["~1"]: Schema_Null<this["~0"]> }
+export interface Schema_BooleanF extends Kind<{}> { ["~1"]: Schema_Boolean<this["~0"]> }
+export interface Schema_IntegerF extends Kind<{}> { ["~1"]: Schema_Integer<this["~0"]> }
+export interface Schema_NumberF extends Kind<{}> { ["~1"]: Schema_Number<this["~0"]> }
+export interface Schema_StringF extends Kind<{}> { ["~1"]: Schema_String<this["~0"]> }
+export interface Schema_AnyOfF extends Kind<{}> { ["~1"]: Schema_AnyOf<this["~0"]> }
+export interface Schema_OneOfF extends Kind<{}> { ["~1"]: Schema_OneOf<this["~0"]> }
+export interface Schema_AllOfF extends Kind<{}> { ["~1"]: Schema_AllOf<this["~0"]> }
+
+export interface SchemaKind extends Kind<Schema_F<any>> { ["~1"]: Schema_F<this["~0"]> }
+
+export type Schema_kinds = typeof Schema_kinds
+export declare const Schema_kinds: {
+  allOf: Schema_AllOfF
+  anyOf: Schema_AnyOfF
+  boolean: Schema_BooleanF
+  integer: Schema_IntegerF
+  null: Schema_NullF
+  number: Schema_NumberF
+  oneOf: Schema_OneOfF
+  string: Schema_StringF
+}
+
+export type Schema_tag<T>
+  = T extends Schema_scalar ? Schema_tag.scalar<T>
+  : T extends Schema_tuple ? Schema_tag.tuple<T>
+  : T extends Schema_array ? Schema_tag.array<T>
+  : T extends Schema_record ? Schema_tag.record<T>
+  : T extends Schema_object ? Schema_tag.object<T>
+  : T extends Schema_allOf ? Schema_tag.allOf<T>
+  : T extends Schema_anyOf ? Schema_tag.anyOf<T>
+  : T extends Schema_oneOf ? Schema_tag.oneOf<T>
+  : never
+  ;
+
+export declare namespace Schema_tag { export { object_ as object } }
+export declare namespace Schema_tag {
+  type scalar<T extends Schema_scalar> = Kind.apply<typeof Schema_kinds[T["type"]], Mutable<T>>
+  type array<
+    T extends Schema_array, 
+    $ extends 
+    | KeepLast<T, { items: Schema_tag<T["items"]> }>
+    = KeepLast<T, { items: Schema_tag<T["items"]> }>
+  > = never | Schema_Array<$>
+  type tuple<
+    T extends Schema_tuple, 
+    _ extends T["items"] = T["items"],
+    $ extends 
+    | KeepLast<T, { items: { -readonly [K in keyof _]: Schema_tag<_[K]> } }>
+    = KeepLast<T, { items: { -readonly [K in keyof _]: Schema_tag<_[K]> } }>
+  > = never | Schema_Tuple<$>
+  type object_<
+    T extends Schema_object, 
+    $ extends 
+    | KeepLast<T, { properties: { -readonly [K in keyof T["properties"]]: Schema_tag<T["properties"][K]> } }>
+    = KeepLast<T, { properties: { -readonly [K in keyof T["properties"]]: Schema_tag<T["properties"][K]> } }>
+  > = never | Schema_Object<$>
+  type record<
+    T extends Schema_record, 
+    $ extends 
+    | KeepLast<T, { additionalProperties: Schema_tag<T["additionalProperties"]> }>
+    = KeepLast<T, { additionalProperties: Schema_tag<T["additionalProperties"]> }>
+  > = never | Schema_Record<$>
+  type allOf<T extends Schema_allOf> = never | Schema_AllOf<T> 
+  type anyOf<T extends Schema_anyOf> = never | Schema_AnyOf<T> 
+  type oneOf<T extends Schema_oneOf> = never | Schema_OneOf<T> 
+}
 
 export interface Predicate<
   S = {} | null | undefined, 
 > { (src: S, path: prop.any[]): boolean }
 
-// T extends S = S
-// (src: S, path: prop.any[]): src is T 
-
 export type DocLike = { 
   paths?: {}, 
   components?: { schemas?: {} },
-}
-
-export declare namespace Arbitrary {
-  export {
-    Arbitrary_any as any,
-    Arbitrary_infer as infer,
-    Arbitrary_map as map,
-    Arbitrary_shape as shape,
-    Arbitrary_unmap as unmap,
-  }
-}
-export declare namespace Arbitrary {
-  type Arbitrary_any = fc.Arbitrary<unknown>
-  type Arbitrary_infer<T> = T extends fc.Arbitrary<infer U> ? U : never
-  type Arbitrary_map<T> = never | { -readonly [K in keyof T]: fc.Arbitrary<T[K]> }
-  type Arbitrary_shape<T extends { [x: string]: Arbitrary.any } = { [x: string]: Arbitrary.any }> = T
-  type Arbitrary_unmap<T> = never | { -readonly [K in keyof T]: Arbitrary_infer<T[K]> }
 }
 
 export declare namespace arbitrary {
@@ -379,7 +772,7 @@ export declare namespace openapi {
   }
 
   interface schemas {
-    [x: string]: Schema.any
+    [x: string]: Schema
   }
   interface parameters extends inline<readonly openapi.parameter[]> {}
 
@@ -411,7 +804,6 @@ export declare namespace openapi {
   }
 
   type header = openapi.header.any
-  // | openapi.$ref
   interface headers extends inline<{ [name: string]: openapi.header }> {}
   namespace header {
     export { header_any as any }
@@ -419,7 +811,7 @@ export declare namespace openapi {
   }
 
   interface mediatype<T = unknown> {
-    schema?: Schema.any // | openapi.$ref
+    schema?: Schema
     examples?: openapi.meta.examples
     example?: T
     encoding?: openapi.encoding
@@ -461,7 +853,7 @@ export interface path_parameter
   extends inline<{
     in: "path"
     name: string
-    schema: Schema.any
+    schema: Schema
     required: boolean
     style?: style.path
     explode?: boolean
@@ -471,7 +863,7 @@ export interface query_parameter
   extends inline<{
     in: "query"
     name: string
-    schema: Schema.any
+    schema: Schema
     required?: boolean
     style?: style.query
     explode?: boolean
@@ -482,7 +874,7 @@ export interface header_parameter
   extends inline<{
     in: "header"
     name: string
-    schema: Schema.any
+    schema: Schema
     required?: boolean
     style?: style.header
     explode?: boolean
@@ -493,7 +885,7 @@ export interface cookie_parameter
   extends inline<{
     in: "cookie"
     name: string
-    schema: Schema.any
+    schema: Schema
     required?: boolean
     style?: style.cookie
     explode?: boolean

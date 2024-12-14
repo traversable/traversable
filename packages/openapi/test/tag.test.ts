@@ -1,12 +1,12 @@
 import * as vi from "vitest"
 
-import { test } from "@traversable/core"
-import { schema, tag, untag, } from "@traversable/openapi"
-import { symbol } from "@traversable/registry"
+import { show, test } from "@traversable/core"
+import { Schema, tag, untag, } from "@traversable/openapi"
+import { type Force, symbol } from "@traversable/registry"
 
 vi.describe("〖⛳️〗‹‹‹ ❲@traversable/openapi/tag❳", () => {
   vi.it("〖⛳️〗‹ ❲openapi.tag❳: examples", () => {
-    const ex_01 = tag({ 
+    const ex_01 = tag({
       type: "object", 
       properties: { 
         abc: { type: "string" }
@@ -14,13 +14,17 @@ vi.describe("〖⛳️〗‹‹‹ ❲@traversable/openapi/tag❳", () => {
     })
 
     vi.assert.deepEqual(
-      ex_01, { 
+      ex_01, 
+      { 
         type: "object", 
         [symbol.tag]: symbol.object,
-        properties: { 
-          abc: { type: "string", [symbol.tag]: symbol.string }
+        properties: {
+          abc: {
+            [symbol.tag]: symbol.string,
+            type: "string",
+          }
         } 
-      }
+      } as never
     )
   })
 
@@ -38,14 +42,25 @@ vi.describe("〖⛳️〗‹‹‹ ❲@traversable/openapi/tag❳", () => {
         type: "object", 
         properties: { 
           abc: { type: "string" }
-        } 
-      }
+        }
+      } as never
     )
-  })
 
-  test.prop([schema.tree().tree], {
-    verbose: 2,
-    errorWithCause: true
+    
+  });
+
+  test.prop([Schema.any()], {
+    // verbose: 2,
+    errorWithCause: true,
+    // endOnFailure: true,
+    examples: [
+      [{
+        items: {
+          type: "number"
+        },
+        type: "array"
+      }]
+    ]
   })(
     "〖⛳️〗‹ ❲lossless roundtrip❳: openapi.tag --> openapi.untag", 
     (s) => {

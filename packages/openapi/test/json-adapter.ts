@@ -188,10 +188,9 @@ vi.describe("〖⛳️〗‹‹‹ ❲@traversable/openapi/json-adapter❳", () 
           a: { type: "boolean", const: true }, 
           b: { 
             type: "array", 
-            items: false,
             minItems: 3,
             maxItems: 3,
-            prefixItems: [
+            items: [
               { type: "number", const: 1 },
               { type: "null", nullable: true, enum: [null] },
               { 
@@ -217,10 +216,9 @@ vi.describe("〖⛳️〗‹‹‹ ❲@traversable/openapi/json-adapter❳", () 
           a: { type: "boolean", const: true }, 
           b: { 
             type: "array", 
-            items: false,
             minItems: 3,
             maxItems: 3,
-            prefixItems: [
+            items: [
               { type: "number", const: 1 },
               { type: "null", nullable: true, enum: [null] },
               { 

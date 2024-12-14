@@ -4,15 +4,8 @@ import { http } from "@traversable/http"
 import { PATTERN } from "@traversable/registry"
 
 import * as N from "./normalize.js"
-import { 
-  BooleanNode,
-  ExternalDocumentation,
-  IntegerNode,
-  NumberNode,
-  Schema,
-  StringNode,
-} from "./schema-old.js"
-import type { Arbitrary } from "./types.js"
+import { Schema } from "./schema/exports.js"
+import type { $ref } from "./types.js"
 
 /** @internal */
 type inline<T> = T
@@ -30,6 +23,9 @@ openapi.is = {
   request: (u: openapi.requestBody): u is openapi.request => !("$ref" in u),
 }
 
+export declare namespace openapi {
+  export { $ref }
+}
 export declare namespace openapi {
   const document: document.meta & {
     openapi: "3.0.1" | "3.0.1"
@@ -115,7 +111,8 @@ export declare namespace openapi {
 
   interface components { schemas?: schemas }
   interface paths extends inline<{ [path: string]: openapi.pathitem }> {}
-  interface $ref<T extends string = string> { $ref?: T }
+
+
   interface pathitem extends 
     pathitem.meta, 
     pathitem.verbs {}
@@ -527,7 +524,7 @@ namespace Auth {
   /**
    * ### {@link SecurityRequirement `openapi.SecurityRequirement`}
    */
-  export interface SecurityRequirement extends Arbitrary.infer<typeof SecurityRequirement> {}
+  export interface SecurityRequirement extends fc.Arbitrary.infer<typeof SecurityRequirement> {}
   export const SecurityRequirement = fc.dictionary(fc.string(), fc.array(fc.string()))
 }
 
@@ -537,7 +534,7 @@ namespace Auth {
 /**
  * ### {@link Contact `openapi.Contact`}
  */
-export interface Contact extends Arbitrary.infer<typeof Contact> {}
+export interface Contact extends fc.Arbitrary.infer<typeof Contact> {}
 export const Contact = fc.record(
   {
     name: fc.string(),
@@ -550,7 +547,7 @@ export const Contact = fc.record(
 /**
  * ### {@link License `openapopenapiicense`}
  */
-export interface License extends Arbitrary.infer<typeof License> {}
+export interface License extends fc.Arbitrary.infer<typeof License> {}
 export const License = fc.record(
   {
     name: fc.string(),
@@ -562,7 +559,7 @@ export const License = fc.record(
 /**
  * ### {@link Info `openapi.Info`}
  */
-export interface Info extends Arbitrary.infer<typeof Info> {}
+export interface Info extends fc.Arbitrary.infer<typeof Info> {}
 export const Info = fc.record(
   {
     title: fc.string(),
@@ -578,7 +575,7 @@ export const Info = fc.record(
 /**
  * ### {@link ServerVariable `openapi.ServerVariable`}
  */
-export interface ServerVariable extends Arbitrary.infer<typeof ServerVariable> {}
+export interface ServerVariable extends fc.Arbitrary.infer<typeof ServerVariable> {}
 export const ServerVariable = fc.record(
   {
     enum: fc.array(fc.string()),
@@ -591,7 +588,7 @@ export const ServerVariable = fc.record(
 /**
  * ### {@link Server `openapi.Server`}
  */
-export interface Server extends Arbitrary.infer<typeof Server> {}
+export interface Server extends fc.Arbitrary.infer<typeof Server> {}
 export const Server = fc.record(
   {
     url: fc.string(),
@@ -607,7 +604,7 @@ export const Server = fc.record(
 export interface Tag {
   name: string;
   description?: string | undefined;
-  externalDocs?: ExternalDocumentation | undefined;
+  // externalDocs?: ExternalDocumentation | undefined;
 }
 
 /** ### {@link tag `openapi.tag`} */
@@ -616,7 +613,7 @@ export function tag(constraints: arbitrary.Constraints = defaults) {
   return fc.record({
     name: fc.string(),
     description: fc.lorem(),
-    externalDocs: ExternalDocumentation(constraints),
+    // externalDocs: ExternalDocumentation(constraints),
   }, { requiredKeys: ["name"] })
 }
 
@@ -643,7 +640,7 @@ export namespace Link {
     parameters: fc.dictionary(fc.string(), fc.object()),
     requestBody: fc.object(),
     server: Server,
-  } satisfies Arbitrary.map<Link.Shape>
+  } satisfies fc.Arbitrary.map<Link.Shape>
   /** ### {@link Link.withOperationId `openapi.Link.withOperationId`} */
   export const withOperationId = fc.record(
     {
@@ -665,7 +662,7 @@ export namespace Link {
 }
 
 /** ### {@link Encoding `openapi.Encoding`} */
-export interface Encoding extends Arbitrary.infer<typeof Encoding> {}
+export interface Encoding extends fc.Arbitrary.infer<typeof Encoding> {}
 /** ### {@link Encoding `openapi.Encoding`} */
 export const Encoding = fc.record(
   {
@@ -680,7 +677,7 @@ export const Encoding = fc.record(
 )
 
 /** ### {@link mediatype `openapi.mediatype`} */
-export interface mediatype extends Arbitrary.infer<ReturnType<typeof mediatype>> {}
+export interface mediatype extends fc.Arbitrary.infer<ReturnType<typeof mediatype>> {}
 /** ### {@link mediatype `openapi.mediatype`} */
 export function mediatype(constraints?: mediatype.Constraints): fc.Arbitrary<openapi.mediatype>
 export function mediatype(_: mediatype.Constraints = mediatype.defaults) {
@@ -778,13 +775,13 @@ export namespace Header {
 }
 
 /** ### {@link response `openapi.Response`} */
-export interface response extends Arbitrary.infer<ReturnType<typeof response>> {}
+export interface response extends fc.Arbitrary.infer<ReturnType<typeof response>> {}
 /** ### {@link response `openapi.Response`} */
 export function response(constraints?: arbitrary.Constraints) {
   return fc.record({
     content: mediatypes({
       ...constraints,
-      schema: Schema.object,
+      schema: Schema.any(),
     }),
     // Note: this field is required (not configurable)
     description: fc.lorem(),
@@ -920,12 +917,12 @@ export namespace parameter {
     export type query = typeof parameter.style.query[number]
   }
 
-  export function pathSchema(constraints: Schema.Constraints = Schema.defaults) {
+  export function pathSchema(constraints: Schema.Constraints = Schema.Constraints.defaults) {
     return fc.oneof(
-      NumberNode(constraints), 
-      StringNode(constraints), 
-      IntegerNode(constraints), 
-      BooleanNode(constraints),
+      Schema.number(constraints), 
+      Schema.string(constraints), 
+      Schema.integer(constraints), 
+      Schema.boolean(constraints),
     )
   }
 
@@ -936,7 +933,7 @@ export namespace parameter {
     return fc.record({
       in: fc.constant("path"),
       required: fc.constant(true),
-      schema: pathSchema(constraints),
+      schema: pathSchema(),
       style: fc.constantFrom(...style.path),
       explode: fc.boolean(),
     }, { 
@@ -955,7 +952,7 @@ export namespace parameter {
     return fc.record({
       in: fc.constant("query"),
       name: fc.identifier(),
-      schema: Schema.any(constraints),
+      schema: Schema.any(),
       required: fc.boolean(),
       style: fc.constantFrom(...style.query),
       explode: fc.boolean(),
@@ -978,7 +975,7 @@ export namespace parameter {
       name: fc.identifier(),
       style: fc.constant(...parameter.style.header),
       required: fc.boolean(),
-      schema: Schema.StringNode({ ...constraints, nullable: false }),
+      schema: Schema.string({ ...constraints, ...Schema.Constraints.defaults }),
       deprecated: fc.boolean(),
     }, { 
       requiredKeys: [
@@ -998,7 +995,7 @@ export namespace parameter {
       name: fc.identifier(),
       style: fc.constant(...parameter.style.cookie),
       required: fc.boolean(),
-      schema: Schema.any(constraints),
+      schema: Schema.any(Schema.Constraints.defaults),
       deprecated: fc.boolean(),
     }, { requiredKeys: ["in", "name", "schema"] })
   }
@@ -1187,7 +1184,6 @@ export function paths(_?: arbitrary.Constraints): fc.Arbitrary<openapi.paths> {
   )
 }
 
-
 /** ### {@link components `openapi.components`} */
 export function components(constraints?: arbitrary.Constraints): fc.Arbitrary<openapi.components>
 export function components(_?: arbitrary.Constraints): fc.Arbitrary<openapi.components> {
@@ -1195,7 +1191,7 @@ export function components(_?: arbitrary.Constraints): fc.Arbitrary<openapi.comp
   return fc.record({ 
     schemas: fc.dictionary(
       fc.alphanumeric(),
-      Schema.any(constraints) as fc.Arbitrary<Schema.any>, {
+      Schema.any(Schema.Constraints.defaults) as fc.Arbitrary<Schema.any>, {
         minKeys: constraints.schemas.minCount,
         maxKeys: constraints.schemas.maxCount,
       },
