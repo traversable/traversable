@@ -246,7 +246,7 @@ export const Schema_isObject: {
   (u: unknown): u is Schema_object
 } = core.allOf(
   tree.has("type", core.is.literally(DataType.object)),
-  tree.has("properties", core.is.recordOf(Schema_is)),
+  tree.has("properties", /* core.is.recordOf(Schema_is) */ ),
   // (u): u is never => u !== null && typeof u === "object" && !("additionalProperties" in u),
 )
 
@@ -261,19 +261,19 @@ export const Schema_isRecord: {
 )
 
 export const Schema_isArray: {
-  (u: Schema | $ref): u is Schema_array<Schema>
+  // (u: Schema | $ref): u is Schema_array<Schema>
   (u: unknown): u is Schema_array
 } = core.allOf(
   tree.has("type", core.is.literally(DataType.array)),
-  tree.has("items", Schema_is)
+  tree.has("items", /* Schema_is */)
 )
 
 export const Schema_isTuple: {
-  (u: Schema | $ref): u is Schema_tuple<Schema>
+  // (u: Schema | $ref): u is Schema_tuple<Schema>
   (u: unknown): u is Schema_tuple
 } = core.allOf(
   tree.has("type", core.is.literally(DataType.array)),
-  tree.has("items", core.is.array(Schema_is)),
+  tree.has("items", /* core.is.array(Schema_is) */),
 )
 
 export function Schema_isCombinator(u: Schema | $ref): u is Schema_combinator<Schema>
@@ -297,83 +297,114 @@ export const Schema_isScalar: {
   Schema_isString,
 )
 
-export interface Schema_base<T = unknown> { nullable?: boolean, example?: T }
-export interface Schema_null extends inline<{ type: DataType.null }>, Schema_base { enum?: { [0]: null }, nullable?: true }
-export interface Schema_boolean extends inline<{ type: DataType.boolean }>, Schema_base {}
-export interface Schema_integer extends inline<{ type: DataType.integer }>, Schema_base {
-  format?: string
-  exclusiveMaximum?: boolean
-  exclusiveMinimum?: boolean
-  multipleOf?: number
-  maximum?: number
-  minimum?: number
-}
-export interface Schema_number extends inline<{ type: "number" }>, Schema_base  {
-  format?: Autocomplete<format.number>
-  minimum?: number
-  maximum?: number
-  exclusiveMinimum?: boolean
-  exclusiveMaximum?: boolean
-  multipleOf?: number
-}
-export interface Schema_string extends inline<{ type: "string" }>, Schema_base  {
-  pattern?: Autocomplete<format.string>
-  format?: string
-  minLength?: number
-  maxLength?: number
-}
+export interface Schema_base<T = {}> { nullable?: boolean, example?: T }
+export interface Schema_null<T = {}, Meta extends {} = {}> extends 
+  Kind<T>,
+  newtype<Meta>, 
+  inline<{ type: DataType.null }>, 
+  Schema_base 
+  { enum?: { [0]: null }, nullable?: true }
 
-export type Schema_scalar = 
-  | Schema_null 
-  | Schema_boolean 
-  | Schema_integer 
-  | Schema_number 
-  | Schema_string 
+export interface Schema_boolean<T = {}, Meta extends {} = {}> extends 
+  Kind<T>, 
+  newtype<Meta>, 
+  inline<{ type: DataType.boolean }>, 
+  Schema_base {}
+
+export interface Schema_integer<T = {}, Meta extends {} = {}> extends 
+  Kind<T>,
+  newtype<Meta>, 
+  inline<{ type: DataType.integer }>, 
+  Schema_base {
+    format?: string
+    exclusiveMaximum?: boolean
+    exclusiveMinimum?: boolean
+    multipleOf?: number
+    maximum?: number
+    minimum?: number
+  }
+
+export interface Schema_number<
+  T = {}, 
+  Meta extends {} = {}
+> extends 
+  Kind<T>,
+  newtype<Meta>, 
+  inline<{ type: "number" }>, 
+  Schema_base  {
+    format?: Autocomplete<format.number>
+    minimum?: number
+    maximum?: number
+    exclusiveMinimum?: boolean
+    exclusiveMaximum?: boolean
+    multipleOf?: number
+  }
+
+export interface Schema_string<
+  T = {}, 
+  Meta extends {} = {}
+> extends 
+  Kind<T>,
+  newtype<Meta>, 
+  inline<{ type: "string" }>, 
+  Schema_base  {
+    pattern?: Autocomplete<format.string>
+    format?: string
+    minLength?: number
+    maxLength?: number
+  }
+
+export type Schema_scalar<Meta extends {} = {}> = 
+  | Schema_null<Meta>
+  | Schema_boolean<Meta>
+  | Schema_integer<Meta>
+  | Schema_number<Meta>
+  | Schema_string<Meta>
   ;
 
-export interface Schema_allOf<T = unknown> { readonly allOf: readonly T[] }
-export interface Schema_anyOf<T = unknown> { readonly anyOf: readonly T[] }
-export interface Schema_oneOf<T = unknown> { readonly oneOf: readonly T[] }
-export type Schema_combinator<T = unknown> =
+export interface Schema_allOf<T = unknown, Meta extends {} = {}> extends newtype<Meta> { readonly allOf: readonly T[] }
+export interface Schema_anyOf<T = unknown, Meta extends {} = {}> extends newtype<Meta> { readonly anyOf: readonly T[] }
+export interface Schema_oneOf<T = unknown, Meta extends {} = {}> extends newtype<Meta> { readonly oneOf: readonly T[] }
+export type Schema_combinator<T = unknown, Meta extends {} = {}> =
   | Schema_allOf<T>
   | Schema_anyOf<T>
   | Schema_oneOf<T>
   ;
 
-export interface Schema_array<T = unknown> extends Partial<Schema_Items> {
+export interface Schema_array<T = unknown, Meta extends {} = {}> extends newtype<Meta>, Partial<Schema_Items> {
   readonly type: "array", 
   readonly items: T
 }
-export interface Schema_tuple<T = unknown> extends Partial<Schema_Items> {
+export interface Schema_tuple<T = unknown, Meta extends {} = {}> extends newtype<Meta>, Partial<Schema_Items> {
   readonly type: "array", 
   readonly items: readonly T[]
 }
 
-export interface Schema_record<T = unknown> { 
+export interface Schema_record<T = unknown, Meta extends {} = {}> extends newtype<Meta> { 
   readonly type: "object"
   // readonly required?: readonly string[]
   readonly additionalProperties: T
   // readonly properties?: { [x: string]: T }
 }
-export interface Schema_object<T = unknown> { 
+export interface Schema_object<T = unknown, Meta extends {} = {}> { 
   readonly type: "object"
   readonly required?: readonly string[]
   readonly properties: { [x: string]: T }
   readonly additionalProperties?: T
 }
 
-export type Schema_composite<T = unknown> =
-  | Schema_array<T>
-  | Schema_tuple<T>
-  | Schema_object<T>
-  | Schema_record<T>
+export type Schema_composite<T = unknown, Meta extends {} = {}> =
+  | Schema_array<T, Meta>
+  | Schema_tuple<T, Meta>
+  | Schema_object<T, Meta>
+  | Schema_record<T, Meta>
   ;
 
-export interface Schema_Null<T extends {}> extends newtype<T>, Schema_base { [symbol.tag]: symbol.null }
-export interface Schema_Boolean<T extends {}> extends newtype<T>, Schema_base { [symbol.tag]: symbol.boolean }
-export interface Schema_Integer<T extends {}> extends newtype<T>, Schema_base { [symbol.tag]: symbol.integer }
-export interface Schema_Number<T extends {}> extends newtype<T>, Schema_base { [symbol.tag]: symbol.number }
-export interface Schema_String<T extends {}> extends newtype<T>, Schema_base { [symbol.tag]: symbol.string }
+export interface Schema_Null<T = unknown> extends newtype<T & {}>, Schema_base { [symbol.tag]: symbol.null }
+export interface Schema_Boolean<T = unknown> extends newtype<T & {}>, Schema_base { [symbol.tag]: symbol.boolean }
+export interface Schema_Integer<T = unknown> extends newtype<T & {}>, Schema_base { [symbol.tag]: symbol.integer }
+export interface Schema_Number<T = unknown> extends newtype<T & {}>, Schema_base { [symbol.tag]: symbol.number }
+export interface Schema_String<T = unknown> extends newtype<T & {}>, Schema_base { [symbol.tag]: symbol.string }
 
 export type Schema_F<T> =
   | Schema_null
@@ -390,13 +421,13 @@ export type Schema_F<T> =
   | Schema_record<T>
   ;
 
-export interface Schema_AllOf<T extends {}> extends newtype<T> { [symbol.tag]: symbol.intersection }
-export interface Schema_AnyOf<T extends {}> extends newtype<T> { [symbol.tag]: symbol.union }
-export interface Schema_OneOf<T extends {}> extends newtype<T> { [symbol.tag]: symbol.disjoint }
-export interface Schema_Object<T extends {}> extends newtype<T> { [symbol.tag]: symbol.object }
-export interface Schema_Array<T extends {}> extends newtype<T> { [symbol.tag]: symbol.array }
-export interface Schema_Tuple<T extends {}> extends newtype<T> { [symbol.tag]: symbol.tuple }
-export interface Schema_Record<T extends {}> extends newtype<T> { [symbol.tag]: symbol.record }
+export interface Schema_AllOf<T = unknown> extends newtype<T & {}> { [symbol.tag]: symbol.intersection }
+export interface Schema_AnyOf<T = unknown> extends newtype<T & {}> { [symbol.tag]: symbol.union }
+export interface Schema_OneOf<T = unknown> extends newtype<T & {}> { [symbol.tag]: symbol.disjoint }
+export interface Schema_Object<T = unknown> extends newtype<T & {}> { [symbol.tag]: symbol.object }
+export interface Schema_Array<T = unknown> extends newtype<T & {}> { [symbol.tag]: symbol.array }
+export interface Schema_Tuple<T = unknown> extends newtype<T & {}> { [symbol.tag]: symbol.tuple }
+export interface Schema_Record<T = unknown> extends newtype<T & {}> { [symbol.tag]: symbol.record }
 
 export interface Schema_NullF extends Kind<{}> { ["~1"]: Schema_Null<this["~0"]> }
 export interface Schema_BooleanF extends Kind<{}> { ["~1"]: Schema_Boolean<this["~0"]> }

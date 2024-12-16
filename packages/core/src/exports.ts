@@ -13,11 +13,14 @@ export * as show from "./show.js"
 export { 
   type intersect,
   allOf,
-  oneOf,
   and, 
   anyOf,
   array,
+  deriveFromTagged,
+  deriveFromTags,
+  inferFromTagged,
   not,
   object,
+  oneOf,
   or,
 } from "./guard.js"

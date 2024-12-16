@@ -2,6 +2,7 @@ import { type Functor, Invariant, type Kind } from "@traversable/registry"
 
 import type { any, mut } from "any-ts"
 import type { array_shift } from "./_array.js"
+import { Either } from "@traversable/data"
 export { fn }
 export type {
   fn_any as any,
@@ -33,7 +34,7 @@ export {
 /** @internal */
 type _ = unknown
 /** @internal */
-type arguments = any.array
+type arguments = readonly unknown[]
 /** @internal */
 type fn = globalThis.Function
 
@@ -175,7 +176,6 @@ const call
   : <T>(fn: () => T) => T 
   = (fn) => fn()
 
-
 /**
  * {@link loop `fn.loop`} puts a recursive function in tail-position. 
  * 
@@ -184,9 +184,12 @@ const call
  * - no stack overflows
  * - a more predictable performance profile (linear)
  *
- * See also: {@link https://en.wikipedia.org/wiki/Continuation-passing_style continuation passing style}
- * 
- * @category optimization
+ * See also: 
+ * - the Wikipedia page on [continuation passing style}](https://en.wikipedia.org/wiki/Continuation-passing_style)
+ * - {@link ana `fn.ana`}
+ * - {@link apo `fn.apo`}
+ * - {@link cata `fn.cata`}
+ * - {@link para `fn.para`}
  */
 const loop
   : <A, B>(fn: (a: A, next: (a: A) => B) => B) => (a: A) => B
@@ -215,14 +218,16 @@ const free
   : <T = never>(type: T) => T 
   = identity
 
-const isFunction: any.typeguard<unknown, fn.any> = (u): u is never => typeof u === "function"
+const isFunction
+  : (u: unknown) => u is fn.any
+  = (u): u is never => typeof u === "function"
 
 const hasOwn
   : (struct: any.object, prop: keyof any) => boolean 
   = (struct, prop) => globalThis.Object.prototype.hasOwnProperty.call(struct, prop)
 
 const tuple
-  : <const xs extends any.array>(...xs: xs) => xs 
+  : <const T extends any.array>(...xs: T) => T 
   = (...xs) => xs
 
 /**
@@ -358,30 +363,25 @@ function flow(
       return args[0]
     case args.length === 2:
       return function (this: unknown) {
-        // biome-ignore lint/style/noArguments: semantically necessary
         return args[1](args[0].apply(this, arguments))
       }
     case args.length === 3:
       return function (this: unknown) {
-        // biome-ignore lint/style/noArguments: semantically necessary
         return args[2](args[1](args[0].apply(this, arguments)))
       }
     case args.length === 4:
       return function (this: unknown) {
-        // biome-ignore lint/style/noArguments: semantically necessary
         return args[3](args[2](args[1](args[0].apply(this, arguments))))
       }
     case args.length === 5:
       return function (this: unknown) {
         return args[4](
-          // biome-ignore lint/style/noArguments: semantically necessary
           args[3](args[2](args[1](args[0].apply(this, arguments)))),
         )
       }
     case args.length === 6:
       return function (this: unknown) {
         return args[5](
-          // biome-ignore lint/style/noArguments: semantically necessary
           args[4](args[3](args[2](args[1](args[0].apply(this, arguments))))),
         )
       }
@@ -389,7 +389,6 @@ function flow(
       return function (this: unknown) {
         return args[6](
           args[5](
-            // biome-ignore lint/style/noArguments: semantically necessary
             args[4](args[3](args[2](args[1](args[0].apply(this, arguments))))),
           ),
         )
@@ -400,7 +399,6 @@ function flow(
           args[6](
             args[5](
               args[4](
-                // biome-ignore lint/style/noArguments: semantically necessary
                 args[3](args[2](args[1](args[0].apply(this, arguments)))),
               ),
             ),
@@ -414,7 +412,6 @@ function flow(
             args[6](
               args[5](
                 args[4](
-                  // biome-ignore lint/style/noArguments: semantically necessary
                   args[3](args[2](args[1](args[0].apply(this, arguments)))),
                 ),
               ),
@@ -792,40 +789,156 @@ export const tap
   : (msg: string, logger?: (...args: unknown[]) => void) => <const T>(x: T) => T 
   = (msg, logger = globalThis.console.log) => flow(chainFirst, apply(log(msg, logger)))
 
-export namespace morphism {
-  export function ana<F extends Kind>(F: Functor<F>) {
-    return <T>(coalgebra: Functor.Coalgebra<F, T>) => {
-      return function loop(term: T): Kind.apply<F, T> {
-        return F.map(loop)(coalgebra(term))
-      }
+/** 
+ * ## {@link ana `fn.ana`}
+ * 
+ * Dual of {@link cata `fn.cata`}.
+ * 
+ * Repeatedly apply a "reduce" or _fold_ operation to a functor instance using 
+ * co-recursion. 
+ * 
+ * Since the operation is co-recursive, in practice, you're typically building _up_
+ * a data structure (like a tree).
+ * 
+ * The nice thing about using an anamorphism is that it lets you write the operation
+ * without having to worry about the recursive bit. 
+ * 
+ * tl,dr: 
+ * 
+ * If you can write a `map` function for the data structure you're targeting, then
+ * just give that function to {@link ana `fn.any`} along with the non-recursive
+ * operation you want performed, and it will take care of repeatedly applying the
+ * operation (called a "coalgebra") to the data structure, returning you the final
+ * result.
+ * 
+ * See also:
+ * - the [Wikipedia page](https://en.wikipedia.org/wiki/Anamorphism) on anamorphisms
+ * - {@link apo `fn.apo`}
+ * - {@link cata `fn.cata`}
+ * - {@link hylo `fn.hylo`}
+ * - {@link para `fn.para`}
+ */
+
+export function ana<F extends Kind>(Functor: Functor<F>): 
+  <T>(coalgebra: Functor.Coalgebra<F, T>) => (term: T) => Kind.apply<F, T> 
+/// impl.
+export function ana<F extends Kind>(Functor: Functor<F>) {
+  return <T>(coalgebra: Functor.Coalgebra<F, T>) => {
+    return function loop(term: T): Kind.apply<F, T> {
+      return Functor.map(loop)(coalgebra(term))
     }
   }
+}
 
-  export function cata<F extends Kind>(F: Functor<F>) {
-    return <T>(algebra: Functor.Algebra<F, T>) => {
-      return function loop(term: Kind.apply<F, T>): T {
-        return algebra(F.map(loop)(term))
-      }
+/** 
+ * ## {@link cata `fn.cata`}
+ * 
+ * Dual of {@link ana `fn.ana`}.
+ * 
+ * See also:
+ * - {@link ana `fn.ana`}
+ * - {@link apo `fn.apo`}
+ * - {@link hylo `fn.hylo`}
+ * - {@link para `fn.para`}
+ */
+
+export function cata<F extends Kind>(Functor: Functor<F>) {
+  return <T>(algebra: Functor.Algebra<F, T>) => {
+    return function loop(term: Kind.apply<F, T>): T { 
+      return algebra(Functor.map(loop)(term))
     }
   }
+}
 
-  export function hylo
-    <F extends Kind>(F: Functor<F>): 
-    <S, T>(
+/** 
+ * ## {@link para `fn.para`}
+ * 
+ * Dual of {@link apo `fn.apo`}.
+ * 
+ * See also:
+ * - {@link ana `fn.ana`}
+ * - {@link apo `fn.apo`}
+ * - {@link cata `fn.cata`}
+ * - {@link hylo `fn.hylo`}
+ */
+
+export function para<F extends Kind>(F: Functor<F>):
+  <T>(algebra: (term: Kind.apply<F, [F, T]>) => T) 
+    => (term: Kind.apply<F, [F, T]>) 
+    => Kind.apply<F, [F, T]>
+
+export function para<F extends Kind>(F: Functor<F>) {
+  return <T>(algebra: (term: Kind.apply<F, [F, T]>) => T) => {
+    return function loop(term: Kind.apply<F, [F, T]>): Kind.apply<F, [F, T]> {
+      return [term, algebra(F.map(loop)(term))]
+    }
+  }
+}
+
+/** 
+ * ## {@link apo `fn.apo`}
+ * 
+ * Dual of {@link para `fn.para`}.
+ * 
+ * See also:
+ * - {@link ana `fn.ana`}
+ * - {@link apo `fn.apo`}
+ * - {@link cata `fn.cata`}
+ * - {@link hylo `fn.hylo`}
+ */
+
+export function apo<F extends Kind>(F: Functor<F>): 
+  <T>(coalgebra: Functor.RCoalgebra<F, T>) 
+    => (expr: T) 
+    => Kind.apply<F, T> 
+
+export function apo<F extends Kind>(F: Functor<F>) {
+  return <T>(coalgebra: Functor.RCoalgebra<F, T>) => 
+    (expr: T): Kind.apply<F, T> => pipe(
+      coalgebra(expr),
+      F.map(
+        Either.match({
+          onRight: identity,
+          onLeft: apo(F)(coalgebra),
+        })
+      )
+    )
+}
+
+/** 
+ * ## {@link hylo `fn.hylo`}
+ * 
+ * Run an anamorphism, followed by a catamorphism, on a 
+ * recursive data structure.
+ * 
+ * The benefit to using {@link hylo `fn.hylo`} rather than
+ * just using function composition is performance: by providing
+ * the co-/algebra ahead of time, we're able to avoid building up
+ * an intermediate data structure in-memory.
+ * 
+ * See also:
+ * - {@link ana `fn.ana`}
+ * - {@link apo `fn.apo`}
+ * - {@link cata `fn.cata`}
+ * - {@link hylo `fn.hylo`}
+ */
+export function hylo
+  <F extends Kind>(F: Functor<F>): 
+  <S, T>(
+    algebra: Functor.Algebra<F, T>, 
+    coalgebra: Functor.Coalgebra<F, S>
+  ) => (s: S) 
+    => T
+
+export function hylo
+  <F extends Kind>(Functor: Functor<F>) {
+    return <S, T>(
       algebra: Functor.Algebra<F, T>, 
       coalgebra: Functor.Coalgebra<F, S>
-    ) => (s: S) 
-      => T
-  export function hylo
-  <F extends Kind>(F: Functor<F>) {
-      return <S, T>(
-        algebra: Functor.Algebra<F, T>, 
-        coalgebra: Functor.Coalgebra<F, S>
-      ) => 
-        (s: S) => pipe(
-          coalgebra(s),
-          F.map(hylo(F)(algebra, coalgebra)),
-          algebra,
-        )
-    }
-}
+    ) => 
+      (s: S) => pipe(
+        coalgebra(s),
+        Functor.map(hylo(Functor)(algebra, coalgebra)),
+        algebra,
+      )
+  }

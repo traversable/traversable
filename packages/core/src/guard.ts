@@ -9,13 +9,15 @@ import {
   object,
   string 
 } from "@traversable/data"
-import { Invariant, symbol } from "@traversable/registry"
+import { Invariant, symbol, Mutable } from "@traversable/registry"
 
 export { 
   optional_ as optional,
   object_ as object,
 }
 
+/** @internal */
+const Object_keys = globalThis.Object.keys
 /** @internal */
 const Array_isArray = globalThis.Array.isArray
 /** @internal */
@@ -27,20 +29,18 @@ function hasOwn(u: unknown, key: key.any): u is { [x: string]: unknown } {
     ? object.isComposite(u) && key in u 
     : hasOwnProperty.call(u, key)
 }
-
-export interface Shape { [x: string]: (u: unknown) => boolean }
-
-export type inferTarget<T extends any.guard> = [T] extends [(u: any) => u is infer target] ? target : never
-export type inferSource<T extends any.guard> = [T] extends [(u: infer source) => u is any] ? source : never
-
-export type intersect<T> = intersectAll<T extends readonly unknown[] ? T : never, unknown>
-export type intersectAll<T extends readonly unknown[], X>
-  = T extends nonempty.array<infer F, infer R> ? intersectAll<R, X & F> : X
-
 /** @internal */
 const integer_is
   : (u: unknown) => u is integer 
   = (u): u is never => typeof u === "number" && globalThis.Number.isInteger(u)
+
+export interface Shape { [x: string]: (u: unknown) => boolean }
+export type inferTarget<T extends any.guard> = [T] extends [(u: any) => u is infer target] ? target : never
+export type inferSource<T extends any.guard> = [T] extends [(u: infer source) => u is any] ? source : never
+export type intersect<T> = intersectAll<T extends readonly unknown[] ? T : never, unknown>
+export type intersectAll<T extends readonly unknown[], X>
+  = T extends nonempty.array<infer F, infer R> ? intersectAll<R, X & F> : X
+
 
 declare namespace int { export { integer_is as is } }
 declare namespace int{
@@ -61,28 +61,28 @@ function int(u: unknown): u is integer { return integer_is(u) }
 namespace int {
   int.is = integer_is
   export const isFinite
-    : any.typeguard<unknown, int.finite>
+    : (u: unknown) => u is int.finite
     = (u): u is never => int.is(u) && globalThis.Number.isFinite(u)
   export const isInfinite
-    : any.typeguard<unknown, int.infinite>
+    : (u: unknown) => u is int.infinite
     = (u): u is never => int.is(u) && u === globalThis.Number.POSITIVE_INFINITY || u === -(globalThis.Number.POSITIVE_INFINITY)
   export const isNaN 
-    : any.typeguard<unknown, int.NaN>
+    : (u: unknown) => u is int.NaN
     = globalThis.Number.isNaN as never
   export const atLeast
-    : <Min extends number>(min: Min) => any.typeguard<unknown, int.atLeast<Min>>
+    : <Min extends number>(min: Min) => (u: unknown) => u is int.atLeast<Min>
     = (min) => (u): u is never => int.is(u) && u.valueOf() >= min
   export const atMost
-    : <Max extends number>(max: Max) => any.typeguard<unknown, int.atMost<Max>>
+    : <Max extends number>(max: Max) => (u: unknown) => u is int.atMost<Max>
     = (max) => (u): u is never => int.is(u) && u.valueOf() <= max
   export const multipleOf
-    : <Factor extends number>(factor: Factor) => any.typeguard<unknown, int.multipleOf<Factor>>
+    : <Factor extends number>(factor: Factor) => (u: unknown) => u is int.multipleOf<Factor>
     = (factor) => (u): u is never => int.is(u) && (u.valueOf() % factor) === 0
   export const divisibleBy
-    : <Divisor extends number>(divisor: Divisor) => any.typeguard<unknown, int.divisibleBy<Divisor>>
+    : <Divisor extends number>(divisor: Divisor) => (u: unknown) => u is int.divisibleBy<Divisor>
     = (divisor) => (u): u is never => int.is(u) && (u.valueOf() / divisor) === 0
   export const within
-    : <Bounds extends readonly [min: number, max: number]>([min, max]: Bounds) => any.typeguard<unknown, int.bounded<Bounds>>
+    : <Bounds extends readonly [min: number, max: number]>([min, max]: Bounds) => (u: unknown) => u is int.bounded<Bounds>
     = (bounds) => (u): u is never => {
       if (!int.is(u)) return false
       const [min, max] = [...bounds].sort((x, y) => x > y ? 1 : y > x ? -1 : 0)
@@ -124,18 +124,12 @@ export const anything
   : <T>(x: T) => x is T
   = (_): _ is never => true
 
-
-
-///
-///
-///
-
-
 /**
- * ## {@link array_any `core.is.array.any`}
+ * ## {@link array `is.array`}
  * 
  * Typeguard that narrows its argument to be an non-finite
- * (unbounded) array whose elements all satisfy {@link guard `guard`}.
+ * (unbounded) array whose elements all satisfy the provided
+ * {@link guard `guard`}.
  * 
  * For a typeguard that targets a type whose index is
  * [representable](https://en.wikipedia.org/wiki/Representable_functor),
@@ -143,7 +137,7 @@ export const anything
  * 
  * See also: 
  * - {@link tuple `core.is.tuple`}
- * - {@link array_any `core.is.array.any`}
+ * - {@link array_any `core.is.any.array`}
  */
 export function array<T>(guard: (u: unknown) => u is T): (u: unknown) => u is array<T>
 export function array<T>(guard: (u: unknown) => u is T) 
@@ -166,21 +160,6 @@ function array_any(u: unknown): u is array_.any
 function array_any(u: unknown): u is array_.any 
   /// impl.
   { return array_.is(u) }
-
-
-// const isPartial
-//   : <const T extends any.dict<any.guard>>(guards: T) => any.typeguard<unknown, { [K in keyof T]+?: inferTarget<T[K]> }>
-//   = (guards) => (u): u is never => {
-//     if (!isRecord(u)) return false
-//     else {
-//       for (const k in guards) {
-//         if (!(k in u)) continue
-//         else if (!guards[k](u[k])) return false
-//         else continue
-//       }
-//       return true
-//     }
-//   }
 
 export const isRecordOf
   : <T>(guard: (u: unknown) => u is T) => (u: unknown) => u is { [x: string]: T }
@@ -693,3 +672,111 @@ export namespace partial {
     ...object_.defaults,
   } satisfies globalThis.Required<partial.Options>
 }
+
+
+function meetKeys<const T extends readonly {}[]>(...shapes: T): readonly (keyof T[number])[]
+function meetKeys<const T extends readonly {}[]>(...shapes: T) {
+  if (shapes.length === 1) return Object_keys(shapes[0])
+  else {
+    let seen = new globalThis.Set<keyof never>()
+    let out = new globalThis.Set<keyof never>()
+    let k: keyof any | undefined
+    let keys: (keyof any)[]
+    for (let ix = 0, len = shapes.length; ix < len; ix++) {
+      keys = Object_keys(shapes[ix])
+      while ((k = keys.pop()) !== undefined) 
+        if (seen.has(k)) out.add(k)
+        else seen.add(k)
+    }
+    return [...out]
+  }
+}
+
+
+type fromTagged<
+  U extends {},
+  Meet extends keyof U = keyof U,
+  Tag extends keyof any & U[Meet] = keyof any & U[Meet]
+> = never | { [K in Tag]: (u: U) => u is Extract<U, Record<Meet, K>> }
+
+type ZeroOrMoreThanOne<T> 
+  = [T] extends [readonly unknown[]] 
+  ? T["length"] extends 1 
+  ? ["TypeError: Cannot create guards from a set that contains only one member"] 
+  : readonly {}[] 
+  : never
+
+export function inferFromTagged<const T extends ZeroOrMoreThanOne<T>>(...disjoint: T): fromTagged<Mutable<T[number]>>
+export function inferFromTagged<const T extends ZeroOrMoreThanOne<T>>(...disjoint: T): {} {
+  const meet = meetKeys(...disjoint)
+  if (meet.length === 0) 
+    throw globalThis.Error("A disciminant property could not be inferred")
+  if (meet.length > 1) 
+    throw globalThis.Error("More than one disciminant could be inferred, got: " + meet.join(", "))
+  else {
+    const [disc] = meet
+    let out: { [x: string]: (u: unknown) => boolean } = {}
+    let k: typeof meet[number] | undefined
+    for (let ix = 0, len = disjoint.length; ix < len; ix++) {
+      const member = disjoint[ix]
+      const tag: string = member[disc as never]
+      out[tag] = (u: unknown): u is never => u !== null && typeof u === "object" && disc in u && u[disc as never] === tag
+    }
+    return out
+  }
+}
+
+export function deriveFromTagged<
+  const T extends ZeroOrMoreThanOne<T>, 
+  Meet extends keyof T[number]
+>(
+  discriminant: Meet, 
+  ...disjoint: T
+): fromTagged<Mutable<T[number]>>
+
+export function deriveFromTagged<
+  const T extends ZeroOrMoreThanOne<T>, 
+  Meet extends keyof T[number]
+>(
+  disc: Meet, 
+  ...disjoint: T
+): {} {
+  let out: { [x: string]: (u: unknown) => boolean } = {}
+  let k: keyof any | undefined
+  for (let ix = 0, len = disjoint.length; ix < len; ix++) {
+    const member = disjoint[ix]
+    const tag: string = member[disc as never]
+    out[tag] = (u: unknown): u is never => 
+      u !== null && typeof u === "object" && disc in u && u[disc as never] === tag
+  }
+  return out
+}
+
+type LeastUpperBound<
+  Disc extends keyof any, 
+  Tags extends readonly (keyof any)[]
+> = never | 
+  { [I in keyof Tags]: Record<Disc, Tags[I]> }[number]
+
+export function deriveFromTags<
+  Disc extends keyof any, 
+  const Tags extends readonly (keyof any)[]
+>(
+  discriminant: Disc, 
+  tags: Tags
+): <U extends LeastUpperBound<Disc, Tags>>() => fromTagged<U>
+
+export function deriveFromTags
+  <Disc extends keyof any, const Tags extends readonly (keyof any)[]>
+  (disc: Disc, tags: Tags): () => {} {
+    const disjoint = tags.map((tag) => ({ [disc]: tag } as { [K in Disc]: Tags[number] }))
+    let out: { [x: string]: (u: unknown) => boolean } = {}
+    let k: keyof any | undefined
+    for (let ix = 0, len = disjoint.length; ix < len; ix++) {
+      const member = disjoint[ix]
+      const tag: string = member[disc as never]
+      out[tag] = (u: unknown): u is never => 
+        u !== null && typeof u === "object" && disc in u && u[disc as never] === tag
+    }
+    return () => out
+  }

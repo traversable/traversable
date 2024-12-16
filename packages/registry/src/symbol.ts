@@ -64,6 +64,10 @@ namespace URI {
   export type Ok = typeof Ok
   export const Err = `${ns}::Result.Err` as const
   export type Err = typeof Err
+  export const Left = `${ns}::Either.Left` as const
+  export type Left = typeof Left
+  export const Right = `${ns}::Either.Right` as const
+  export type Right = typeof Right
   /// URIs that do __NOT__ have an associated symbol
   /////////////////////////////////////////////////////
 

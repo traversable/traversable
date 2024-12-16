@@ -13,9 +13,11 @@ export { record } from "./record.js"
 export { jsdoc, unicode } from "./unicode.js"
 
 export * from "./version.js"
+export * as Either from "./either.js"
 export * as Equal from "./equal.js"
 export * as Option from "./option.js"
 export * as Result from "./result.js"
+
 export * as array from "./array.js"
 export * as fn from "./function.js"
 export * as number from "./number.js"

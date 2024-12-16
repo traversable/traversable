@@ -6,7 +6,6 @@ import { type Schema, type arbitrary, format } from "../types.js"
 import type * as t from "../types.js"
 import {
   DataType,
-
 } from "../types.js"
 export {
   type $ref,

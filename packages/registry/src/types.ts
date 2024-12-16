@@ -26,6 +26,8 @@ interface Contravariant<T extends (_: never) => unknown> {
 
 interface Bivariant<T extends { (_: never): unknown }> extends newtype<{ _(_: Parameter<T>): Returns<T> }> {}
 
+
+
 export declare namespace Position {
   type covariant<T> = never | Covariant<{ (_: never): T }>
   type invariant<T> = never | Invariant<{ (_: T): T }>
@@ -125,9 +127,10 @@ export declare namespace Position {
  *   pushes the name _down_ the list, which makes sure that the _user's_
  *   API is what gets seen first (rather than ours).
  */
-export interface Kind<in$ = unknown, out$ = unknown> extends newtype<{ ["~0"]: in$; ["~1"]: out$ }> {}
-export type apply<F extends Kind, T extends F["~0"]> = (F & { ["~0"]: T })["~1"]
-export type apply$<F, T> = (F & { ["~0"]: T; ["~1"]: unknown })["~1"]
+export interface Kind<I = unknown, O = unknown> extends newtype<{ ["~0"]?: I; ["~1"]?: O }> {}
+export type bind<F extends Kind, T = never> = never | [T] extends [never] ? [F] extends [Kind] ? F : Kind<F> : Kind.apply<F, T>;
+export type apply<F extends Kind, T extends F["~0"]> = never | (F & { ["~0"]: T })["~1"]
+export type apply$<F, T> = never | (F & { ["~0"]: T; ["~1"]: unknown })["~1"]
 
 export declare function apply$<F>(F: F): <T>(t: T) => Kind.apply$<F, T>
 
@@ -198,7 +201,7 @@ export interface Enumerable<T = unknown> extends Spreadable<T> {
 }
 
 /**
- * ## {@link Functor `data.Functor`}
+ * ## {@link Functor `Functor`}
  */
 export interface Functor<F extends Kind = Kind> {
   map<S, T>(f: (s: S) => T): (F: Kind.apply<F, S>) => Kind.apply<F, T>
@@ -211,16 +214,19 @@ export declare namespace Functor {
         <S, T>(f: (s: S) => T): { (F: Kind.apply<F, S>): Kind.apply<F, T> }
         <S, T>(F: Kind.apply<F, S>, f: (s: S) => T): Kind.apply<F, T>
       }
-  type Algebra<F extends Kind, T> = (F: Kind.apply<F, T>) => T
-  type Coalgebra<F extends Kind, T> = (t: T) => Kind.apply<F, T>
+  type Algebra<F extends Kind, T> = (term: Kind.apply<F, T>) => T
+  type Coalgebra<F extends Kind, T> = (expr: T) => Kind.apply<F, T>
+  type RAlgebra<F extends Kind, T> = (term: Kind.apply<F, [F, T]>) => T
+  type RCoalgebra<F extends Kind, T> = (expr: T) => Kind.apply<F, Either<F, T>>
+  type infer<T> = T extends Functor<infer F> ? F : never
 }
 
 /**
- * ## {@link Predicate `data.Predicate`}
+ * ## {@link Predicate `Predicate`}
  *
  * A predicate is a unary function that returns a boolean.
  *
- * Whereas the {@link boolean `data.boolean`} module is concerned with
+ * Whereas the {@link boolean `boolean`} module is concerned with
  * `true` or `false`, a lot of interesting things happen when we promote
  * a boolean to a predicate -- namely, we gain _portability_ and
  * _composability_.
@@ -235,12 +241,12 @@ export declare namespace Functor {
 export type Predicate<in T = any> = (value: T) => boolean
 
 /**
- * ## {@link Predicate `data.Predicate`}
+ * ## {@link Predicate `Predicate`}
  */
 export type Equal<in T> = (left: T, right: T) => boolean
 
 /**
- * ## {@link Compare `data.Compare`}
+ * ## {@link Compare `Compare`}
  *
  * Describes a binary operation that compares 2 elements of type {@link T `T`},
  * and returns a number summarizing their "order":
@@ -250,7 +256,7 @@ export type Equal<in T> = (left: T, right: T) => boolean
  * - `0` means {@link  left `left`} and {@link right `right`} are _equal_
  *
  * See also:
- * - {@link Equal `data.Equal`}
+ * - {@link Equal `Equal`}
  * - the Wikipedia page for [total orders](https://en.wikipedia.org/wiki/Total_order)
  */
 export interface Compare<in T> {
@@ -268,7 +274,7 @@ export declare namespace Compare {
 }
 
 /**
- * ## {@link Pick `data.Pick`}
+ * ## {@link Pick `Pick`}
  *
  * Similar to the built-in {@link globalThis.Pick `Pick`} utility, but eagerly
  * evaluates its target.
@@ -279,7 +285,7 @@ export declare namespace Compare {
 export type Pick<T, K extends keyof T> = never | { -readonly [P in K]: T[P] }
 
 /**
- * ## {@link Omit `data.Omit`}
+ * ## {@link Omit `Omit`}
  *
  * Similar to the built-in {@link globalThis.Omit `Omit`} utility, but eagerly
  * evaluates its target.
@@ -290,9 +296,9 @@ export type Pick<T, K extends keyof T> = never | { -readonly [P in K]: T[P] }
 export type Omit<T, K extends keyof any> = never | Pick<T, Exclude<keyof T, K>>
 
 /**
- * ### {@link Force `data.Force`}
+ * ### {@link Force `Force`}
  *
- * There are a few use cases for the {@link Force `data.Force`} operation:
+ * There are a few use cases for the {@link Force `Force`} operation:
  *
  * - forcing evaluation
  * - "forgetting" the differences between intersections, by merging them into a single type
@@ -335,14 +341,14 @@ export type Require<T, K extends keyof T = never> = [K] extends [never]
 export type Optional<T, K extends keyof T = keyof T> = never | { [P in K]+?: T[P] }
 
 /**
- * ## {@link Sort `data.Sort`}
+ * ## {@link Sort `Sort`}
  *
- * If {@link Compare `data.Compare`} describes the relationship between
+ * If {@link Compare `Compare`} describes the relationship between
  * two members of a total order, then a sort operation is simply the
  * application of the comparison to `n` number of elements.
  *
  * See also:
- * - {@link Compare `data.Compare`}
+ * - {@link Compare `Compare`}
  */
 export type Sort<in out T> = (array: readonly T[]) => readonly T[]
 export declare namespace Sort {
@@ -352,7 +358,7 @@ export declare namespace Sort {
 }
 
 /**
- * ## {@link MapSort `data.MapSort`}
+ * ## {@link MapSort `MapSort`}
  *
  * Given a function that maps to elements of a total order, and
  * a sequence of `n` elements from the function's codomain,
@@ -365,7 +371,7 @@ export declare namespace Sort {
  * input, given a function between them.
  *
  * See also:
- * - {@link Sort `data.Sort`}
+ * - {@link Sort `Sort`}
  * - the Wikipedia page on
  * [contravariant functors](
  *   https://en.wikipedia.org/wiki/Covariance_and_contravariance_(computer_science)
@@ -374,7 +380,7 @@ export declare namespace Sort {
 export type MapSort<in T> = <S>(fn: (s: S) => T) => Sort<S>
 export declare namespace MapSort {
   /**
-   * ### {@link infer `data.MapSort.infer`}
+   * ### {@link infer `MapSort.infer`}
    * Type-level utility that extracts
    */
   export type infer<T> = [T] extends [MapSort<infer U>] ? U : never
@@ -383,7 +389,7 @@ export declare namespace MapSort {
 }
 
 /**
- * ## {@link Option `data.Option`}
+ * ## {@link Option `Option`}
  *
  * Usually the first algebraic data type (ADT) that people encounter.
  * It has numerous names/encodings: Haskell's `Maybe`, Scala's
@@ -392,11 +398,11 @@ export declare namespace MapSort {
  * A simple, but useful primitive. These two use cases come to mind, but there
  * are others:
  *
- * - {@link Option `data.Option`} can be used as a kind of "type-safe null pointer"
- * - {@link Option `data.Option`} can be used as a control-flow primitive
+ * - {@link Option `Option`} can be used as a kind of "type-safe null pointer"
+ * - {@link Option `Option`} can be used as a control-flow primitive
  *
  * See also:
- * - {@link Result `data.Result`}
+ * - {@link Result `Result`}
  * - the Wikipedia page for the
  * [option type](https://en.wikipedia.org/wiki/Option_type)
  */
@@ -410,12 +416,12 @@ export interface Some<T> {
 }
 
 /**
- * ## {@link Result `data.Result`}
+ * ## {@link Result `Result`}
  *
- * Like {@link Option `data.Option`}, {@link Result `data.Result`} is often
+ * Like {@link Option `Option`}, {@link Result `Result`} is often
  * used to describe an operation that can fail.
  *
- * Unlike {@link Option `data.Option`}, {@link Result `data.Result`}
+ * Unlike {@link Option `Option`}, {@link Result `Result`}
  * comes with an extra "slot" that's most commonly used to encode the
  * _reason_ why an operation failed.
  *
@@ -424,7 +430,7 @@ export interface Some<T> {
  *
  * See also:
  *
- * - {@link Option `data.Option`}
+ * - {@link Option `Option`}
  * - Rust's docs on [`Result`](https://doc.rust-lang.org/std/result/)
  */
 export type Result<T = unknown, E = never> = Ok<T> | Err<E>
@@ -438,12 +444,50 @@ export interface Err<T> {
 }
 
 /**
- * ## {@link Concattable `data.Concattable`}
+ * ## {@link Either `Either`}
+ * 
+ * Isomorphic to {@link Result `Result`}, just comes with a slightly different
+ * semantics.
+ * 
+ * Whereas {@link Result `Result`} has an "error" channel, {@link Either `Either`}'s
+ * corresponding channel is just called a "left".
+ * 
+ * See also:
+ * - {@link Left `Left`}
+ * - {@link Right `Right`}
+ * - {@link Result `Result`}
+ */
+export type Either<E = never, T = unknown> = Left<E> | Right<T>
+
+/**
+ * ## {@link Left `Left`}
+ * 
+ * Member of {@link Either `Either`}, along with {@link Right `Right`}.
+ * 
+ * See also:
+ * - {@link Either `Either`}
+ * - {@link Right `Right`}
+ */
+export interface Left<E> { _tag: URI.Left, left: E }
+
+/**
+ * ## {@link Right `Right`}
+ * 
+ * Member of {@link Either `Either`}, along with {@link Left `Left`}.
+ * 
+ * See also:
+ * - {@link Either `Either`}
+ * - {@link Left `Left`}
+ */
+export interface Right<T> { _tag: URI.Right, right: T }
+
+/**
+ * ## {@link Concattable `Concattable`}
  *
  * a.k.a. "semigroup"
  *
  * See also:
- * - {@link Foldable `data.Foldable`}
+ * - {@link Foldable `Foldable`}
  * - the Wikipedia page on [semigroups](https://en.wikipedia.org/wiki/Semigroup)
  */
 export interface Concattable<in out T> {
@@ -451,12 +495,12 @@ export interface Concattable<in out T> {
 }
 
 /**
- * ## {@link Foldable `data.Foldable`}
+ * ## {@link Foldable `Foldable`}
  *
  * a.k.a. "monoid"
  *
  * See also:
- * - {@link Concattable `data.Concattable`}
+ * - {@link Concattable `Concattable`}
  * - the Wikipedia page on [monoids](https://en.wikipedia.org/wiki/Monoid)
  */
 export interface Foldable<in out T> extends Concattable<T> {

@@ -192,7 +192,6 @@ export const tag
   : <const T extends Schema.any>(term: T) => Tag.F<T>
   = cata(tagAlgebra)
 
-const z = tag({ type: "string" })
 
 export const untag
   : <const T>(term: Tag.F<T>) => Untag<T>
