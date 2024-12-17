@@ -608,13 +608,16 @@ export namespace Ext {
     | Ext.anyOf.$<lax>
     | Ext.oneOf.$<lax>
     | lax.ArrayLike
+    | lax.TupleLike
     | lax.ObjectLike
 
   export namespace lax {
-    export type ArrayLike = { type: "array"; items: lax | readonly lax[] }
+    export type ArrayLike = { type: "array"; items: lax }
+    export type TupleLike = { type: "array"; items: readonly lax[] }
     export type ObjectLike =
       | { type: "object"; properties: globalThis.Record<string, lax> }
       | { type: "object"; additionalProperties: lax }
+    export const isTupleLike = (u: unknown): u is TupleLike => isObject(u) && u.type === "array" && Array_isArray(u.items)
     export const isArrayLike = (u: unknown): u is ArrayLike => isObject(u) && u.type === "array"
     export const isObjectLike = (u: unknown): u is lax.ObjectLike => isObject(u) && u.type === "object"
   }
@@ -642,8 +645,8 @@ export namespace Ext {
           return "properties" in expr
             ? Ext.make.object(expr.properties)
             : Ext.make.record(expr.additionalProperties)
-        case lax.isArrayLike(expr):
-          return Array_isArray(expr.items) ? Ext.make.tuple(expr.items) : Ext.make.array(expr.items)
+        case lax.isTupleLike(expr): return Ext.make.tuple(expr.items)
+        case lax.isArrayLike(expr): return Ext.make.array(expr.items)
         default:
           return fn.exhaustive(expr)
       }
