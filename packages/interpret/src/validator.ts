@@ -1,7 +1,12 @@
-import { array, Compare, fn, map, number, order } from "@traversable/data"
-import type { Concattable, Foldable, Functor } from "@traversable/registry"
+import { Compare, array, fn, map, number, order } from "@traversable/data"
 import { Weight } from "@traversable/openapi"
+import type { Functor } from "@traversable/registry"
 import { Ext, JsonSchema } from "./model.js"
+
+/** @internal */
+const Object_entries = globalThis.Object.entries
+/** @internal */
+const Object_fromEntries = globalThis.Object.fromEntries
 
 namespace RAlgebra {
   export const validator: Functor.RAlgebra<Ext.Kind, derive.Stream> = (n) => {
@@ -78,16 +83,15 @@ namespace RAlgebra {
   }
 }
 
-derive.fold = fn.flow(
-  Ext.fromSchema, 
-  fn.para(Ext.functor)(RAlgebra.validator),
-)
+derive.fold = fn.flow(Ext.fromSchema, fn.para(Ext.functor)(RAlgebra.validator))
 
-/** 
+const WeightMap = { ...Weight.byType, array: Weight.byType.object, object: Weight.byType.array }
+
+/**
  * ## {@link derive `validator.derive`}
- * 
+ *
  * Given a JSON Schema object, compiles a super fast validation function.
- * 
+ *
  * All this function does is return true/false depending on whether the input
  * object satisfies the spec.
  */

@@ -1,4 +1,4 @@
-import type { defined, Kind, newtype } from "./types.js"
+import type { Kind, defined, newtype } from "./types.js"
 
 declare namespace Template {
   //////////////

@@ -77,10 +77,7 @@ namespace RAlgebra {
   }
 }
 
-derive.fold = fn.flow(
-  Ext.fromSchema, 
-  fn.para(Ext.functor)(RAlgebra.validator),
-)
+derive.fold = fn.flow(Ext.fromSchema, fn.para(Ext.functor)(RAlgebra.validator))
 
 export function derive(schema: Schema | Ext.lax, options?: derive.Options): string
 export function derive(
@@ -89,7 +86,6 @@ export function derive(
 ) {
   return `function ${functionName}($){` + derive.fold(schema).go([]) + "}"
 }
-
 
 export declare namespace derive {
   interface Options {

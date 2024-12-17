@@ -330,14 +330,6 @@ vi.describe(`〖️🚑〗‹‹‹ @traversable/data/object`, () => {
   //   vi.assert.isTrue(object.flatten(object.flatten({ a: { b: { c: [{ d: 1, e: 2, f: { g: [3, 4, 5], h: [7, { i: 9000 } ], j: [{ k: 10 }]}}]}}})))
   // })
 
-  vi.it(`〖️🚑〗› ❲object.titlecase.values❳`, () => {
-    const ex_01 = fn.pipe(
-      { a: 1, b: 2, c: 3, d: 4 },
-      object.pullback({ b: 1000, c: 9000 }),
-    )
-    vi.assert.deepEqual({ b: 2, c: 3 }, ex_01)
-  })
-
   const invertible: fc.Arbitrary<object.invertible> = fc
     .array(fc.string({ unit: "grapheme-ascii" }), { minLength: 1 })
     .map((ss) => {

@@ -9,8 +9,6 @@ import { type Functor, type Kind as HKT, URI, newtype, symbol } from "@traversab
 /** @internal */
 const Array_isArray = globalThis.Array.isArray
 /** @internal */
-const Object_create = globalThis.Object.create
-/** @internal */
 const Object_values = globalThis.Object.values
 /** @internal */
 const Object_entries = globalThis.Object.entries
@@ -33,6 +31,7 @@ export type JsonSchema =
   | JsonSchema.oneOf
   | JsonSchema.array
   | JsonSchema.object
+
 export declare namespace JsonSchema {
   export {
     JsonSchema_null as null,
@@ -62,7 +61,7 @@ export declare namespace JsonSchema {
     allOf: readonly JsonSchema[]
   }
   namespace allOf {
-    interface $<T> {
+    interface F<T> {
       allOf: readonly T[]
     }
   }
@@ -70,7 +69,7 @@ export declare namespace JsonSchema {
     anyOf: readonly JsonSchema[]
   }
   namespace anyOf {
-    interface $<T> {
+    interface F<T> {
       anyOf: readonly T[]
     }
   }
@@ -78,7 +77,7 @@ export declare namespace JsonSchema {
     oneOf: readonly JsonSchema[]
   }
   namespace oneOf {
-    interface $<T> {
+    interface F<T> {
       oneOf: readonly T[]
     }
   }
@@ -87,7 +86,7 @@ export declare namespace JsonSchema {
     items: JsonSchema
   }
   namespace array {
-    interface $<T> {
+    interface F<T> {
       type: "array"
       items: T
     }
@@ -97,7 +96,7 @@ export declare namespace JsonSchema {
     properties: { [x: string]: JsonSchema }
   }
   namespace Schema_object {
-    interface $<T> {
+    interface F<T> {
       type: "object"
       properties: { [x: string]: T }
     }
@@ -110,19 +109,19 @@ export declare namespace JsonSchema {
     | JsonSchema.number
     | JsonSchema.string
   interface Kind<T = unknown> extends HKT<T> {
-    ["~1"]: JsonSchema.$<this["~0"]>
+    ["~1"]: JsonSchema.F<this["~0"]>
   }
-  type $<T> =
+  type F<T> =
     | JsonSchema.null
     | JsonSchema.boolean
     | JsonSchema.integer
     | JsonSchema.number
     | JsonSchema.string
-    | JsonSchema.allOf.$<T>
-    | JsonSchema.anyOf.$<T>
-    | JsonSchema.oneOf.$<T>
-    | JsonSchema.array.$<T>
-    | JsonSchema.object.$<T>
+    | JsonSchema.allOf.F<T>
+    | JsonSchema.anyOf.F<T>
+    | JsonSchema.oneOf.F<T>
+    | JsonSchema.array.F<T>
+    | JsonSchema.object.F<T>
 }
 
 export namespace JsonSchema {
@@ -186,12 +185,12 @@ export namespace JsonSchema {
     export const integer = (u: unknown): u is JsonSchema.integer => isObject(u) && u.type === "integer"
     export const number = (u: unknown): u is JsonSchema.number => isObject(u) && u.type === "number"
     export const string = (u: unknown): u is JsonSchema.string => isObject(u) && u.type === "string"
-    export const allOf = <T>(u: unknown): u is JsonSchema.allOf.$<T> => isObject(u) && Array_isArray(u.allOf)
-    export const anyOf = <T>(u: unknown): u is JsonSchema.anyOf.$<T> => isObject(u) && Array_isArray(u.anyOf)
-    export const oneOf = <T>(u: unknown): u is JsonSchema.oneOf.$<T> => isObject(u) && Array_isArray(u.oneOf)
-    export const object = <T>(u: unknown): u is JsonSchema.object.$<T> =>
+    export const allOf = <T>(u: unknown): u is JsonSchema.allOf.F<T> => isObject(u) && Array_isArray(u.allOf)
+    export const anyOf = <T>(u: unknown): u is JsonSchema.anyOf.F<T> => isObject(u) && Array_isArray(u.anyOf)
+    export const oneOf = <T>(u: unknown): u is JsonSchema.oneOf.F<T> => isObject(u) && Array_isArray(u.oneOf)
+    export const object = <T>(u: unknown): u is JsonSchema.object.F<T> =>
       isObject(u) && u.type === "object" && !!u.properties
-    export const array = <T>(u: unknown): u is JsonSchema.array.$<T> => isObject(u) && u.type === "array"
+    export const array = <T>(u: unknown): u is JsonSchema.array.F<T> => isObject(u) && u.type === "array"
     export const isScalar = (u: unknown): u is JsonSchema.Scalar =>
       JsonSchema.is.null(u) ||
       JsonSchema.is.boolean(u) ||
@@ -205,16 +204,16 @@ export namespace JsonSchema {
     export const integer = (): JsonSchema.integer => ({ type: "integer" })
     export const number = (): JsonSchema.number => ({ type: "number" })
     export const string = (): JsonSchema.string => ({ type: "string" })
-    export const allOf = <T>(allOf: readonly T[]): Ext.allOf.$<T> => ({ allOf })
-    export const anyOf = <T>(anyOf: readonly T[]): Ext.anyOf.$<T> => ({ anyOf })
-    export const oneOf = <T>(oneOf: readonly T[]): Ext.oneOf.$<T> => ({ oneOf })
-    export const array = <T>(items: T): Ext.array.$<T> => ({ type: "array", items })
-    export const tuple = <T>(items: readonly T[]): Ext.tuple.$<T> => ({ type: "tuple", items })
-    export const record = <T>(additionalProperties: T): Ext.record.$<T> => ({
+    export const allOf = <T>(allOf: readonly T[]): Ext.allOf.F<T> => ({ allOf })
+    export const anyOf = <T>(anyOf: readonly T[]): Ext.anyOf.F<T> => ({ anyOf })
+    export const oneOf = <T>(oneOf: readonly T[]): Ext.oneOf.F<T> => ({ oneOf })
+    export const array = <T>(items: T): Ext.array.F<T> => ({ type: "array", items })
+    export const tuple = <T>(items: readonly T[]): Ext.tuple.F<T> => ({ type: "tuple", items })
+    export const record = <T>(additionalProperties: T): Ext.record.F<T> => ({
       type: "record",
       additionalProperties,
     })
-    export const object = <T>(properties: { [x: string]: T }): Ext.object.$<T> => ({
+    export const object = <T>(properties: { [x: string]: T }): Ext.object.F<T> => ({
       type: "object",
       properties,
     })
@@ -336,7 +335,7 @@ export declare namespace Ext {
     allOf: readonly Ext[]
   }
   namespace allOf {
-    interface $<T> {
+    interface F<T> {
       allOf: readonly T[]
     }
   }
@@ -344,7 +343,7 @@ export declare namespace Ext {
     anyOf: readonly Ext[]
   }
   namespace anyOf {
-    interface $<T> {
+    interface F<T> {
       anyOf: readonly T[]
     }
   }
@@ -352,7 +351,7 @@ export declare namespace Ext {
     oneOf: readonly Ext[]
   }
   namespace oneOf {
-    interface $<T> {
+    interface F<T> {
       oneOf: readonly T[]
     }
   }
@@ -361,7 +360,7 @@ export declare namespace Ext {
     items: Ext
   }
   namespace array {
-    interface $<T> {
+    interface F<T> {
       type: "array"
       items: T
     }
@@ -371,7 +370,7 @@ export declare namespace Ext {
     items: readonly Ext[]
   }
   namespace tuple {
-    interface $<T> {
+    interface F<T> {
       type: "tuple"
       items: readonly T[]
     }
@@ -381,7 +380,7 @@ export declare namespace Ext {
     additionalProperties: Ext
   }
   namespace record {
-    interface $<T> {
+    interface F<T> {
       type: "record"
       additionalProperties: T
     }
@@ -391,59 +390,59 @@ export declare namespace Ext {
     properties: { [x: string]: Ext }
   }
   namespace Ext_object {
-    interface $<T> {
+    interface F<T> {
       type: "object"
       properties: { [x: string]: T }
     }
   }
   ///
   interface Kind<T = unknown> extends HKT<T> {
-    ["~1"]: Ext.$<this["~0"]>
+    ["~1"]: Ext.F<this["~0"]>
   }
-  type $<T> =
+  type F<T> =
     | JsonSchema.null
     | JsonSchema.boolean
     | JsonSchema.integer
     | JsonSchema.number
     | JsonSchema.string
-    | Ext.allOf.$<T>
-    | Ext.anyOf.$<T>
-    | Ext.oneOf.$<T>
-    | Ext.array.$<T>
-    | Ext.object.$<T>
-    | Ext.record.$<T>
-    | Ext.tuple.$<T>
+    | Ext.allOf.F<T>
+    | Ext.anyOf.F<T>
+    | Ext.oneOf.F<T>
+    | Ext.array.F<T>
+    | Ext.object.F<T>
+    | Ext.record.F<T>
+    | Ext.tuple.F<T>
 }
 
 export namespace Ext {
   export namespace is {
-    export const allOf = <T>(u: unknown): u is Ext.allOf.$<T> => isObject(u) && Array_isArray(u.allOf)
-    export const anyOf = <T>(u: unknown): u is Ext.anyOf.$<T> => isObject(u) && Array_isArray(u.anyOf)
-    export const oneOf = <T>(u: unknown): u is Ext.oneOf.$<T> => isObject(u) && Array_isArray(u.oneOf)
-    export const array = <T>(u: unknown): u is Ext.array.$<T> => isObject(u) && u.type === "array"
-    export const tuple = <T>(u: unknown): u is Ext.tuple.$<T> => isObject(u) && u.type === "tuple"
-    export const object = <T>(u: unknown): u is Ext.object.$<T> => isObject(u) && u.type === "object"
-    export const record = <T>(u: unknown): u is Ext.record.$<T> => isObject(u) && u.type === "record"
+    export const allOf = <T>(u: unknown): u is Ext.allOf.F<T> => isObject(u) && Array_isArray(u.allOf)
+    export const anyOf = <T>(u: unknown): u is Ext.anyOf.F<T> => isObject(u) && Array_isArray(u.anyOf)
+    export const oneOf = <T>(u: unknown): u is Ext.oneOf.F<T> => isObject(u) && Array_isArray(u.oneOf)
+    export const array = <T>(u: unknown): u is Ext.array.F<T> => isObject(u) && u.type === "array"
+    export const tuple = <T>(u: unknown): u is Ext.tuple.F<T> => isObject(u) && u.type === "tuple"
+    export const object = <T>(u: unknown): u is Ext.object.F<T> => isObject(u) && u.type === "object"
+    export const record = <T>(u: unknown): u is Ext.record.F<T> => isObject(u) && u.type === "record"
   }
   export namespace make {
-    export const allOf = <T>(allOf: readonly T[]): Ext.allOf.$<T> => ({ allOf })
-    export const anyOf = <T>(anyOf: readonly T[]): Ext.anyOf.$<T> => ({ anyOf })
-    export const oneOf = <T>(oneOf: readonly T[]): Ext.oneOf.$<T> => ({ oneOf })
-    export const array = <T>(items: T): Ext.array.$<T> => ({ type: "array", items })
-    export const tuple = <T>(items: readonly T[]): Ext.tuple.$<T> => ({ type: "tuple", items })
-    export const record = <T>(additionalProperties: T): Ext.record.$<T> => ({
+    export const allOf = <T>(allOf: readonly T[]): Ext.allOf.F<T> => ({ allOf })
+    export const anyOf = <T>(anyOf: readonly T[]): Ext.anyOf.F<T> => ({ anyOf })
+    export const oneOf = <T>(oneOf: readonly T[]): Ext.oneOf.F<T> => ({ oneOf })
+    export const array = <T>(items: T): Ext.array.F<T> => ({ type: "array", items })
+    export const tuple = <T>(items: readonly T[]): Ext.tuple.F<T> => ({ type: "tuple", items })
+    export const record = <T>(additionalProperties: T): Ext.record.F<T> => ({
       type: "record",
       additionalProperties,
     })
-    export const object = <T>(properties: { [x: string]: T }): Ext.object.$<T> => ({
+    export const object = <T>(properties: { [x: string]: T }): Ext.object.F<T> => ({
       type: "object",
       properties,
     })
   }
 
   export const functor: Functor<Ext.Kind, Ext> = { map }
-  export function map<S, T>(f: (s: S) => T): (s: Ext.$<S>) => Ext.$<T> {
-    return (x: Ext.$<S>) => {
+  export function map<S, T>(f: (s: S) => T): (s: Ext.F<S>) => Ext.F<T> {
+    return (x: Ext.F<S>) => {
       switch (true) {
         case JsonSchema.is.null(x):
           return x
@@ -581,32 +580,14 @@ export namespace Ext {
         default:
           return fn.exhaustive(n)
       }
-
-      // switch (true) {
-      //   case Schema.is.null(n): return [[n.type]]
-      //   case Schema.is.boolean(n): return [[n.type]]
-      //   case Schema.is.integer(n): return [[n.type]]
-      //   case Schema.is.number(n): return [[n.type]]
-      //   case Schema.is.string(n): return [[n.type]]
-      //   case Ext.is.array(n): return n.items.map((path) => [symbol.array as keyof any].concat(path))
-      //   case Ext.is.tuple(n): return n.items.map((paths) => paths.flatMap((path, ix) => [ix as keyof any].concat(path)))
-      //   case Ext.is.allOf(n): return n.allOf.map((paths) => paths.flatMap((path, ix) => [ix as keyof any].concat(path)))
-      //   case Ext.is.anyOf(n): return n.anyOf.map((paths) => paths.flatMap((path, ix) => [ix as keyof any].concat(path)))
-      //   case Ext.is.oneOf(n): return n.oneOf.map((paths) => paths.flatMap((path, ix) => [ix as keyof any].concat(path)))
-      //   case Ext.is.record(n):
-      //     return n.additionalProperties.map((path) => [symbol.record as keyof any].concat(path))
-      //   case Ext.is.object(n):
-      //     return Object_entries(n.properties).flatMap(([k, paths]) => paths.map((path) => [k as keyof any].concat(path)))
-      //   default: return exhaustive(n)
-      // }
     }
   }
 
   export type lax =
     | JsonSchema.Scalar
-    | Ext.allOf.$<lax>
-    | Ext.anyOf.$<lax>
-    | Ext.oneOf.$<lax>
+    | Ext.allOf.F<lax>
+    | Ext.anyOf.F<lax>
+    | Ext.oneOf.F<lax>
     | lax.ArrayLike
     | lax.TupleLike
     | lax.ObjectLike
@@ -617,7 +598,8 @@ export namespace Ext {
     export type ObjectLike =
       | { type: "object"; properties: globalThis.Record<string, lax> }
       | { type: "object"; additionalProperties: lax }
-    export const isTupleLike = (u: unknown): u is TupleLike => isObject(u) && u.type === "array" && Array_isArray(u.items)
+    export const isTupleLike = (u: unknown): u is TupleLike =>
+      isObject(u) && u.type === "array" && Array_isArray(u.items)
     export const isArrayLike = (u: unknown): u is ArrayLike => isObject(u) && u.type === "array"
     export const isObjectLike = (u: unknown): u is lax.ObjectLike => isObject(u) && u.type === "object"
   }
@@ -645,10 +627,21 @@ export namespace Ext {
           return "properties" in expr
             ? Ext.make.object(expr.properties)
             : Ext.make.record(expr.additionalProperties)
-        case lax.isTupleLike(expr): return Ext.make.tuple(expr.items)
-        case lax.isArrayLike(expr): return Ext.make.array(expr.items)
+        case lax.isTupleLike(expr):
+          return Ext.make.tuple(expr.items)
+        case lax.isArrayLike(expr):
+          return Ext.make.array(expr.items)
+        /**
+         * **Note:**
+         *
+         * This case intentionally does _NOT_ throw when executed.
+         *
+         * That way if a user passes an `Ext` schema (a schema that has
+         * _already_ been transformed into its intermediate representation),
+         * {@link fromSchema `Ext.fromSchema`} behaves like the identity function.
+         */
         default:
-          return fn.exhaustive(expr)
+          return fn.softExhaustiveCheck(expr)
       }
     }
   }

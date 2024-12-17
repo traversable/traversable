@@ -14,7 +14,7 @@ export {
 export { Equal_string as equals } from "./_internal/_equal.js"
 
 import type { string as String, any, newtype, nonempty } from "any-ts"
-import type { Concattable as concattable, Foldable as foldable } from "./exports.js"
+import type { Monoid as monoid, Semigroup as semigroup } from "./exports.js"
 import { key } from "./key.js"
 
 /** @internal */
@@ -524,28 +524,30 @@ export const toLines
   = (joinWith = "\n") => (xs) => xs.join(`${joinWith}`)
 
 /** ## {@link Concattable `string.Concattable`} */
-export const Concattable
-  : concattable<string> 
+export const Semigroup
+  : semigroup<string> 
   = { concat: (x, y) => x.concat(y) }
 
 /** ## {@link Foldable `string.Foldable`} */
-export const Foldable
-  : foldable<string>
-  = { ...Concattable, empty: "" }
-
+export const Monoid
+  : monoid<string>
+  = { ...Semigroup, empty: "" }
 
 export type interpolate<
-  text extends any.key, 
-  lookup extends any.invertible, 
-  captures extends any.pair<string, string> = ["${", "}"]
-> = interpolate.recurse<"", text, lookup, captures>
+  T extends any.key, 
+  Lookup extends any.invertible, 
+  Captures extends any.pair<string, string> = ["${", "}"]
+> = interpolate.recurse<"", T, Lookup, Captures>
 
 export declare namespace interpolate {
-  type recurse<acc extends string, path extends any.key, dict extends any.invertible, captures extends any.pair<string, string>>
-    = path extends `${infer head}${captures[0]}${any.propertyOf<dict, infer param>}${captures[1]}${infer tail}`
-    ? interpolate.recurse<`${acc}${head}${dict[param]}`, tail, dict, captures>
-    : `${acc}${path}`
-    ;
+  type recurse<
+    Out extends string, 
+    KS extends any.key, 
+    Lookup extends any.invertible, 
+    Captures extends any.pair<string, string>
+  > = KS extends `${infer head}${Captures[0]}${any.propertyOf<Lookup, infer param>}${Captures[1]}${infer tail}`
+    ? interpolate.recurse<`${Out}${head}${Lookup[param]}`, tail, Lookup, Captures>
+    : `${Out}${KS}`
 }
 
 /** ## {@link interpolate `string.interpolate`} */

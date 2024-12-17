@@ -144,6 +144,10 @@ export const order_coerce
   : (x: number) => sign
   = sign.CLAMP
 
+export const order_reverse
+  : <T>(compare: Compare<T>) => Compare<T>
+  = (compare) => (l, r) => sign.FLIP[compare(l, r)]
+
 /** ### {@link order_all `order.all`} */
 export const order_all
   : <T>(...[head, ...tail]: Compare<T>[]) => Compare<T>
@@ -312,8 +316,7 @@ order_string.lengthAscending = order_mapInput(_order_number_ascending, (s: strin
 /** 
  * ### {@link order_array.zero `order.array.zero`} 
  * 
- * {@link order_array.zero `order.array.zero`} constructs an empty array. Like the number 0, its value does not come
- * from what it represents, but its semantics. Can be useful as an initializer when calling 
+ * {@link order_array.zero `order.array.zero`} constructs an empty array. Can be useful as an initializer when calling 
  * {@link globalThis.Array.prototype.reduce `Array.prototype.reduce`}.
  * 
  * Users can specify the array's type by providing a type parameteter at the call site, but in many contexts TypeScript
@@ -355,6 +358,7 @@ export function order_array<T>(compare: Compare<T>): Compare<readonly T[]> {
 /** ### {@link order_array.lengthAscending `order.array.lengthAscending`} */
 order_array.lengthAscending = order_mapInput(order_number, (x: readonly unknown[]) => x.length) satisfies Compare<readonly unknown[]>
 /** ### {@link order_array.lengthDescending `order.array.lengthDescending`} */
+order_array.lengthDescending = order_reverse(order_array.lengthAscending)
 /** ### {@link order_array.sortLengthAscending `order.array.sortLengthAscending`} */
 /** ### {@link order_array.sortLengthDescending `order.array.sortLengthDescending`} */
 /** 

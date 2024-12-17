@@ -1,7 +1,6 @@
 import * as vi from "vitest"
 
-import { fc, show, test, tree } from "@traversable/core"
-import { Option } from "@traversable/data"
+import { show } from "@traversable/core"
 import { openapi } from "@traversable/openapi"
 import { symbol } from "@traversable/registry"
 

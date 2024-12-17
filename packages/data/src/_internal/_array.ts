@@ -1,4 +1,4 @@
-import type { Compare, Concattable, Foldable, Predicate } from "@traversable/registry"
+import type { Compare, Monoid, Predicate, Semigroup } from "@traversable/registry"
 import type { 
   any, 
   mut, 
@@ -30,7 +30,7 @@ export type array_of<T> = readonly T[]
  * ## {@link array_finite `array.finite`}
  * 
  * {@link array_finite `array.finite`} constrains a type parameter to be a _finite_ 
- * array (`[1, 2, 3]`, not `number[]` or `(1 | 2 | 3)[]`).
+ * array (for example `[1, 2, 3]`, but not `number[]` or `(1 | 2 | 3)[]`).
  * 
  * **Note:** For this to work, you need to apply {@link array_finite `array.finite`}
  * to the type parameter you're _currently_ declaring, see example below.
@@ -396,24 +396,23 @@ export function array_reduce<T, U>(
 /** 
  * ## {@link array_fold `array.fold`} 
  * 
- * Semantics: derive a left-associative array catamorphism for a
- * given Monoid (which I named `Concattable` so my teammates wouldn't
- * hate me).
+ * Semantics: given an arbitrary Monoid, derives its left-associative 
+ * array catamorphism.
  * 
  * Basically this is just shorthand for {@link array_reduce `array.reduce`}.
  * Convenient when you already have a monoid in-hand.
  * 
- * Unless you're steeped in FP-land, you probably don't need this. The
- * only benefit you really get is that type inference works better when 
- * the merging operation and neutral element come pre-paired together,
- * since the type-checker better understands that there's a relationship
- * between the two.
+ * Besides the convenience of using a single identifier to represent a 
+ * reducing or folding operation, another subtle benefit to using it is 
+ * that type inference works better when the merging operation and neutral 
+ * element come pre-paired together (since the type-checker better understands 
+ * that there's a relationship between the two).
  * 
  * See also: 
  * - {@link globalThis.Array.prototype.reduce `Array.prototype.reduce`}
  * - {@link array_reduce `array.reduce`}
  */
-export function array_fold<T>(M: Foldable<T>): (xs: readonly T[]) => T
+export function array_fold<T>(M: Monoid<T>): (xs: readonly T[]) => T
   { return (xs: readonly T[]) => xs.reduce(M.concat, M.empty) }
 
 /** 
@@ -426,11 +425,11 @@ export function array_fold<T>(M: Foldable<T>): (xs: readonly T[]) => T
  * See also: 
  * - {@link array_fold `array.fold`}
  */
-export function array_foldMap<T>(M: Foldable<T>):
+export function array_foldMap<T>(M: Monoid<T>):
   <S>(mapfn: (s: S, ix: number) => T) 
     => (xs: readonly S[]) 
     => T 
-export function array_foldMap<T>(M: Foldable<T>) { 
+export function array_foldMap<T>(M: Monoid<T>) { 
   return <S>(mapfn: (s: S, ix: number) => T) => 
     (xs: readonly S[]) => 
       xs.reduce((acc, x, ix) => M.concat(acc, mapfn(x, ix)), M.empty) 
@@ -811,18 +810,18 @@ export function array_lastIndexOf<T>(_: ((x: T) => boolean) | T) {
 } 
 
 /** 
- * ## {@link array_getConcattable `array.getConcattable`} 
+ * ## {@link array_getSemigroup `array.getSemigroup`} 
  */
-export function array_getConcattable<T = never>(): Concattable<readonly T[]> {
+export function array_getSemigroup<T = never>(): Semigroup<readonly T[]> {
   return ({ concat: (l, r) => l.length === 0 ? r : r.length === 0 ? l : l.concat(r) })
 }
 
 /** 
- * ## {@link array_getFoldable `array.getFoldable`} 
+ * ## {@link array_getMonoid `array.getMonoid`} 
  */
-export const array_getFoldable
-  : <T = never>() => Foldable<readonly T[]> 
-  = () => ({ concat: array_getConcattable().concat, empty: local.array_getEmpty() })
+export const array_getMonoid
+  : <T = never>() => Monoid<readonly T[]> 
+  = () => ({ concat: array_getSemigroup().concat, empty: local.array_getEmpty() })
 
 /** 
  * ## {@link array_prefix `array.prefix`} 

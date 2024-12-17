@@ -4,9 +4,6 @@ import type { Functor } from "@traversable/registry"
 import { Schema } from "./schema/exports.js"
 import { type Kind, type Tag, symbol } from "./tag.js"
 
-/** @internal */
-const Object_entries = globalThis.Object.entries
-
 const Tags = [
   "Array",
   "Disjoint",
@@ -116,7 +113,6 @@ export function cata<T>(algebra: Functor.Algebra<Kind, T>): (term: Schema.any) =
 const pathsAlgebra = (x: Tag.F<readonly (readonly prop.any[])[]>) => {
   switch (true) {
     // return x
-    default: return x // fn.exhaustive(x)
     case x[symbol.tag] === symbol.null: return x.type
     case x[symbol.tag] === symbol.boolean: return x.type
     case x[symbol.tag] === symbol.integer: return x.type
@@ -125,54 +121,9 @@ const pathsAlgebra = (x: Tag.F<readonly (readonly prop.any[])[]>) => {
     case x[symbol.tag] === symbol.array: return [x.items, symbol.array]
     case x[symbol.tag] === symbol.tuple: return x.items.map((xs) => [xs, symbol.array])
     case x[symbol.tag] === symbol.record: return map(x.additionalProperties, ((v, k) => [].concat(k as never).concat()))
+    default: return fn.exhaustive(x)
   }
 }
 
-// case x[symbol.tag] === symbol.union: return x.anyOf.map(([h, ...t]) => [h, ...t, symbol.union])
-// case x[symbol.tag] === symbol.disjoint: return x.oneOf.map(([h, ...t]) => [h, ...t.slice(0, -1), symbol.disjoint, t[t.length - 1]])
-// case x[symbol.tag] === symbol.intersection: return x.allOf.map(([h, ...t]) => [h, ...t.slice(0, -1), symbol.intersection, t[t.length - 1]])
-// case x[symbol.tag] === symbol.object: return [].concat(x.properties).map(([k, v]) => )
-// Object_entries(x.properties), map((v, k) => [].concat(k).concat(v))
-//  return [].concat(json).map(
-//           ([k, x]) => {
-//             return x.map((y) => isLeaf(y) ? [y, k] : [k].concat(y))
-//           }
-//         )
-// [].concat(k).concat(v)))
-
-export const paths
-  // : (x: unknown) => array.of<unknown>
-  = cata(pathsAlgebra as never)
-
-
-
-// // export function pathsAlgebra<const T>(x: Tag.F<T>): Tag.infer<T> 
-// // export function pathsAlgebra(x: Tag.F<(keyof any)[]>) {
-// //   switch (true) {
-// //     // return x
-// //     case x[symbol.tag] === symbol.null: return [x.type]
-// //     case x[symbol.tag] === symbol.boolean: return [x.type]
-// //     case x[symbol.tag] === symbol.integer: return [x.type]
-// //     case x[symbol.tag] === symbol.number: return [x.type]
-// //     case x[symbol.tag] === symbol.string: return [x.type]
-    
-// //     // case x[symbol.tag] === symbol.union: return x.anyOf.map(([h, ...t]) => [h, ...t, symbol.union])
-// //     // case x[symbol.tag] === symbol.disjoint: return x.oneOf.map(([h, ...t]) => [h, ...t.slice(0, -1), symbol.disjoint, t[t.length - 1]])
-// //     // // case x[symbol.tag] === symbol.intersection: return x.allOf.map(([h, ...t]) => [h, ...t.slice(0, -1), symbol.intersection, t[t.length - 1]])
-// //     // case x[symbol.tag] === symbol.array: return ([] as (typeof x.items)[]).concat([x.items, symbol.array])
-// //     // case x[symbol.tag] === symbol.tuple: return x.items.map(([h, ...t]) => [h, ...t.slice(0, -1), symbol.array, t[t.length - 1]])
-// //     // case x[symbol.tag] === symbol.record: return Object_entries(x.additionalProperties).map(([k, v]) => [].concat(k as never).concat())
-// //     case x[symbol.tag] === symbol.object: return fn.pipe(
-// //       x.properties,
-// //       map((p) => [...p])
-
-// //     )
-// //     default: return x // fn.exhaustive(x)
-// //   }
-// // }
-
-// export const paths
-//   // : (x: unknown) => array.of<unknown>
-//   = cata(pathsAlgebra)
-
-// const z = paths({ type: "array", items: [{ type: "string" }] })
+// TODO: fix types
+export const paths = cata(pathsAlgebra as never)

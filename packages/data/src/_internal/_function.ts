@@ -23,6 +23,7 @@ export {
   loop,
   loopN,
   pipe,
+  softExhaustiveCheck,
   tuple,
   tupled,
   untupled,
@@ -212,6 +213,10 @@ function loopN<A extends readonly unknown[], B>(fn: ContinuationFn<A, B>): (...a
 const exhaustive
   : <_ extends never = never>(..._: _[]) => _ 
   = (..._) => Invariant.FailedToExhaustivelyMatch("@traversable/data/fn.exhaustive", _)
+
+const softExhaustiveCheck
+  : <_ extends never = never>(..._: _[]) => _ 
+  = identity
 
 const free
   : <T = never>(type: T) => T 

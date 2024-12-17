@@ -7,8 +7,8 @@ export type inline<T> = T
 export type _ = {} | null | undefined
 export type defined<T> = never | globalThis.Exclude<T, undefined>
 
-export type Parameter<T> = T extends (_: infer I) => unknown ? I : never
-export type Returns<T> = T extends (_: never) => infer O ? O : never
+export type Produces<T> = T extends (_: infer I) => unknown ? I : never
+export type Consumes<T> = T extends (_: never) => infer O ? O : never
 export type Partial<T> = never | { -readonly [K in keyof T]+?: T[K] }
 export type Required<T> = never | { -readonly [K in keyof T]-?: T[K] }
 export type KeepFirst<S, T> = never | KeepLast<T, S>
@@ -16,16 +16,16 @@ export type KeepLast<S, T> = never | Force<Omit<S, keyof (S | T)> & T>
 export type Mutable<T> = never | { -readonly [K in keyof T]: T[K] }
 
 interface Covariant<T extends (_: never) => unknown> {
-  (_: never): Returns<T>
-}
-interface Invariant<T extends (_: never) => unknown> {
-  (_: Parameter<T>): Returns<T>
+  (_: never): Consumes<T>
 }
 interface Contravariant<T extends (_: never) => unknown> {
-  (_: Parameter<T>): void
+  (_: Produces<T>): void
+}
+interface Invariant<T extends (_: never) => unknown> {
+  (_: Produces<T>): Consumes<T>
 }
 
-interface Bivariant<T extends { (_: never): unknown }> extends newtype<{ _(_: Parameter<T>): Returns<T> }> {}
+interface Bivariant<T extends { (_: never): unknown }> extends newtype<{ _(_: Consumes<T>): Produces<T> }> {}
 
 export declare namespace Position {
   type covariant<T> = never | Covariant<{ (_: never): T }>
@@ -235,8 +235,8 @@ export declare namespace Functor {
  * a boolean to a predicate -- namely, we gain _portability_ and
  * _composability_.
  *
- * For those that are curious, this is the basis of first-order logic,
- * which allows us to make logical statements about non-logical objects.
+ * A predicate forms the basis of first-order logic, which allows us
+ * to make logical statements about non-logical objects.
  *
  * See also:
  * - the Wikipedia page on
@@ -377,9 +377,8 @@ export declare namespace Sort {
  * See also:
  * - {@link Sort `Sort`}
  * - the Wikipedia page on
- * [contravariant functors](
- *   https://en.wikipedia.org/wiki/Covariance_and_contravariance_(computer_science)
- * )
+ *   [contravariant functors](https://en.wikipedia.org/wiki/Covariance_and_contravariance_(computer_science))
+ *
  */
 export type MapSort<in T> = <S>(fn: (s: S) => T) => Sort<S>
 export declare namespace MapSort {
@@ -466,7 +465,7 @@ export type Either<E = never, T = unknown> = Left<E> | Right<T>
 /**
  * ## {@link Left `Left`}
  *
- * Member of {@link Either `Either`}, along with {@link Right `Right`}.
+ * Member of the {@link Either `Either`} sum type, along with {@link Right `Right`}.
  *
  * See also:
  * - {@link Either `Either`}
@@ -480,7 +479,7 @@ export interface Left<E> {
 /**
  * ## {@link Right `Right`}
  *
- * Member of {@link Either `Either`}, along with {@link Left `Left`}.
+ * Member of the {@link Either `Either`} sum type, along with {@link Left `Left`}.
  *
  * See also:
  * - {@link Either `Either`}
@@ -492,27 +491,23 @@ export interface Right<T> {
 }
 
 /**
- * ## {@link Concattable `Concattable`}
- *
- * a.k.a. "semigroup"
+ * ## {@link Semigroup `Semigroup`}
  *
  * See also:
- * - {@link Foldable `Foldable`}
- * - the Wikipedia page on [semigroups](https://en.wikipedia.org/wiki/Semigroup)
+ * - {@link Monoid `Monoid`}
+ * - [Wikipedia page](https://en.wikipedia.org/wiki/Semigroup)
  */
-export interface Concattable<in out T> {
+export interface Semigroup<in out T> {
   concat(left: T, right: T): T
 }
 
 /**
- * ## {@link Foldable `Foldable`}
- *
- * a.k.a. "monoid"
+ * ## {@link Monoid `Monoid`}
  *
  * See also:
- * - {@link Concattable `Concattable`}
- * - the Wikipedia page on [monoids](https://en.wikipedia.org/wiki/Monoid)
+ * - {@link Semigroup `Semigroup`}
+ * - [Wikipedia page](https://en.wikipedia.org/wiki/Monoid)
  */
-export interface Foldable<in out T> extends Concattable<T> {
+export interface Monoid<in out T> extends Semigroup<T> {
   empty: T
 }

@@ -1,10 +1,10 @@
-import { type any, fn, map, object } from "@traversable/data"
 import { deriveFromTags } from "@traversable/core"
+import { type any, fn, map, object } from "@traversable/data"
 
+import { type Kind as HKT, URI } from "@traversable/registry"
+import type { Functor, newtype } from "@traversable/registry"
 import { Schema } from "./schema/exports.js"
-import { Kind, type Tag, symbol, functor } from "./tag.js"
-import { Kind as HKT, URI } from "@traversable/registry"
-import type { Functor, newtype, Parameter } from "@traversable/registry"
+import { type Kind, type Tag, functor, symbol } from "./tag.js"
 
 /** @internal */
 const Object_entries = globalThis.Object.entries
@@ -140,7 +140,7 @@ function fmap<S, T>(f: (s: S) => T) {
 
 
 export declare function free<F extends HKT>(F: F): <T>(expr: T) => HKT.apply<F, T> 
-export const project = free(Kind())
+export const project = free({} as Kind)
 // export const inject function forget<F extends HKT, T>(term: HKT.apply<F, T>): T
 
 // export declare function forget<F extends HKT, T>(term: HKT.apply<F, T>): T

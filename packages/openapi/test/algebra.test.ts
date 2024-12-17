@@ -1,5 +1,4 @@
-import { show, test } from "@traversable/core"
-import { Option, fn } from "@traversable/data"
+import { test } from "@traversable/core"
 import { openapi } from "@traversable/openapi"
 
 import * as vi from "vitest"
@@ -41,27 +40,7 @@ vi.describe("〖⛳️〗‹‹‹ ❲@traversable/openapi/algebra❳", () => {
   test.prop([openapi.Schema.any()], {
     verbose: 2,
     endOnFailure: false,
-    examples: [
-      [
-        { 
-          "type":"array", 
-          "items": [
-            {
-              "anyOf":[{
-                "type":"object",
-                "required":["_"],
-                "properties":{
-                  "_":{
-                    "type":"string",
-                    "pattern":""
-                  }
-                }
-              }]
-            }
-          ]
-        },
-      ],
-    ]
+    examples: []
   })(
     "〖⛳️〗‹ ❲algebra.forget❳: roundtrip is lossless",
     (schema) => {

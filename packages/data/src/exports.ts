@@ -16,8 +16,8 @@ export type None = import("@traversable/registry").None
 export type Ok<T> = import("@traversable/registry").Ok<T>
 export type Err<T> = import("@traversable/registry").Err<T>
 export type Compare<T> = import("@traversable/registry").Compare<T>
-export type Concattable<T> = import("@traversable/registry").Concattable<T>
-export type Foldable<T> = import("@traversable/registry").Foldable<T>
+export type Semigroup<T> = import("@traversable/registry").Semigroup<T>
+export type Monoid<T> = import("@traversable/registry").Monoid<T>
 export type Predicate<T = any> = import("@traversable/registry").Predicate<T>
 export type Equal<T = any> = import("@traversable/registry").Equal<T>
 

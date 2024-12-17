@@ -14,6 +14,7 @@ export type Autocomplete<T> = T | (string & {})
 export interface $ref<T extends string = string> { readonly $ref?: T }
 
 const Array_isArray = globalThis.Array.isArray
+const Object_values = globalThis.Object.values
 
 export type DataTypes = typeof DataTypes
 export const DataTypes = [
@@ -232,69 +233,64 @@ export function Schema_isAllOf(u: unknown): u is Schema_allOf<Schema> {
   return tree.has("allOf", core.is.array(Schema_is))(u)
 }
 
-export const Schema_isNull: {
-  (u: Schema | $ref): u is Schema_null
-  (u: unknown): u is Schema_null
-} = core.allOf(
-  tree.has("type", core.is.literally(DataType.null)),
-  // tree.has("enum", 0, core.is.literally(null)),
-  // tree.has("nullable", core.is.literally(true)),
-) as never
+export const Schema_isNull
+  : (u: unknown) => u is Schema_null
+  = core.allOf(
+    tree.has("type", core.is.literally(DataType.null)),
+    // tree.has("enum", 0, core.is.literally(null)),
+    // tree.has("nullable", core.is.literally(true)),
+  ) as never
 
 export const Schema_isConst = tree.has("const")
 
-export const Schema_isBoolean: {
-  (u: Schema | $ref): u is Schema_boolean
-  (u: unknown): u is Schema_boolean
-} = tree.has("type", core.is.literally(DataType.boolean))
+export const Schema_isBoolean
+  : (u: unknown) => u is Schema_boolean
+  = tree.has("type", core.is.literally(DataType.boolean))
 
-export const Schema_isInteger: {
-  (u: Schema | $ref): u is Schema_integer
-  (u: unknown): u is Schema_integer
-} = tree.has("type", core.is.literally(DataType.integer))
+export const Schema_isInteger 
+  : (u: unknown) => u is Schema_integer
+  = tree.has("type", core.is.literally(DataType.integer))
 
-export const Schema_isNumber: {
-  (u: Schema | $ref): u is Schema_number
-  (u: unknown): u is Schema_number
-} = tree.has("type", core.is.literally(DataType.number))
+export const Schema_isNumber
+  : (u: unknown) => u is Schema_number
+  = tree.has("type", core.is.literally(DataType.number))
 
-export const Schema_isString: {
-  (u: Schema | $ref): u is Schema_string
-  (u: unknown): u is Schema_string
-} = tree.has("type", core.is.literally(DataType.string))
+export const Schema_isString
+  : (u: unknown) => u is Schema_string
+  = tree.has("type", core.is.literally(DataType.string))
 
-export const Schema_isObject: {
-  (u: Schema | $ref): u is Schema_object<Schema>
-  (u: unknown): u is Schema_object
-} = core.allOf(
-  tree.has("type", core.is.literally(DataType.object)),
-  tree.has("properties", /* core.is.recordOf(Schema_is) */ ),
-  // (u): u is never => u !== null && typeof u === "object" && !("additionalProperties" in u),
-)
+export const Schema_isObject
+  = (u: unknown): u is Schema_object => core.allOf(
+    tree.has("type", core.is.literally(DataType.object)),
+    tree.has("properties", (u): u is typeof u => {
+      if (u === null || typeof u !== "object") return false
+      else if (core.is.any.array(u)) return false
+      else return  !("additionalProperties" in u) && core.is.recordOf(Schema_is)(u) //
+    }),
+  )(u)
 
-export const Schema_isRecord: {
-  (u: Schema | $ref): u is Schema_record<Schema>
-  (u: unknown): u is Schema_record
-} = core.allOf(
-  tree.has("type", core.is.literally(DataType.object)),
-  (u): u is never => u !== null && typeof u === "object" && !("properties" in u),
-  // tree.has("properties"),
-  tree.has("additionalProperties", Schema_is),
-)
+export const Schema_isRecord
+  : (u: unknown) => u is Schema_record
+  = core.allOf(
+    tree.has("type", core.is.literally(DataType.object)),
+    (u): u is never => u !== null && typeof u === "object" && !("properties" in u),
+    // tree.has("properties"),
+    tree.has("additionalProperties", Schema_is),
+  )
 
 export const Schema_isArray: {
   // (u: Schema | $ref): u is Schema_array<Schema>
   (u: unknown): u is Schema_array
 } = core.allOf(
   tree.has("type", core.is.literally(DataType.array)),
-  tree.has("items", /* Schema_is */)
+  tree.has("items", (u): u is typeof u => !Array_isArray(u) /* Schema_is */)
 )
 
 export const Schema_isTuple: {
   (u: unknown): u is Schema_tuple
 } = (u: unknown): u is Schema_tuple => core.allOf(
   tree.has("type", core.is.literally(DataType.array)),
-  tree.has("items"),
+  tree.has("items", core.is.any.array),
 )(u)
 
 export function Schema_isCombinator(u: Schema | $ref): u is Schema_combinator<Schema>

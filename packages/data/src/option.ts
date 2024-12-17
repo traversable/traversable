@@ -1,6 +1,16 @@
-import { type Force, Omit, Partial, URI } from "@traversable/registry"
+import type { 
+  Force, 
+  Monoid, 
+  None, 
+  Omit, 
+  Option, 
+  Partial, 
+  Predicate, 
+  Semigroup, 
+  Some,
+} from "@traversable/registry"
+import { URI } from "@traversable/registry"
 import type { any } from "any-ts"
-import type { Concattable, Foldable, None, Option, Predicate, Some } from "./exports.js"
 
 export { 
   type Option_infer as infer,
@@ -210,8 +220,8 @@ export function partial<const T extends { [P in K]+?: Option_any }, K extends an
   return hasSomething ? some(out) : none()
 }
 
-export const getFoldable 
-  : <T>(C: Concattable<T>) => Foldable<Option<T>>
+export const getMonoid 
+  : <T>(C: Semigroup<T>) => Semigroup<Option<T>>
   = ({ concat }) => ({
     empty: none(),
     concat(x, y) { 
@@ -220,7 +230,7 @@ export const getFoldable
   })
 
 export const foldMap
-  : <O>(Foldable: Foldable<O>) => <I>(fn: (x: I) => O) => (option: Option<I>) => O
+  : <O>(Foldable: Monoid<O>) => <I>(fn: (x: I) => O) => (option: Option<I>) => O
   = (Foldable) => (fn) => (option) => isNone(option) ? Foldable.empty : fn(option.value)
 
 export function filter(toBoolean: globalThis.BooleanConstructor): <const T>(option: Option<T>) => Option<T & {}> 
