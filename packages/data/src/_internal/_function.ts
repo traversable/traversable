@@ -1,8 +1,7 @@
-import { type Functor, Invariant, type Kind } from "@traversable/registry"
+import { type Either, type Functor, Invariant, type Kind, URI } from "@traversable/registry"
 
 import type { any, mut } from "any-ts"
 import type { array_shift } from "./_array.js"
-import { Either } from "@traversable/data"
 export { fn }
 export type {
   fn_any as any,
@@ -789,6 +788,15 @@ export const tap
   : (msg: string, logger?: (...args: unknown[]) => void) => <const T>(x: T) => T 
   = (msg, logger = globalThis.console.log) => flow(chainFirst, apply(log(msg, logger)))
 
+export const fanout 
+  : <A, B, C>(ab: (a: A) => B, ac: (a: A) => C) => (a: A) => [B, C]
+  = (ab, ac) => (a) => [ab(a), ac(a)]
+ 
+export const fanin 
+  : <A, B, C>(ba: (b: B) => A, ca: (c: C) => A) => (cb: Either<C, B>) => A
+  = (ba, ca) => (cb) => cb._tag === URI.Left ? ca(cb.left) : ba(cb.right)
+
+
 /** 
  * ## {@link ana `fn.ana`}
  * 
@@ -862,18 +870,28 @@ export function cata<F extends Kind>(Functor: Functor<F>) {
  * - {@link hylo `fn.hylo`}
  */
 
-export function para<F extends Kind>(F: Functor<F>):
-  <T>(algebra: (term: Kind.apply<F, [F, T]>) => T) 
-    => (term: Kind.apply<F, [F, T]>) 
-    => Kind.apply<F, [F, T]>
-
-export function para<F extends Kind>(F: Functor<F>) {
-  return <T>(algebra: (term: Kind.apply<F, [F, T]>) => T) => {
-    return function loop(term: Kind.apply<F, [F, T]>): Kind.apply<F, [F, T]> {
-      return [term, algebra(F.map(loop)(term))]
-    }
+export function para<F extends Kind>(F: Functor<F>): <A>(ralgebra: Functor.RAlgebra<F, A>) => (term: Kind.apply<F, unknown>) => A {
+  return (ralgebra) => {
+    function fanout(term: unknown): unknown 
+      { return [term, para(F)(ralgebra)(term)] }
+    return flow(
+      F.map(fanout),
+      ralgebra,
+    )
   }
 }
+
+// export function para<F extends Kind, _>(F: Functor<F, _>):
+//   <T>(algebra: (term: Kind.apply<F, [F, T]>) => T) 
+//     => (term: Kind.apply<F, [_, T]>) 
+//     => Kind.apply<F, [F, T]>
+// export function para<F extends Kind>(F: Functor<F>) {
+//   return <T>(algebra: (term: Kind.apply<F, [F, T]>) => T) => {
+//     return function loop(term: Kind.apply<F, [F, T]>): Kind.apply<F, [F, T]> {
+//       return [term, algebra(F.map(loop)(term))]
+//     }
+//   }
+// }
 
 /** 
  * ## {@link apo `fn.apo`}
@@ -886,10 +904,9 @@ export function para<F extends Kind>(F: Functor<F>) {
  * - {@link cata `fn.cata`}
  * - {@link hylo `fn.hylo`}
  */
-
 export function apo<F extends Kind>(F: Functor<F>): 
   <T>(coalgebra: Functor.RCoalgebra<F, T>) 
-    => (expr: T) 
+    => (expr: T)
     => Kind.apply<F, T> 
 
 export function apo<F extends Kind>(F: Functor<F>) {
@@ -897,10 +914,9 @@ export function apo<F extends Kind>(F: Functor<F>) {
     (expr: T): Kind.apply<F, T> => pipe(
       coalgebra(expr),
       F.map(
-        Either.match({
-          onRight: identity,
-          onLeft: apo(F)(coalgebra),
-        })
+        (e) => e._tag === URI.Right 
+          ? identity 
+          : apo(F)(coalgebra)
       )
     )
 }

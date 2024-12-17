@@ -477,7 +477,7 @@ const themes = {
 } satisfies Record<string, serialize.Colors>
 
 const defaults = {
-  maxDepth: 10,
+  maxDepth: 20,
   newline: "",
   tab: "",
   hooks,

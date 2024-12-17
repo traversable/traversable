@@ -172,7 +172,7 @@ export function untagAlgebra<T>({ [symbol.tag]: _, ...x }: Tag.F<T>)
 
 export interface Kind extends HKT { ["~1"]: Schema.F<this["~0"]> }
 export const functor: Functor<Kind> = { map: bmap }
-export const ana = fn.morphism.ana(functor)
+export const ana = fn.ana(functor)
 
 
 export function cata<T>(algebra: Functor.Algebra<Kind, T>): (term: Schema.any) => T {

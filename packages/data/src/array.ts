@@ -21,6 +21,8 @@ export {
   array_findLast as findLast,
   array_flatMap as flatMap,
   array_flatten as flatten,
+  array_fold as fold,
+  array_foldMap as foldMap,
   array_forEach as forEach,
   array_fst as fst,
   array_getConcattable as getConcattable,

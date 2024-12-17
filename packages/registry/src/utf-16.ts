@@ -1,4 +1,4 @@
-import type { Kind, newtype } from "./types.js"
+import type { defined, Kind, newtype } from "./types.js"
 
 declare namespace Template {
   //////////////
@@ -11,22 +11,22 @@ declare namespace Template {
   //////////////
   /// apply
   interface Identity extends Kind<Template.Entry, string> {
-    ["~1"]: this["~0"][0]
+    ["~1"]: defined<this["~0"]>[0]
   }
   interface Property<_NS extends string = string> extends Kind<Template.Entry, string> {
-    ["~1"]: createProperty<this["~0"]>
+    ["~1"]: createProperty<defined<this["~0"]>>
   }
   interface Emoji<NS extends string> extends Kind<Template.Entry, string> {
-    ["~1"]: createEmoji<this["~0"][0], NS, this["~0"][1]>
+    ["~1"]: createEmoji<defined<this["~0"]>[0], NS, defined<this["~0"]>[1]>
   }
   // interface Letter extends Kind<Template.Entry, unknown>
   //   { ["~1"]: [upper: this["~0"][0], lower: this["~0"][1]]  }
   interface Letter<CS extends readonly [upper: string, lower: string]> extends newtype<CS> {}
 }
 
-export type JsDoc<F extends Kind<Template.Entry>, T extends { [x: string]: F["~0"][1] }> =
+export type JsDoc<F extends Kind<Template.Entry>, T extends { [x: string]: defined<F["~0"]>[1] }> =
   | never
-  | { [K in keyof T]: Kind.apply<F, [T[K] & F["~0"][0], K & F["~0"][1]]> }
+  | { [K in keyof T]: Kind.apply<F, [T[K] & defined<F["~0"]>[0], K & defined<F["~0"]>[1]]> }
 
 export type Charset<T extends { [x: string]: readonly [upper: string, lower: string] }> =
   | never

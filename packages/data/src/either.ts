@@ -1,4 +1,4 @@
-import { URI, type Either, type Left, type Right } from "@traversable/registry"
+import { type Either, type Left, type Right, URI } from "@traversable/registry"
 
 export const isLeft = <L, R>(either: Either<L, R>): either is Left<L> => either._tag === URI.Left
 export const isRight = <R, L>(either: Either<L, R>): either is Right<R> => either._tag === URI.Right

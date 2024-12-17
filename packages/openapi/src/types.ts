@@ -11,7 +11,7 @@ export type inline<T> = T
 export type Scalar = null | undefined | boolean | number | string | symbol
 export type Autocomplete<T> = T | (string & {})
 
-export interface $ref<T extends string = string> { $ref?: T }
+export interface $ref<T extends string = string> { readonly $ref?: T }
 
 const Array_isArray = globalThis.Array.isArray
 
@@ -178,6 +178,28 @@ export type Schema =
   | Schema_object<Schema>
   ;
 
+type F<T> =
+  | $ref
+  | Schema_null
+  | Schema_boolean
+  | Schema_integer
+  | Schema_number
+  | Schema_string
+  | Schema_allOf<T>
+  | Schema_anyOf<T>
+  | Schema_oneOf<T>
+  | Schema_array<T>
+  | Schema_record<T>
+  | Schema_tuple<T>
+  | Schema_object<T>
+  ;
+
+export type Schema_Node = F<Schema | $ref>
+
+export declare namespace Schema_Node {
+  export { Schema_Node as any }
+}
+
 export const Schema_is
   : (u: unknown) => u is Schema
   = core.anyOf(
@@ -269,12 +291,11 @@ export const Schema_isArray: {
 )
 
 export const Schema_isTuple: {
-  // (u: Schema | $ref): u is Schema_tuple<Schema>
   (u: unknown): u is Schema_tuple
-} = core.allOf(
+} = (u: unknown): u is Schema_tuple => core.allOf(
   tree.has("type", core.is.literally(DataType.array)),
-  tree.has("items", /* core.is.array(Schema_is) */),
-)
+  tree.has("items"),
+)(u)
 
 export function Schema_isCombinator(u: Schema | $ref): u is Schema_combinator<Schema>
 export function Schema_isCombinator(u: unknown): u is Schema_combinator

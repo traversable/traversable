@@ -9,7 +9,7 @@ import {
   object,
   string 
 } from "@traversable/data"
-import { Invariant, symbol, Mutable } from "@traversable/registry"
+import { Invariant, type Mutable, symbol } from "@traversable/registry"
 
 export { 
   optional_ as optional,

@@ -74,9 +74,9 @@ const Functor_: Functor_ = {
   map: fmap as never 
 }
 
-export const cata = fn.morphism.cata(Functor_ as never)
-export const ana = fn.morphism.ana(Functor_ as never)
-export const hylo = fn.morphism.hylo(Functor_ as never)
+export const cata = fn.cata(Functor_ as never)
+export const ana = fn.ana(Functor_ as never)
+export const hylo = fn.hylo(Functor_ as never)
 
 export const thinAlgebra = (x: F<Target>): Target => {
   if (!("type" in x)) switch (true) {

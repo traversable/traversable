@@ -5,6 +5,7 @@ export type { newtype } from "any-ts"
 
 export type inline<T> = T
 export type _ = {} | null | undefined
+export type defined<T> = never | globalThis.Exclude<T, undefined>
 
 export type Parameter<T> = T extends (_: infer I) => unknown ? I : never
 export type Returns<T> = T extends (_: never) => infer O ? O : never
@@ -25,8 +26,6 @@ interface Contravariant<T extends (_: never) => unknown> {
 }
 
 interface Bivariant<T extends { (_: never): unknown }> extends newtype<{ _(_: Parameter<T>): Returns<T> }> {}
-
-
 
 export declare namespace Position {
   type covariant<T> = never | Covariant<{ (_: never): T }>
@@ -128,7 +127,11 @@ export declare namespace Position {
  *   API is what gets seen first (rather than ours).
  */
 export interface Kind<I = unknown, O = unknown> extends newtype<{ ["~0"]?: I; ["~1"]?: O }> {}
-export type bind<F extends Kind, T = never> = never | [T] extends [never] ? [F] extends [Kind] ? F : Kind<F> : Kind.apply<F, T>;
+export type bind<F extends Kind, T = never> = never | [T] extends [never]
+  ? [F] extends [Kind]
+    ? F
+    : Kind<F>
+  : Kind.apply<F, T>
 export type apply<F extends Kind, T extends F["~0"]> = never | (F & { ["~0"]: T })["~1"]
 export type apply$<F, T> = never | (F & { ["~0"]: T; ["~1"]: unknown })["~1"]
 
@@ -203,7 +206,8 @@ export interface Enumerable<T = unknown> extends Spreadable<T> {
 /**
  * ## {@link Functor `Functor`}
  */
-export interface Functor<F extends Kind = Kind> {
+export interface Functor<F extends Kind = Kind, _F = any> {
+  _F?: 1 extends _F & 0 ? F : _F
   map<S, T>(f: (s: S) => T): (F: Kind.apply<F, S>) => Kind.apply<F, T>
 }
 
@@ -214,11 +218,11 @@ export declare namespace Functor {
         <S, T>(f: (s: S) => T): { (F: Kind.apply<F, S>): Kind.apply<F, T> }
         <S, T>(F: Kind.apply<F, S>, f: (s: S) => T): Kind.apply<F, T>
       }
-  type Algebra<F extends Kind, T> = (term: Kind.apply<F, T>) => T
-  type Coalgebra<F extends Kind, T> = (expr: T) => Kind.apply<F, T>
-  type RAlgebra<F extends Kind, T> = (term: Kind.apply<F, [F, T]>) => T
-  type RCoalgebra<F extends Kind, T> = (expr: T) => Kind.apply<F, Either<F, T>>
-  type infer<T> = T extends Functor<infer F> ? F : never
+  type Algebra<F extends Kind, T> = never | { (term: Kind.apply<F, T>): T }
+  type Coalgebra<F extends Kind, T> = never | { (expr: T): Kind.apply<F, T> }
+  type RAlgebra<F extends Kind, T> = never | { (term: Kind.apply<F, [F, T]>): T }
+  type RCoalgebra<F extends Kind, T> = never | { (expr: T): Kind.apply<F, Either<F, T>> }
+  type infer<T> = T extends Functor<any, infer F> ? Exclude<F, undefined> : never
 }
 
 /**
@@ -445,13 +449,13 @@ export interface Err<T> {
 
 /**
  * ## {@link Either `Either`}
- * 
+ *
  * Isomorphic to {@link Result `Result`}, just comes with a slightly different
  * semantics.
- * 
+ *
  * Whereas {@link Result `Result`} has an "error" channel, {@link Either `Either`}'s
  * corresponding channel is just called a "left".
- * 
+ *
  * See also:
  * - {@link Left `Left`}
  * - {@link Right `Right`}
@@ -461,25 +465,31 @@ export type Either<E = never, T = unknown> = Left<E> | Right<T>
 
 /**
  * ## {@link Left `Left`}
- * 
+ *
  * Member of {@link Either `Either`}, along with {@link Right `Right`}.
- * 
+ *
  * See also:
  * - {@link Either `Either`}
  * - {@link Right `Right`}
  */
-export interface Left<E> { _tag: URI.Left, left: E }
+export interface Left<E> {
+  _tag: URI.Left
+  left: E
+}
 
 /**
  * ## {@link Right `Right`}
- * 
+ *
  * Member of {@link Either `Either`}, along with {@link Left `Left`}.
- * 
+ *
  * See also:
  * - {@link Either `Either`}
  * - {@link Left `Left`}
  */
-export interface Right<T> { _tag: URI.Right, right: T }
+export interface Right<T> {
+  _tag: URI.Right
+  right: T
+}
 
 /**
  * ## {@link Concattable `Concattable`}

@@ -2,8 +2,6 @@ import { type Force, Omit, Partial, URI } from "@traversable/registry"
 import type { any } from "any-ts"
 import type { Concattable, Foldable, None, Option, Predicate, Some } from "./exports.js"
 
-export type { Option, None, Some } from "./exports.js"
-
 export { 
   type Option_infer as infer,
   Option_any as any,

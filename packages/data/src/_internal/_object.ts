@@ -5,18 +5,18 @@ import type * as array from "../array.js"
 import type { entry } from "../entry.js"
 import type { object } from "../exports.js"
 import type { any } from "./_any.js"
-import type { prop, props } from "./_prop.js"
-import type { to } from "./_to.js"
-import type { jsdoc } from "./_unicode.js"
 // actual dependencies
 import * as fn from "./_function.js"
 import { key, type keys } from "./_key.js"
 import { map } from "./_map.js"
+import type { prop, props } from "./_prop.js"
 import { 
   escape, 
   isQuoted, 
   toString,
 } from "./_string.js"
+import type { to } from "./_to.js"
+import type { jsdoc } from "./_unicode.js"
 
 type mutable<T> = never | { -readonly [K in keyof T]: T[K] }
 /** @internal */

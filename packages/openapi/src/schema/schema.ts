@@ -9,10 +9,11 @@ import {
 } from "../types.js"
 export {
   type $ref,
-  type Schema_scalar as scalar,
   type Schema_combinator as combinator,
   type Schema_composite as composite,
   type Schema_F as F,
+  type Schema_Node as Node,
+  type Schema_scalar as scalar,
 
   Schema_is as is,
   Schema_isBoolean as isBoolean,

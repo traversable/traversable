@@ -394,6 +394,49 @@ export function array_reduce<T, U>(
 }
 
 /** 
+ * ## {@link array_fold `array.fold`} 
+ * 
+ * Semantics: derive a left-associative array catamorphism for a
+ * given Monoid (which I named `Concattable` so my teammates wouldn't
+ * hate me).
+ * 
+ * Basically this is just shorthand for {@link array_reduce `array.reduce`}.
+ * Convenient when you already have a monoid in-hand.
+ * 
+ * Unless you're steeped in FP-land, you probably don't need this. The
+ * only benefit you really get is that type inference works better when 
+ * the merging operation and neutral element come pre-paired together,
+ * since the type-checker better understands that there's a relationship
+ * between the two.
+ * 
+ * See also: 
+ * - {@link globalThis.Array.prototype.reduce `Array.prototype.reduce`}
+ * - {@link array_reduce `array.reduce`}
+ */
+export function array_fold<T>(M: Foldable<T>): (xs: readonly T[]) => T
+  { return (xs: readonly T[]) => xs.reduce(M.concat, M.empty) }
+
+/** 
+ * ## {@link array_foldMap `array.foldMap`}
+ * 
+ * Apply a function to each element _before_ it gets reduced.
+ * 
+ * More useful than you might think. Contravariance semantics.
+ * 
+ * See also: 
+ * - {@link array_fold `array.fold`}
+ */
+export function array_foldMap<T>(M: Foldable<T>):
+  <S>(mapfn: (s: S, ix: number) => T) 
+    => (xs: readonly S[]) 
+    => T 
+export function array_foldMap<T>(M: Foldable<T>) { 
+  return <S>(mapfn: (s: S, ix: number) => T) => 
+    (xs: readonly S[]) => 
+      xs.reduce((acc, x, ix) => M.concat(acc, mapfn(x, ix)), M.empty) 
+}
+
+/** 
  * ## {@link array_reduceRight `array.reduceRight`} 
  * 
  * {@link array_reduceRight `array.reduceRight`} has the same behavior as 

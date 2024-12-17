@@ -58,6 +58,7 @@
       },
       "style": {
         "noParameterAssign": "off",
+        "noArguments": "off",
         "noNonNullAssertion": "off",
         "useConst": "off",
         "useTemplate": "off",
