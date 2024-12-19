@@ -3,9 +3,10 @@ import * as fs from "node:fs"
 import * as path from "node:path"
 
 import { FailedToRegisterSymbol } from "./error.js"
-import { type Known, type Open, PKG_NAME } from "./exports.js"
+import type { Known, Open } from "./exports.js"
 import type { symbol } from "./symbol.js"
 import { WeightByType } from "./tmp/node-weight-by-type.json.js"
+import { PKG_NAME } from "./version.js"
 
 const $$_REGISTRY_KEY_$$ = `@${PKG_NAME}` as const
 const SymbolRegistryKey = "SymbolRegistry" as const
