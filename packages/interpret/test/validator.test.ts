@@ -46,7 +46,6 @@ const ex_01 = {
           ]
         },
         h: { type: "number" },
-
       }
     }
   }
@@ -90,7 +89,6 @@ vi.describe("〖️⛳️〗‹‹‹ ❲@traversable/interpret/validator❳", (
       'function($0$:any){if(!Array.isArray($0$))return false;let $0$2=$0$[2];if(typeof $0$2!=="boolean")return false;let $0$0=$0$[0];if(typeof $0$0!=="string")return false;let $0$1=$0$[1];if(!Array.isArray($0$1))return false;for(let i=0;i<$0$1.length;i++){let $1$1=$0$1[i];if(typeof $1$1!=="number")return false;}return true;}',
     )
   })
-
 })
 
 vi.describe("〖️⛳️〗‹‹‹ ❲@traversable/interpret/validator❳: records", () => {

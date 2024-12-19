@@ -13,6 +13,7 @@ import type { prop, props } from "./_prop.js"
 import { 
   escape, 
   isQuoted, 
+  isValidIdentifier, 
   toString,
 } from "./_string.js"
 import type { to } from "./_to.js"
@@ -1639,14 +1640,32 @@ export const object_createLookup
  * ### ｛ {@link jsdoc.mapping ` 🌈‍ `} , {@link jsdoc.preserves_structure ` 🌿‍ ` } ｝
  */
 export function object_parseKey<const T extends keyof any>(key: T): Universal.key<T>
-export function object_parseKey(k: keyof any, _ = globalThis.String(k)) {
+export function object_parseKey<const T extends keyof any>(key: T, options?: object_parseKey.Options): Universal.key<T>
+export function object_parseKey(
+  k: keyof any, {
+    parseAsJson = object_parseKey.defaults.parseAsJson,
+  }: object_parseKey.Options = object_parseKey.defaults, 
+  _ = globalThis.String(k)
+) {
   return (
     typeof k === "symbol" ? _ 
     : isQuoted(k) ? escape(_)
+    // : parseAsJson ? `"` + escape(_) + `"`
+    // : isValidIdentifier(k) ? escape(_)
     : `"` + escape(_) + `"`
-    /* isValidIdentifier(k) ? escape(_) */ 
   )
 }
+
+object_parseKey.defaults = {
+  parseAsJson: false,
+} satisfies globalThis.Required<object_parseKey.Options>
+
+export declare namespace object_parseKey {
+  type Options = {
+    parseAsJson: boolean
+  }
+}
+
 
 /** 
  * ## {@link object_parseEntry `object.parseEntry`} 

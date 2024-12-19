@@ -221,6 +221,13 @@ function deriveValidator(
     sort.derive({ compare }),
     deriveValidator.fold,
     (xf) => xf.go([], 0),
-    (body) => `function${functionName && functionName.length > 0 ? " " + functionName : ""}($0$${includeType ? ":any" : ""}){` + body + "return true;}",
+    (body) => 
+      `function${
+        functionName && functionName.length > 0 ? " " + functionName : ""
+      }($0$${
+        includeType ? ":any" : ""
+      }){` 
+      + body 
+      + "return true;}",
   )
 }
