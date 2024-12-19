@@ -1,4 +1,3 @@
-
 /** 
  * Implemement a single feature (TS types) from an OpenAPI document
  * 
