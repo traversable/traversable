@@ -1,5 +1,5 @@
 import { fn, map, object } from "@traversable/data"
-import type { Functor, Kind as HKT, Omit, newtype } from "@traversable/registry";
+import type { Functor, HKT, Omit, newtype } from "@traversable/registry";
 import { symbol } from "@traversable/registry"
 export { symbol } from "@traversable/registry"
 
@@ -170,18 +170,18 @@ export function untagAlgebra<T>(x: Tag.F<T>): T
 export function untagAlgebra<T>({ [symbol.tag]: _, ...x }: Tag.F<T>) 
   { return x }
 
-export interface Kind extends HKT { ["~1"]: Schema.F<this["~0"]> }
-export const functor: Functor<Kind> = { map: bmap }
+export interface lambda extends HKT { [-1]: Schema.F<this[0]> }
+export const functor: Functor<lambda> = { map: bmap }
 export const ana = fn.ana(functor)
 
 
-export function cata<T>(algebra: Functor.Algebra<Kind, T>): (term: Schema.any) => T {
+export function cata<T>(algebra: Functor.Algebra<lambda, T>): (term: Schema.any) => T {
   return function loop(term: Schema.any): T { 
     return algebra(bmap(loop)(term))
   }
 }
 /**
- * function ana<T>(coalgebra: Functor.Coalgebra<Kind, T>) {
+ * function ana<T>(coalgebra: Functor.Coalgebra<lambda, T>) {
  *   return function loop(term: T): HKT.apply<F, F> {
  *     return F.map(loop)(coalgebra(term))
  *   }

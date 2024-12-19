@@ -109,49 +109,47 @@ export declare namespace Position {
  *   default behavior. To support this, this implementation exposes
  *   two "slots":
  *
- *   - `~0` (corresponds to `in$`)
- *   - `~1` (corresponds to `out$`)
+ *   - `0` (corresponds to `in$`)
+ *   - `1` (corresponds to `out$`)
  *
  *   - These names are intentionally
  *   [out-of-band](https://en.wikipedia.org/wiki/Out-of-band)
  *
  *   - {@link globalThis.Symbol `Symbols`} intentionally avoided
  *   to keep API surface area small, and to keep the API "spec-able"
- *
- *   - Tildes (`~`) are used because for its low precedence compared
- *   to alphanumeric characters.
- *
- *   - By default most IDEs put names that start with (for example)
- *   `_` or `$` at the _top_ of of auto-completion lists. Using a tilde
- *   pushes the name _down_ the list, which makes sure that the _user's_
- *   API is what gets seen first (rather than ours).
  */
-export interface Kind<I = unknown, O = unknown> extends newtype<{ ["~0"]?: I; ["~1"]?: O }> {}
-export type bind<F extends Kind, T = never> = never | [T] extends [never]
-  ? [F] extends [Kind]
+
+export interface HKT<I = unknown, O = unknown> extends newtype<{ [0]: I; [-1]: O }> {}
+
+/* */
+
+// export interface Kind<I = unknown, O = unknown> extends newtype<{ [0]: I; [-1]: O }> {}
+export type bind<F extends HKT, T = never> = never | [T] extends [never]
+  ? [F] extends [HKT]
     ? F
-    : Kind<F>
-  : Kind.apply<F, T>
-export type apply<F extends Kind, T extends F["~0"]> = never | (F & { ["~0"]: T })["~1"]
-export type apply$<F, T> = never | (F & { ["~0"]: T; ["~1"]: unknown })["~1"]
+    : HKT<F>
+  : HKT.apply<F, T>
+export type apply<F extends HKT, T extends F[0]> = never | (F & { [0]: T })[-1]
+export type apply$<F, T> = never | (F & { [0]: T; [-1]: unknown })[-1]
+export type forall<F extends HKT> = HKT.apply<F, unknown>
 
-export declare function apply$<F>(F: F): <T>(t: T) => Kind.apply$<F, T>
+export declare function apply$<F>(F: F): <T>(t: T) => HKT.apply$<F, T>
 
-export declare namespace Kind {
-  export { apply, apply$ }
-  export interface satisfies<F extends Kind> extends newtype<F["~0"] & {}> {}
-  export type unapply<F extends Kind> = F extends Kind & infer T ? T : never
+export declare namespace HKT {
+  export { apply, apply$, forall }
+  export interface satisfies<F extends HKT> extends newtype<F[0] & {}> {}
+  export type unapply<F extends HKT> = F extends HKT & infer T ? T : never
 }
 
 /**
  * ## {@link Fix `Fix`}
  *
  * @example
- *  import { Kind, Fix } from "@traversable/registry"
+ *  import { HKT, Fix } from "@traversable/registry"
  */
-export interface Fix<F> extends Kind<F, Fix<F>> {}
-// export interface Fix<F> extends Kind<Fix<F>> { ["~1"]: this, unfix: Kind<F, Fix<F>>["~0"] }
-// export interface Fix<F> extends Kind<Fix<F>>, newtype<{ unfix: Kind<F, Fix<F>> }> {}
+export interface Fix<F> extends HKT<F, Fix<F>> {}
+// export interface Fix<F> extends HKT<Fix<F>> { [-1]: this, unfix: HKT<F, Fix<F>>[0] }
+// export interface Fix<F> extends HKT<Fix<F>>, newtype<{ unfix: HKT<F, Fix<F>> }> {}
 
 /**
  * ## {@link Countable `Countable`}
@@ -206,22 +204,22 @@ export interface Enumerable<T = unknown> extends Spreadable<T> {
 /**
  * ## {@link Functor `Functor`}
  */
-export interface Functor<F extends Kind = Kind, _F = any> {
+export interface Functor<F extends HKT = HKT, _F = any> {
   _F?: 1 extends _F & 0 ? F : _F
-  map<S, T>(f: (s: S) => T): (F: Kind.apply<F, S>) => Kind.apply<F, T>
+  map<S, T>(f: (s: S) => T): (F: HKT.apply<F, S>) => HKT.apply<F, T>
 }
 
 export declare namespace Functor {
-  type map<F extends Kind> =
+  type map<F extends HKT> =
     | never
     | {
-        <S, T>(f: (s: S) => T): { (F: Kind.apply<F, S>): Kind.apply<F, T> }
-        <S, T>(F: Kind.apply<F, S>, f: (s: S) => T): Kind.apply<F, T>
+        <S, T>(f: (s: S) => T): { (F: HKT.apply<F, S>): HKT.apply<F, T> }
+        <S, T>(F: HKT.apply<F, S>, f: (s: S) => T): HKT.apply<F, T>
       }
-  type Algebra<F extends Kind, T> = never | { (term: Kind.apply<F, T>): T }
-  type Coalgebra<F extends Kind, T> = never | { (expr: T): Kind.apply<F, T> }
-  type RAlgebra<F extends Kind, T> = never | { (term: Kind.apply<F, [F, T]>): T }
-  type RCoalgebra<F extends Kind, T> = never | { (expr: T): Kind.apply<F, Either<F, T>> }
+  type Algebra<F extends HKT, T> = never | { (term: HKT.apply<F, T>): T }
+  type Coalgebra<F extends HKT, T> = never | { (expr: T): HKT.apply<F, T> }
+  type RAlgebra<F extends HKT, T> = never | { (term: HKT.apply<F, [F, T]>): T }
+  type RCoalgebra<F extends HKT, T> = never | { (expr: T): HKT.apply<F, Either<F, T>> }
   type infer<T> = T extends Functor<any, infer F> ? Exclude<F, undefined> : never
 }
 
@@ -510,4 +508,100 @@ export interface Semigroup<in out T> {
  */
 export interface Monoid<in out T> extends Semigroup<T> {
   empty: T
+}
+
+/**
+ * ## {@link Open `Open`}
+ *
+ * > I've never come across anything like this one in the wild.
+ * > If you have, I'd love to hear about it: <ahrjarrett@gmail.com>
+ *
+ * For a type that's even more extensible, see {@link Open.HKT `Open.HKT`}.
+ *
+ * {@link Open `Open`} constructs a record that is open
+ *
+ * See also:
+ * - {@link Open.HKT `Open.HKT`}
+ * - {@link OpenRecord `OpenRecord`}
+ *
+ * @example
+ *  import type { Open } from "@traversable/registry"
+ *
+ *  type Options = {
+ *    newlineChar: string
+ *    indentation: string
+ *  }
+ *
+ *  declare const defaults: Options
+ *
+ *  function configure<const T extends {}>(overrides: T & Partial<Options>): Open<T, Options>
+ *  function configure<const T extends {}>(overrides: T & Partial<Options>)
+ *    { return { ...defaults, ...overrides } }
+ *
+ *  const ex_01 = configure({ newlineChar: "\n", custom: 123 })
+ *  //    ^? OpenRecord<{ newlineChar: "\n", indentation: string, custom: 123 }>
+ *
+ *  // Check: existing properties are preserved
+ *  ex_01.indentation
+ *  //     ^? (property) indentation: string ✅
+ *
+ *  // Check: overrides have been applied
+ *  ex_01.newlineChar
+ *  //     ^? (property) newlineChar: "\n" ✅
+ *
+ *  // Check: supports adding new fields
+ *  ex_01.custom
+ *  //     ^? (property) custom: 123 😌
+ */
+export type Open<
+  T extends {},
+  Base,
+  _ extends Force<T & Required<Omit<Base, keyof T>>> = Force<T & Required<Omit<Base, keyof T>>>,
+> = never | OpenRecord<_>
+
+export interface OpenRecord<T extends {}> extends newtype<T> {}
+
+export declare namespace Open {
+  /**
+   * ### {@link HKT `Open.Kind`}
+   *
+   * Partially apply an {@link OpenRecord}. Gives users an
+   * extension point where they can apply their own semantics
+   * to a type, and have that type "stick".
+   *
+   * @example
+   * import type { Open, newtype } from "@traversable/registry"
+   *
+   * type Options = { newline: string, indentation: string }
+   * interface YourSemantics<T extends {}> extends newtype<T> {}
+   *
+   * // `@traverable/registry` will target `Wrapper[0]`:
+   * //                       🠛
+   * interface Wrapper { [0]: {}, [-1]: YourSemantics<this[0]>  }
+   * // updates to `Wrapper[0]` will be observed here 🠙🠙🠙
+   *
+   * declare function configure<const T extends {}>(overrides: T & Partial<Options>):
+   *   Open.Kind<T, Options, Wrapper>
+   *   //                    ^^ pass the wrapper to `Open.Kind`
+   *
+   * // Note that `ex_01` is wrapped with `YourSemantics`
+   * const ex_01 = configure({ indentation: "\t", CUSTOM: "hey", })
+   * //     ?^ const ex_01: YourSemantics<{ indentation: "\t"; CUSTOM: "hey"; newline: string; }>
+   *
+   * // Properties flow through:
+   *
+   * ex_01.indentation
+   * //     ^? (property) indentation: "\t"
+   * ex_01.CUSTOM
+   * //     ^? (property) CUSTOM: "hey"
+   * ex_01.newline
+   * //     ^? (property) newline: string
+   */
+  type lambda<
+    T extends {},
+    Base,
+    Kind extends HKT,
+    _ extends Force<T & Required<Omit<Base, keyof T>>> = Force<T & Required<Omit<Base, keyof T>>>,
+  > = HKT.apply<Kind, _>
+  interface Record<T extends {}> extends newtype<T> {}
 }

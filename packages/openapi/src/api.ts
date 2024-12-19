@@ -28,7 +28,7 @@ import {
   string,
 } from "@traversable/data"
 import { http } from "@traversable/http"
-// import { fs, path } from "@hotelengine/node"
+// import { fs, path } from "@traversable/node"
 import {  } from "@traversable/openapi"
 import { Compare } from "@traversable/registry"
 

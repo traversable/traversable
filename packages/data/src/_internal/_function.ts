@@ -1,4 +1,4 @@
-import { type Either, type Functor, Invariant, type Kind, URI } from "@traversable/registry"
+import { type Either, type Functor, type HKT, Invariant, URI } from "@traversable/registry"
 
 import type { any, mut } from "any-ts"
 import type { array_shift } from "./_array.js"
@@ -832,12 +832,12 @@ export const fanin
  * - {@link para `fn.para`}
  */
 
-export function ana<F extends Kind>(Functor: Functor<F>): 
-  <T>(coalgebra: Functor.Coalgebra<F, T>) => (term: T) => Kind.apply<F, T> 
+export function ana<F extends HKT>(Functor: Functor<F>): 
+  <T>(coalgebra: Functor.Coalgebra<F, T>) => (term: T) => HKT.apply<F, T> 
 /// impl.
-export function ana<F extends Kind>(Functor: Functor<F>) {
+export function ana<F extends HKT>(Functor: Functor<F>) {
   return <T>(coalgebra: Functor.Coalgebra<F, T>) => {
-    return function loop(term: T): Kind.apply<F, T> {
+    return function loop(term: T): HKT.apply<F, T> {
       return Functor.map(loop)(coalgebra(term))
     }
   }
@@ -855,9 +855,9 @@ export function ana<F extends Kind>(Functor: Functor<F>) {
  * - {@link para `fn.para`}
  */
 
-export function cata<F extends Kind>(Functor: Functor<F>) {
+export function cata<F extends HKT>(Functor: Functor<F>) {
   return <T>(algebra: Functor.Algebra<F, T>) => {
-    return function loop(term: Kind.apply<F, T>): T { 
+    return function loop(term: HKT.apply<F, T>): T { 
       return algebra(Functor.map(loop)(term))
     }
   }
@@ -875,9 +875,12 @@ export function cata<F extends Kind>(Functor: Functor<F>) {
  * - {@link hylo `fn.hylo`}
  */
 
-export function para<F extends Kind>(F: Functor<F>): <A>(ralgebra: Functor.RAlgebra<F, A>) => (term: Kind.apply<F, unknown>) => A {
-  return (ralgebra) => {
-    function fanout(term: unknown): unknown 
+export function para<F extends HKT>(F: Functor<F>): 
+  <T>(ralgebra: Functor.RAlgebra<F, T>) => (term: HKT.apply<F, T>) => T 
+    
+export function para<F extends HKT>(F: Functor<F>) {
+  return <T>(ralgebra: Functor.RAlgebra<F, T>) => {
+    function fanout(term: T): HKT.apply<F, [F, T]>
       { return [term, para(F)(ralgebra)(term)] }
     return flow(
       F.map(fanout),
@@ -886,13 +889,13 @@ export function para<F extends Kind>(F: Functor<F>): <A>(ralgebra: Functor.RAlge
   }
 }
 
-// export function para<F extends Kind, _>(F: Functor<F, _>):
-//   <T>(algebra: (term: Kind.apply<F, [F, T]>) => T) 
-//     => (term: Kind.apply<F, [_, T]>) 
-//     => Kind.apply<F, [F, T]>
-// export function para<F extends Kind>(F: Functor<F>) {
-//   return <T>(algebra: (term: Kind.apply<F, [F, T]>) => T) => {
-//     return function loop(term: Kind.apply<F, [F, T]>): Kind.apply<F, [F, T]> {
+// export function para<F extends HKT, _>(F: Functor<F, _>):
+//   <T>(algebra: (term: HKT.apply<F, [F, T]>) => T) 
+//     => (term: HKT.apply<F, [_, T]>) 
+//     => HKT.apply<F, [F, T]>
+// export function para<F extends HKT>(F: Functor<F>) {
+//   return <T>(algebra: (term: HKT.apply<F, [F, T]>) => T) => {
+//     return function loop(term: HKT.apply<F, [F, T]>): HKT.apply<F, [F, T]> {
 //       return [term, algebra(F.map(loop)(term))]
 //     }
 //   }
@@ -909,14 +912,14 @@ export function para<F extends Kind>(F: Functor<F>): <A>(ralgebra: Functor.RAlge
  * - {@link cata `fn.cata`}
  * - {@link hylo `fn.hylo`}
  */
-export function apo<F extends Kind>(F: Functor<F>): 
+export function apo<F extends HKT>(F: Functor<F>): 
   <T>(coalgebra: Functor.RCoalgebra<F, T>) 
     => (expr: T)
-    => Kind.apply<F, T> 
+    => HKT.apply<F, T> 
 
-export function apo<F extends Kind>(F: Functor<F>) {
+export function apo<F extends HKT>(F: Functor<F>) {
   return <T>(coalgebra: Functor.RCoalgebra<F, T>) => 
-    (expr: T): Kind.apply<F, T> => pipe(
+    (expr: T): HKT.apply<F, T> => pipe(
       coalgebra(expr),
       F.map(
         (e) => e._tag === URI.Right 
@@ -935,7 +938,7 @@ export function apo<F extends Kind>(F: Functor<F>) {
  * The benefit to using {@link hylo `fn.hylo`} rather than
  * just using function composition is performance: by providing
  * the co-/algebra ahead of time, we're able to avoid building up
- * an intermediate data structure in-memory.
+ * an intermediate data structure in memory.
  * 
  * See also:
  * - {@link ana `fn.ana`}
@@ -944,7 +947,7 @@ export function apo<F extends Kind>(F: Functor<F>) {
  * - {@link hylo `fn.hylo`}
  */
 export function hylo
-  <F extends Kind>(F: Functor<F>): 
+  <F extends HKT>(F: Functor<F>): 
   <S, T>(
     algebra: Functor.Algebra<F, T>, 
     coalgebra: Functor.Coalgebra<F, S>
@@ -952,7 +955,7 @@ export function hylo
     => T
 
 export function hylo
-  <F extends Kind>(Functor: Functor<F>) {
+  <F extends HKT>(Functor: Functor<F>) {
     return <S, T>(
       algebra: Functor.Algebra<F, T>, 
       coalgebra: Functor.Coalgebra<F, S>

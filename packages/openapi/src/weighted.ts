@@ -1,56 +1,38 @@
 import { array, fn, number, order } from "@traversable/data"
-import type { Compare, Functor, Monoid } from "@traversable/registry"
+import { 
+  type Compare, 
+  type Monoid, 
+  type NodeWeight,
+  WeightMap, 
+} from "@traversable/registry"
 
-import { JsonPointer, is, tree } from "@traversable/core"
-import { hasOwn } from "@traversable/data/function"
+import { JsonPointer, tree } from "@traversable/core"
 import { Schema } from "./schema/exports.js"
 
-export type { Weight_any as any }
-
-type Weight_any = byType[keyof byType]
-//           ^?
-export type WeightMap = globalThis.Record<keyof typeof byType, Weight_any>
-
-export type byType = typeof byType
-export const byType = {
-  nonnullable: -1,
-  null: 0,
-  boolean: 1,
-  integer: 2,
-  number: 3,
-  string: 4,
-  oneOf: 100,
-  anyOf: 101,
-  allOf: 102,
-  object: 200,
-  array: 300,
-  tuple: 9000,
-  record: 9000,
-} as const
-
-const getMonoid
-  : ($: Doclike, mapping: WeightMap) => Monoid<Weight_any> 
-  = ($, mapping) => ({
-    empty: mapping.nonnullable,
-    concat: number.max
-  })
-
-export const fold 
-  : ($: Doclike, mapping?: WeightMap) => (xs: readonly Schema.Node[]) => Weight_any
-  = ($: Doclike, mapping: WeightMap = byType) => fn.pipe(
-    getMonoid($, mapping), 
-    (Mn) => array.foldMap(Mn)(fromSchema($, mapping)),
-  )
-
+/** TODO: Replace this type with one from {@link openapi.document} */
 export type Doclike = { 
   paths?: {[x: string]: {} }, 
   components?: { schemas?: {} } 
 }
 
+const getMonoid
+  : ($: Doclike, mapping: WeightMap) => Monoid<NodeWeight> 
+  = (_, mapping) => ({
+    empty: mapping.unknown,
+    concat: number.max
+  })
+
+export const fold 
+  : ($: Doclike, mapping?: WeightMap) => (xs: readonly Schema.Node[]) => NodeWeight
+  = ($: Doclike, mapping: WeightMap = WeightMap) => fn.pipe(
+    getMonoid($, mapping), 
+    (Mn) => array.foldMap(Mn)(fromSchema($, mapping)),
+  )
+
 export const fromSchema
-  : ($: Doclike, mapping?: WeightMap) => (node: Schema.Node) => Weight_any
-  = ($, mapping = byType) => (node) => {
-    if (typeof node === "boolean") return mapping.nonnullable
+  : ($: Doclike, mapping?: WeightMap) => (node: Schema.Node) => NodeWeight
+  = ($, mapping = WeightMap) => (node) => {
+    if (typeof node === "boolean") return mapping.unknown
     else {
       switch (true) {
         case Schema.isRef(node): return resolveRef(node, $, mapping)
@@ -63,9 +45,9 @@ export const fromSchema
   }
 
 export const fromSchemaRec
-  : ($: Doclike, mapping?: WeightMap) => (node: Schema.Node) => Weight_any
-  = ($, mapping = byType) => (node) => {
-    if (typeof node === "boolean") return mapping.nonnullable
+  : ($: Doclike, mapping?: WeightMap) => (node: Schema.Node) => NodeWeight
+  = ($, mapping = WeightMap) => (node) => {
+    if (typeof node === "boolean") return mapping.unknown
     else {
       switch (true) {
         case Schema.isNull(node): return mapping.null
@@ -82,24 +64,24 @@ export const fromSchemaRec
 const trimHash = ($ref: string) => $ref.startsWith("#") ? $ref.slice(1) : $ref
 const toJsonPointer = fn.flow(trimHash, JsonPointer.toPath)
 
-export const resolveRef = ({ $ref }: { $ref?: string }, $: Doclike, mapping: WeightMap) => {
-  if (!$ref) return byType.nonnullable
+export const resolveRef = ({ $ref }: { $ref?: string }, $: Doclike, mapping: WeightMap): NodeWeight => {
+  if (!$ref) return WeightMap.unknown
   const path = toJsonPointer($ref)
   return !tree.has(...path, Schema.is)($) 
-    ? byType.nonnullable 
-    : fromSchema($, mapping)(tree.get($, ...path)!) ?? byType.nonnullable
+    ? WeightMap.unknown 
+    : fromSchema($, mapping)(tree.get($, ...path)!) ?? WeightMap.unknown
 }
 
 export const fromSchemaEntry
-  : ($: Doclike, mapping?: WeightMap) => (entry: readonly [string, Schema.Node]) => Weight_any
-  = ($, mapping = byType) => ([, v]) => fromSchema($, mapping)(v)
+  : ($: Doclike, mapping?: WeightMap) => (entry: readonly [string, Schema.Node]) => NodeWeight
+  = ($, mapping = WeightMap) => ([, v]) => fromSchema($, mapping)(v)
 
 export const orderBy
   : ($: Doclike, mapping?: WeightMap) => Compare<Schema.Node>
-  = ($, mapping = byType) => order.mapInput(order.number, fromSchema($, mapping))
+  = ($, mapping = WeightMap) => order.mapInput(order.number, fn.flow(fromSchema($, mapping), (x) => x.weight))
 
 export const orderEntriesBy
   : ($: Doclike, mapping?: WeightMap) => Compare<readonly [string, Schema.Node]>
-  = ($, mapping = byType) => order.mapInput(order.number, fromSchemaEntry($, mapping))
+  = ($, mapping = WeightMap) => order.mapInput(order.number, fn.flow(fromSchemaEntry($, mapping), (x) => x.weight))
 
 // export const sortSchema

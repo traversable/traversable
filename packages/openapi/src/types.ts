@@ -1,7 +1,7 @@
 import { core, fc, tree } from "@traversable/core";
 import type { prop } from "@traversable/data"
 import { object } from "@traversable/data"
-import type { KeepLast, Kind, Mutable, Partial } from "@traversable/registry";
+import type { HKT, KeepLast, Mutable, Partial } from "@traversable/registry";
 import { symbol } from "@traversable/registry";
 import type { any, newtype } from "any-ts"
 
@@ -197,6 +197,7 @@ type F<T> =
 
 export type Schema_Node = F<Schema | $ref>
 
+
 export declare namespace Schema_Node {
   export { Schema_Node as any }
 }
@@ -316,20 +317,17 @@ export const Schema_isScalar: {
 
 export interface Schema_base<T = {}> { nullable?: boolean, example?: T }
 export interface Schema_null<T = {}, Meta extends {} = {}> extends 
-  Kind<T>,
   newtype<Meta>, 
   inline<{ type: DataType.null }>, 
   Schema_base 
   { enum?: { [0]: null }, nullable?: true }
 
 export interface Schema_boolean<T = {}, Meta extends {} = {}> extends 
-  Kind<T>, 
   newtype<Meta>, 
   inline<{ type: DataType.boolean }>, 
   Schema_base {}
 
 export interface Schema_integer<T = {}, Meta extends {} = {}> extends 
-  Kind<T>,
   newtype<Meta>, 
   inline<{ type: DataType.integer }>, 
   Schema_base {
@@ -345,7 +343,6 @@ export interface Schema_number<
   T = {}, 
   Meta extends {} = {}
 > extends 
-  Kind<T>,
   newtype<Meta>, 
   inline<{ type: "number" }>, 
   Schema_base  {
@@ -361,7 +358,6 @@ export interface Schema_string<
   T = {}, 
   Meta extends {} = {}
 > extends 
-  Kind<T>,
   newtype<Meta>, 
   inline<{ type: "string" }>, 
   Schema_base  {
@@ -446,16 +442,16 @@ export interface Schema_Array<T = unknown> extends newtype<T & {}> { [symbol.tag
 export interface Schema_Tuple<T = unknown> extends newtype<T & {}> { [symbol.tag]: symbol.tuple }
 export interface Schema_Record<T = unknown> extends newtype<T & {}> { [symbol.tag]: symbol.record }
 
-export interface Schema_NullF extends Kind<{}> { ["~1"]: Schema_Null<this["~0"]> }
-export interface Schema_BooleanF extends Kind<{}> { ["~1"]: Schema_Boolean<this["~0"]> }
-export interface Schema_IntegerF extends Kind<{}> { ["~1"]: Schema_Integer<this["~0"]> }
-export interface Schema_NumberF extends Kind<{}> { ["~1"]: Schema_Number<this["~0"]> }
-export interface Schema_StringF extends Kind<{}> { ["~1"]: Schema_String<this["~0"]> }
-export interface Schema_AnyOfF extends Kind<{}> { ["~1"]: Schema_AnyOf<this["~0"]> }
-export interface Schema_OneOfF extends Kind<{}> { ["~1"]: Schema_OneOf<this["~0"]> }
-export interface Schema_AllOfF extends Kind<{}> { ["~1"]: Schema_AllOf<this["~0"]> }
+export interface Schema_NullF extends HKT<{}> { [-1]: Schema_Null<this[0]> }
+export interface Schema_BooleanF extends HKT<{}> { [-1]: Schema_Boolean<this[0]> }
+export interface Schema_IntegerF extends HKT<{}> { [-1]: Schema_Integer<this[0]> }
+export interface Schema_NumberF extends HKT<{}> { [-1]: Schema_Number<this[0]> }
+export interface Schema_StringF extends HKT<{}> { [-1]: Schema_String<this[0]> }
+export interface Schema_AnyOfF extends HKT<{}> { [-1]: Schema_AnyOf<this[0]> }
+export interface Schema_OneOfF extends HKT<{}> { [-1]: Schema_OneOf<this[0]> }
+export interface Schema_AllOfF extends HKT<{}> { [-1]: Schema_AllOf<this[0]> }
 
-export interface SchemaKind extends Kind<Schema_F<any>> { ["~1"]: Schema_F<this["~0"]> }
+export interface SchemaKind extends HKT<Schema_F<any>> { [-1]: Schema_F<this[0]> }
 
 export type Schema_kinds = typeof Schema_kinds
 export declare const Schema_kinds: {
@@ -483,7 +479,7 @@ export type Schema_tag<T>
 
 export declare namespace Schema_tag { export { object_ as object } }
 export declare namespace Schema_tag {
-  type scalar<T extends Schema_scalar> = Kind.apply<typeof Schema_kinds[T["type"]], Mutable<T>>
+  type scalar<T extends Schema_scalar> = HKT.apply<typeof Schema_kinds[T["type"]], Mutable<T>>
   type array<
     T extends Schema_array, 
     $ extends 

@@ -1,5 +1,20 @@
 import { Weight } from "@traversable/openapi"
+import { WeightMap, createWeightRegistry } from "@traversable/registry"
 import * as vi from "vitest"
+
+interface CustomNode { _tag: "CustomNode" }
+
+// createWeightRegistry()
+// const myWeights = Weight.register({
+//   CustomNode: {
+//     weight: 9000,
+//     predicate: (u): u is CustomNode => true
+//   }
+// })
+// declare module "@traversable/openapi" { 
+//   interface WeightRegistry extends Weight.Register<typeof myWeights> {} 
+// }
+
 
 vi.describe(`〖⛳️〗‹‹‹ ❲@traversable/openapi❳`, () => {
 	vi.it(`〖⛳️〗› ❲openapi.Weight.fromSchema❳`, () => {
@@ -64,12 +79,16 @@ vi.describe(`〖⛳️〗‹‹‹ ❲@traversable/openapi❳`, () => {
     } as const
 
     const ex_01 = doc.paths["/api/v2/groups/businesses"].get.responses[200].content["application/json"].schema
-    const orderEntries = Weight.orderEntriesBy(doc, Weight.byType)
+    const orderEntries = Weight.orderEntriesBy(doc, WeightMap)
+    orderEntries
     const sorted = globalThis.Object
       .entries(ex_01.properties)
       .sort(orderEntries)
       .map((xs) => globalThis.Number.parseInt(xs[0]))
 
     vi.assert.deepEqual(sorted, [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12])
+  })
+
+  vi.it.todo(`registers`, () => {
   })
 })

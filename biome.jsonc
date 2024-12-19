@@ -83,7 +83,8 @@
       "packages/core/**/*",
       "packages/data/**/*",
       "packages/http/**/*",
-      "packages/openapi/**/*"
+      "packages/openapi/**/*",
+      "packages/interpret/**/*"
     ],
     "include": ["packages/*/src/**/*.ts"],
     "formatWithErrors": false,

@@ -1,19 +1,19 @@
 import { fn } from "@traversable/data"
 import type { Functor } from "@traversable/registry"
-import { Ext, JsonSchema as Schema } from "./model.js"
+import { Ext, Ltd } from "./model.js"
 
-namespace RAlgebra {
-  export const validator: Functor.RAlgebra<Ext.Kind, derive.Stream> = (n) => {
+namespace Algebra {
+  export const equal: Functor.RAlgebra<Ext.lambda, derive.Stream> = (n) => {
     switch (true) {
-      case Schema.is.null(n):
+      case Ltd.is.null(n):
         return { go: (path) => `if (${path.join("")} != null) return false;\n` }
-      case Schema.is.boolean(n):
+      case Ltd.is.boolean(n):
         return { go: (path) => `if (typeof ${path.join("")} !== "boolean") return false;\n` }
-      case Schema.is.integer(n):
+      case Ltd.is.integer(n):
         return { go: (path) => `if (typeof ${path.join("")} !== "number") return false;\n` }
-      case Schema.is.number(n):
+      case Ltd.is.number(n):
         return { go: (path) => `if (typeof ${path.join("")} !== "number") return false;\n` }
-      case Schema.is.string(n):
+      case Ltd.is.string(n):
         return { go: (path) => `if (typeof ${path.join("")}!=="string") return false;\n` }
       case Ext.is.object(n):
         return {
@@ -77,11 +77,11 @@ namespace RAlgebra {
   }
 }
 
-derive.fold = fn.flow(Ext.fromSchema, fn.para(Ext.functor)(RAlgebra.validator))
+derive.fold = fn.flow(Ext.fromSchema, fn.para(Ext.functor)(Algebra.equal))
 
-export function derive(schema: Schema | Ext.lax, options?: derive.Options): string
+export function derive(schema: Ltd | Ext.lax, options?: derive.Options): string
 export function derive(
-  schema: Schema | Ext.lax,
+  schema: Ltd | Ext.lax,
   { functionName = derive.defaults.functionName }: derive.Options = derive.defaults,
 ) {
   return `function ${functionName}($){` + derive.fold(schema).go([]) + "}"

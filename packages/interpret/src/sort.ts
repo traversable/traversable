@@ -1,8 +1,8 @@
-import { type Compare, fn, order } from "@traversable/data"
-import { order_array_zero } from "@traversable/data/_internal/_order"
+import { type Compare, fn, map, order } from "@traversable/data"
 import { Weight } from "@traversable/openapi"
-import type { Functor } from "@traversable/registry"
-import { Ext, JsonSchema as Ltd } from "./model.js"
+import { type Functor, WeightMap } from "@traversable/registry"
+
+import { Ext, Ltd } from "./model.js"
 
 export const nodesAreTheSameType: (l: Ext, r: Ext) => boolean = (l, r) =>
   "type" in l && "type" in r
@@ -83,7 +83,7 @@ const compareDeep: (compare: Compare<Ext>) => Compare<Ext> = (compare: Compare<E
   }
 }
 
-const coalgebra: (compare: Compare<Ext>) => Functor.Coalgebra<Ext.Kind, Ext> = (compare) => (n) => {
+const coalgebra: (compare: Compare<Ext>) => Functor.Coalgebra<Ext.lambda, Ext> = (compare) => (n) => {
   switch (true) {
     case Ltd.is.null(n):
       return n
@@ -105,8 +105,31 @@ const coalgebra: (compare: Compare<Ext>) => Functor.Coalgebra<Ext.Kind, Ext> = (
       return { anyOf: [...n.anyOf].sort(compareDeep(compare)) }
     case Ext.is.oneOf(n):
       return { oneOf: [...n.oneOf].sort(compareDeep(compare)) }
-    case Ext.is.tuple(n):
-      return { ...n, items: [...n.items].sort(compareDeep(compare)) }
+    case Ext.is.tuple(n): {
+      // const out = { ...n, items: [...n.items].sort(compareDeep(compare)) }
+
+      const items =
+        // Object.entries(
+        n.items
+          .map((x, ix) => [ix, x] as const)
+          .sort(order.mapInput(compareDeep(compare), ([, v]) => v))
+          .map(([originalIx, x]) => ({ ...x, originalIx }))
+      // .reduce((acc: { [ix: `_${number}`]: typeof x }, [ix, x], order) => (acc["_" + order] = [ix, x], acc), {})
+      // )
+      // const out: { [originalIx: number]: Ext } = Array.from()
+
+      // pre.forEach(([originalIx, x], ix) => {
+      //   out["_" + originalIx] = x
+      // })
+
+      // console.log(JSON.stringify(n.items, null, 2))
+      // console.log(out)
+      // console.log(JSON.stringify(Object.entries(out), null, 2))
+      // console.log(Object.fromEntries(Object.entries(out).map(([, x]) => x)))
+      // console.log(Object.entries(Object.fromEntries(Object.entries(out).map(([, x]) => x))))
+
+      return { ...n, items }
+    }
     case Ext.is.object(n):
       return {
         ...n,
@@ -118,14 +141,14 @@ const coalgebra: (compare: Compare<Ext>) => Functor.Coalgebra<Ext.Kind, Ext> = (
         ),
       }
     default:
-      return fn.exhaustive(n)
+      return n // fn.exhaustive(n)
   }
 }
 
-export { sortDeep as deep }
+export { deriveSort as sortDeep, deriveSort as derive }
 
 /**
- * ## {@link sortDeep `sort.deep`}
+ * ## {@link deriveSort `sort.derive`}
  *
  * Given a comparison function that returns `-1`, `0` or `1` given 2 arbitrary
  * OpenAPI or JSON Schema nodes, returns a function that expects an OpenAPI
@@ -187,8 +210,34 @@ export { sortDeep as deep }
  *  // ⛳️ 1 passed
  *  // 😌
  */
-function sortDeep(compare: Compare<Ltd | Ext>): <const T extends Ext>(schema: T) => T
-function sortDeep(compare: Compare<Ltd | Ext>) {
+
+function deriveSort(options?: deriveSort.Options): <const T extends Ltd | Ext.lax | Ext>(schema: T) => T
+function deriveSort(
+  {
+    compare = deriveSort.defaults.compare,
+    // weightMap = deriveSort.defaults.weightMap,
+  }: deriveSort.Options = deriveSort.defaults,
+) {
   /// impl.
   return fn.ana(Ext.functor)(coalgebra(order.mapInput(compare, Ext.fromSchema)))
+}
+
+declare namespace deriveSort {
+  type Options = Partial<typeof deriveSort.defaults>
+  namespace _Internal {
+    interface Options {
+      compare: Compare<Ltd | Ext.lax | Ext>
+      // weightMap: WeightMap
+    }
+  }
+}
+
+namespace deriveSort {
+  export const defaults = {
+    compare: order.mapInput(
+      order.number,
+      fn.flow(Weight.fromSchema({ paths: {} }, WeightMap), (_) => _.weight),
+    ) as Compare<any>,
+    // weightMap: WeightMap,
+  } as const satisfies deriveSort._Internal.Options
 }

@@ -23,14 +23,38 @@ openapi.is = {
   request: (u: openapi.requestBody): u is openapi.request => !("$ref" in u),
 }
 
+
+export const doc
+  : <const T extends doc>(specification: T) => T 
+  = fn.identity
+export interface doc extends doc.meta {
+  openapi: string
+  paths: openapi.paths
+  components?: openapi.components
+}
+export declare namespace doc {
+    interface meta {
+      info: openapi.meta.info
+      servers?: openapi.meta.servers
+      security?: openapi.meta.security
+      tags?: openapi.meta.tags
+      externalDocs?: openapi.meta.externalDocs
+    }
+  }
+
 export declare namespace openapi {
-  export { $ref }
+  export { $ref, doc as document }
 }
 export declare namespace openapi {
-  const document: document.meta & {
-    openapi: "3.0.1" | "3.0.1"
-    schemas: openapi.schemas
-    paths:
+  const doc: doc.meta & {
+    openapi: "3.1.0"
+    components: {
+      schemas: openapi.schemas
+    }
+    paths: 
+      /** 
+       * __Path__ syntax specified by [RFC-3986](https://datatracker.ietf.org/doc/html/rfc3986#section-3) 
+       */ 
       & { ["/api/v2/example/{id}"]?: openapi.pathitem } 
       & { 
       [path: string]: {
@@ -46,10 +70,13 @@ export declare namespace openapi {
             [500]?: openapi.response 
           } & {
             /** 
-             * ### [HTTP status code](https://developer.mozilla.org/en-US/docs/Web/HTTP/Status) 
+             * __Status__ specified by [RFC-7231](https://datatracker.ietf.org/doc/html/rfc7231#section-6)
              */
-            [status: number]: { 
-              content?: {
+            [status: number]: {
+              content?: { 
+                /** 
+                 * __Media type__ specified by [RFC-6838](https://datatracker.ietf.org/doc/html/rfc6838) 
+                 */
                 [http.MediaType.enum.applicationJSON]?: openapi.mediatype
                 [http.MediaType.enum.applicationFormURLEncoded]?: openapi.mediatype
                 [http.MediaType.enum.applicationOctetStream]?: openapi.mediatype
@@ -94,24 +121,9 @@ export declare namespace openapi {
     }
   }
 
-  interface document extends document.meta {
-    openapi: string
-    paths: openapi.paths
-    components?: openapi.components
-  }
-  namespace document {
-    interface meta {
-      info: openapi.meta.info
-      servers?: openapi.meta.servers
-      security?: openapi.meta.security
-      tags?: openapi.meta.tags
-      externalDocs?: openapi.meta.externalDocs
-    }
-  }
 
   interface components { schemas?: schemas }
   interface paths extends inline<{ [path: string]: openapi.pathitem }> {}
-
 
   interface pathitem extends 
     pathitem.meta, 
@@ -268,7 +280,7 @@ export declare namespace arbitrary {
  *
  * const oneHundredOpenAPIDocuments = fc.sample(openapi.arbitrary, 100)
  */
-export function arbitrary(constraints?: arbitrary.Constraints): fc.Arbitrary<openapi.document>
+export function arbitrary(constraints?: arbitrary.Constraints): fc.Arbitrary<doc>
 export function arbitrary(_: arbitrary.Constraints = defaults): fc.Arbitrary<{}> {
   const constraints = applyConstraints(_)
   return fc.record({
