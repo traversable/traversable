@@ -1,5 +1,5 @@
 import { type Compare, fn, object } from "@traversable/data"
-import { type Functor } from "@traversable/registry"
+import type { Functor } from "@traversable/registry"
 
 import { Ext, Ltd } from "./model.js"
 import * as sort from "./sort.js"

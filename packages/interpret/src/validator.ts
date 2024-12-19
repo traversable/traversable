@@ -136,8 +136,7 @@ namespace RAlgebra {
           }
         }
       }
-      case Ext.is.allOf(n):
-        return fn.throw("UNIMPLEMENETED")
+      case Ext.is.allOf(n): return { go: (path, depth) => n.allOf.map(([, ctx]) => ctx.go(path, depth)).join("") }
       case Ext.is.anyOf(n):
         return fn.throw("UNIMPLEMENETED")
       case Ext.is.oneOf(n):

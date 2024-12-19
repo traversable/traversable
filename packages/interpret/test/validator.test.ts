@@ -89,6 +89,18 @@ vi.describe("〖️⛳️〗‹‹‹ ❲@traversable/interpret/validator❳", (
       'function($0$:any){if(!Array.isArray($0$))return false;let $0$2=$0$[2];if(typeof $0$2!=="boolean")return false;let $0$0=$0$[0];if(typeof $0$0!=="string")return false;let $0$1=$0$[1];if(!Array.isArray($0$1))return false;for(let i=0;i<$0$1.length;i++){let $1$1=$0$1[i];if(typeof $1$1!=="number")return false;}return true;}',
     )
   })
+
+  vi.it("〖️⛳️〗› ❲validator.derive❳: ‹intersection› (example-based)", () => {
+    vi.assert.equal(
+      V.derive({ 
+        allOf: [
+          { type: "object", properties: { abc: { type: "boolean" } } },
+          { type: "object", properties: { def: { type: "boolean" } } },
+        ],
+      }),
+      'function($0$:any){if(!$0$||typeof $0$!=="object"||Array.isArray($0$))return false;let abc=$0$["abc"];if(typeof abc!=="boolean")return false;if(!$0$||typeof $0$!=="object"||Array.isArray($0$))return false;let def=$0$["def"];if(typeof def!=="boolean")return false;return true;}',
+    )
+  })
 })
 
 vi.describe("〖️⛳️〗‹‹‹ ❲@traversable/interpret/validator❳: records", () => {
