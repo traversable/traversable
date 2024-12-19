@@ -55,7 +55,7 @@ vi.describe("〖️⛳️〗‹‹‹ ❲@traversable/interpret/validator❳", (
   vi.it("〖️⛳️〗› ❲validator.derive❳: ‹sanity› (highly-suspect)", () => {
     vi.assert.equal(
       T.derive(ex_01),
-      'type Anonymous = { "a": { "h": number; "b": [{ "d": number; "e": [[[{ "f": string; "g": boolean }]]]; "c": number; "f": number }, { "g": number }] } }',
+      'type Anonymous = { a: { h: number; b: [{ d: number; e: [[[{ f: string; g: boolean }]]]; c: number; f: number }, { g: number }] } }',
     )
   })
   

@@ -1650,8 +1650,8 @@ export function object_parseKey(
   return (
     typeof k === "symbol" ? _ 
     : isQuoted(k) ? escape(_)
-    // : parseAsJson ? `"` + escape(_) + `"`
-    // : isValidIdentifier(k) ? escape(_)
+    : parseAsJson ? `"` + escape(_) + `"`
+    : isValidIdentifier(k) ? escape(_)
     : `"` + escape(_) + `"`
   )
 }

@@ -757,7 +757,7 @@ const builtins = {
   object: {
     beforeEach(ctx: Internal.Context) { 
       return (prop: Schema.any, key: string | number) => 
-        [prop, object.parseKey(key)] satisfies [Schema.any, string] 
+        [prop, object.parseKey(key, { parseAsJson: true })] satisfies [Schema.any, string] 
     }
   }
 } as const
