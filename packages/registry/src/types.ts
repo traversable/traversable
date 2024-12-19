@@ -121,7 +121,11 @@ export declare namespace Position {
 
 export interface HKT<I = unknown, O = unknown> extends newtype<{ [0]: I; [-1]: O }> {}
 
-/* */
+// type __ = HKT.apply<Capture, (x: number) => string>
+// interface Capture extends HKT<(_: any) => unknown> {
+//   [-1]: <T extends Parameters<this[0] & {}>[0]>(_: T) => ReturnType<this[0] & {}>
+// }
+
 
 // export interface Kind<I = unknown, O = unknown> extends newtype<{ [0]: I; [-1]: O }> {}
 export type bind<F extends HKT, T = never> = never | [T] extends [never]
