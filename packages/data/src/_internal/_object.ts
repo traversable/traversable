@@ -18,6 +18,7 @@ import {
 } from "./_string.js"
 import type { to } from "./_to.js"
 import type { jsdoc } from "./_unicode.js"
+import { Partial } from "@traversable/registry"
 
 type mutable<T> = never | { -readonly [K in keyof T]: T[K] }
 /** @internal */
@@ -1655,16 +1656,8 @@ export function object_parseKey(
     : `"` + escape(_) + `"`
   )
 }
-
-object_parseKey.defaults = {
-  parseAsJson: false,
-} satisfies globalThis.Required<object_parseKey.Options>
-
-export declare namespace object_parseKey {
-  type Options = {
-    parseAsJson: boolean
-  }
-}
+object_parseKey.defaults = { parseAsJson: false } satisfies globalThis.Required<object_parseKey.Options>
+export declare namespace object_parseKey { type Options = Partial<{ parseAsJson: boolean }> }
 
 
 /** 
@@ -1673,9 +1666,15 @@ export declare namespace object_parseKey {
  */
 export function object_parseEntry<const T extends readonly [key.any, any.primitive]>([k, v]: T): `${string}: ${string}`
 export function object_parseEntry<const T extends readonly [prop.any, any.showable]>([k, v]: T): `${string}: ${string}`
-export function object_parseEntry<const T extends readonly [prop.any, any.showable]>([k, v]: T) {
-  return `${object_parseKey(k)}: ${globalThis.String(v)}`
-}
+export function object_parseEntry<const T extends readonly [key.any, any.primitive]>([k, v]: T, options?: object_parseEntry.Options): `${string}: ${string}`
+export function object_parseEntry<const T extends readonly [prop.any, any.showable]>([k, v]: T, options?: object_parseEntry.Options): `${string}: ${string}`
+export function object_parseEntry<const T extends readonly [prop.any, any.showable]>(
+  [k, v]: T, {
+    parseAsJson = object_parseEntry.defaults.parseAsJson,
+  }: object_parseEntry.Options = object_parseEntry.defaults
+) { return object_parseKey(k, { parseAsJson }) + ": " + globalThis.String(v) }
+object_parseEntry.defaults = object_parseKey.defaults
+export declare namespace object_parseEntry { type Options = object_parseKey.Options }
 
 /** 
  * ## {@link object_get.defer `object.get.defer`} 
