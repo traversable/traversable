@@ -422,7 +422,7 @@ namespace Context {
       Context.apply(node, xf),
       object.intersect.defer({
         path: [...prev.path, symbol.string],
-        example: parseExample(core.is.record)(node),
+        example: parseExample(core.is.any.record)(node),
       }),
     )
   }

@@ -1,6 +1,6 @@
-import { type JSON, is } from "@traversable/core"
+import { Json, is } from "@traversable/core"
 import { Option, fn, type keys, map, number, object, pair } from "@traversable/data"
-import { Invariant, type Mutable } from "@traversable/registry"
+import { Invariant } from "@traversable/registry"
 import { Schema } from "./schema/exports.js"
 
 export type toJSON<T> 
@@ -126,16 +126,6 @@ export namespace toJSON {
     )
 }
 
-export type fromJSON<T> 
-  = T extends null ? { type: "null"; nullable: true; enum: [null] }
-  : T extends boolean ? { type: "boolean"; const: T }
-  : T extends bigint ? { type: "string"; format: "bigint"; const: `${T}` }
-  : T extends number ? { type: "number"; const: T }
-  : T extends string ? { type: "string"; const: T }
-  : T extends readonly JSON[] ? fromJSON.array<T>
-  : fromJSON.object<T>
-  ;
-
 /**
  * ## {@link fromJSON `openapi.fromJSON`}
  *
@@ -170,30 +160,42 @@ export type fromJSON<T>
  *    }
  *  )
  */
-export function fromJSON<const T>(json: T): fromJSON<Mutable<T>>
-export function fromJSON(json: JSON.any): {} {
-  return fromJSON.loop(json)
-}
+export function fromJSON<const T>(json: T): fromJSON<T>
+export function fromJSON(json: Json.any) { return fromJSON.loop(json) }
+
+export type fromJSON<T> 
+  = T extends null ? { type: "null"; nullable: true; enum: [null] }
+  : T extends boolean ? { type: "boolean"; const: T }
+  : T extends bigint ? { type: "string"; format: "bigint"; const: `${T}` }
+  : T extends number ? { type: "number"; const: T }
+  : T extends string ? { type: "string"; const: T }
+  : T extends readonly Json[] ? fromJSON_array<T>
+  : fromJSON_object<T>
+  ;
 
 export declare namespace fromJSON {
-  export interface Loop { (_: JSON.any): { type: Schema.scalar["type"] | Schema.composite["type"] } }
+  export interface Loop { (_: Json.any): { type: Schema.scalar["type"] | Schema.composite["type"] } }
   export interface Context { path: [...keys.any] }
-  export type array<T extends readonly JSON[]> = never | {
-    type: "array"
-    minItems: T["length"]
-    maxItems: T["length"]
-    items
-      : number extends T["length"] 
-      ? fromJSON<T[number]> 
-      : { -readonly [ix in keyof T]: fromJSON<T[ix]> }
+  export { 
+    fromJSON_object as object,
+    fromJSON_array as array,
   }
+}
 
-  export { object_ as object }
-  export type object_<T> = never | {
-    type: "object"
-    required: (keyof T)[]
-    properties : { -readonly [K in keyof T]: fromJSON<T[K]> }
-  }
+type fromJSON_array<T extends readonly Json[]> = never | {
+  type: "array"
+  minItems: T["length"]
+  maxItems: T["length"]
+  items
+    : number extends T["length"] 
+    ? fromJSON<T[number]> 
+    : { -readonly [ix in keyof T]: fromJSON<T[ix]> }
+}
+
+type fromJSON_object<T> = never | {
+  type: "object"
+  required: (keyof T)[]
+  properties : { -readonly [K in keyof T]: fromJSON<T[K]> }
 }
 
 export namespace fromJSON {
@@ -211,8 +213,8 @@ export namespace fromJSON {
       const: `${node}`,
     }) satisfies Schema.string & { const: string }
 
-  export function typeOf<T extends JSON>(value: T): typeOf<T>
-  export function typeOf<T extends JSON>(value: T): string { return typeof value }
+  export function typeOf<T extends Json.any>(value: T): typeOf<T>
+  export function typeOf<T extends Json.any>(value: T): string { return typeof value }
   export type typeOf<T> 
     = T extends null ? "null"
     : T extends boolean ? "boolean"
@@ -246,7 +248,7 @@ export namespace fromJSON {
   } as const
 
   export const fromArray 
-    : (loop: fromJSON.Loop) => (node: readonly JSON[]) => Schema.tuple<Schema.any>
+    : (loop: fromJSON.Loop) => (node: readonly Json.any[]) => Schema.tuple<Schema.any>
     = (loop) => fn.flow(
       pair.duplicate,
       pair.mapBoth(
@@ -269,7 +271,7 @@ export namespace fromJSON {
     type: "object"
   } as const
 
-  export const fromObject = (loop: fromJSON.Loop) => (node: JSON.object) => {
+  export const fromObject = (loop: fromJSON.Loop) => (node: Json.object) => {
     const keys = globalThis.Object.keys(node)
     if (keys.length === 0) return { ...objectBase, properties: {} }
     else {
@@ -282,18 +284,17 @@ export namespace fromJSON {
     }
   }
 
-  export const loop = fn.loop<JSON.any, { type: Schema.scalar["type"] | Schema.composite["type"] }>((node, loop) => {
+  export const loop = fn.loop<Json.any, { type: Schema.scalar["type"] | Schema.composite["type"] }>((node, loop) => {
     switch (true) {
       case number.isNonFinite(node):
-      case is.null(node): return fromJSON.fromNull()
+      case Json.is.null(node): return fromJSON.fromNull()
       case is.bigint(node): return fromJSON.fromBigint(node)
-      case is.number(node): return fromJSON.fromScalar(node)
-      case is.string(node): return fromJSON.fromScalar(node)
-      case is.boolean(node): return fromJSON.fromScalar(node)
-      case is.array.any(node): return fromJSON.fromArray(loop)(node)
-      case is.object.any(node): return fromJSON.fromObject(loop)(node)
-      // TODO: handle `{} | undefined` and return `fn.exhaustive(node)`
-      default: return fn.throw(node) 
+      case Json.is.number(node): return fromJSON.fromScalar(node)
+      case Json.is.string(node): return fromJSON.fromScalar(node)
+      case Json.is.boolean(node): return fromJSON.fromScalar(node)
+      case Json.is.array(node): return fromJSON.fromArray(loop)(node)
+      case Json.is.object(node): return fromJSON.fromObject(loop)(node)
+      default: return fn.exhaustive(node)
     }
   })
 }

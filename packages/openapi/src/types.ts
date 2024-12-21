@@ -14,7 +14,6 @@ export type Autocomplete<T> = T | (string & {})
 export interface $ref<T extends string = string> { readonly $ref?: T }
 
 const Array_isArray = globalThis.Array.isArray
-const Object_values = globalThis.Object.values
 
 export type DataTypes = typeof DataTypes
 export const DataTypes = [
@@ -266,7 +265,7 @@ export const Schema_isObject
     tree.has("properties", (u): u is typeof u => {
       if (u === null || typeof u !== "object") return false
       else if (core.is.any.array(u)) return false
-      else return  !("additionalProperties" in u) && core.is.recordOf(Schema_is)(u) //
+      else return !("additionalProperties" in u) && core.is.record(Schema_is)(u)
     }),
   )(u)
 
