@@ -1,5 +1,6 @@
 import type { Universal, mutable as mut, newtype, nonempty, some } from "any-ts"
 
+import type { Partial } from "@traversable/registry"
 // type-level dependencies
 import type * as array from "../array.js"
 import type { entry } from "../entry.js"
@@ -18,7 +19,6 @@ import {
 } from "./_string.js"
 import type { to } from "./_to.js"
 import type { jsdoc } from "./_unicode.js"
-import { Partial } from "@traversable/registry"
 
 type mutable<T> = never | { -readonly [K in keyof T]: T[K] }
 /** @internal */
@@ -806,7 +806,7 @@ export function object_isComposite<T>(u: unknown): u is { [x: string]: T }
  * - {@link object_isComposite `object.isComposite`}
  */
 export function object_isRecord(u: unknown): 
-  u is { [x: string]: unknown } 
+  u is globalThis.Record<string, unknown> 
   { return u !== null && typeof u === "object" && !isArray(u) }
 
 /** 
@@ -2097,4 +2097,3 @@ object_forEach.defer = (
     /// impl.
     { return (object: object.any) => object_forEach(object, effect) }
 )
-

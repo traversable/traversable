@@ -832,8 +832,8 @@ export const fanin
  * - {@link para `fn.para`}
  */
 
-export function ana<F extends HKT>(Functor: Functor<F>): 
-  <T>(coalgebra: Functor.Coalgebra<F, T>) => (term: T) => HKT.apply<F, T> 
+export function ana<F extends HKT, _F>(Functor: Functor<F, _F>): 
+  <T>(coalgebra: Functor.Coalgebra<F, T>) => <S extends _F>(term: S) => HKT.apply<F, T>
 /// impl.
 export function ana<F extends HKT>(Functor: Functor<F>) {
   return <T>(coalgebra: Functor.Coalgebra<F, T>) => {
@@ -854,11 +854,13 @@ export function ana<F extends HKT>(Functor: Functor<F>) {
  * - {@link hylo `fn.hylo`}
  * - {@link para `fn.para`}
  */
+export function cata<F extends HKT, _F>(F: Functor<F, _F>): 
+  <T>(algebra: Functor.Algebra<F, T>) => <S extends _F>(term: S) => T
 
-export function cata<F extends HKT>(Functor: Functor<F>) {
+export function cata<F extends HKT>(F: Functor<F>) {
   return <T>(algebra: Functor.Algebra<F, T>) => {
-    return function loop(term: HKT.apply<F, T>): T { 
-      return algebra(Functor.map(loop)(term))
+    return function loop(term: HKT.apply<F, T>): T {
+      return algebra(F.map(loop)(term))
     }
   }
 }
@@ -875,8 +877,8 @@ export function cata<F extends HKT>(Functor: Functor<F>) {
  * - {@link hylo `fn.hylo`}
  */
 
-export function para<F extends HKT>(F: Functor<F>): 
-  <T>(ralgebra: Functor.RAlgebra<F, T>) => (term: HKT.apply<F, T>) => T 
+export function para<F extends HKT, _F>(F: Functor<F, _F>): 
+  <T>(ralgebra: Functor.RAlgebra<F, T>) => <S extends _F>(term: S) => T 
     
 export function para<F extends HKT>(F: Functor<F>) {
   return <T>(ralgebra: Functor.RAlgebra<F, T>) => {
@@ -966,3 +968,15 @@ export function hylo
         algebra,
       )
   }
+
+/** 
+ * ## {@link dimap `fn.dimap`}
+ * 
+ * Implementation of `dimap` for the function or "Arrow" profunctor.
+ */
+export function dimap<S, T, A, B>
+  (f: (s: S) => A, h: (b: B) => T): 
+    (g: (a: A) => B) => (s: S) => T 
+export function dimap<S, T, A, B>
+  (f: (s: S) => A, h: (b: B) => T) 
+  { return (g: (a: A) => B) => flow(f, g, h) }

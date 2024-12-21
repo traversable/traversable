@@ -101,16 +101,16 @@ declare namespace trap {
  * 
  * See also: {@link array_split `array.split`}
  */
-export type array_take<T extends any.array, n extends number> 
-  = T extends { length: n | 0 } ? T
-  : T extends nonempty.pathLeft<infer lead, any> ? array_take<lead, n>
+export type array_take<T extends any.array, N extends number> 
+  = T extends { length: N | 0 } ? T
+  : T extends nonempty.pathLeft<infer lead, any> ? array_take<lead, N>
   : []
 
 /**
  * ## {@link array_split `array.split`}
  * 
  * {@link array_split `array.split`} splits a tuple into two parts. The
- * first tuple will have length {@link n `n`}.
+ * first tuple will have length {@link Ix `Ix`}.
  *
  * **Note:** This implementation preserves tuple labels, if they exist,
  * which makes it ideal for working with function parameters
@@ -123,11 +123,11 @@ export type array_take<T extends any.array, n extends number>
  *  type Split = array.split<1, MyTuple>
  *  //   ^? type Split = [before: [a: 1], after: [b: 2, c: 3, d: 4, e: 5]]
  */
-export type array_split<T extends any.array, ix extends number> 
-  = array_take<T, ix> extends any.list<infer ys>
-  ? T extends readonly [...ys, ...infer zs] 
-  ? [ix, 1] extends [1, ix] ? [head: ys, tail: zs]
-  : [before: ys, after: zs]
+export type array_split<S extends any.array, Ix extends number> 
+  = array_take<S, Ix> extends any.list<infer H>
+  ? S extends readonly [...H, ...infer T] 
+  ? [Ix, 1] extends [1, Ix] ? [head: H, tail: T]
+  : [before: H, after: T]
   : never
   : never
 
