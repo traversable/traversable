@@ -4,7 +4,7 @@ import type { any, array, key, nonempty, prop, unicode } from "@traversable/data
 import { fn, keys, map, object, props } from "@traversable/data"
 
 import { Invariant, URI, symbol } from "@traversable/registry";
-import type { JSON } from "./json.js"
+import type { Json } from "./json.js"
 
 declare namespace Predicate {
   export { Any as any }
@@ -35,10 +35,10 @@ const Array_isArray
   : (u: unknown) => u is any[]
   = globalThis.Array.isArray
 const isJsonArray
-  : (u: unknown) => u is readonly JSON[]
+  : (u: unknown) => u is readonly Json[]
   = globalThis.Array.isArray
 const isJsonObject
-  : (u: unknown) => u is JSON.object
+  : (u: unknown) => u is Json.object
   = object.isComposite
 /** @internal */
 const isPrimitive = (u: unknown): u is null | undefined | boolean | number | string | bigint | symbol => 
@@ -359,8 +359,8 @@ function separatePath(xs: keys.any | [...keys.any, Predicate.any]):
   [path: key.any[], check: (u: any) => u is any]
 function separatePath(xs: keys.any | [...keys.any, Predicate.any]) { 
   return keys.is(xs) 
-  ? [xs, has.defaults.guard] 
-  : [xs.slice(0, -1), xs[xs.length - 1]] 
+    ? [xs, has.defaults.guard] 
+    : [xs.slice(0, -1), xs[xs.length - 1]] 
 }
 
 has.defaults = {
@@ -373,12 +373,12 @@ export declare namespace has {
     = KS extends nonempty.propsLeft<infer Todo, infer K>
     ? has.path<Todo, { [P in K]: T }>
     : T extends infer U extends {} ? U : never // has<U> : never
-  type maybe<KS extends props.any, T = {}>
+  type maybe<KS extends keys.any, T = {}>
     = KS extends nonempty.propsLeft<infer Todo, infer K>
     ? has.path<Todo, { [P in K]+?: T }>
-    : T extends infer U extends {} ? has<U> : never
+    : T extends infer U extends {} ? tentatively<U> : never
+  interface tentatively<T extends {}> extends newtype<T> {}
 }
-export interface has<T extends {}> extends newtype<T> {}
 
 /** 
  * ## {@link set `tree.set`}
@@ -804,15 +804,15 @@ export namespace fromPaths {
  * See also:
  * - {@link fromPaths `tree.fromPaths`}
  */
-export function toPaths<const T extends JSON>
+export function toPaths<const T extends Json>
   (json: T): readonly [path: props.any, leaf: unknown][] 
-export function toPaths<const T extends JSON>(
+export function toPaths<const T extends Json>(
   json: { [x: string]: fromPaths.Leaf }, 
   opts: toPaths.Options & { roundtrip: true }
 ): readonly [path: props.any, leaf: unknown][] 
-export function toPaths<const T extends JSON>
+export function toPaths<const T extends Json>
   (json: T, opts?: toPaths.Options): readonly [path: props.any, leaf: unknown][] 
-export function toPaths<const T extends JSON>
+export function toPaths<const T extends Json>
   (json: T, opts: toPaths.Options = toPaths.defaults) { 
     const config = toPaths.configFromOptions(opts)
     return toPaths.isBaseCase(json, config) 
@@ -821,10 +821,10 @@ export function toPaths<const T extends JSON>
   }
 
 export declare namespace toPaths {
-  type Path<T = JSON> = readonly [path: props.any, leaf: T]
-  type Paths<T = JSON> = readonly Path<T>[]
-  type Stream<T = JSON> = { prev: props.any, next: T }
-  type BaseCase = undefined | JSON.scalar | []
+  type Path<T = Json> = readonly [path: props.any, leaf: T]
+  type Paths<T = Json> = readonly Path<T>[]
+  type Stream<T = Json> = { prev: props.any, next: T }
+  type BaseCase = undefined | Json.leaf | []
 }
 export namespace toPaths {
   export interface Options { roundtrip?: boolean }
@@ -834,27 +834,27 @@ export namespace toPaths {
     : (opts: toPaths.Options) => toPaths.Config
     = (opts) => ({ ...toPaths.defaults, ...opts })
 
-  export function done<T extends JSON>(json: T, config: toPaths.Config & { roundtrip: true }): [path: props.any, leaf: T][]
-  export function done<T extends JSON>(json: T, config: toPaths.Config): [path: props.any, leaf: T][]
-  export function done<T extends JSON>(json: T, config: toPaths.Config) { return config.roundtrip ? json : [[[], json]] }
+  export function done<T extends Json>(json: T, config: toPaths.Config & { roundtrip: true }): [path: props.any, leaf: T][]
+  export function done<T extends Json>(json: T, config: toPaths.Config): [path: props.any, leaf: T][]
+  export function done<T extends Json>(json: T, config: toPaths.Config) { return config.roundtrip ? json : [[[], json]] }
 
-  export const isLeaf = (u: JSON, config: toPaths.Config) =>
+  export const isLeaf = (u: Json, config: toPaths.Config) =>
     config.roundtrip 
     ? fromPaths.isLeaf(u) 
     : isPrimitive(u)
 
-  export const isEmpty = (u?: JSON) =>
+  export const isEmpty = (u?: Json) =>
     isComposite(u) 
     && Object_values(u).length === 0
 
-  export const isBaseCase = (u: JSON, config: toPaths.Config): u is toPaths.BaseCase => 
+  export const isBaseCase = (u: Json, config: toPaths.Config): u is toPaths.BaseCase => 
     toPaths.isLeaf(u, config)
     || toPaths.isEmpty(u)
 
-  export const isPath = (u: JSON): u is toPaths.Path => Array_isArray(u) && u.length === 2 && props.is(u[0])
+  export const isPath = (u: Json): u is toPaths.Path => Array_isArray(u) && u.length === 2 && props.is(u[0])
   export const isPaths 
-    : (u: JSON) => u is toPaths.Paths
-    = (u: JSON): u is never => Array_isArray(u) && u.every(isPath)
+    : (u: Json) => u is toPaths.Paths
+    = (u: Json): u is never => Array_isArray(u) && u.every(isPath)
 
   export const loop = (config: toPaths.Config) => fn.loop<toPaths.Stream, toPaths.Stream | toPaths.Stream[]>
     (({ prev, next }, loop) => {
@@ -884,9 +884,9 @@ export namespace toPaths {
    * call ({@link loop `tree.toPaths.loop`}), and destructing the intermediate
    * representation into the final output type.
    */
-  export function go(config: toPaths.Config): <const T extends JSON>(json: T) => [path: props.any, leaf: T][]
+  export function go(config: toPaths.Config): <const T extends Json>(json: T) => [path: props.any, leaf: T][]
   export function go(config: toPaths.Config) {
-    return <const T extends JSON>(json: T) => fn.pipe(
+    return <const T extends Json>(json: T) => fn.pipe(
       json,
       empty,
       toPaths.loop(config),
@@ -898,7 +898,7 @@ export namespace toPaths {
    * ### {@link construct `tree.toPaths.construct`} 
    * Dual of {@link destruct `tree.toPaths.destruct`}
    */
-  export function construct<T extends JSON>
+  export function construct<T extends Json>
     ([prev, next]: [props.any, next: T]): 
     { prev: props.any, next: T }
     { return { prev, next } }
@@ -932,7 +932,7 @@ export namespace toPaths {
    * ### {@link empty `tree.toPaths.empty`} 
    * Least upper bound of {@link construct `tree.toPaths`}
    */
-  export const empty = <T extends JSON>(init: T) => construct([[], init])
+  export const empty = <T extends Json>(init: T) => construct([[], init])
 }
 
 /** 

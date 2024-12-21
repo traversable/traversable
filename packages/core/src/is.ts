@@ -23,8 +23,7 @@ export {
   object,
   isPath as path,
   isPrimitive as primitive,
-  isRecord as record,
-  isRecordOf as recordOf,
+  record,
   isScalar as scalar,
   isShowable as showable,
   isString as string,
@@ -43,19 +42,23 @@ import type { empty as Empty, nonempty as NonEmpty, has } from "any-ts"
 import { 
   array,
   object,
+  record,
 } from "./guard.js"
 
 export declare namespace any {
   export {
     any_object as object,
     any_array as array,
+    any_record as record,
   }
 }
 const any_object = object.any
 const any_array = array.any
+const any_record = record.any
 export namespace any {
   void (any.object = any_object)
   void (any.array = any_array)
+  void (any.record = any_record)
 }
 
 export declare namespace nonempty {

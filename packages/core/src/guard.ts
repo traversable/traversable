@@ -19,6 +19,8 @@ export {
 /** @internal */
 const Object_keys = globalThis.Object.keys
 /** @internal */
+const Object_values = globalThis.Object.values
+/** @internal */
 const Array_isArray = globalThis.Array.isArray
 /** @internal */
 const hasOwnProperty = globalThis.Object.prototype.hasOwnProperty
@@ -35,12 +37,11 @@ const integer_is
   = (u): u is never => typeof u === "number" && globalThis.Number.isInteger(u)
 
 export interface Shape { [x: string]: (u: unknown) => boolean }
-export type inferTarget<T extends any.guard> = [T] extends [(u: any) => u is infer target] ? target : never
-export type inferSource<T extends any.guard> = [T] extends [(u: infer source) => u is any] ? source : never
+export type inferTarget<T extends (u: any) => u is unknown> = [T] extends [(u: any) => u is infer _] ? _ : never
+export type inferSource<T extends (u: any) => u is unknown> = [T] extends [(u: infer _) => u is any] ? _ : never
 export type intersect<T> = intersectAll<T extends readonly unknown[] ? T : never, unknown>
 export type intersectAll<T extends readonly unknown[], X>
   = T extends nonempty.array<infer F, infer R> ? intersectAll<R, X & F> : X
-
 
 declare namespace int { export { integer_is as is } }
 declare namespace int{
@@ -161,14 +162,10 @@ function array_any(u: unknown): u is array_.any
   /// impl.
   { return array_.is(u) }
 
-export const isRecordOf
-  : <T>(guard: (u: unknown) => u is T) => (u: unknown) => u is { [x: string]: T }
-  = (guard) => (u): u is never => {
-    return isRecord(u) && globalThis.Object.values(u).every(guard)
-  }
+export function record<T>(guard: (u: unknown) => u is T): (u: unknown) => u is globalThis.Record<string, T> 
+  { return (u: unknown): u is never => object.isRecord(u) && Object_values(u).every(guard) }
 
-export function isRecord(u: unknown): u is { [x: string]: unknown } { return object.isRecord(u) }
-isRecord.of = isRecordOf
+record.any = object.isRecord
 
 export const isFunction = fn.is
 
@@ -181,17 +178,26 @@ export const isString
   : isString
   = string.is
 
-export const isDate: any.guard<globalThis.Date> = (u): u is never => u instanceof globalThis.Date
+export const isDate
+  : (u: unknown) => u is globalThis.Date 
+  = (u): u is never => u instanceof globalThis.Date
 
-export const isSymbol: any.guard<symbol> = (u): u is never => typeof u === "symbol"
+export const isSymbol
+  : (u: unknown) => u is symbol 
+  = (u): u is never => typeof u === "symbol"
 
-export const isKey: any.guard<any.key> = (u): u is never => ["number", "string"].includes(typeof u)
+export const isKey
+  : (u: unknown) => u is number | string 
+  = (u): u is never => ["number", "string"].includes(typeof u)
 
-export const isIndex: any.guard<any.index> = (u): u is never =>
-  ["number", "string", "symbol"].includes(typeof u)
+export const isIndex
+  : (u: unknown) => u is any.index
+  = (u): u is never => 
+    typeof u === "number"
+    || typeof u === "string"
+    || typeof u === "symbol"
 
 export const isPath = <const T extends any.path>(u: unknown): u is T => Array_isArray(u) && u.every(isIndex)
-
 
 export interface isBoolean<
   T extends 
