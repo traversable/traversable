@@ -7,8 +7,8 @@ export type inline<T> = T
 export type _ = {} | null | undefined
 export type defined<T> = never | globalThis.Exclude<T, undefined>
 
-export type Produces<T> = T extends (_: infer I) => unknown ? I : never
-export type Consumes<T> = T extends (_: never) => infer O ? O : never
+export type Consumes<T> = T extends (_: infer I) => unknown ? I : never
+export type Produces<T> = T extends (_: never) => infer O ? O : never
 export type Partial<T> = never | { -readonly [K in keyof T]+?: T[K] }
 export type Required<T> = never | { -readonly [K in keyof T]-?: T[K] }
 export type KeepFirst<S, T> = never | KeepLast<T, S>
@@ -16,15 +16,14 @@ export type KeepLast<S, T> = never | Force<Omit<S, keyof (S | T)> & T>
 export type Mutable<T> = never | { -readonly [K in keyof T]: T[K] }
 
 interface Covariant<T extends (_: never) => unknown> {
-  (_: never): Consumes<T>
+  (_: never): Produces<T>
 }
 interface Contravariant<T extends (_: never) => unknown> {
-  (_: Produces<T>): void
+  (_: Consumes<T>): void
 }
 interface Invariant<T extends (_: never) => unknown> {
-  (_: Produces<T>): Consumes<T>
+  (_: Consumes<T>): Produces<T>
 }
-
 interface Bivariant<T extends { (_: never): unknown }> extends newtype<{ _(_: Consumes<T>): Produces<T> }> {}
 
 export declare namespace Position {
@@ -34,7 +33,27 @@ export declare namespace Position {
   /**
    * ## {@link bivariant `Position.bivariant`}
    *
-   * When TypeScript checks a _function_ for assignability, the normal rules
+   * When TypeScript checks a _function_ type, what you get is something like the
+   * type-level equivalent of [Opposite Day](https://www.youtube.com/watch?v=pod4NRWn_Ak).
+   *
+   * Essentially, the normal rules of assignment work _exactly_ backwards:
+   *
+   * ```typescript
+   * type Producer<T> = (_: any) => T
+   * type Consumer<T> = (_: T) => any
+   *
+   * type Ex01 = Producer<3> extends Producer<number> ? true : false
+   * //   ^? type Ex01 = true
+   * type Ex02 = Consumer<3> extends Consumer<number> ? true : false
+   * //   ^? type Ex02 = false
+   *
+   * type Ex03 = Producer<number> extends Producer<3> ? true : false
+   * //   ^? type Ex03 = false
+   * type Ex04 = Consumer<number> extends Consumer<3> ? true : false
+   * //   ^? type Ex04 = true
+   * ```
+   *
+   *
    * are totally reversed: in that context, the _wider_ function is the one
    * that _depends_ on "less" (assuming return types are the same).
    *
@@ -57,6 +76,10 @@ export declare namespace Position {
    *
    * Once you've put your type in bivariant position, the type is available under
    * the `_` (underscore) prop.
+   *
+   * See also:
+   * - [TypeScript 2.4 release notes](https://www.typescriptlang.org/docs/handbook/release-notes/typescript-2-4.html#strict-contravariance-for-callback-parameters)
+   * - [TypeScript 2.8 release notes](https://www.typescriptlang.org/docs/handbook/release-notes/typescript-2-8.html#conditional-types)
    *
    * @example
    * import type { Position } from "@traversable/registry"
@@ -120,30 +143,22 @@ export declare namespace Position {
  */
 
 export interface HKT<I = unknown, O = unknown> extends newtype<{ [0]: I; [-1]: O }> {}
-
-// type __ = HKT.apply<Capture, (x: number) => string>
-// interface Capture extends HKT<(_: any) => unknown> {
-//   [-1]: <T extends Parameters<this[0] & {}>[0]>(_: T) => ReturnType<this[0] & {}>
-// }
-
-
-// export interface Kind<I = unknown, O = unknown> extends newtype<{ [0]: I; [-1]: O }> {}
-export type bind<F extends HKT, T = never> = never | [T] extends [never]
-  ? [F] extends [HKT]
-    ? F
-    : HKT<F>
-  : HKT.apply<F, T>
 export type apply<F extends HKT, T extends F[0]> = never | (F & { [0]: T })[-1]
 export type apply$<F, T> = never | (F & { [0]: T; [-1]: unknown })[-1]
 export type forall<F extends HKT> = HKT.apply<F, unknown>
 
 export declare function apply$<F>(F: F): <T>(t: T) => HKT.apply$<F, T>
 
+type HKT_const<T> = HKT<unknown, T>
 export declare namespace HKT {
-  export { apply, apply$, forall }
+  export { apply, apply$, forall, HKT_const as const }
   export interface satisfies<F extends HKT> extends newtype<F[0] & {}> {}
   export type unapply<F extends HKT> = F extends HKT & infer T ? T : never
+  export type product<F extends HKT, T> = HKT.apply<F, [F, T]>
+  export type sum<F extends HKT, T> = HKT.apply<F, Either<F, T>>
 }
+
+// export interface Fix_<F> extends HKT<F, Fix_<F>> {}
 
 /**
  * ## {@link Fix `Fix`}
@@ -151,7 +166,11 @@ export declare namespace HKT {
  * @example
  *  import { HKT, Fix } from "@traversable/registry"
  */
-export interface Fix<F> extends HKT<F, Fix<F>> {}
+export interface Fix<F> 
+  { get fix(): Fix<this>, get unfix(): F }
+export type Unfix<F extends Fix<any>> = F["unfix"]
+
+// export interface Fix<F> extends HKT<F, Fix<F>> {}
 // export interface Fix<F> extends HKT<Fix<F>> { [-1]: this, unfix: HKT<F, Fix<F>>[0] }
 // export interface Fix<F> extends HKT<Fix<F>>, newtype<{ unfix: HKT<F, Fix<F>> }> {}
 
@@ -209,7 +228,7 @@ export interface Enumerable<T = unknown> extends Spreadable<T> {
  * ## {@link Functor `Functor`}
  */
 export interface Functor<F extends HKT = HKT, _F = any> {
-  _F?: 1 extends _F & 0 ? F : _F
+  _F?: 1 extends _F & 0 ? F : Extract<_F, HKT>
   map<S, T>(f: (s: S) => T): (F: HKT.apply<F, S>) => HKT.apply<F, T>
 }
 
@@ -217,13 +236,14 @@ export declare namespace Functor {
   type map<F extends HKT> =
     | never
     | {
-        <S, T>(f: (s: S) => T): { (F: HKT.apply<F, S>): HKT.apply<F, T> }
-        <S, T>(F: HKT.apply<F, S>, f: (s: S) => T): HKT.apply<F, T>
+        <S, T>(st: (s: S) => T): { (F: HKT.apply<F, S>): HKT.apply<F, T> }
+        <S, T>(F: HKT.apply<F, S>, st: (s: S) => T): HKT.apply<F, T>
       }
+  // type AlgebraFromFunctor<F extends Functor, T> = never | { (term: HKT.apply<F["_F"] & {}, T>): T }
   type Algebra<F extends HKT, T> = never | { (term: HKT.apply<F, T>): T }
   type Coalgebra<F extends HKT, T> = never | { (expr: T): HKT.apply<F, T> }
-  type RAlgebra<F extends HKT, T> = never | { (term: HKT.apply<F, [F, T]>): T }
-  type RCoalgebra<F extends HKT, T> = never | { (expr: T): HKT.apply<F, Either<F, T>> }
+  type RAlgebra<F extends HKT, T> = never | { (term: HKT.product<F, T>): T }
+  type RCoalgebra<F extends HKT, T> = never | { (expr: T): HKT.sum<F, T> }
   type infer<T> = T extends Functor<any, infer F> ? Exclude<F, undefined> : never
 }
 
@@ -609,3 +629,8 @@ export declare namespace Open {
   > = HKT.apply<Kind, _>
   interface Record<T extends {}> extends newtype<T> {}
 }
+
+// type __ = HKT.apply<Capture, (x: number) => string>
+// interface Capture extends HKT<(_: any) => unknown> {
+//   [-1]: <T extends Parameters<this[0] & {}>[0]>(_: T) => ReturnType<this[0] & {}>
+// }

@@ -248,7 +248,7 @@ export function createWeightRegistry(weightMap?: {
 /**
  * @example
  * import { registry } from "@traverable/registry"
- * import { sort } from "@traverable/interpret"
+ * import { sort } from "@traverable/algebra"
  *
  * const myWeights = registry.registerWeights({
  *   customNode: {
