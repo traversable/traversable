@@ -1,0 +1,17 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "tsBuildInfoFile": ".tsbuildinfo/src.tsbuildinfo",
+    "rootDir": "src",
+    "types": ["node"],
+    "outDir": "build/src"
+  },
+  "references": [
+    { "path": "../core" },
+    { "path": "../data" },
+    { "path": "../http" },
+    { "path": "../openapi" },
+    { "path": "../registry" }
+  ],
+  "include": ["src"]
+}
