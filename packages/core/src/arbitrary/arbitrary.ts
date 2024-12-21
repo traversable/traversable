@@ -18,6 +18,7 @@ import Country = std.Country
 import Currency = std.Currency
 import Digit = std.Digit
 import State = std.UnitedStateOfAmerica
+import type { HKT } from "@traversable/registry"
 
 /** @internal */
 const PATTERN = {
@@ -79,6 +80,12 @@ export type {
    * - {@link fc_unwrap `fc.unwrap`}
    */
   fc_wrap as wrap,
+
+  /** 
+   * ### {@link fc_lambda `fc.lambda`}
+   */
+  // TODO: document
+  fc_lambda as lambda,
 }
 
 export {
@@ -135,6 +142,7 @@ const fc_null
 const fc_undefined
   : () => fc.Arbitrary<undefined>
   = () => constant(undefined)
+interface fc_lambda extends HKT { [-1]: fc.Arbitrary<this[0]> }
 
 /**
  * ### {@link peek `fc.peek`}
