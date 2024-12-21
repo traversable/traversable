@@ -1,9 +1,9 @@
 export const PACKAGES = [
+	"packages/algebra",
 	"packages/bench",
 	"packages/core",
 	"packages/data",
 	"packages/http",
-	"packages/interpret",
 	"packages/openapi",
 	"packages/registry"
 ] as const

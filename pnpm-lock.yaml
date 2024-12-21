@@ -91,6 +91,29 @@ importers:
         specifier: ^11.0.0
         version: 11.0.0
 
+  packages/algebra:
+    dependencies:
+      '@traversable/registry':
+        specifier: workspace:^
+        version: link:../registry/dist
+    devDependencies:
+      '@traversable/bench':
+        specifier: workspace:^
+        version: link:../bench/dist
+      '@traversable/core':
+        specifier: workspace:^
+        version: link:../core/dist
+      '@traversable/data':
+        specifier: workspace:^
+        version: link:../data/dist
+      '@traversable/http':
+        specifier: workspace:^
+        version: link:../http/dist
+      '@traversable/openapi':
+        specifier: workspace:^
+        version: link:../openapi/dist
+    publishDirectory: dist
+
   packages/bench:
     dependencies:
       '@traversable/registry':
@@ -144,29 +167,6 @@ importers:
       '@traversable/data':
         specifier: workspace:^
         version: link:../data/dist
-    publishDirectory: dist
-
-  packages/interpret:
-    dependencies:
-      '@traversable/registry':
-        specifier: workspace:^
-        version: link:../registry/dist
-    devDependencies:
-      '@traversable/bench':
-        specifier: workspace:^
-        version: link:../bench/dist
-      '@traversable/core':
-        specifier: workspace:^
-        version: link:../core/dist
-      '@traversable/data':
-        specifier: workspace:^
-        version: link:../data/dist
-      '@traversable/http':
-        specifier: workspace:^
-        version: link:../http/dist
-      '@traversable/openapi':
-        specifier: workspace:^
-        version: link:../openapi/dist
     publishDirectory: dist
 
   packages/openapi:

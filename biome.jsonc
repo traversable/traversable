@@ -35,7 +35,8 @@
         "noForEach": "off",
         "useLiteralKeys": "off",
         "noStaticOnlyClass": "off",
-        "noExtraBooleanCast": "off"
+        "noExtraBooleanCast": "off",
+        "noUselessSwitchCase": "off"
       },
       "performance": {
         "noAccumulatingSpread": "off"
@@ -84,7 +85,7 @@
       "packages/data/**/*",
       "packages/http/**/*",
       "packages/openapi/**/*",
-      "packages/interpret/**/*"
+      "packages/algebra/**/*"
     ],
     "include": ["packages/*/src/**/*.ts"],
     "formatWithErrors": false,

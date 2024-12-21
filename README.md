@@ -24,12 +24,12 @@ flowchart TD
     core(@traversable/core) -.-> bench(@traversable/bench)
     http(@traversable/http) -.-> core(@traversable/core)
     http(@traversable/http) -.-> data(@traversable/data)
-    interpret(@traversable/interpret) -.-> bench(@traversable/bench)
-    interpret(@traversable/interpret) -.-> core(@traversable/core)
-    interpret(@traversable/interpret) -.-> data(@traversable/data)
-    interpret(@traversable/interpret) -.-> http(@traversable/http)
-    interpret(@traversable/interpret) -.-> openapi(@traversable/openapi)
-    interpret(@traversable/interpret) -.depends on.-> registry(@traversable/registry)
+    algebra(@traversable/algebra) -.-> bench(@traversable/bench)
+    algebra(@traversable/algebra) -.-> core(@traversable/core)
+    algebra(@traversable/algebra) -.-> data(@traversable/data)
+    algebra(@traversable/algebra) -.-> http(@traversable/http)
+    algebra(@traversable/algebra) -.-> openapi(@traversable/openapi)
+    algebra(@traversable/algebra) -.depends on.-> registry(@traversable/registry)
 ```
 
 From fewest to most dependencies:
@@ -41,7 +41,7 @@ From fewest to most dependencies:
 - [`@traversable/openapi@0.0.2`](./packages/openapi) - [CHANGELOG](https://github.com/traversable/shared/blob/main/packages/openapi/CHANGELOG.md)
 - [`@traversable/core@0.0.2`](./packages/core) - [CHANGELOG](https://github.com/traversable/shared/blob/main/packages/core/CHANGELOG.md)
 - [`@traversable/http@0.0.2`](./packages/http) - [CHANGELOG](https://github.com/traversable/shared/blob/main/packages/http/CHANGELOG.md)
-- [`@traversable/interpret@0.0.0`](./packages/interpret) - [CHANGELOG](https://github.com/traversable/shared/blob/main/packages/interpret/CHANGELOG.md)
+- [`@traversable/algebra@0.0.0`](./packages/algebra) - [CHANGELOG](https://github.com/traversable/shared/blob/main/packages/algebra/CHANGELOG.md)
 <!-- codegen:end -->
 
 
