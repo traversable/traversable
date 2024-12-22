@@ -105,33 +105,24 @@ export namespace Coalgebra {
   export const sort: (comparisonFn: Compare<Schema>) => Functor.Coalgebra<Schema.lambda, Schema> =
     ($) => (n) => {
       switch (true) {
-        case Schema.is.null(n):
-          return n
-        case Schema.is.boolean(n):
-          return n
-        case Schema.is.integer(n):
-          return n
-        case Schema.is.number(n):
-          return n
-        case Schema.is.string(n):
-          return n
-        case Schema.is.array(n):
-          return n
-        case Schema.is.record(n):
-          return n
-        case Schema.is.allOf(n):
-          return { ...n, allOf: [...n.allOf].sort(compare($)) }
-        case Schema.is.anyOf(n):
-          return { ...n, anyOf: [...n.anyOf].sort(compare($)) }
-        case Schema.is.oneOf(n):
-          return { ...n, oneOf: [...n.oneOf].sort(compare($)) }
+        case Schema.is.enum(n): return n
+        case Schema.is.null(n): return n
+        case Schema.is.boolean(n): return n
+        case Schema.is.integer(n): return n
+        case Schema.is.number(n): return n
+        case Schema.is.string(n): return n
+        case Schema.is.array(n): return n
+        case Schema.is.record(n): return n
+        case Schema.is.allOf(n): return { ...n, allOf: [...n.allOf].sort(compare($)) }
+        case Schema.is.anyOf(n): return { ...n, anyOf: [...n.anyOf].sort(compare($)) }
+        case Schema.is.oneOf(n): return { ...n, oneOf: [...n.oneOf].sort(compare($)) }
         case Schema.is.tuple(n):
           return {
             ...n,
             items: n.items
               .map((x, ix) => [ix, x] satisfies [number, Schema])
               .sort(order.mapInput(compare($), ([, v]) => v))
-              .map(([ix, x]) => (((x as { originalIx: number }).originalIx = ix), x)),
+              .map(([ix, x]) => (((x as { originalIndex: number }).originalIndex = ix), x)),
           }
         case Schema.is.object(n):
           return {

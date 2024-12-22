@@ -54,6 +54,7 @@ const Ext_Tag = { ...Ltd_Tag, ...object.fromKeys(Ext_Tags) }
 type Ext_Tag = (typeof Ext_Tag)[keyof typeof Ext_Tag]
 
 const is_null = (u: unknown): u is Ltd.null => isObject(u) && "type" in u && u.type === "null"
+const is_enum = (u: unknown): u is Ltd.enum => isObject(u) && "enum" in u
 
 export type Ltd =
   | Ltd.null
@@ -61,6 +62,7 @@ export type Ltd =
   | Ltd.integer
   | Ltd.number
   | Ltd.string
+  | Ltd.enum
   | Ltd.allOf
   | Ltd.anyOf
   | Ltd.oneOf
@@ -71,6 +73,7 @@ export declare namespace Ltd {
   export {
     Ltd_null as null,
     Ltd_boolean as boolean,
+    Ltd_enum as enum,
     Ltd_integer as integer,
     Ltd_number as number,
     Ltd_string as string,
@@ -78,24 +81,15 @@ export declare namespace Ltd {
   }
 }
 export declare namespace Ltd {
-  interface Meta {
-    originalIx?: number
-  }
-  interface Ltd_null {
-    type: "null"
-  }
-  interface Ltd_boolean {
-    type: "boolean"
-  }
-  interface Ltd_number {
-    type: "number"
-  }
-  interface Ltd_string {
-    type: "string"
-  }
+  interface Meta { originalIndex?: number }
+  interface Ltd_null { type: "null" }
+  interface Ltd_boolean { type: "boolean" }
+  interface Ltd_number { type: "number" }
+  interface Ltd_string { type: "string" }
   interface Ltd_integer {
     type: "integer"
   }
+  interface Ltd_enum { enum: readonly unknown[] }
   interface allOf {
     allOf: readonly Ltd[]
   }
@@ -233,6 +227,7 @@ export namespace Ltd {
       is.integer,
       is.number,
       is.string,
+      is.enum,
       is.array,
       is.object,
       is.oneOf,
@@ -241,6 +236,8 @@ export namespace Ltd {
     )(u)
   }
   is.null = is_null
+  is.enum = is_enum
+
 
   export namespace is {
     export const boolean = (u: unknown): u is Ltd.boolean => isObject(u) && u.type === "boolean"
@@ -253,10 +250,19 @@ export namespace Ltd {
     export const object = <T>(u: unknown): u is Ltd.object.F<T> =>
       isObject(u) && u.type === "object" && !!u.properties
     export const array = <T>(u: unknown): u is Ltd.array.F<T> => isObject(u) && u.type === "array"
-    export const isScalar = (u: unknown): u is Ltd.Scalar =>
-      [Ltd.is.null(u), Ltd.is.boolean(u), Ltd.is.integer(u), Ltd.is.number(u), Ltd.is.string(u)].some(
-        fn.identity,
-      )
+    export const scalar = (u: unknown): u is Ltd.Scalar =>
+      (  Ltd.is.null(u) 
+      || Ltd.is.boolean(u) 
+      || Ltd.is.integer(u) 
+      || Ltd.is.number(u) 
+      || Ltd.is.string(u))
+    export const combinator = (u: unknown): u is Ltd.allOf | Ltd.anyOf | Ltd.oneOf => 
+      (  is.allOf(u) 
+      || is.anyOf(u) 
+      || is.oneOf(u))
+    export const composite = (u: unknown): u is Ltd.array | Ltd.object => 
+      (  is.array(u) 
+      || is.object(u))
   }
 
   export namespace make {
@@ -267,110 +273,61 @@ export namespace Ltd {
     export const allOf: <T>(allOf: readonly T[]) => Ltd.allOf.F<T> = (allOf) => ({ allOf })
     export const anyOf: <T>(anyOf: readonly T[]) => Ltd.anyOf.F<T> = (anyOf) => ({ anyOf })
     export const oneOf: <T>(oneOf: readonly T[]) => Ltd.oneOf.F<T> = (oneOf) => ({ oneOf })
-    export const array: <T>(items: T, meta?: Ltd.Meta) => Ltd.array.F<T> = (_, meta = {}) => ({
-      type: "array",
-      items: _,
-      ...meta,
-    })
-    export const object: <T>(
-      properties: { [x: string]: T },
-      meta?: Ltd.Meta & { required?: readonly string[] },
-    ) => Ltd.object.F<T> = (_, { required = [], ...meta } = { required: [] }) => ({
-      type: "object",
-      properties: _,
-      required,
-      ...meta,
-    })
+    export const array
+      : <T>(items: T, meta?: Ltd.Meta) => Ltd.array.F<T> 
+      = (_, meta = {}) => ({ type: "array", items: _, ...meta })
+    export const object
+      : <T>( properties: { [x: string]: T }, meta?: Ltd.Meta & { required?: readonly string[] }) => Ltd.object.F<T> 
+      = (_, { required = [], ...meta } = { required: [] }) => ({ type: "object", properties: _, required, ...meta })
   }
 
-  const make_null: () => Ltd.null = () => ({ type: "null" })
+  const make_null
+    : () => Ltd.null 
+    = () => ({ type: "null" })
+  const make_enum
+    : <const T extends readonly unknown[]>(enum_: T) => Ltd.enum 
+    = (enum_) => ({ enum: enum_ })
+
   void (Ltd.make.null = make_null)
-  export declare namespace make {
-    export { make_null as null }
-  }
+  void (Ltd.make.enum = make_enum)
+  export declare namespace make { export { make_null as null, make_enum as enum } }
 
   export namespace Algebra {
     export const count: Functor.Algebra<Ltd.lambda, number> = (n) => {
       switch (true) {
-        case Ltd.is.null(n):
-          return 1
-        case Ltd.is.boolean(n):
-          return 1
-        case Ltd.is.integer(n):
-          return 1
-        case Ltd.is.number(n):
-          return 1
-        case Ltd.is.string(n):
-          return 1
-        case Ltd.is.array(n):
-          return 1 + n.items
-        case Ltd.is.allOf(n):
-          return 1 + n.allOf.reduce((out, x) => out + x, 0)
-        case Ltd.is.anyOf(n):
-          return 1 + n.anyOf.reduce((out, x) => out + x, 0)
-        case Ltd.is.oneOf(n):
-          return 1 + n.oneOf.reduce((out, x) => out + x, 0)
-        case Ltd.is.object(n):
-          return 1 + Object_values(n.properties).reduce((out, x) => out + x, 0)
-        default:
-          return fn.exhaustive(n)
+        default: return fn.exhaustive(n)
+        case Ltd.is.enum(n):
+        case Ltd.is.scalar(n): return 1
+        case Ltd.is.array(n): return 1 + n.items
+        case Ltd.is.allOf(n): return 1 + n.allOf.reduce((out, x) => out + x, 0)
+        case Ltd.is.anyOf(n): return 1 + n.anyOf.reduce((out, x) => out + x, 0)
+        case Ltd.is.oneOf(n): return 1 + n.oneOf.reduce((out, x) => out + x, 0)
+        case Ltd.is.object(n): return 1 + Object_values(n.properties).reduce((out, x) => out + x, 0)
       }
     }
     export const depth: Functor.Algebra<Ltd.lambda, number> = (n) => {
       switch (true) {
-        case Ltd.is.null(n):
-          return 1
-        case Ltd.is.boolean(n):
-          return 1
-        case Ltd.is.integer(n):
-          return 1
-        case Ltd.is.number(n):
-          return 1
-        case Ltd.is.string(n):
-          return 1
-        case Ltd.is.array(n):
-          return 1 + n.items
-        case Ltd.is.allOf(n):
-          return 1 + Math_max(...n.allOf)
-        case Ltd.is.anyOf(n):
-          return 1 + Math_max(...n.anyOf)
-        case Ltd.is.oneOf(n):
-          return 1 + Math_max(...n.oneOf)
-        case Ltd.is.object(n):
-          return 1 + Math_max(...Object_values(n.properties))
-        default:
-          return fn.exhaustive(n)
+        default: return fn.exhaustive(n)
+        case Ltd.is.enum(n):
+        case Ltd.is.scalar(n): return 1
+        case Ltd.is.array(n): return 1 + n.items
+        case Ltd.is.allOf(n): return 1 + Math_max(...n.allOf)
+        case Ltd.is.anyOf(n): return 1 + Math_max(...n.anyOf)
+        case Ltd.is.oneOf(n): return 1 + Math_max(...n.oneOf)
+        case Ltd.is.object(n): return 1 + Math_max(...Object_values(n.properties))
       }
     }
 
     export const paths: Functor.Algebra<Ltd.lambda, readonly (readonly (keyof any)[])[]> = (n) => {
       switch (true) {
-        case Ltd.is.null(n):
-          return [[n.type]]
-        case Ltd.is.boolean(n):
-          return [[n.type]]
-        case Ltd.is.integer(n):
-          return [[n.type]]
-        case Ltd.is.number(n):
-          return [[n.type]]
-        case Ltd.is.string(n):
-          return [[n.type]]
-        case Ltd.is.array(n):
-          return n.items.map((xs) => [symbol.array as keyof any].concat(xs))
-        case Ltd.is.allOf(n):
-          return n.allOf.map((xss) =>
-            xss.flatMap((xs, ix) => [symbol.intersection, ix as keyof any].concat(xs)),
-          )
-        case Ltd.is.anyOf(n):
-          return n.anyOf.map((xss) => xss.flatMap((xs, ix) => [symbol.union, ix as keyof any].concat(xs)))
-        case Ltd.is.oneOf(n):
-          return n.oneOf.map((xss) => xss.flatMap((xs, ix) => [symbol.disjoint, ix as keyof any].concat(xs)))
-        case Ltd.is.object(n):
-          return Object_entries(n.properties).flatMap(([k, xss]) =>
-            xss.map((xs) => [k as keyof any].concat(xs)),
-          )
-        default:
-          return fn.exhaustive(n)
+        case Ltd.is.enum(n): return []
+        case Ltd.is.scalar(n): return [[n.type]]
+        case Ltd.is.array(n): return n.items.map((xs) => [symbol.array as keyof any].concat(xs))
+        case Ltd.is.allOf(n): return n.allOf.map((xss) => xss.flatMap((xs, ix) => [symbol.intersection, ix as keyof any].concat(xs)))
+        case Ltd.is.anyOf(n): return n.anyOf.map((xss) => xss.flatMap((xs, ix) => [symbol.union, ix as keyof any].concat(xs))) 
+        case Ltd.is.oneOf(n): return n.oneOf.map((xss) => xss.flatMap((xs, ix) => [symbol.disjoint, ix as keyof any].concat(xs)))
+        case Ltd.is.object(n): return Object_entries(n.properties).flatMap(([k, xss]) => xss.map((xs) => [k as keyof any].concat(xs)))
+        default: return fn.exhaustive(n)
       }
     }
   }
@@ -381,6 +338,7 @@ export namespace Ltd {
 
 export type Ext =
   | Ext.null
+  | Ext.enum
   | Ext.boolean
   | Ext.integer
   | Ext.number
@@ -395,6 +353,7 @@ export type Ext =
 export declare namespace Ext {
   export {
     Ext_null as null,
+    Ext_enum as enum,
     Ext_boolean as boolean,
     Ext_integer as integer,
     Ext_number as number,
@@ -408,61 +367,29 @@ export declare namespace Ext {
   type Ext_any<T extends Ext | Ext.Weak | Ltd = Ext | Ext.Weak | Ltd> = T
   type Scalar = Ext.null | Ext.boolean | Ext.integer | Ext.number | Ext.string
   interface Meta extends Ltd.Meta {}
-  interface Ext_null extends Ltd.null {
-    _type: null
-  }
-  interface Ext_boolean extends Ltd.boolean {
-    _type: boolean
-  }
-  interface Ext_integer extends Ltd.integer {
-    _type: number
-  }
-  interface Ext_number extends Ltd.number {
-    _type: number
-  }
-  interface Ext_string extends Ltd.string {
-    _type: string
-  }
-  interface allOf {
-    type: "allOf"
-    allOf: readonly Ext[]
-  }
+  interface Ext_null extends Ltd.null { _type: null }
+  interface Ext_enum extends Ltd.enum { _type: this["enum"][number] ; tag: "enum" }
+  interface Ext_boolean extends Ltd.boolean { _type: boolean }
+  interface Ext_integer extends Ltd.integer { _type: number }
+  interface Ext_number extends Ltd.number { _type: number }
+  interface Ext_string extends Ltd.string { _type: string }
+  interface allOf { type: "allOf", allOf: readonly Ext[] }
   namespace allOf {
     export { F as of }
-    export interface F<T> {
-      allOf: readonly T[]
-    }
-    export interface lambda extends HKT {
-      [-1]: Ext.allOf.F<this[0]>
-    }
+    export interface F<T> { allOf: readonly T[] }
+    export interface lambda extends HKT { [-1]: Ext.allOf.F<this[0]> }
   }
-  interface anyOf {
-    type: "anyOf"
-    anyOf: readonly Ext[]
-  }
+  interface anyOf { type: "anyOf", anyOf: readonly Ext[] }
   namespace anyOf {
     export { F as of }
-    export interface F<T> {
-      type: "anyOf"
-      anyOf: readonly T[]
-    }
-    export interface lambda extends HKT {
-      [-1]: Ext.anyOf.F<this[0]>
-    }
+    export interface F<T> { type: "anyOf", anyOf: readonly T[] }
+    export interface lambda extends HKT { [-1]: Ext.anyOf.F<this[0]> }
   }
-  interface oneOf {
-    type: "oneOf"
-    oneOf: readonly Ext[]
-  }
+  interface oneOf { type: "oneOf", oneOf: readonly Ext[] }
   namespace oneOf {
     export { F as of }
-    export interface F<T> {
-      type: "oneOf"
-      oneOf: readonly T[]
-    }
-    export interface lambda extends HKT {
-      [-1]: Ext.oneOf.F<this[0]>
-    }
+    export interface F<T> { type: "oneOf", oneOf: readonly T[] }
+    export interface lambda extends HKT { [-1]: Ext.oneOf.F<this[0]> }
   }
   interface array extends Ext.Meta {
     type: typeof Ext.Tag.array
@@ -537,6 +464,7 @@ export declare namespace Ext {
     | Ext.integer
     | Ext.number
     | Ext.string
+    | Ext.enum
     | Ext.allOf.F<T>
     | Ext.anyOf.F<T>
     | Ext.oneOf.F<T>
@@ -552,6 +480,8 @@ export namespace Ext {
     return Ltd.is(u)
   }
   is.null = (u: unknown): u is Ext.null => is_null(u)
+  is.enum = (u: unknown): u is Ext.enum => Ltd.is.enum(u)
+
   export namespace is {
     export const boolean = Ltd.is.boolean
     export const integer = Ltd.is.integer
@@ -564,6 +494,9 @@ export namespace Ext {
     export const tuple = <T>(u: unknown): u is Ext.tuple.F<T> => isObject(u) && u.type === "tuple"
     export const object = <T>(u: unknown): u is Ext.object.F<T> => isObject(u) && u.type === "object"
     export const record = <T>(u: unknown): u is Ext.record.F<T> => isObject(u) && u.type === "record"
+    export const scalar = Ltd.is.scalar
+    export const combinator = Ltd.is.combinator
+    export const composite = Ltd.is.composite
   }
 
   export namespace make {
@@ -609,45 +542,40 @@ export namespace Ext {
     })
   }
 
-  const make_null: () => Ext.null = fn.flow(Ltd.make.null, bind({ _type: null }))
+  const make_null
+    : () => Ext.null 
+    = fn.flow(Ltd.make.null, bind({ _type: null }))
+
+  const make_enum
+    : <const T extends readonly unknown[]>(enum_: T) => Ext.enum 
+    = (enum_) => fn.pipe(Ltd.make.enum(enum_), bind({ tag: "enum" as const, _type: enum_[0] }))
+
   void (Ext.make.null = make_null)
   export declare namespace make {
-    export { make_null as null }
+    export { make_null as null, make_enum as enum }
   }
 
   export const functor: Functor<Ext.lambda, Ext> = { map }
   export function map<S, T>(f: (s: S) => T): (s: Ext.F<S>) => Ext.F<T> {
     return (x: Ext.F<S>) => {
       switch (true) {
-        case Ltd.is.null(x):
-          return x
-        case Ltd.is.boolean(x):
-          return x
-        case Ltd.is.integer(x):
-          return x
-        case Ltd.is.number(x):
-          return x
-        case Ltd.is.string(x):
-          return x
-        case Ext.is.array(x):
-          return { ...x, items: f(x.items) }
-        case Ext.is.allOf(x):
-          return { ...x, allOf: x.allOf.map(f) }
-        case Ext.is.anyOf(x):
-          return { ...x, anyOf: x.anyOf.map(f) }
-        case Ext.is.oneOf(x):
-          return { ...x, oneOf: x.oneOf.map(f) }
-        case Ext.is.tuple(x):
-          return { ...x, items: x.items.map(f) }
-        case Ext.is.record(x):
-          return { ...x, additionalProperties: f(x.additionalProperties) }
-        case Ext.is.object(x):
-          return {
-            ...x,
-            properties: Object_fromEntries(Object_entries(x.properties).map(([k, v]) => [k, f(v)])),
-          }
-        default:
-          return fn.softExhaustiveCheck(x)
+        default: return fn.softExhaustiveCheck(x)
+        case Ext.is.enum(x): return x
+        case Ext.is.null(x): return x
+        case Ext.is.boolean(x): return x
+        case Ext.is.integer(x): return x
+        case Ext.is.number(x): return x
+        case Ext.is.string(x): return x
+        case Ext.is.array(x): return { ...x, items: f(x.items) }
+        case Ext.is.allOf(x): return { ...x, allOf: x.allOf.map(f) }
+        case Ext.is.anyOf(x): return { ...x, anyOf: x.anyOf.map(f) }
+        case Ext.is.oneOf(x): return { ...x, oneOf: x.oneOf.map(f) }
+        case Ext.is.tuple(x): return { ...x, items: x.items.map(f) }
+        case Ext.is.record(x): return { ...x, additionalProperties: f(x.additionalProperties) }
+        case Ext.is.object(x): return {
+          ...x,
+          properties: Object_fromEntries(Object_entries(x.properties).map(([k, v]) => [k, f(v)])),
+        }
       }
     }
   }
@@ -667,100 +595,52 @@ export namespace Ext {
   export namespace Algebra {
     export const count: Functor.Algebra<Ext.lambda, number> = (n) => {
       switch (true) {
-        case Ext.is.null(n):
-          return 1
-        case Ext.is.boolean(n):
-          return 1
-        case Ext.is.integer(n):
-          return 1
-        case Ext.is.number(n):
-          return 1
-        case Ext.is.string(n):
-          return 1
-        case Ext.is.array(n):
-          return 1 + n.items
-        case Ext.is.allOf(n):
-          return 1 + n.allOf.reduce((out, x) => out + x, 0)
-        case Ext.is.anyOf(n):
-          return 1 + n.anyOf.reduce((out, x) => out + x, 0)
-        case Ext.is.oneOf(n):
-          return 1 + n.oneOf.reduce((out, x) => out + x, 0)
-        case Ext.is.tuple(n):
-          return 1 + n.items.reduce((out, x) => out + x, 0)
-        case Ext.is.record(n):
-          return 1 + Object_values(n.additionalProperties).reduce((out, x) => out + x, 0)
-        case Ext.is.object(n):
-          return 1 + Object_values(n.properties).reduce((out, x) => out + x, 0)
-        default:
-          return fn.exhaustive(n)
+        case Ext.is.enum(n): return 1
+        case Ext.is.scalar(n): return 1
+        case Ext.is.array(n): return 1 + n.items
+        case Ext.is.allOf(n): return 1 + n.allOf.reduce((out, x) => out + x, 0)
+        case Ext.is.anyOf(n): return 1 + n.anyOf.reduce((out, x) => out + x, 0)
+        case Ext.is.oneOf(n): return 1 + n.oneOf.reduce((out, x) => out + x, 0)
+        case Ext.is.tuple(n): return 1 + n.items.reduce((out, x) => out + x, 0)
+        case Ext.is.record(n): return 1 + Object_values(n.additionalProperties).reduce((out, x) => out + x, 0)
+        case Ext.is.object(n): return 1 + Object_values(n.properties).reduce((out, x) => out + x, 0)
+        default: return fn.exhaustive(n)
       }
     }
+
     export const depth: Functor.Algebra<Ext.lambda, number> = (n) => {
       switch (true) {
-        case Ltd.is.null(n):
-          return 1
-        case Ltd.is.boolean(n):
-          return 1
-        case Ltd.is.integer(n):
-          return 1
-        case Ltd.is.number(n):
-          return 1
-        case Ltd.is.string(n):
-          return 1
-        case Ext.is.array(n):
-          return 1 + n.items
-        case Ext.is.allOf(n):
-          return 1 + Math_max(...n.allOf)
-        case Ext.is.anyOf(n):
-          return 1 + Math_max(...n.anyOf)
-        case Ext.is.oneOf(n):
-          return 1 + Math_max(...n.oneOf)
-        case Ext.is.tuple(n):
-          return 1 + Math_max(...Object_values(n.items))
-        case Ext.is.object(n):
-          return 1 + Math_max(...Object_values(n.properties))
-        case Ext.is.record(n):
-          return 1 + Math_max(...Object_values(n.additionalProperties))
-        default:
-          return fn.exhaustive(n)
+        default: return fn.exhaustive(n)
+        case Ext.is.enum(n): return 1
+        case Ext.is.scalar(n): return 1
+        case Ext.is.array(n): return 1 + n.items
+        case Ext.is.allOf(n): return 1 + Math_max(...n.allOf)
+        case Ext.is.anyOf(n): return 1 + Math_max(...n.anyOf)
+        case Ext.is.oneOf(n): return 1 + Math_max(...n.oneOf)
+        case Ext.is.tuple(n): return 1 + Math_max(...Object_values(n.items))
+        case Ext.is.object(n): return 1 + Math_max(...Object_values(n.properties))
+        case Ext.is.record(n): return 1 + Math_max(...Object_values(n.additionalProperties))
       }
     }
     export const paths: Functor.Algebra<Ext.lambda, readonly (readonly (keyof any)[])[]> = (n) => {
       switch (true) {
-        case Ltd.is.null(n):
-          return [[n.type]]
-        case Ltd.is.boolean(n):
-          return [[n.type]]
-        case Ltd.is.integer(n):
-          return [[n.type]]
-        case Ltd.is.number(n):
-          return [[n.type]]
-        case Ltd.is.string(n):
-          return [[n.type]]
-        case Ext.is.allOf(n):
-          return n.allOf.map((xss) => xss.flatMap((xs, ix) => [ix as keyof any].concat(xs)))
-        case Ext.is.anyOf(n):
-          return n.anyOf.map((xss) => xss.flatMap((xs, ix) => [ix as keyof any].concat(xs)))
-        case Ext.is.oneOf(n):
-          return n.oneOf.map((xss) => xss.flatMap((xs, ix) => [ix as keyof any].concat(xs)))
-        case Ext.is.tuple(n):
-          return n.items.flatMap((xss, ix) => xss.map((xs) => [ix as keyof any].concat(xs)))
-        case Ext.is.record(n):
-          return n.additionalProperties.map((path) => [symbol.record as keyof any].concat(path))
-        case Ext.is.array(n):
-          return n.items.map((xs) => [symbol.array as keyof any].concat(xs))
-        case Ext.is.object(n):
-          return Object_entries(n.properties).flatMap(([k, xss]) =>
-            xss.map((xs) => [k as keyof any].concat(xs)),
-          )
-        default:
-          return fn.softExhaustiveCheck(n)
+        default: return fn.softExhaustiveCheck(n)
+        case Ext.is.enum(n): return []
+        case Ext.is.scalar(n): return [[n.type]]
+        case Ext.is.allOf(n): return n.allOf.map((xss) => xss.flatMap((xs, ix: keyof any) => [ix].concat(xs)))
+        case Ext.is.anyOf(n): return n.anyOf.map((xss) => xss.flatMap((xs, ix: keyof any) => [ix].concat(xs)))
+        case Ext.is.oneOf(n): return n.oneOf.map((xss) => xss.flatMap((xs, ix: keyof any) => [ix].concat(xs)))
+        case Ext.is.tuple(n): return n.items.flatMap((xss, ix) => xss.map((xs) => [ix as keyof any].concat(xs)))
+        case Ext.is.record(n): return n.additionalProperties.map((path) => [symbol.record as keyof any].concat(path))
+        case Ext.is.array(n): return n.items.map((xs) => [symbol.array as keyof any].concat(xs))
+        case Ext.is.object(n): return Object_entries(n.properties).flatMap(([k, xss]) => xss.map((xs) => [k as keyof any].concat(xs)))
       }
     }
   }
 
   export type Weak =
     | Ltd.Scalar
+    | Ltd.enum
     | Ext.Scalar
     | Ext.allOf.F<Weak>
     | Ext.anyOf.F<Weak>
@@ -791,36 +671,24 @@ export namespace Ext {
   export namespace Coalgebra {
     export const fromSchema: Functor.Coalgebra<Ext.lambda, Ext.Weak> = (expr) => {
       const meta = {
-        ...("originalIx" in expr && typeof expr.originalIx === "number" && { originalIx: expr.originalIx }),
-        ...(tree.has("required", core.is.array(core.is.string))(expr) && { required: expr.required }),
+        ...tree.has("originalIndex", core.is.number)(expr) && { originalIndex: expr.originalIndex },
+        ...tree.has("required", core.is.array(core.is.string))(expr) && { required: expr.required },
       }
       switch (true) {
-        case Ltd.is.null(expr):
-          return Ext.make.null()
-        case Ltd.is.boolean(expr):
-          return Ext.make.boolean(meta)
-        case Ltd.is.integer(expr):
-          return Ext.make.integer(meta)
-        case Ltd.is.number(expr):
-          return Ext.make.number(meta)
-        case Ltd.is.string(expr):
-          return Ext.make.string(meta)
-        case Ltd.is.allOf(expr):
-          return { type: "allOf", allOf: expr.allOf }
-        case Ltd.is.anyOf(expr):
-          return { type: "anyOf", anyOf: expr.anyOf }
-        case Ltd.is.oneOf(expr):
-          return { type: "oneOf", oneOf: expr.oneOf }
-        case Weak.isTupleLike(expr):
-          return Ext.make.tuple(expr.items, meta)
-        case Weak.isArrayLike(expr):
-          return Ext.make.array(expr.items, meta)
-        case Weak.isObjectLike(expr):
-          return !("properties" in expr)
-            ? Ext.make.record(expr.additionalProperties, meta)
-            : Ext.make.object(expr.properties, {
-                ...meta,
-              })
+        case Ltd.is.enum(expr): return Ext.make.enum(expr.enum)
+        case Ltd.is.null(expr): return Ext.make.null()
+        case Ltd.is.boolean(expr): return Ext.make.boolean(meta)
+        case Ltd.is.integer(expr): return Ext.make.integer(meta)
+        case Ltd.is.number(expr): return Ext.make.number(meta)
+        case Ltd.is.string(expr): return Ext.make.string(meta)
+        case Ltd.is.allOf(expr): return { type: "allOf", allOf: expr.allOf }
+        case Ltd.is.anyOf(expr): return { type: "anyOf", anyOf: expr.anyOf }
+        case Ltd.is.oneOf(expr): return { type: "oneOf", oneOf: expr.oneOf }
+        case Weak.isTupleLike(expr): return Ext.make.tuple(expr.items, meta)
+        case Weak.isArrayLike(expr): return Ext.make.array(expr.items, meta)
+        case Weak.isObjectLike(expr): return !("properties" in expr) 
+          ? Ext.make.record(expr.additionalProperties, meta) 
+          : Ext.make.object(expr.properties, { ...meta })
 
         /**
          * **Note:**
@@ -831,8 +699,7 @@ export namespace Ext {
          * _already_ been transformed into its intermediate representation),
          * {@link fromSchema `Ext.fromSchema`} behaves like the identity function.
          */
-        default:
-          return fn.softExhaustiveCheck(expr)
+        default: return fn.softExhaustiveCheck(expr)
       }
     }
   }
@@ -840,58 +707,44 @@ export namespace Ext {
   export const count = Ext.fold(Ext.Algebra.count)
   export const depth = Ext.fold(Ext.Algebra.depth)
   export const paths = Ext.fold(Ext.Algebra.paths)
-  export const fromSchema: (term: Weak) => Ext = Ext.unfold(Ext.Coalgebra.fromSchema) as never
+  export const fromSchema = Ext.unfold(Ext.Coalgebra.fromSchema)
 
   export type fromSchema<T extends Ext.Weak> = fromSchema.loop<T>
   export declare namespace fromSchema {
     type loop<S> =
       // if `S` is the full union, don't recurse: just return `Ext`
-      [Ltd] extends [S]
-        ? Ext
-        : S extends Ltd.Scalar
-          ? Extract<Ext.Scalar, { type: S["type"] }>
-          : S extends { allOf: infer T }
-            ? S & { type: "allOf"; allOf: readonly fromSchema.loop<T>[] }
-            : S extends { anyOf: infer T }
-              ? S & { type: "anyOf"; anyOf: readonly fromSchema.loop<T>[] }
-              : S extends { oneOf: infer T }
-                ? { type: "oneOf"; oneOf: readonly Ext[] }
-                : S extends { properties: { [x: string]: infer T } }
-                  ? { type: "object"; properties: { [x: string]: fromSchema.loop<T> } }
-                  : S extends { additionalProperties: infer T }
-                    ? { type: "record"; additionalProperties: fromSchema.loop<T> }
-                    : S extends { items: infer T extends readonly unknown[] }
-                      ? { type: "tuple"; items: { [I in keyof T]: fromSchema.loop<T[I]> } }
-                      : S extends { items: infer T }
-                        ? { type: "array"; items: fromSchema.loop<T> }
-                        : never
+      [Ltd] extends [S] ? Ext
+      : S extends Ltd.Scalar ? Extract<Ext.Scalar, { type: S["type"] }>
+      : S extends { allOf: infer T } ? S & { type: "allOf"; allOf: readonly fromSchema.loop<T>[] }
+      : S extends { anyOf: infer T } ? S & { type: "anyOf"; anyOf: readonly fromSchema.loop<T>[] }
+      : S extends { oneOf: infer T } ? { type: "oneOf"; oneOf: readonly Ext[] }
+      : S extends { properties: { [x: string]: infer T } } ? { type: "object"; properties: { [x: string]: fromSchema.loop<T> } }
+      : S extends { additionalProperties: infer T } ? { type: "record"; additionalProperties: fromSchema.loop<T> }
+      : S extends { items: infer T extends readonly unknown[] } ? { type: "tuple"; items: { [I in keyof T]: fromSchema.loop<T[I]> } }
+      : S extends { items: infer T } ? { type: "array"; items: fromSchema.loop<T> }
+      : never
   }
 
   export type toType<T extends Weak> = toType.loop<T>
   export declare namespace toType {
-    type loop<S extends Weak> = S extends Ltd.Scalar
-      ? (typeof Ext_ScalarTypeMap)[S["type"]]
-      : S extends { allOf: infer T extends readonly {}[] }
-        ? intersect<T>
-        : S extends { anyOf: infer T extends Weak }
-          ? toType.loop<T>
-          : S extends { oneOf: infer T extends Weak }
-            ? toType.loop<T>
-            : S extends { items: infer T extends readonly Weak[] }
+    type loop<S extends Weak> 
+      = S extends Ltd.Scalar ? (typeof Ext_ScalarTypeMap)[S["type"]]
+      : S extends { allOf: infer T extends readonly {}[] } ? intersect<T>
+      : S extends { anyOf: infer T extends Weak } ? toType.loop<T>
+      : S extends { oneOf: infer T extends Weak } ? toType.loop<T>
+      : S extends { items: infer T extends readonly Weak[] }
               ? { -readonly [I in keyof T]: toType.loop<T[I]> }
-              : S extends { items: infer T extends Weak }
+      : S extends { items: infer T extends Weak }
                 ? readonly toType.loop<T>[]
-                : S extends {
-                      properties: infer T extends { [x: string]: Weak }
-                      required: readonly (infer Req extends string)[]
-                    }
-                  ? Merge<
-                      { -readonly [K in Req & keyof T]: toType.loop<T[K]> },
-                      { -readonly [K in Exclude<keyof T, Req>]+?: toType.loop<T[K]> }
-                    >
-                  : S extends { additionalProperties: infer T extends Weak }
-                    ? globalThis.Record<string, toType.loop<T>>
-                    : never
+      : S extends { 
+        properties: infer T extends { [x: string]: Weak }, 
+        required: readonly (infer Req extends string)[] 
+     } 
+      ? Merge<
+        { -readonly [K in Req & keyof T]: toType.loop<T[K]> },
+        { -readonly [K in Exclude<keyof T, Req>]+?: toType.loop<T[K]> }
+      >
+      : S extends { additionalProperties: infer T extends Weak } ? globalThis.Record<string, toType.loop<T>> : never
   }
 }
 

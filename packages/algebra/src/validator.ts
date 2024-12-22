@@ -52,28 +52,24 @@ namespace RAlgebra {
 
   export const validator: Functor.RAlgebra<Schema.lambda, Stream> = (n) => {
     switch (true) {
-      case Schema.is.null(n):
-        return { go: (path) => `if(${path.join("")}!=null)return false;` }
-      case Schema.is.boolean(n):
-        return {
-          go: (path, _, req) =>
-            "if(" + handleOptional(req, path) + `typeof ${path.join("")}!=="boolean")return false;`,
+      case Schema.is.enum(n): return { go: (path) => "" }
+      case Schema.is.null(n): return { go: (path) => `if(${path.join("")}!=null)return false;` }
+      case Schema.is.boolean(n): return {
+        go: (path, _, req) =>
+          "if(" + handleOptional(req, path) + `typeof ${path.join("")}!=="boolean")return false;`,
+      }
+      case Schema.is.integer(n): return {
+        go: (path, _, req) => 
+          "if(" + handleOptional(req, path) + `!Number.isInteger(${path.join("")}))return false;`,
+      }
+      case Schema.is.number(n): return {
+        go: (path, _, req) =>
+          "if(" + handleOptional(req, path) + `typeof ${path.join("")}!=="number")return false;`,
         }
-      case Schema.is.integer(n):
-        return {
-          go: (path, _, req) =>
-            "if(" + handleOptional(req, path) + `!Number.isInteger(${path.join("")}))return false;`,
-        }
-      case Schema.is.number(n):
-        return {
-          go: (path, _, req) =>
-            "if(" + handleOptional(req, path) + `typeof ${path.join("")}!=="number")return false;`,
-        }
-      case Schema.is.string(n):
-        return {
-          go: (path, _, req) =>
-            "if(" + handleOptional(req, path) + `typeof ${path.join("")}!=="string")return false;`,
-        }
+      case Schema.is.string(n): return {
+        go: (path, _, req) =>
+          "if(" + handleOptional(req, path) + `typeof ${path.join("")}!=="string")return false;`,
+      }
       case Schema.is.object(n):
         return {
           go: (path, depth, req) => {
@@ -122,7 +118,7 @@ namespace RAlgebra {
               $check +
               n.items
                 .map(([x, ctx], ix) => {
-                  const $ix = tree.has("originalIx", is.number)(x) ? x.originalIx : ix
+                  const $ix = tree.has("originalIndex", is.number)(x) ? x.originalIndex : ix
                   const $next = [...$path, $ix]
                   // const $path = [$prev, $ix]
                   const $var = $next.join("")

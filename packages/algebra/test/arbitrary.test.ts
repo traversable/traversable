@@ -1,4 +1,3 @@
-import { core, fc, test } from "@traversable/core"
 import * as vi from "vitest"
 
 import { arbitrary as A } from "@traversable/algebra"
@@ -58,7 +57,7 @@ const ex_01 = {
 vi.describe("〖️⛳️〗‹‹‹ ❲@traversable/algebra/arbitrary❳", () => {
   vi.it("〖️⛳️〗› ❲arbitrary.derive❳: ‹sanity› (highly-suspect)", () => {
     vi.assert.equal(
-      A.generate(ex_01),
+      A.generate()(ex_01),
       'const Arbitrary = fc.record({ ' + 
       'a: fc.record({ b: fc.tuple(fc.record({ d: fc.integer(), ' +
       'e: fc.tuple(fc.tuple(fc.tuple(fc.record({ f: fc.lorem(), ' +
@@ -72,21 +71,19 @@ vi.describe("〖️⛳️〗‹‹‹ ❲@traversable/algebra/arbitrary❳", () 
       'h: fc.float() }, ' +
       '{ requiredKeys: ["b"] }) }, ' +
       '{ requiredKeys: ["a"] })',
-
-      // 'const Arbitrary = fc.record({ a: fc.record({ h: fc.float(), b: fc.tuple(fc.record({ g: fc.float() }, { requiredKeys: ["g"] }), fc.record({ d: fc.integer(), c: fc.float(), f: fc.float(), e: fc.tuple(fc.tuple(fc.tuple(fc.record({ g: fc.boolean(), f: fc.lorem() }, { requiredKeys: ["f", "g"] })))) }, { requiredKeys: ["c", "d", "e", "f"] })) }, { requiredKeys: ["b"] }) }, { requiredKeys: ["a"] })'
     )
   })
   
   vi.it("〖️⛳️〗› ❲arbitrary.derive❳: ‹record› (example-based)", () => {
     vi.assert.equal(
-      A.generate({ 
+      A.generate()({ 
         type: "record", 
         additionalProperties: { type: "string" },
       }),
       'const Arbitrary = fc.dictionary(fc.lorem(), fc.lorem())',
     )
     vi.assert.equal(
-      A.generate({ 
+      A.generate()({ 
         type: "record", 
         additionalProperties: { type: "record", additionalProperties: { type: "string" } },
       }),
@@ -96,7 +93,7 @@ vi.describe("〖️⛳️〗‹‹‹ ❲@traversable/algebra/arbitrary❳", () 
 
   vi.it("〖️⛳️〗› ❲arbitrary.derive❳: Tuple (example-based)", () => {
     vi.assert.equal(
-      A.generate({
+      A.generate()({
         type: "tuple", 
         items: [
           { type: "string" }, 

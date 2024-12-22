@@ -6,56 +6,38 @@ import * as sort from "./sort.js"
 
 export { deriveType as derive }
 
+/** @internal */
+const Object_entries = globalThis.Object.entries
+
 export namespace Algebra {
   export const types: (options?: deriveType.Options) => Functor.Algebra<Schema.lambda, string> =
     ({ minify = deriveType.defaults.minify } = deriveType.defaults) =>
     (n) => {
       const _ = minify ? "" : " "
       switch (true) {
-        case Schema.is.null(n):
-          return "null"
-        case Schema.is.boolean(n):
-          return "boolean"
-        case Schema.is.integer(n):
-          return "number"
-        case Schema.is.number(n):
-          return "number"
-        case Schema.is.string(n):
-          return "string"
-        case Schema.is.allOf(n):
-          return n.allOf.join(`${_}&${_}`)
-        case Schema.is.anyOf(n):
-          return n.anyOf.join(`${_}|${_}`)
-        case Schema.is.oneOf(n):
-          return n.oneOf.join(`${_}|${_}`)
-        case Schema.is.array(n):
-          return n.items + "[]"
-        case Schema.is.tuple(n):
-          return "[" + n.items.join(`,${_}`) + "]"
-        case Schema.is.record(n):
-          return `Record<string,${_}` + n.additionalProperties + ">"
-        case Schema.is.object(n):
-          return (
-            `{${_}` +
-            Object.entries(n.properties)
-              .map(([k, v]) => object.parseKey(k) + (n.required.includes(k) ? `:${_}` : `?:${_}`) + v)
-              .join(`;${_}`) +
-            `${_}}`
-          )
-        default:
-          return fn.exhaustive(n)
+        case Schema.is.enum(n): return n.enum.join(" | ")
+        case Schema.is.null(n): return "null"
+        case Schema.is.boolean(n): return "boolean"
+        case Schema.is.integer(n): return "number"
+        case Schema.is.number(n): return "number"
+        case Schema.is.string(n): return "string"
+        case Schema.is.allOf(n): return n.allOf.join(_ + "&" + _)
+        case Schema.is.anyOf(n): return n.anyOf.join(_ + "|" + _)
+        case Schema.is.oneOf(n): return n.oneOf.join(_ + "|" + _)
+        case Schema.is.array(n): return n.items + "[]"
+        case Schema.is.tuple(n): return "[" + n.items.join("," + _) + "]"
+        case Schema.is.record(n): return "Record<string," + _ + n.additionalProperties + ">"
+        case Schema.is.object(n): return "{" + _ 
+          + Object_entries(n.properties).map(([k, v]) => "" 
+            + object.parseKey(k) 
+            + (n.required.includes(k) ? ":" + _ : "?:" + _) 
+            + v
+          ).join(";" + _) 
+          + _ + "}"
+        default: return fn.exhaustive(n)
       }
     }
 }
-
-deriveType.fold = (options: deriveType.Options = deriveType.defaults) =>
-  fn.flow(Schema.fromSchema, fn.cata(Schema.functor)(Algebra.types(options)))
-
-deriveType.defaults = {
-  compare: sort.derive.defaults.compare,
-  typeName: "Anonymous",
-  minify: false as boolean,
-} satisfies deriveType._Internal.Options
 
 declare namespace deriveType {
   type Options = Partial<typeof deriveType.defaults>
@@ -69,10 +51,20 @@ declare namespace deriveType {
   }
 }
 
+const deriveType_fold = (options: deriveType.Options = deriveType.defaults) => fn.flow(
+  Schema.fromSchema, 
+  fn.cata(Schema.functor)(Algebra.types(options)),
+)
+
+const deriveType_defaults = {
+  compare: sort.derive.defaults.compare,
+  typeName: "Anonymous",
+  minify: false as boolean,
+} satisfies deriveType._Internal.Options
+
 function deriveType(schema: Schema.any, options?: deriveType.Options): string
 function deriveType(
-  schema: Schema.any,
-  {
+  schema: Schema.any, {
     compare = deriveType.defaults.compare,
     typeName = deriveType.defaults.typeName,
     minify = deriveType.defaults.minify,
@@ -83,6 +75,9 @@ function deriveType(
     schema,
     sort.derive({ compare }),
     deriveType.fold({ compare, typeName, minify }),
-    (body) => `type ${typeName}${_}=${_}` + body,
+    (body) => "type " + typeName + _ + "=" + _ + body,
   )
 }
+
+void (deriveType.defaults = deriveType_defaults)
+void (deriveType.fold = deriveType_fold)

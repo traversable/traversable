@@ -28,7 +28,7 @@ vi.describe("〖️⛳️〗‹‹‹ ❲@traversable/algebra/sort❳", () => {
     const expected_01: [string, unknown][] = [
       ["Z", { type: "string" }],
       ["Y", { type: "object", properties: {} }],
-      ["X", { type: "object", properties: { xx_1: { type: "tuple", items: [{ type: "string", originalIx: 0 }] } } }],
+      ["X", { type: "object", properties: { xx_1: { type: "tuple", items: [{ type: "string", originalIndex: 0 }] } } }],
       ["W", { type: "object", properties: { ww_1: { type: "null" }, ww_2: { type: "null" } } }],
       ["V", { type: "object", properties: { vv_1: { type: "null" }, vv_2: { type: "string" } } }],
       ["U", { type: "array", items: { type: "null" } }],

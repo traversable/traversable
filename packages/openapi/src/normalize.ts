@@ -1,9 +1,9 @@
-import { core, is, JsonPointer, tree } from "@traversable/core"
-import { fn, props } from "@traversable/data"
+import { JsonPointer, core, is, tree } from "@traversable/core"
+import { fn, type props } from "@traversable/data"
 
+import type { Partial } from "@traversable/registry"
 import { accessors } from "./query.js"
 import type { DocLike, Predicate } from "./types.js"
-import { Partial } from "@traversable/registry"
 
 type Options = Partial<{
   sourceFocus: [...props.any]

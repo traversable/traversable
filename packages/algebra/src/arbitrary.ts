@@ -98,36 +98,30 @@ const Object_entries = globalThis.Object.entries
 const Object_assign = globalThis.Object.assign
 
 export namespace Algebra {
-  export const arbitrary: Functor.Algebra<Schema.lambda, fc.Arbitrary<{} | null>> = (x) => {
-    switch (true) {
-      case Schema.is.null(x):
-        return fc.constant(null)
-      case Schema.is.boolean(x):
-        return fc.boolean()
-      case Schema.is.integer(x):
-        return fc.integer()
-      case Schema.is.number(x):
-        return fc.oneof(fc.integer(), fc.float())
-      case Schema.is.string(x):
-        return fc.lorem()
-      case Schema.is.array(x):
-        return fc.array(x.items)
-      case Schema.is.record(x):
-        return fc.dictionary(fc.lorem(), x.additionalProperties)
-      case Schema.is.tuple(x):
-        return fc.tuple(...x.items)
-      case Schema.is.anyOf(x):
-        return fc.oneof(...x.anyOf)
-      case Schema.is.oneOf(x):
-        return fc.oneof(...x.oneOf)
-      case Schema.is.object(x):
-        return fc.record({ ...x.properties }, { requiredKeys: [...x.required] })
-      case Schema.is.allOf(x):
-        return fc.tuple(...x.allOf).map((xs) => xs.reduce((ys: {}, y) => (y ? Object_assign(ys, y) : ys), {}))
-      default:
-        return fn.exhaustive(x)
+  export const arbitrary
+    : Functor.Algebra<Schema.lambda, fc.Arbitrary<{} | null | undefined>> 
+    = (x) => {
+      switch (true) {
+        default: return fn.exhaustive(x)
+        case Schema.is.enum(x): return fc.constantFrom(...x.enum)
+        case Schema.is.null(x): return fc.constant(null)
+        case Schema.is.boolean(x): return fc.boolean()
+        case Schema.is.integer(x): return fc.integer()
+        case Schema.is.number(x): return fc.oneof(fc.integer(), fc.float())
+        case Schema.is.string(x): return fc.lorem()
+        case Schema.is.anyOf(x): return fc.oneof(...x.anyOf)
+        case Schema.is.oneOf(x): return fc.oneof(...x.oneOf)
+        case Schema.is.allOf(x): return fc.tuple(...x.allOf)
+          .map((xs) => xs.reduce((ys: {}, y) => (y ? Object_assign(ys, y) : ys), {}))
+        case Schema.is.array(x): return fc.array(x.items)
+        case Schema.is.record(x): return fc.dictionary(fc.lorem(), x.additionalProperties)
+        case Schema.is.tuple(x): return fc.tuple(...x.items)
+        case Schema.is.object(x): return fc.record(
+          { ...x.properties }, 
+          { requiredKeys: [...x.required] }
+        )
+      }
     }
-  }
 
   /**
    * ## {@link codegen `Algebra.codegen`}
@@ -136,32 +130,24 @@ export namespace Algebra {
     : (options?: Options) => Functor.Algebra<Schema.lambda, string> 
     = ({ stripTypes: noTypes = defaults.stripTypes } = defaults) => (x) => {
       switch (true) {
+        default: return fn.exhaustive(x)
+        case Schema.is.enum(x): return "fc.constantFrom(" + x + ")"
         case Schema.is.null(x): return "fc.constant(null)"
         case Schema.is.boolean(x): return "fc.boolean()"
         case Schema.is.integer(x): return "fc.integer()"
         case Schema.is.number(x): return "fc.float()"
         case Schema.is.string(x): return "fc.lorem()"
-        case Schema.is.array(x): return "fc.array(" + x.items + ")"
-        case Schema.is.record(x): return "fc.dictionary(fc.lorem(), " + x.additionalProperties + ")"
         case Schema.is.tuple(x): return "fc.tuple(" + x.items.join(", ") + ")"
         case Schema.is.anyOf(x): return "fc.oneof(" + x.anyOf.join(", ") + ")"
         case Schema.is.oneOf(x): return "fc.oneof(" + x.oneOf.join(", ") + ")"
-        case Schema.is.object(x): return (
-          "fc.record(" +
-          "{ " +
-          Object_entries(x.properties).map(object.parseEntry).join(", ") +
-          " }, " +
-          "{ requiredKeys: [" +
-          x.required.map((k) => '"' + k + '"').join(", ") +
-          "]" +
-          " }" +
-          ")"
-        )
-        case Schema.is.allOf(x):
-          return "fc.tuple(" + x.allOf.join(", ") + ")" + ".map((xs) => xs.reduce((ys" 
-            + noTypes ? "" : ": {}" + ", y) => y ? Object.assign(ys, y) : ys, {}))"
-        default:
-          return fn.exhaustive(x)
+        case Schema.is.allOf(x): return "fc.tuple(" + x.allOf.join(", ") + ")" 
+          + ".map((xs) => xs.reduce((ys" + noTypes ? "" : ": {}" + ", y) => y ? Object.assign(ys, y) : ys, {}))"
+        case Schema.is.array(x): return "fc.array(" + x.items + ")"
+        case Schema.is.record(x): return "fc.dictionary(fc.lorem(), " + x.additionalProperties + ")"
+        case Schema.is.object(x): return "fc.record(" 
+          + "{ " + Object_entries(x.properties).map(object.parseEntry).join(", ") + " }, " 
+          + "{ requiredKeys: [" + x.required.map((k) => '"' + k + '"').join(", ") + "]" + " }" 
+          + ")"
       }
     }
 }
@@ -169,38 +155,35 @@ export namespace Algebra {
 declare namespace generateArbitrary {
   export { Options }
 }
-generateArbitrary.defaults = defaults
 
-generateArbitrary.fold = ({
+function generateArbitrary_fold({
   arbitraryName = defaults.arbitraryName,
   stripTypes = defaults.stripTypes,
-}: Options = defaults) =>
-  fn.flow(Schema.fromSchema, fn.cata(Schema.functor)(Algebra.jit({ arbitraryName, stripTypes })))
-
-function generateArbitrary<T extends Schema.any>(
-  schema: T,
-  options: Options = generateArbitrary.defaults,
-): string {
-  return fn.pipe(
-    schema,
-    generateArbitrary.fold(options),
-    (body) => "const " + options.arbitraryName + " = " + body,
+}: Options = defaults): (term: Schema.Weak) => string {
+  return fn.flow(
+    Schema.fromSchema, 
+    fn.cata(Schema.functor)(Algebra.jit({ arbitraryName, stripTypes })),
   )
 }
 
-deriveArbitrary.fold = deriveFold
+function generateArbitrary<T extends Schema.any>(options: Options = defaults): 
+  (term: Schema.Weak) => string {
+    return fn.flow(
+      generateArbitrary_fold(options),
+      (body) => "const " + options.arbitraryName + " = " + body,
+    )
+  }
+
+generateArbitrary.defaults = defaults
+generateArbitrary.fold = generateArbitrary_fold
+
 deriveArbitrary.defaults = object.pick(defaults, "compare")
+deriveArbitrary.fold = deriveArbitrary_fold
 
-function deriveArbitrary(
-  options?: Options,
-): <T extends Schema.Weak>(schema: T) => fc.Arbitrary<Schema.toType<T>>
-function deriveArbitrary(options: Options = defaults): {} {
-  return fn.flow(Schema.fromSchema, fn.cata(Schema.functor)(Algebra.arbitrary))
-}
+function deriveArbitrary(_?: Options): <T extends Schema.Weak>(schema: T) => fc.Arbitrary<Schema.toType<T>>
+function deriveArbitrary(_: Options = deriveArbitrary.defaults): {} 
+  { return fn.flow(deriveArbitrary_fold) }
 
-function deriveFold(
-  options?: Options,
-): <const T extends Schema.Weak>(term: T) => fc.Arbitrary<Schema.toType<T>>
-function deriveFold(_: Options = defaults): {} {
-  return fn.flow(Schema.fromSchema, fn.cata(Schema.functor)(Algebra.arbitrary))
-}
+function deriveArbitrary_fold(_?: Options): <const T extends Schema.Weak>(term: T) => fc.Arbitrary<Schema.toType<T>>
+function deriveArbitrary_fold(_: Options = defaults): {}
+  { return fn.flow(Schema.fromSchema, fn.cata(Schema.functor)(Algebra.arbitrary)) }
