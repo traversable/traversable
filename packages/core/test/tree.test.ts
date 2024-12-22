@@ -30,8 +30,8 @@ const withIndex = <K, V>(xss: readonly [readonly K[], V][]): readonly [readonly 
  * are located in the `describe` block directly below this one.
  */
 
-vi.describe("〖️🚑〗‹‹‹ ❲@traversable/core/tree❳", () => {
-  vi.it("〖️🚑〗› ❲tree.set❳: applies the patch when both the source and target are composite types", () => {
+vi.describe("〖️⛳️〗‹‹‹ ❲@traversable/core/tree❳", () => {
+  vi.it("〖️⛳️〗› ❲tree.set❳: applies the patch when both the source and target are composite types", () => {
     const patch = { X: { Y: { Z: 9000 }} }
     const ex_01 = tree.set
       ("a", "b", "c")
@@ -44,7 +44,7 @@ vi.describe("〖️🚑〗‹‹‹ ❲@traversable/core/tree❳", () => {
     )
   })
 
-  vi.it("〖️🚑〗› ❲tree.set❳: applies the patch when both the source and target are primitive types", () => {
+  vi.it("〖️⛳️〗› ❲tree.set❳: applies the patch when both the source and target are primitive types", () => {
     const ex_01 = tree.set
       ("a", "b", "c")
       ({ a: { b: { c: 3 } } })
@@ -56,7 +56,7 @@ vi.describe("〖️🚑〗‹‹‹ ❲@traversable/core/tree❳", () => {
     )
   })
 
-  vi.it("〖️🚑〗› ❲tree.set❳: applies the patch when source is primitive and the target is composite", () => {
+  vi.it("〖️⛳️〗› ❲tree.set❳: applies the patch when source is primitive and the target is composite", () => {
     const ex_01 = tree.set
       ("a", "b", "c")
       ({ a: { b: { c: 4 } } })
@@ -68,7 +68,7 @@ vi.describe("〖️🚑〗‹‹‹ ❲@traversable/core/tree❳", () => {
     )
   })
 
-  vi.it("〖️🚑〗› ❲tree.set❳: applies the patch when source is composite and the target is primitive", () => {
+  vi.it("〖️⛳️〗› ❲tree.set❳: applies the patch when source is composite and the target is primitive", () => {
     const ex_01 = tree.set
       ("a", "b", "c")
       ({ a: { b: { c: [1, 2, 3] } } })
@@ -80,7 +80,7 @@ vi.describe("〖️🚑〗‹‹‹ ❲@traversable/core/tree❳", () => {
     )
   })
 
-  vi.it("〖️🚑〗› ❲tree.set❳: mutates its argument", () => {
+  vi.it("〖️⛳️〗› ❲tree.set❳: mutates its argument", () => {
     const input_01 = { "$": { "_": { 0: { "_": { "A": {} } } } } }
     void tree.set
       ("$", "_", 0, "_", "A")
@@ -94,7 +94,7 @@ vi.describe("〖️🚑〗‹‹‹ ❲@traversable/core/tree❳", () => {
     )
   })
 
-  vi.it("〖️🚑〗› ❲tree.toPaths❳", () => {
+  vi.it("〖️⛳️〗› ❲tree.toPaths❳", () => {
     void vi.assert.deepEqual(tree.toPaths("hey"), [[[], "hey"]])
     void vi.assert.deepEqual(tree.toPaths(null), [[[], null]])
     void vi.assert.deepEqual(tree.toPaths([1]), [[[0], 1]])
@@ -123,7 +123,7 @@ vi.describe("〖️🚑〗‹‹‹ ❲@traversable/core/tree❳", () => {
     )
   })
 
-  vi.it("〖️🚑〗› ❲tree.fromPaths❳", () => {
+  vi.it("〖️⛳️〗› ❲tree.fromPaths❳", () => {
     const ex_01 = tree.fromPaths([
       [ [ "a", 0 ], "zero" ],
       [ [ "a", 1 ], "one" ],
@@ -161,7 +161,7 @@ vi.describe("〖️🚑〗‹‹‹ ❲@traversable/core/tree❳", () => {
     )
   })
 
-  vi.it("〖️🚑〗› ❲tree.fromPaths.ensureContiguous❳", () => {
+  vi.it("〖️⛳️〗› ❲tree.fromPaths.ensureContiguous❳", () => {
     void vi.assert.isTrue(
       tree.fromPaths.isContiguous([
       [ [ 0, "c" ], 100 ],
@@ -209,7 +209,7 @@ vi.describe("〖️🚑〗‹‹‹ ❲@traversable/core/tree❳", () => {
     ]))
   })
 
-  vi.it("〖️🚑〗› ❲tree.fromPaths.group❳", () => {
+  vi.it("〖️⛳️〗› ❲tree.fromPaths.group❳", () => {
     void vi.assert.deepEqual(
       tree.fromPaths.group([
         [ [ "a", 0 ], wrap(null) ],
@@ -254,7 +254,7 @@ vi.describe("〖️🚑〗‹‹‹ ❲@traversable/core/tree❳", () => {
     )
   })
 
-  vi.it("〖️🚑〗› ❲tree.fromPaths.isGroupedArray❳", () => {
+  vi.it("〖️⛳️〗› ❲tree.fromPaths.isGroupedArray❳", () => {
     void vi.assert.isTrue(
       tree.fromPaths.isGroupedArray([
         [ [ 0 ], wrap([ 400, 4_000, 40_000 ]) ],
@@ -276,7 +276,7 @@ vi.describe("〖️🚑〗‹‹‹ ❲@traversable/core/tree❳", () => {
     )
   })
 
-  vi.it("〖️🚑〗› ❲tree.fromPaths.markAll❳", () => {
+  vi.it("〖️⛳️〗› ❲tree.fromPaths.markAll❳", () => {
     void vi.assert.deepEqual(
       tree.fromPaths.markAll([
         [ [ "a", 0 ], null ],
@@ -311,7 +311,7 @@ vi.describe("〖️🚑〗‹‹‹ ❲@traversable/core/tree❳", () => {
     )
   })
 
-  vi.it(`〖️🚑〗› ❲tree.flatten❳ typical use`, () => {
+  vi.it(`〖️⛳️〗› ❲tree.flatten❳ typical use`, () => {
     vi.assert.equal(tree.flatten(1), 1)
     vi.assert.deepEqual(
       tree.flatten({ a: 1, b: [2] }),
@@ -323,7 +323,7 @@ vi.describe("〖️🚑〗‹‹‹ ❲@traversable/core/tree❳", () => {
     )
   })
 
-  vi.it(`〖️🚑〗› ❲tree.flatten❳: pathological cases`, () => {
+  vi.it(`〖️⛳️〗› ❲tree.flatten❳: pathological cases`, () => {
     const ex_01 = { a: { b: void 0 as never as { d: 2, e: { f: unknown } } }, c: 1 as const }
     const ex_02 = { d: 2 as const, e: { f: void 0 as never as { a: { b: unknown }, c: 1 } } }
     void (ex_01.a.b = ex_02)
@@ -496,50 +496,48 @@ vi.describe("〖⛳️〗‹‹‹ ❲@traversable/core/tree❳", () => {
  * ======================
  */
 vi.describe("〖🧙〗‹‹‹ ❲@traversable/core/tree❳", () => {
-  vi.it("〖🧙〗› tree.get", () => {
-    type input_01 = typeof input_01
-
-    const input_01 = { 
-      a: { 
+  const input_01 = { 
+    a: { 
+      ...Math.random() > 0.5 &&
+      ({
+      b: { 
         ...Math.random() > 0.5 &&
         ({
-        b: { 
+        c: { 
           ...Math.random() > 0.5 &&
           ({
-          c: { 
             ...Math.random() > 0.5 &&
-            ({
-              ...Math.random() > 0.5 &&
-              ({ 
-                d: { 
-                ...Math.random() > 0.5 && 
-                ({ e: [ { f: { g: 1, h: 2 }, i: 3 }, [6] ] as const }),
-                j: 7 
-              }, 
-              }),
+            ({ 
+              d: { 
+              ...Math.random() > 0.5 && 
+              ({ e: [ { f: { g: 1, h: 2 }, i: 3 }, [6] ] as const }),
+              j: 7 
+            }, 
             }),
-            k: 8 
-          }, 
           }),
+          k: 8 
         }, 
         }),
-        l: 10 
       }, 
-      m: {
-        ...Math.random() > 0.5 && ({ n: 11 }),
-        o: {
-          p: [
-            100,
-            200,
-            300,
-            { q: { r: [ 0, { s: 12, t: { u: [13, { v: 14 }] } } ] as const, w: 15 }, x: 16 },
-          ],
-          y: 17,
-        },
-        z: 18,
-      }
-    } as const
+      }),
+      l: 10 
+    }, 
+    m: {
+      ...Math.random() > 0.5 && ({ n: 11 }),
+      o: {
+        p: [
+          100,
+          200,
+          300,
+          { q: { r: [ 0, { s: 12, t: { u: [13, { v: 14 }] } } ] as const, w: 15 }, x: 16 },
+        ],
+        y: 17,
+      },
+      z: 18,
+    }
+  } as const
 
+  vi.it("〖🧙〗› tree.get", () => {
     vi.assertType<readonly [13, { v: 14 }]>
       (tree.get(input_01, "m", "o", "p", 3, "q", "r", 1, "t", "u"))
 
@@ -598,7 +596,67 @@ vi.describe("〖🧙〗‹‹‹ ❲@traversable/core/tree❳", () => {
     >(tree.get(input_01, "a"))
   })
 
-  vi.it("〖⛳️〗› ❲tree.accessor❳: no primitive accessors", () => {
+  vi.it("〖🧙〗› tree.get.defer", () => {
+    vi.assertType<readonly [13, { v: 14 }]>
+      (tree.get.defer("m", "o", "p", 3, "q", "r", 1, "t", "u")(input_01))
+
+    vi.assertType<undefined | 1>
+      // (tree.get(input_01, "a", "b", "c", "d", "e", 0, "f", "g"))
+      (tree.get.defer("a", "b", "c", "d", "e", 0, "f", "g")(input_01))
+
+    vi.assertType<undefined | { g: 1, h: 2 }>
+      (tree.get.defer("a", "b", "c", "d", "e", 0, "f")(input_01))
+
+    vi.assertType<undefined | { f: { g: 1, h: 2 }, i: 3 }>
+      (tree.get.defer("a", "b", "c", "d", "e", 0)(input_01))
+
+    vi.assertType<undefined | readonly [{ f: { g: 1, h: 2 }, i: 3 }, readonly [6]]>
+      (tree.get.defer("a", "b", "c", "d", "e")(input_01))
+
+    vi.assertType<
+      | { e?: readonly [{ f: { g: 1, h: 2 }, i: 3 }, readonly [6]], j: number }
+      | undefined
+    >(tree.get.defer("a", "b", "c", "d")(input_01))
+
+    vi.assertType<
+      | undefined 
+      | { 
+        k: number
+          d?: {
+            e?: readonly [
+              { f: { g: 1, h: 2 }, i: 3 },
+              readonly [6]
+            ]
+            j: number
+          }
+      }
+    >(tree.get.defer("a", "b", "c")(input_01))
+    
+    vi.assertType<
+      undefined | 
+      { 
+        c?: {
+          k: number 
+          d?: { e?: readonly [ { f: { g: 1, h: 2 }, i: 3 }, readonly [6] ], j: number }
+        }
+      }
+    >(tree.get.defer("a", "b")(input_01))
+
+    vi.assertType<
+      undefined |
+      { 
+        l: number 
+        b?: { 
+          c?: { 
+            k: number 
+            d?: { j: number, e?: readonly [ { f: { g: 1, h: 2 }, i: 3 }, readonly [6] ] }
+          }
+        }
+      }
+    >(tree.get.defer("a")(input_01))
+  })
+
+  vi.it("〖🧙️〗› ❲tree.accessor❳: no primitive accessors", () => {
     const ex_01 = { a: { b: { c: 0 } } }
     const makeAccessor = tree.accessor("a", "b", "c")
     const accessor = makeAccessor(ex_01)

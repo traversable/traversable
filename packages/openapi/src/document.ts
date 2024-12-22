@@ -183,7 +183,7 @@ export declare namespace openapi {
 
   type response = {
   // interface response {
-    description?: string
+    description: string
     content?: openapi.content
     headers?: openapi.headers
   }
@@ -791,12 +791,12 @@ export interface response extends fc.Arbitrary.infer<ReturnType<typeof response>
 /** ### {@link response `openapi.Response`} */
 export function response(constraints?: arbitrary.Constraints) {
   return fc.record({
+    description: fc.lorem(),
     content: mediatypes({
       ...constraints,
       schema: Schema.any(),
     }),
     // Note: this field is required (not configurable)
-    description: fc.lorem(),
   })
 }
 

@@ -285,12 +285,17 @@ export function get(t: {}, ...k: [...props.any])
 
 export type get<T, KS extends props.any> = get.loop<KS, T>;
 export declare namespace get {
-  type loop<KS extends props.any, T>
-    = T extends null | undefined
-    ? T 
+  type loop<KS extends props.any, T, optionals extends "try" = never>
+    = T extends null | undefined ? [optionals] extends ["try"] ? maybe<KS, T> : T 
     : KS extends readonly [infer K extends keyof T, ...infer Todo extends props.any]
     ? get.loop<Todo, T[K]>
     : KS extends readonly [] ? T
+    : unknown
+
+  type maybe<KS extends props.any, T, _ = Exclude<T, undefined>>
+    = KS extends readonly [infer K extends keyof _, ...infer Todo extends props.any]
+    ? get.maybe<Todo, _[K]>
+    : KS extends readonly [] ? undefined | T
     : unknown
 }
 
@@ -313,8 +318,8 @@ void (get.defer = get_defer)
  * See also:
  * - {@link get `tree.get`}
  */
-export function get_defer<KS extends props.any, T extends has.maybe<KS>>(...path: [...KS]): 
-  (shape: T) => get<T, KS>
+export function get_defer<KS extends props.any>(...path: [...KS]): 
+  <const T extends has_maybe<KS>>(shape: T) => get.loop<KS, T, "try">
 /// impl.
 export function get_defer(
   ...args:
@@ -344,41 +349,47 @@ export function get_defer(
 export function has<KS extends keys.any>
   (...params: [...KS]): (u: unknown) => u is has.path<KS>
 export function has<const KS extends keys.any, T>
-  (...params: [...KS, (u: unknown) => u is T]): (u: unknown) => u is has.path<KS, T>
+  (...params: [...KS, (u: unknown) => u is T]): (u: unknown) => u is has_path<KS, T>
 /// impl.
 export function has
   (...params: [...keys.any] | [...keys.any, (u: any) => u is any]) {
-  return (u: unknown) => {
-    const [path, check] = has.defaults.separatePath(params)
-    const got = get_(u, path)
-    return got !== symbol.not_found && check(got)
+    return (u: unknown) => {
+      const [path, check] = separatePath(params)
+      const got = get_(u, path)
+      return got !== symbol.not_found && check(got)
+    }
   }
-}
 
-function separatePath(xs: keys.any | [...keys.any, Predicate.any]): 
+function separatePath(xs: [...keys.any] | [...keys.any, Predicate.any]): 
   [path: key.any[], check: (u: any) => u is any]
-function separatePath(xs: keys.any | [...keys.any, Predicate.any]) { 
+function separatePath(xs: [...keys.any] | [...keys.any, Predicate.any]) { 
   return keys.is(xs) 
     ? [xs, has.defaults.guard] 
     : [xs.slice(0, -1), xs[xs.length - 1]] 
 }
 
 has.defaults = {
-  separatePath,
   guard: ((_?: any): _ is any => true) satisfies Predicate.any,
 }
 
 export declare namespace has {
-  type path<KS extends keys.any, T = {}> 
-    = KS extends nonempty.propsLeft<infer Todo, infer K>
-    ? has.path<Todo, { [P in K]: T }>
-    : T extends infer U extends {} ? U : never // has<U> : never
-  type maybe<KS extends keys.any, T = {}>
-    = KS extends nonempty.propsLeft<infer Todo, infer K>
-    ? has.path<Todo, { [P in K]+?: T }>
-    : T extends infer U extends {} ? tentatively<U> : never
-  interface tentatively<T extends {}> extends newtype<T> {}
+  export { 
+    has_maybe as maybe, 
+    has_path as path,
+  }
 }
+
+type has_path<KS extends keys.any, T = {}> 
+  = KS extends nonempty.propsLeft<infer Todo, infer K>
+  ? has.path<Todo, { [P in K]: T }>
+  : T extends infer U extends {} ? U : never 
+
+type has_maybe<KS extends keys.any, T = {}>
+  = KS extends nonempty.propsLeft<infer Todo, infer K>
+  ? has_maybe<Todo, { [P in K]+?: T }>
+  : T extends infer U extends {} ? tentatively<U> : never
+
+interface tentatively<T extends {}> extends newtype<T> {}
 
 /** 
  * ## {@link set `tree.set`}
@@ -401,14 +412,20 @@ export declare namespace has {
  */
 export const set = mutate
 
-export function mutate<KS extends props.any>(...path: [...KS]): <const T extends has.path<KS>>(tree: T) => {
-  <V extends get<T, KS>>(v: V): unknown
-  <V>(v: V): unknown
-}
-export function mutate<KS extends props.any>(path: [...KS], options?: mutate.Options): <const T extends has.path<KS>>(tree: T) => {
-  <V extends get<T, KS>>(v: V): unknown
-  <V>(v: V): unknown
-}
+export function mutate
+  <KS extends props.any>(...path: [...KS]): 
+    <const T extends has.path<KS>>(tree: T) => {
+      <V extends get<T, KS>>(v: V): unknown
+      <V>(v: V): unknown
+    }
+
+export function mutate
+  <KS extends props.any>(path: [...KS], options?: mutate.Options): 
+    <const T extends has.path<KS>>(tree: T) => {
+      <V extends get<T, KS>>(v: V): unknown
+      <V>(v: V): unknown
+    }
+
 /// impl.
 export function mutate(
   ...args:

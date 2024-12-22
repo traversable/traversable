@@ -132,46 +132,34 @@ export namespace Algebra {
   /**
    * ## {@link codegen `Algebra.codegen`}
    */
-  export const jit: (options?: Options) => Functor.Algebra<Schema.lambda, string> =
-    ({ stripTypes: noTypes = defaults.stripTypes } = defaults) =>
-    (x) => {
+  export const jit
+    : (options?: Options) => Functor.Algebra<Schema.lambda, string> 
+    = ({ stripTypes: noTypes = defaults.stripTypes } = defaults) => (x) => {
       switch (true) {
-        case Schema.is.null(x):
-          return "fc.constant(null)"
-        case Schema.is.boolean(x):
-          return "fc.boolean()"
-        case Schema.is.integer(x):
-          return "fc.integer()"
-        case Schema.is.number(x):
-          return "fc.float()"
-        case Schema.is.string(x):
-          return "fc.lorem()"
-        case Schema.is.array(x):
-          return "fc.array(" + x.items + ")"
-        case Schema.is.record(x):
-          return "fc.dictionary(fc.lorem(), " + x.additionalProperties + ")"
-        case Schema.is.tuple(x):
-          return "fc.tuple(" + x.items.join(", ") + ")"
-        case Schema.is.anyOf(x):
-          return "fc.oneof(" + x.anyOf.join(", ") + ")"
-        case Schema.is.oneOf(x):
-          return "fc.oneof(" + x.oneOf.join(", ") + ")"
-        case Schema.is.object(x):
-          return (
-            "fc.record(" +
-            "{ " +
-            Object_entries(x.properties).map(object.parseEntry).join(", ") +
-            " }, " +
-            "{ requiredKeys: [" +
-            x.required.map((k) => '"' + k + '"').join(", ") +
-            "]" +
-            " }" +
-            ")"
-          )
+        case Schema.is.null(x): return "fc.constant(null)"
+        case Schema.is.boolean(x): return "fc.boolean()"
+        case Schema.is.integer(x): return "fc.integer()"
+        case Schema.is.number(x): return "fc.float()"
+        case Schema.is.string(x): return "fc.lorem()"
+        case Schema.is.array(x): return "fc.array(" + x.items + ")"
+        case Schema.is.record(x): return "fc.dictionary(fc.lorem(), " + x.additionalProperties + ")"
+        case Schema.is.tuple(x): return "fc.tuple(" + x.items.join(", ") + ")"
+        case Schema.is.anyOf(x): return "fc.oneof(" + x.anyOf.join(", ") + ")"
+        case Schema.is.oneOf(x): return "fc.oneof(" + x.oneOf.join(", ") + ")"
+        case Schema.is.object(x): return (
+          "fc.record(" +
+          "{ " +
+          Object_entries(x.properties).map(object.parseEntry).join(", ") +
+          " }, " +
+          "{ requiredKeys: [" +
+          x.required.map((k) => '"' + k + '"').join(", ") +
+          "]" +
+          " }" +
+          ")"
+        )
         case Schema.is.allOf(x):
-          return "fc.tuple(" + x.allOf.join(", ") + ")" + ".map((xs) => xs.reduce((ys" + noTypes
-            ? ""
-            : ": {}" + ", y) => y ? Object.assign(ys, y) : ys, {}))"
+          return "fc.tuple(" + x.allOf.join(", ") + ")" + ".map((xs) => xs.reduce((ys" 
+            + noTypes ? "" : ": {}" + ", y) => y ? Object.assign(ys, y) : ys, {}))"
         default:
           return fn.exhaustive(x)
       }

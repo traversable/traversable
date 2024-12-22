@@ -75,8 +75,8 @@ export function map<const S, T>
  * {@link map `map`} is a polymorphic function that accepts a function and a data structure (such 
  * as an array or object) to apply the function to.
  * 
- * A unique feature of this implementation is polymorphism: it doesn't care whether the
- * composite data structure is an array, or whether it's an object. It will apply the argument
+ * A unique feature of this implementation is its polymorphism: it doesn't care whether the
+ * data structure is an array, or whether it's an object. It will apply the argument
  * to each of the children, and will __preserve__ the __structure__ of the original shape.
  * 
  * **Trade-off:** the data-first overload of {@link map `map`} evaluates eagerly. It comes with 

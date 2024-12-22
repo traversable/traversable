@@ -55,7 +55,11 @@ import * as vi from "vitest"
  * 
  * ## What's the big idea?
  * 
- * The main idea is simple:
+ * If you're like me, you've always had a complicated relationship
+ * with testing. Somehow it feels...broken?
+ * 
+ * And I think that's because it is, at least partially. For one thing,
+ * human beings are kinda bad at it. Specifically:
  * 
  * - Humans are bad at writing tests.
  * - Humans are bad at thinking of edge cases. 

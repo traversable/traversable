@@ -166,8 +166,10 @@ export declare namespace HKT {
  * @example
  *  import { HKT, Fix } from "@traversable/registry"
  */
-export interface Fix<F> 
-  { get fix(): Fix<this>, get unfix(): F }
+export interface Fix<F> {
+  get fix(): Fix<this>
+  get unfix(): F
+}
 export type Unfix<F extends Fix<any>> = F["unfix"]
 
 // export interface Fix<F> extends HKT<F, Fix<F>> {}
