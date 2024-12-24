@@ -122,9 +122,10 @@ export namespace sign {
  *    { id: 3, createdAt: Wed Jul 17 2024 18:58:17 GMT-0500 (Central Daylight Time) },
  *  ]
  */
-export const order_mapInput
-  : <T, U>(compare: Compare<U>, fn: (t: T) => U) => Compare<T> 
-  = (compare, fn) => (left, right) => compare(fn(left), fn(right))
+export function order_mapInput<S, T>(compare: Compare<T>, fn: (s: S) => T): Compare<S> 
+  { return (left, right) => compare(fn(left), fn(right)) }
+
+order_mapInput.defer = <S, T>(fn: (s: S) => T) => (compare: Compare<T>): Compare<S> => order_mapInput(compare, fn)
 
 export const order_combine
   : <T>(first: Compare<T>, second: Compare<T>) => Compare<T>

@@ -32,14 +32,17 @@ export type NodeWeight<T = any> = {
   predicate(u: unknown): u is T
 }
 
+export type Weight<T> = never | (T | (number & {}))
+
 /**
  * TODO:
  * 1. make sure these weights are override-able from userland
  * 2. add real predicates
  */
 export type WeightMap = {
-  [K in keyof WeightByType]: { weight: WeightByType[K]; predicate: (u: unknown) => u is unknown }
+  [K in keyof WeightByType]: { weight: Weight<WeightByType[K]>; predicate: (u: unknown) => u is unknown }
 }
+
 export const WeightMap = {
   null: {
     weight: WeightByType.null,
@@ -95,8 +98,6 @@ export const WeightMap = {
   },
 } satisfies WeightMap
 
-export type StickyNumeric<T> = never | (T | (number & {}))
-export type Weight = never | StickyNumeric<WeightByType[keyof WeightByType]>
 
 export type RegisterWeight<T extends {}> = Open<T, WeightByType>
 export type RegisterSymbol<

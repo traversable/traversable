@@ -1,146 +1,130 @@
-import type { Compare } from "@traversable/data"
-import { fn, order } from "@traversable/data"
-import { Weight } from "@traversable/openapi"
-import type { Functor } from "@traversable/registry"
-import { type Partial, type Required, WeightMap } from "@traversable/registry"
 
+import type { Compare } from "@traversable/data"
+import { fn, map, order } from "@traversable/data"
+import { openapi, Weight } from "@traversable/openapi"
+import type { Functor } from "@traversable/registry"
+import { type Partial, WeightByType, WeightMap } from "@traversable/registry"
 import { Ext as Schema } from "./model.js"
 
 export { deriveSort as derive }
 
-export type Options = Partial<{
-  compare: Compare<Schema.any>
-}>
+export type Options = Partial<typeof defaults>
 
 export const defaults = {
   compare: order.mapInput(
     order.number,
     fn.flow(Weight.fromSchema({ paths: {} }, WeightMap), (_) => _.weight),
   ) as Compare<any>,
-} as const satisfies Required<Options>
+  doc: openapi.doc({}),
+  weightMap: WeightByType as Partial<WeightByType>,
+} as const
 
-/** @internal */
-const Object_entries = globalThis.Object.entries
+deriveSort.defaults = defaults
+
 /** @internal */
 const Object_fromEntries = globalThis.Object.fromEntries
+/** @internal */
+const Object_entries = globalThis.Object.entries
 
-export const areTheSameType: (l: Schema, r: Schema) => boolean = (l, r) =>
-  "type" in l && "type" in r
-    ? l.type === r.type
-    : ("oneOf" in l && "oneOf" in r) || ("allOf" in l && "allOf" in r) || ("anyOf" in l && "anyOf" in r)
+function compareMany($: Compare<Schema>): Compare<readonly Schema[]> {
+  return (l, r) => {
+    const lengths = order.array.lengthAscending(l, r)
+    if (lengths !== 0) return lengths
+    else {
+      const li = [...l].sort($)
+      const ri = [...r].sort($)
+      for (let ix = 0, len = li.length; ix < len; ix++) {
+        const shallow = $(li[ix], ri[ix])
+        if (shallow !== 0) return shallow
+      }
+      for (let ix = 0, len = li.length; ix < len; ix++) {
+        const items = compare($)(li[ix], ri[ix])
+        if (items !== 0) return items
+      }
+      return 0
+    }
+  }
+}
 
 export const compare: (comparisonFn: Compare<Schema>) => Compare<Schema> = ($) => (l, r) => {
-  // if (!areTheSameType(l, r))
-  //   return Invariant.IllegalState("Node types do not match", l, r)
   const ordering = $(l, r)
   if (ordering !== 0) return ordering
-  else
-    switch (true) {
-      case Schema.is.null(l):
-        return 0
-      case Schema.is.boolean(l):
-        return 0
-      case Schema.is.integer(l):
-        return 0
-      case Schema.is.number(l):
-        return 0
-      case Schema.is.string(l):
-        return 0
-      case Schema.is.array(l) && Schema.is.array(r): {
-        const shallow = $(l.items, r.items)
-        if (shallow !== 0) return shallow
-        else return compare($)(l.items, r.items)
-      }
-      case Schema.is.record(l) && Schema.is.record(r): {
-        const shallow = $(l.additionalProperties, r.additionalProperties)
-        if (shallow !== 0) return shallow
-        else return compare($)(l.additionalProperties, r.additionalProperties)
-      }
-      case Schema.is.tuple(l) && Schema.is.tuple(r): {
-        const lengths = order.array.lengthAscending(l.items, r.items)
-        if (lengths !== 0) return lengths
-        else {
-          const li = [...l.items].sort($)
-          const ri = [...r.items].sort($)
-          for (let ix = 0, len = li.length; ix < len; ix++) {
-            const shallow = $(li[ix], ri[ix])
-            if (shallow !== 0) return shallow
-          }
-          for (let ix = 0, len = li.length; ix < len; ix++) {
-            const items = compare($)(li[ix], ri[ix])
-            if (items !== 0) return items
-          }
-          return 0
-        }
-      }
-      case Schema.is.object(l) && Schema.is.object(r): {
-        const orderEntries = order.mapInput($, ([, v]: readonly [k: string, v: Schema]) => v)
-        const leftEntries = Object_entries(l.properties)
-        const rightEntries = Object_entries(r.properties)
-        const lengths = order.array.lengthAscending(leftEntries, rightEntries)
-        if (lengths !== 0) return lengths
-        else {
-          const left = leftEntries.sort(orderEntries)
-          const right = rightEntries.sort(orderEntries)
-          for (let ix = 0, len = left.length; ix < len; ix++) {
-            const shallow = $(left[ix][1], right[ix][1])
-            if (shallow !== 0) return shallow
-          }
-          for (let ix = 0, len = left.length; ix < len; ix++) {
-            const values = compare($)(left[ix][1], right[ix][1])
-            if (values !== 0) return values
-          }
-          return 0
-        }
-      }
-      case Schema.is.allOf(l) && Schema.is.allOf(r):
-      case Schema.is.anyOf(l) && Schema.is.anyOf(r):
-      case Schema.is.oneOf(l) && Schema.is.oneOf(r):
-      default:
-        return fn.exhaustive(l as never, r as never)
+  else switch (true) {
+    default: return 0
+    case Schema.is.null(l): return 0
+    case Schema.is.boolean(l): return 0
+    case Schema.is.integer(l): return 0
+    case Schema.is.number(l): return 0
+    case Schema.is.string(l): return 0
+    case Schema.is.allOf(l) && Schema.is.allOf(r): return compareMany($)(l.allOf, r.allOf)
+    case Schema.is.anyOf(l) && Schema.is.anyOf(r): return compareMany($)(l.anyOf, r.anyOf)
+    case Schema.is.oneOf(l) && Schema.is.oneOf(r): return compareMany($)(l.oneOf, r.oneOf)
+    case Schema.is.tuple(l) && Schema.is.tuple(r): return compareMany($)(l.items, r.items)
+    case Schema.is.array(l) && Schema.is.array(r): {
+      const shallow = $(l.items, r.items)
+      if (shallow !== 0) return shallow
+      else return compare($)(l.items, r.items)
     }
+    case Schema.is.record(l) && Schema.is.record(r): {
+      const shallow = $(l.additionalProperties, r.additionalProperties)
+      if (shallow !== 0) return shallow
+      else return compare($)(l.additionalProperties, r.additionalProperties)
+    }
+    case Schema.is.object(l) && Schema.is.object(r): {
+      const orderEntries = order.mapInput($, ([, v]: readonly [k: string, v: Schema]) => v)
+      const leftEntries = Object_entries(l.properties)
+      const rightEntries = Object_entries(r.properties)
+      const lengths = order.array.lengthAscending(leftEntries, rightEntries)
+      if (lengths !== 0) return lengths
+      else {
+        const left = leftEntries.sort(orderEntries)
+        const right = rightEntries.sort(orderEntries)
+        for (let ix = 0, len = left.length; ix < len; ix++) {
+          const shallow = $(left[ix][1], right[ix][1])
+          if (shallow !== 0) return shallow
+        }
+        for (let ix = 0, len = left.length; ix < len; ix++) {
+          const loop = compare($)(left[ix][1], right[ix][1])
+          if (loop !== 0) return loop
+        }
+        return 0
+      }
+    }
+  }
 }
 
 export namespace Coalgebra {
-  export const sort: (comparisonFn: Compare<Schema>) => Functor.Coalgebra<Schema.lambda, Schema> =
-    ($) => (n) => {
+  export const sort
+    : (comparisonFn: Compare<Schema>) => Functor.Coalgebra<Schema.lambda, Schema> 
+    = ($) => (n) => {
       switch (true) {
+        default: return fn.softExhaustiveCheck(n)
         case Schema.is.enum(n): return n
-        case Schema.is.null(n): return n
-        case Schema.is.boolean(n): return n
-        case Schema.is.integer(n): return n
-        case Schema.is.number(n): return n
-        case Schema.is.string(n): return n
+        case Schema.is.scalar(n): return n
         case Schema.is.array(n): return n
         case Schema.is.record(n): return n
         case Schema.is.allOf(n): return { ...n, allOf: [...n.allOf].sort(compare($)) }
         case Schema.is.anyOf(n): return { ...n, anyOf: [...n.anyOf].sort(compare($)) }
         case Schema.is.oneOf(n): return { ...n, oneOf: [...n.oneOf].sort(compare($)) }
-        case Schema.is.tuple(n):
-          return {
-            ...n,
-            items: n.items
-              .map((x, ix) => [ix, x] satisfies [number, Schema])
-              .sort(order.mapInput(compare($), ([, v]) => v))
-              .map(([ix, x]) => (((x as { originalIndex: number }).originalIndex = ix), x)),
-          }
-        case Schema.is.object(n):
-          return {
-            ...n,
-            properties: fn.pipe(
-              n.properties,
-              Object_entries,
-              (xs) => xs.sort(order.mapInput(compare($), ([, v]) => v)),
-              Object_fromEntries,
-            ),
-          }
-        default:
-          return fn.softExhaustiveCheck(n)
+        case Schema.is.tuple(n): return {
+          ...n,
+          items: n.items
+            .map((x, ix) => [ix, x] satisfies [number, Schema])
+            .sort(order.mapInput(compare($), ([, v]) => v))
+            .map(([ix, x]) => (((x as { originalIndex: number }).originalIndex = ix), x)),
+        }
+        case Schema.is.object(n): return {
+          ...n,
+          properties: fn.pipe(
+            n.properties,
+            Object_entries,
+            (xs) => xs.sort(order.mapInput(compare($), ([, v]) => v)),
+            Object_fromEntries,
+          ),
+        }
       }
     }
 }
-
-deriveSort.defaults = defaults
 
 /**
  * ## {@link deriveSort `sort.derive`}
@@ -156,22 +140,22 @@ deriveSort.defaults = defaults
  *  const input_1 = {
  *    type: "object",
  *    properties: {
- *      E: { type: "object", properties: { e2: { type: "string" }, e1: { type: "null" } }},
- *      D: { type: "object", properties: { d1: { type: "null" }, d2: { type: "null" } }},
- *      B: { type: "object", properties: {} },
- *      A: { type: "string" },
- *      F: { type: "array", items: { type: "null" } },
- *      C: { type: "object", properties: { c1: { type: "tuple", items: [{ type: "string" }] } } },
+ *      E: { type: "object", properties: { E2: { type: "string" }, E1: { type: "null" } }, required: ["E1", "E2"] },
+ *      C: { type: "object", properties: {}, required: [] },
+ *      B: { type: "string", format: "date" },
+ *      A: { type: "null" },
+ *      F: { type: "array", items: { type: "object", properties: { F1: { type: "null" }, F2: { type: "integer" } }, required: [] } },
+ *      D: { type: "object", properties: { D1: { type: "null" } }, required: ["D1"] },
  *    }
  *  }
  *
  *  const expected_1 = [
- *    ["A", { type: "string" }],
- *    ["B", { type: "object", properties: {} }],
- *    ["C", { type: "object", properties: { c1: { type: "tuple", items: [{ type: "string" }] } } }],
- *    ["D", { type: "object", properties: { d1: { type: "null" }, d2: { type: "null" } } }],
- *    ["E", { type: "object", properties: { e1: { type: "string" }, e2: { type: "null" } } }],
- *    ["F", { type: "array", items: { type: "null" } }],
+ *    ["A", { type: "null" }],
+ *    ["B", { type: "string", format: "date" }],
+ *    ["C", { type: "object", properties: {}, required: [] }],
+ *    ["D", { type: "object", properties: { D1: { type: "null" } }, required: ["D1"] }],
+ *    ["E", { type: "object", properties: { E1: { type: "null" }, E2: { type: "string" } }, required: ["E1", "E2"] }],
+ *    ["F": { type: "array", items: { type: "object", properties: { F1: { type: "null" }, F2: { type: "integer" } }, required: [] } }],
  *  ]
  *
  *  const actual_1 = sort(input_1).properties
@@ -182,11 +166,10 @@ deriveSort.defaults = defaults
  *
  *  // **Note:** here we're comparing **entries** -- remember, objects themselves
  *  // don't have any semantics when it comes to order, or sequencing.
- *  // They do however preserve insertion order for non-numeric properties, which
- *  // means we can observe that our sort function by forcing the object to enumerate.
+ *  // However, obects do remember insertion-order for non-numeric properties, so 
+ *  // we can observe that our sort worked by enumerating the object.
  *  vi.assert.deepEqual(actual, expected_1)
  *  // ⛳️ 1 passed
- *
  *
  *  // Cool. Let's make sure the sorting was actually recursive:
  *  const input_2 = input_1.properties.E.properties
@@ -205,8 +188,31 @@ deriveSort.defaults = defaults
  *  // ⛳️ 1 passed
  *  // 😌
  */
-
 function deriveSort(options?: Options): <const T extends Schema.any>(schema: T) => T
-function deriveSort({ compare = defaults.compare }: Options = deriveSort.defaults) {
-  return fn.ana(Schema.functor)(Coalgebra.sort(order.mapInput(compare, Schema.fromSchema)))
+function deriveSort({ 
+  compare,
+  weightMap,
+  doc = defaults.doc,
+}: Options = deriveSort.defaults): {} {
+  if (compare) return (
+    fn.ana(Schema.functor)(
+    Coalgebra.sort(order.mapInput(compare, Schema.fromSchema)
+    ))
+  )
+  else if (weightMap) {
+    const weights: WeightMap = fn.pipe(
+      { ...WeightByType, ...weightMap },
+      map((weight) => ({ weight, predicate(u: unknown): u is unknown { return true } })),
+    )
+    const $ = order.mapInput(
+      order.number,
+      fn.flow(Weight.fromSchema(doc, weights), (_) => _.weight),
+    ) as Compare<Schema>
+    return fn.ana(Schema.functor)(Coalgebra.sort($))
+  }
+  else return fn.ana(Schema.functor)(
+    Coalgebra.sort(
+      order.mapInput(defaults.compare, Schema.fromSchema)
+    )
+  )
 }

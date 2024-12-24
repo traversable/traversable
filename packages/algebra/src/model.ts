@@ -23,6 +23,15 @@ const Object_assign = globalThis.Object.assign
 const isObject: (u: unknown) => u is { [x: string]: unknown } = (u): u is never =>
   u !== null && typeof u === "object" && !Array_isArray(u)
 
+
+const areTheSameType
+  : (l: Ext, r: Ext) => boolean 
+  = (l, r) => "type" in l && "type" in r
+     ? l.type === r.type
+     : ("oneOf" in l && "oneOf" in r) 
+    || ("allOf" in l && "allOf" in r) 
+    || ("anyOf" in l && "anyOf" in r)
+
 const bind: <T extends {}>(snd: T) => <U extends {}>(fst: U) => T & U = (snd) => (fst) =>
   Object_assign(fst, snd)
 

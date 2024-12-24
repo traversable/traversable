@@ -52,4 +52,536 @@ vi.describe("〖️⛳️〗‹‹‹ ❲@traversable/algebra/sort❳", () => {
     vi.assert.notDeepEqual(actual_02, input_02)
     vi.assert.deepEqual(actual_02, expected_02)
   })
+
+  vi.it("〖️⛳️〗› ❲sort.deep❳: sort is stable", () => {
+    const actual_03 = sort.derive()({
+      type: "object", 
+      properties: {
+        six: { type: "number" }, 
+        four: { type: "integer" },
+        eighteen: { 
+          type: "tuple", 
+          items: [
+            { 
+              type: "object", 
+              properties: { 
+                rThree: { type: "object", properties: { B: { type: "null" }, C: { type: "null" }, A: { type: "null" } } }, 
+                rTwo: { type: "number" }, 
+                rFour: { type: "object", properties: { A: { type: "null" }, B: { type: "null" }, C: { type: "null" } } }, 
+                rOne: { type: "boolean" }, 
+                rFive: { type: "object", properties: { C: { type: "null" }, A: { type: "null" }, B: { type: "null" } } }, 
+              } 
+            },
+            { type: "null" },
+          ] 
+        },
+        seventeen: { type: "tuple", items: [] },
+        eight: { type: "string" }, 
+        fifteen: { type: "object", properties: { A: { type: "null" }, B: { type: "null" } } },
+        nine: { type: "string" }, 
+        two: { type: "boolean" }, 
+        sixteen: { type: "object", properties: { B: { type: "null" }, A: { type: "null" } } },
+        twelve: { 
+          type: "record", 
+          additionalProperties: { 
+            type: "record",
+            additionalProperties: {
+              type: "anyOf",
+              anyOf: [
+                { type: "object", properties: {} },
+                { type: "null" },
+                { 
+                  type: "allOf", 
+                  allOf: [
+                    { 
+                      type: "object", 
+                      properties: { 
+                        C: { type: "array", items: { type: "string" } }, 
+                        A: { type: "array", items: { type: "null" } }, 
+                        B: { type: "array", items: { type: "boolean" } }, 
+                      } 
+                    }
+                  ]
+                }
+              ] 
+            }
+          },
+        },
+        eleven: { 
+          type: "record", 
+          additionalProperties: { 
+            type: "record",
+            additionalProperties: {
+              type: "anyOf",
+              anyOf: [
+                { type: "object", properties: {} },
+                { 
+                  type: "allOf", 
+                  allOf: [
+                    { 
+                      type: "object", 
+                      properties: { 
+                        C: { type: "array", items: { type: "string" } }, 
+                        A: { type: "array", items: { type: "null" } }, 
+                        B: { type: "array", items: { type: "boolean" } }, 
+                      } 
+                    }
+                  ] 
+                }
+              ] 
+            }
+          },
+        },
+        three: { type: "boolean" },
+        seven: { type: "number" }, 
+        fourteen: {
+          type: "object", 
+          properties: { 
+            A: { 
+              type: "tuple", 
+              items: [{ type: "string" }]
+            } 
+          } 
+        }, 
+        ten: { type: "string" }, 
+        five: { type: "integer" },
+        U: { type: "array", items: { type: "boolean" } },
+        T: { type: "array", items: { type: "null" } },
+        one: { type: "null" },
+        thirteen: { type: "object", properties: {} },
+      }
+    })
+    vi.expect(Object.entries((actual_03.properties.eighteen.items[1] as any).properties)).toMatchInlineSnapshot(`
+      [
+        [
+          "rOne",
+          {
+            "type": "boolean",
+          },
+        ],
+        [
+          "rTwo",
+          {
+            "type": "number",
+          },
+        ],
+        [
+          "rThree",
+          {
+            "properties": {
+              "A": {
+                "type": "null",
+              },
+              "B": {
+                "type": "null",
+              },
+              "C": {
+                "type": "null",
+              },
+            },
+            "type": "object",
+          },
+        ],
+        [
+          "rFour",
+          {
+            "properties": {
+              "A": {
+                "type": "null",
+              },
+              "B": {
+                "type": "null",
+              },
+              "C": {
+                "type": "null",
+              },
+            },
+            "type": "object",
+          },
+        ],
+        [
+          "rFive",
+          {
+            "properties": {
+              "A": {
+                "type": "null",
+              },
+              "B": {
+                "type": "null",
+              },
+              "C": {
+                "type": "null",
+              },
+            },
+            "type": "object",
+          },
+        ],
+      ]
+    `)
+    vi.expect(actual_03.properties.eighteen.items).toMatchInlineSnapshot(`
+      [
+        {
+          "originalIndex": 1,
+          "type": "null",
+        },
+        {
+          "originalIndex": 0,
+          "properties": {
+            "rFive": {
+              "properties": {
+                "A": {
+                  "type": "null",
+                },
+                "B": {
+                  "type": "null",
+                },
+                "C": {
+                  "type": "null",
+                },
+              },
+              "type": "object",
+            },
+            "rFour": {
+              "properties": {
+                "A": {
+                  "type": "null",
+                },
+                "B": {
+                  "type": "null",
+                },
+                "C": {
+                  "type": "null",
+                },
+              },
+              "type": "object",
+            },
+            "rOne": {
+              "type": "boolean",
+            },
+            "rThree": {
+              "properties": {
+                "A": {
+                  "type": "null",
+                },
+                "B": {
+                  "type": "null",
+                },
+                "C": {
+                  "type": "null",
+                },
+              },
+              "type": "object",
+            },
+            "rTwo": {
+              "type": "number",
+            },
+          },
+          "type": "object",
+        },
+      ]
+    `)
+
+    vi.expect(Object.entries(actual_03.properties)).toMatchInlineSnapshot(`
+      [
+        [
+          "one",
+          {
+            "type": "null",
+          },
+        ],
+        [
+          "two",
+          {
+            "type": "boolean",
+          },
+        ],
+        [
+          "three",
+          {
+            "type": "boolean",
+          },
+        ],
+        [
+          "four",
+          {
+            "type": "integer",
+          },
+        ],
+        [
+          "five",
+          {
+            "type": "integer",
+          },
+        ],
+        [
+          "six",
+          {
+            "type": "number",
+          },
+        ],
+        [
+          "seven",
+          {
+            "type": "number",
+          },
+        ],
+        [
+          "eight",
+          {
+            "type": "string",
+          },
+        ],
+        [
+          "nine",
+          {
+            "type": "string",
+          },
+        ],
+        [
+          "ten",
+          {
+            "type": "string",
+          },
+        ],
+        [
+          "eleven",
+          {
+            "additionalProperties": {
+              "additionalProperties": {
+                "anyOf": [
+                  {
+                    "properties": {},
+                    "type": "object",
+                  },
+                  {
+                    "allOf": [
+                      {
+                        "properties": {
+                          "A": {
+                            "items": {
+                              "type": "null",
+                            },
+                            "type": "array",
+                          },
+                          "B": {
+                            "items": {
+                              "type": "boolean",
+                            },
+                            "type": "array",
+                          },
+                          "C": {
+                            "items": {
+                              "type": "string",
+                            },
+                            "type": "array",
+                          },
+                        },
+                        "type": "object",
+                      },
+                    ],
+                    "type": "allOf",
+                  },
+                ],
+                "type": "anyOf",
+              },
+              "type": "record",
+            },
+            "type": "record",
+          },
+        ],
+        [
+          "twelve",
+          {
+            "additionalProperties": {
+              "additionalProperties": {
+                "anyOf": [
+                  {
+                    "type": "null",
+                  },
+                  {
+                    "properties": {},
+                    "type": "object",
+                  },
+                  {
+                    "allOf": [
+                      {
+                        "properties": {
+                          "A": {
+                            "items": {
+                              "type": "null",
+                            },
+                            "type": "array",
+                          },
+                          "B": {
+                            "items": {
+                              "type": "boolean",
+                            },
+                            "type": "array",
+                          },
+                          "C": {
+                            "items": {
+                              "type": "string",
+                            },
+                            "type": "array",
+                          },
+                        },
+                        "type": "object",
+                      },
+                    ],
+                    "type": "allOf",
+                  },
+                ],
+                "type": "anyOf",
+              },
+              "type": "record",
+            },
+            "type": "record",
+          },
+        ],
+        [
+          "thirteen",
+          {
+            "properties": {},
+            "type": "object",
+          },
+        ],
+        [
+          "fourteen",
+          {
+            "properties": {
+              "A": {
+                "items": [
+                  {
+                    "originalIndex": 0,
+                    "type": "string",
+                  },
+                ],
+                "type": "tuple",
+              },
+            },
+            "type": "object",
+          },
+        ],
+        [
+          "fifteen",
+          {
+            "properties": {
+              "A": {
+                "type": "null",
+              },
+              "B": {
+                "type": "null",
+              },
+            },
+            "type": "object",
+          },
+        ],
+        [
+          "sixteen",
+          {
+            "properties": {
+              "A": {
+                "type": "null",
+              },
+              "B": {
+                "type": "null",
+              },
+            },
+            "type": "object",
+          },
+        ],
+        [
+          "seventeen",
+          {
+            "items": [],
+            "type": "tuple",
+          },
+        ],
+        [
+          "eighteen",
+          {
+            "items": [
+              {
+                "originalIndex": 1,
+                "type": "null",
+              },
+              {
+                "originalIndex": 0,
+                "properties": {
+                  "rFive": {
+                    "properties": {
+                      "A": {
+                        "type": "null",
+                      },
+                      "B": {
+                        "type": "null",
+                      },
+                      "C": {
+                        "type": "null",
+                      },
+                    },
+                    "type": "object",
+                  },
+                  "rFour": {
+                    "properties": {
+                      "A": {
+                        "type": "null",
+                      },
+                      "B": {
+                        "type": "null",
+                      },
+                      "C": {
+                        "type": "null",
+                      },
+                    },
+                    "type": "object",
+                  },
+                  "rOne": {
+                    "type": "boolean",
+                  },
+                  "rThree": {
+                    "properties": {
+                      "A": {
+                        "type": "null",
+                      },
+                      "B": {
+                        "type": "null",
+                      },
+                      "C": {
+                        "type": "null",
+                      },
+                    },
+                    "type": "object",
+                  },
+                  "rTwo": {
+                    "type": "number",
+                  },
+                },
+                "type": "object",
+              },
+            ],
+            "type": "tuple",
+          },
+        ],
+        [
+          "T",
+          {
+            "items": {
+              "type": "null",
+            },
+            "type": "array",
+          },
+        ],
+        [
+          "U",
+          {
+            "items": {
+              "type": "boolean",
+            },
+            "type": "array",
+          },
+        ],
+      ]
+    `)
+  })
 })

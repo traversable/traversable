@@ -23,10 +23,21 @@ openapi.is = {
   request: (u: openapi.requestBody): u is openapi.request => !("$ref" in u),
 }
 
+export function doc<const T extends doc>(specification: T): T
+export function doc<const T extends Partial<doc>>(specification: T): T & doc
+export function doc({ info, openapi, paths, ...spec }: Partial<doc>): doc {
+  return {
+    openapi: openapi ?? "3.1.0",
+    info: {
+      title: info?.title ?? "",
+      version: info?.version ?? "0.0.0",
+      ...info,
+    },
+    paths: paths ?? {},
+    ...spec,
+  }
+}
 
-export const doc
-  : <const T extends doc>(specification: T) => T 
-  = fn.identity
 export interface doc extends doc.meta {
   openapi: string
   paths: openapi.paths
