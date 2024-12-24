@@ -10,6 +10,10 @@ export { JsonPointer } from "./json-pointer.js"
 export { Json } from "./json.js"
 export * as show from "./show.js"
 
+export type Traversable = import("./model/traversable.js").Traversable
+export type JsonSchema = import("./model/json-schema.js").any
+export { JsonSchema, Traversable } from "./model/index.js"
+
 export { 
   type intersect,
   allOf,

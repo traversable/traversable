@@ -1,8 +1,8 @@
-import { fn, object } from "@traversable/data"
-import type { Functor, Partial } from "@traversable/registry"
 import * as fc from "fast-check"
 
-import { Traversable } from "./model.js"
+import { Traversable } from "@traversable/core"
+import { fn, object } from "@traversable/data"
+import type { Functor, Partial } from "@traversable/registry"
 
 export { generateArbitrary as generate, deriveArbitrary as derive }
 

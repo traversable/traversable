@@ -1,7 +1,7 @@
 import { type Compare, fn, object } from "@traversable/data"
 import type { Functor } from "@traversable/registry"
 
-import { Traversable } from "./model.js"
+import { Traversable } from "@traversable/core"
 import * as Sort from "./sort.js"
 
 export { deriveType as derive }

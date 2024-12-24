@@ -1,6 +1,6 @@
+import { Traversable } from "@traversable/core"
 import { fn } from "@traversable/data"
 import type { Functor } from "@traversable/registry"
-import { Traversable } from "./model.js"
 
 namespace Algebra {
   export const equal: Functor.RAlgebra<Traversable.lambda, derive.Stream> = (n) => {

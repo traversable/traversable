@@ -1,9 +1,9 @@
+import { Traversable } from "@traversable/core"
 import type { Compare } from "@traversable/data"
 import { fn, map, order } from "@traversable/data"
 import { Weight, openapi } from "@traversable/openapi"
 import type { Functor } from "@traversable/registry"
 import { type Partial, WeightByType, WeightMap } from "@traversable/registry"
-import { Traversable } from "./model.js"
 
 export { deriveSort as derive }
 
@@ -62,6 +62,7 @@ export const compare
       case Traversable.is.oneOf(l) && Traversable.is.oneOf(r): return compareMany($)(l.oneOf, r.oneOf)
       case Traversable.is.tuple(l) && Traversable.is.tuple(r): return compareMany($)(l.items, r.items)
       case Traversable.is.array(l) && Traversable.is.array(r): {
+        l
         const shallow = $(l.items, r.items)
         if (shallow !== 0) return shallow
         else return compare($)(l.items, r.items)
