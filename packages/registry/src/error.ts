@@ -29,6 +29,8 @@ export const SymbolNotFound = (symbol: symbol) =>
 
 export const URINotFound = (uri: string) => Error(`'@traversable/registry' was unable to locate uri '${uri}'`)
 
+export const FileNotFound = (filename: string) => Error("FileNotFound")("'" + filename + "'")
+
 export const UnmatchedScalar = Error("Expected a scalar value")
 
 export const UnexpectedRequiredElement = Error("Required elements cannot follow optional elements")

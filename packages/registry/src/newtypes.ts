@@ -1,6 +1,6 @@
-import type { jsdoc } from "./utf-16.js"
-
 import type { newtype } from "any-ts"
+
+import type { jsdoc } from "./utf-16.js"
 
 /**
  * ## {@link Unit `Unit`}
@@ -9,7 +9,7 @@ import type { newtype } from "any-ts"
  * See also:
  * - wiki page for [the Unit type](https://en.wikipedia.org/wiki/Unit_type)
  */
-export interface Unit<carrier = never> extends newtype<never> {}
+export interface Unit<_carrier = never> extends newtype<never> {}
 
 export declare namespace string {
   export {
@@ -20,12 +20,15 @@ export declare namespace string {
     cuid2,
     date,
     datetime,
+    dirname,
     duration,
     email,
     empty,
     emoji,
+    filename,
     ip,
     nanoid,
+    pathname,
     regex,
     query,
     time,
@@ -88,6 +91,11 @@ interface date<_ = string> extends newtype<string> {}
 interface datetime<_ = string> extends newtype<string> {}
 
 /**
+ * ## {@link dirname `string.dirname`}
+ */
+interface dirname<_ = string> extends newtype<string> {}
+
+/**
  * ## {@link duration `string.duration`}
  */
 interface duration<_ = string> extends newtype<string> {}
@@ -109,6 +117,11 @@ interface empty<ε = ""> extends newtype<""> {}
 interface emoji<_ = string> extends newtype<string> {}
 
 /**
+ * ## {@link filename `string.filename`}
+ */
+interface filename<_ = string> extends newtype<string> {}
+
+/**
  * ## {@link ip `string.ip`}
  */
 interface ip<_ = string> extends newtype<string> {}
@@ -117,6 +130,11 @@ interface ip<_ = string> extends newtype<string> {}
  * ## {@link nanoid `string.nanoid`}
  */
 interface nanoid<_ = string> extends newtype<string> {}
+
+/**
+ * ## {@link pathname `string.pathname`}
+ */
+interface pathname<_ = string> extends newtype<string> {}
 
 /**
  * ## {@link regex `string.regex`}
