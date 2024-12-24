@@ -450,7 +450,7 @@ const Traversable_fromSchema
   }) as (expr: JsonSchema) => Traversable
 
 const fromSchema 
-  : (term: JsonSchema | Traversable) => Traversable
+  : <T extends JsonSchema | Traversable>(term: T) => Traversable
   = Traversable_unfold(Traversable_fromSchema as never)
 
 export function Traversable_unfold<T>(coalgebra: Functor.Coalgebra<Traversable.lambda, T>): (term: T) => Traversable
