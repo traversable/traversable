@@ -1,4 +1,4 @@
-import type { Functor, HKT, Merge, Mutable, newtype } from "@traversable/registry"
+import type { Functor, HKT } from "@traversable/registry"
 
 import { fn } from "@traversable/data"
 import { and, anyOf } from "../guard.js"

@@ -1,4 +1,7 @@
-import { and, anyOf, core, is, tree } from "@traversable/core"
+import { and, anyOf } from "../guard.js"
+import * as is from "../is.js"
+import { has } from "../tree.js"
+
 import { fn, type nonempty } from "@traversable/data"
 import type { Functor, HKT, Merge, Mutable } from "@traversable/registry"
 import * as JsonSchema from "./json-schema.js"
@@ -236,33 +239,33 @@ const is_ = {
   number: JsonSchema.is.number as (u: unknown) => u is Traversable_number,
   string: JsonSchema.is.string as (u: unknown) => u is Traversable_string,
   enum: and(
-    tree.has("type", is.literally("enum")),
+    has("type", is.literally("enum")),
     JsonSchema.is.enum,
   ) as (u: unknown) => u is Traversable_enum,
   allOf: and(
-    tree.has("type", is.literally("allOf")),
+    has("type", is.literally("allOf")),
     JsonSchema.is.allOf,
   ) as <T>(u: unknown) => u is Traversable_allOfF<T>,
   anyOf: and(
-    tree.has("type", is.literally("anyOf")),
+    has("type", is.literally("anyOf")),
     JsonSchema.is.anyOf,
   ) as <T>(u: unknown) => u is Traversable_anyOfF<T>,
   oneOf: and(
-    tree.has("type", is.literally("oneOf")),
+    has("type", is.literally("oneOf")),
     JsonSchema.is.oneOf,
   ) as <T>(u: unknown) => u is Traversable_oneOfF<T>,
   object: and(
-    tree.has("type", is.literally("object")),
-    tree.has("properties", is.any.object),
+    has("type", is.literally("object")),
+    has("properties", is.any.object),
   ) as <T>(u: unknown) => u is Traversable_objectF<T>,
   array: and(
-    tree.has("type", is.literally("array")),
+    has("type", is.literally("array")),
     (u: unknown): u is typeof u => true,
   ) as <T>(u: unknown) => u is Traversable_arrayF<T>,
-  record: tree.has("type", is.literally("record")) as <T>(u: unknown) => u is Traversable_recordF<T>,
+  record: has("type", is.literally("record")) as <T>(u: unknown) => u is Traversable_recordF<T>,
   tuple: and(
-    tree.has("type", is.literally("tuple")),
-    tree.has("items", core.is.any.array),
+    has("type", is.literally("tuple")),
+    has("items", is.any.array),
   ) as <T>(u: unknown) => u is Traversable_tupleF<T>,
   scalar: JsonSchema.is.scalar,
 }
@@ -321,8 +324,8 @@ const Traversable_Functor: Functor<Traversable_lambda, Traversable> = {
 /** @internal */
 const fromSchema = (expr: JsonSchema.any) => {
   const meta = {
-    ...tree.has("originalIndex", core.is.number)(expr) && { originalIndex: expr.originalIndex },
-    ...tree.has("required", core.is.array(core.is.string))(expr) && { required: expr.required },
+    ...has("originalIndex", is.number)(expr) && { originalIndex: expr.originalIndex },
+    ...has("required", is.array(is.string))(expr) && { required: expr.required },
   }
   switch (true) {
     default: return fn.softExhaustiveCheck(expr)
