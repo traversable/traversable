@@ -83,5 +83,3 @@ export const orderBy
 export const orderEntriesBy
   : ($: Doclike, mapping?: WeightMap) => Compare<readonly [string, Schema.Node]>
   = ($, mapping = WeightMap) => order.mapInput(order.number, fn.flow(fromSchemaEntry($, mapping), (x) => x.weight))
-
-// export const sortSchema

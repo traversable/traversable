@@ -1,6 +1,6 @@
 import * as vi from "vitest"
 
-import { type Ext, type Ltd, sort } from "@traversable/algebra"
+import { sort } from "@traversable/algebra"
 
 vi.describe("〖️⛳️〗‹‹‹ ❲@traversable/algebra/sort❳", () => {
   vi.it("〖️⛳️〗› ❲sort.deep❳", () => {

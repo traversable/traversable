@@ -1,8 +1,8 @@
 import { type Compare, fn, object } from "@traversable/data"
 import type { Functor } from "@traversable/registry"
 
-import { Ext as Schema } from "./model.js"
-import * as sort from "./sort.js"
+import { Traversable } from "./model.js"
+import * as Sort from "./sort.js"
 
 export { deriveType as derive }
 
@@ -10,27 +10,27 @@ export { deriveType as derive }
 const Object_entries = globalThis.Object.entries
 
 export namespace Algebra {
-  export const types: (options?: deriveType.Options) => Functor.Algebra<Schema.lambda, string> =
+  export const types: (options?: deriveType.Options) => Functor.Algebra<Traversable.lambda, string> =
     ({ minify = deriveType.defaults.minify } = deriveType.defaults) =>
     (n) => {
       const _ = minify ? "" : " "
       switch (true) {
-        case Schema.is.enum(n): return n.enum.join(" | ")
-        case Schema.is.null(n): return "null"
-        case Schema.is.boolean(n): return "boolean"
-        case Schema.is.integer(n): return "number"
-        case Schema.is.number(n): return "number"
-        case Schema.is.string(n): return "string"
-        case Schema.is.allOf(n): return n.allOf.join(_ + "&" + _)
-        case Schema.is.anyOf(n): return n.anyOf.join(_ + "|" + _)
-        case Schema.is.oneOf(n): return n.oneOf.join(_ + "|" + _)
-        case Schema.is.array(n): return n.items + "[]"
-        case Schema.is.tuple(n): return "[" + n.items.join("," + _) + "]"
-        case Schema.is.record(n): return "Record<string," + _ + n.additionalProperties + ">"
-        case Schema.is.object(n): return "{" + _ 
+        case Traversable.is.enum(n): return n.enum.join(" | ")
+        case Traversable.is.null(n): return "null"
+        case Traversable.is.boolean(n): return "boolean"
+        case Traversable.is.integer(n): return "number"
+        case Traversable.is.number(n): return "number"
+        case Traversable.is.string(n): return "string"
+        case Traversable.is.allOf(n): return n.allOf.join(_ + "&" + _)
+        case Traversable.is.anyOf(n): return n.anyOf.join(_ + "|" + _)
+        case Traversable.is.oneOf(n): return n.oneOf.join(_ + "|" + _)
+        case Traversable.is.array(n): return n.items + "[]"
+        case Traversable.is.tuple(n): return "[" + n.items.join("," + _) + "]"
+        case Traversable.is.record(n): return "Record<string," + _ + n.additionalProperties + ">"
+        case Traversable.is.object(n): return "{" + _ 
           + Object_entries(n.properties).map(([k, v]) => "" 
             + object.parseKey(k) 
-            + (n.required.includes(k) ? ":" + _ : "?:" + _) 
+            + ((n.required ?? []).includes(k) ? ":" + _ : "?:" + _) 
             + v
           ).join(";" + _) 
           + _ + "}"
@@ -43,7 +43,7 @@ declare namespace deriveType {
   type Options = Partial<typeof deriveType.defaults>
   namespace _Internal {
     interface Options {
-      compare: Compare<Schema>
+      compare: Compare<Traversable>
       typeName: string
       minify: boolean
       // preferInterfaces: boolean
@@ -52,19 +52,19 @@ declare namespace deriveType {
 }
 
 const deriveType_fold = (options: deriveType.Options = deriveType.defaults) => fn.flow(
-  Schema.fromSchema, 
-  fn.cata(Schema.functor)(Algebra.types(options)),
+  Traversable.fromSchema, 
+  fn.cata(Traversable.Functor)(Algebra.types(options)),
 )
 
 const deriveType_defaults = {
-  compare: sort.derive.defaults.compare,
+  compare: Sort.derive.defaults.compare,
   typeName: "Anonymous",
   minify: false as boolean,
 } satisfies deriveType._Internal.Options
 
-function deriveType(schema: Schema.any, options?: deriveType.Options): string
+function deriveType(schema: Traversable.any, options?: deriveType.Options): string
 function deriveType(
-  schema: Schema.any, {
+  schema: Traversable.any, {
     compare = deriveType.defaults.compare,
     typeName = deriveType.defaults.typeName,
     minify = deriveType.defaults.minify,
@@ -73,7 +73,7 @@ function deriveType(
   const _ = minify ? "" : " "
   return fn.pipe(
     schema,
-    sort.derive({ compare }),
+    Sort.derive({ compare }),
     deriveType.fold({ compare, typeName, minify }),
     (body) => "type " + typeName + _ + "=" + _ + body,
   )

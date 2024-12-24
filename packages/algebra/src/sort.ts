@@ -1,10 +1,9 @@
-
 import type { Compare } from "@traversable/data"
 import { fn, map, order } from "@traversable/data"
 import { Weight, openapi } from "@traversable/openapi"
 import type { Functor } from "@traversable/registry"
 import { type Partial, WeightByType, WeightMap } from "@traversable/registry"
-import { Ext as Schema } from "./model.js"
+import { Traversable } from "./model.js"
 
 export { deriveSort as derive }
 
@@ -14,7 +13,7 @@ export const defaults = {
   compare: order.mapInput(
     order.number,
     fn.flow(Weight.fromSchema({ paths: {} }, WeightMap), (_) => _.weight),
-  ) as Compare<any>,
+  ) as Compare<Traversable>,
   doc: openapi.doc({}),
   weightMap: WeightByType as Partial<WeightByType>,
 } as const
@@ -26,7 +25,7 @@ const Object_fromEntries = globalThis.Object.fromEntries
 /** @internal */
 const Object_entries = globalThis.Object.entries
 
-function compareMany($: Compare<Schema>): Compare<readonly Schema[]> {
+function compareMany($: Compare<Traversable>): Compare<readonly Traversable[]> {
   return (l, r) => {
     const lengths = order.array.lengthAscending(l, r)
     if (lengths !== 0) return lengths
@@ -46,74 +45,76 @@ function compareMany($: Compare<Schema>): Compare<readonly Schema[]> {
   }
 }
 
-export const compare: (comparisonFn: Compare<Schema>) => Compare<Schema> = ($) => (l, r) => {
-  const ordering = $(l, r)
-  if (ordering !== 0) return ordering
-  else switch (true) {
-    default: return 0
-    case Schema.is.null(l): return 0
-    case Schema.is.boolean(l): return 0
-    case Schema.is.integer(l): return 0
-    case Schema.is.number(l): return 0
-    case Schema.is.string(l): return 0
-    case Schema.is.allOf(l) && Schema.is.allOf(r): return compareMany($)(l.allOf, r.allOf)
-    case Schema.is.anyOf(l) && Schema.is.anyOf(r): return compareMany($)(l.anyOf, r.anyOf)
-    case Schema.is.oneOf(l) && Schema.is.oneOf(r): return compareMany($)(l.oneOf, r.oneOf)
-    case Schema.is.tuple(l) && Schema.is.tuple(r): return compareMany($)(l.items, r.items)
-    case Schema.is.array(l) && Schema.is.array(r): {
-      const shallow = $(l.items, r.items)
-      if (shallow !== 0) return shallow
-      else return compare($)(l.items, r.items)
-    }
-    case Schema.is.record(l) && Schema.is.record(r): {
-      const shallow = $(l.additionalProperties, r.additionalProperties)
-      if (shallow !== 0) return shallow
-      else return compare($)(l.additionalProperties, r.additionalProperties)
-    }
-    case Schema.is.object(l) && Schema.is.object(r): {
-      const orderEntries = order.mapInput($, ([, v]: readonly [k: string, v: Schema]) => v)
-      const leftEntries = Object_entries(l.properties)
-      const rightEntries = Object_entries(r.properties)
-      const lengths = order.array.lengthAscending(leftEntries, rightEntries)
-      if (lengths !== 0) return lengths
-      else {
-        const left = leftEntries.sort(orderEntries)
-        const right = rightEntries.sort(orderEntries)
-        for (let ix = 0, len = left.length; ix < len; ix++) {
-          const shallow = $(left[ix][1], right[ix][1])
-          if (shallow !== 0) return shallow
+export const compare
+  : (comparisonFn: Compare<Traversable>) => Compare<Traversable> 
+  = ($) => (l, r) => {
+    const ordering = $(l, r)
+    if (ordering !== 0) return ordering
+    else switch (true) {
+      default: return 0
+      case Traversable.is.null(l): return 0
+      case Traversable.is.boolean(l): return 0
+      case Traversable.is.integer(l): return 0
+      case Traversable.is.number(l): return 0
+      case Traversable.is.string(l): return 0
+      case Traversable.is.allOf(l) && Traversable.is.allOf(r): return compareMany($)(l.allOf, r.allOf)
+      case Traversable.is.anyOf(l) && Traversable.is.anyOf(r): return compareMany($)(l.anyOf, r.anyOf)
+      case Traversable.is.oneOf(l) && Traversable.is.oneOf(r): return compareMany($)(l.oneOf, r.oneOf)
+      case Traversable.is.tuple(l) && Traversable.is.tuple(r): return compareMany($)(l.items, r.items)
+      case Traversable.is.array(l) && Traversable.is.array(r): {
+        const shallow = $(l.items, r.items)
+        if (shallow !== 0) return shallow
+        else return compare($)(l.items, r.items)
+      }
+      case Traversable.is.record(l) && Traversable.is.record(r): {
+        const shallow = $(l.additionalProperties, r.additionalProperties)
+        if (shallow !== 0) return shallow
+        else return compare($)(l.additionalProperties, r.additionalProperties)
+      }
+      case Traversable.is.object(l) && Traversable.is.object(r): {
+        const orderEntries = order.mapInput($, ([, v]: readonly [k: string, v: Traversable]) => v)
+        const leftEntries = Object_entries(l.properties)
+        const rightEntries = Object_entries(r.properties)
+        const lengths = order.array.lengthAscending(leftEntries, rightEntries)
+        if (lengths !== 0) return lengths
+        else {
+          const left = leftEntries.sort(orderEntries)
+          const right = rightEntries.sort(orderEntries)
+          for (let ix = 0, len = left.length; ix < len; ix++) {
+            const shallow = $(left[ix][1], right[ix][1])
+            if (shallow !== 0) return shallow
+          }
+          for (let ix = 0, len = left.length; ix < len; ix++) {
+            const loop = compare($)(left[ix][1], right[ix][1])
+            if (loop !== 0) return loop
+          }
+          return 0
         }
-        for (let ix = 0, len = left.length; ix < len; ix++) {
-          const loop = compare($)(left[ix][1], right[ix][1])
-          if (loop !== 0) return loop
-        }
-        return 0
       }
     }
   }
-}
 
 export namespace Coalgebra {
   export const sort
-    : (comparisonFn: Compare<Schema>) => Functor.Coalgebra<Schema.lambda, Schema> 
+    : (comparisonFn: Compare<Traversable>) => Functor.Coalgebra<Traversable.lambda, Traversable> 
     = ($) => (n) => {
       switch (true) {
         default: return fn.softExhaustiveCheck(n)
-        case Schema.is.enum(n): return n
-        case Schema.is.scalar(n): return n
-        case Schema.is.array(n): return n
-        case Schema.is.record(n): return n
-        case Schema.is.allOf(n): return { ...n, allOf: [...n.allOf].sort(compare($)) }
-        case Schema.is.anyOf(n): return { ...n, anyOf: [...n.anyOf].sort(compare($)) }
-        case Schema.is.oneOf(n): return { ...n, oneOf: [...n.oneOf].sort(compare($)) }
-        case Schema.is.tuple(n): return {
+        case Traversable.is.enum(n): return n
+        case Traversable.is.scalar(n): return n
+        case Traversable.is.array(n): return n
+        case Traversable.is.record(n): return n
+        case Traversable.is.allOf(n): return { ...n, allOf: [...n.allOf].sort(compare($)) }
+        case Traversable.is.anyOf(n): return { ...n, anyOf: [...n.anyOf].sort(compare($)) }
+        case Traversable.is.oneOf(n): return { ...n, oneOf: [...n.oneOf].sort(compare($)) }
+        case Traversable.is.tuple(n): return {
           ...n,
           items: n.items
-            .map((x, ix) => [ix, x] satisfies [number, Schema])
+            .map((x, ix) => [ix, x] satisfies [number, Traversable])
             .sort(order.mapInput(compare($), ([, v]) => v))
-            .map(([ix, x]) => (((x as { originalIndex: number }).originalIndex = ix), x)),
+            .map(([ix, x]) => (((x as never as { originalIndex: number }).originalIndex = ix), x)),
         }
-        case Schema.is.object(n): return {
+        case Traversable.is.object(n): return {
           ...n,
           properties: fn.pipe(
             n.properties,
@@ -188,16 +189,16 @@ export namespace Coalgebra {
  *  // ⛳️ 1 passed
  *  // 😌
  */
-function deriveSort(options?: Options): <const T extends Schema.any>(schema: T) => T
+function deriveSort(options?: Options): <const T extends Traversable.any>(schema: T) => T
 function deriveSort({ 
   compare,
   weightMap,
   doc = defaults.doc,
 }: Options = deriveSort.defaults): {} {
   if (compare) return (
-    fn.ana(Schema.functor)(
-    Coalgebra.sort(order.mapInput(compare, Schema.fromSchema)
-    ))
+    fn.ana(Traversable.Functor)(
+      Coalgebra.sort(order.mapInput(compare, Traversable.fromSchema))
+    )
   )
   else if (weightMap) {
     const weights: WeightMap = fn.pipe(
@@ -207,12 +208,12 @@ function deriveSort({
     const $ = order.mapInput(
       order.number,
       fn.flow(Weight.fromSchema(doc, weights), (_) => _.weight),
-    ) as Compare<Schema>
-    return fn.ana(Schema.functor)(Coalgebra.sort($))
+    ) as Compare<Traversable>
+    return fn.ana(Traversable.Functor)(Coalgebra.sort($))
   }
-  else return fn.ana(Schema.functor)(
+  else return fn.ana(Traversable.Functor)(
     Coalgebra.sort(
-      order.mapInput(defaults.compare, Schema.fromSchema)
+      order.mapInput(defaults.compare, Traversable.fromSchema),
     )
   )
 }

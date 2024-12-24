@@ -1,7 +1,4 @@
-import type { 
-  SymbolRegistry,
-  NodeRegistry,
-} from "./registry.js"
+import type { NodeRegistry, SymbolRegistry } from "./registry.js"
 import { symbol } from "./symbol.js"
 
 type GlobalThis = typeof globalThis
