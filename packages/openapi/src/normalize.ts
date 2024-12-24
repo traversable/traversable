@@ -32,8 +32,8 @@ function separateArguments<R>(
     | Predicate<R>[] 
     | [Options, ...Predicate<R>[]]): {} {
   if (passedOptions(args)) return [args.slice(1), { 
-    source: args[0].sourceFocus ?? defaults.sourceFocus,
-    target: args[0].targetFocus ?? defaults.targetFocus, 
+    source: args[0]?.sourceFocus ?? defaults.sourceFocus,
+    target: args[0]?.targetFocus ?? defaults.targetFocus, 
   }]
   else return [args, { 
     source: defaults.sourceFocus, 
@@ -48,7 +48,6 @@ export function normalize<R>(options: Options, ...predicates: [...Predicate<R>[]
 export function normalize<R>(...args: Predicate<R>[] | [options: Options, ...predicates: Predicate<R>[]]) {
   const [predicates, { source, target }] = separateArguments(args)
 
-  const targetLens = tree.get.defer(...target)
   const sourceLens: (shape: {}) => {} | undefined | null = tree.get.defer(...source)
   const targetPointer = JsonPointer.fromPath([target])
   const sourcePointer = `#${JsonPointer.fromPath(source)}` as const
@@ -70,7 +69,7 @@ export function normalize<R>(...args: Predicate<R>[] | [options: Options, ...pre
     for (const k in access) {
       // clone the element so the new value doesn't point to a pointer -- 
       // otherwise the mutation will propogate, and we lose the original
-      void (refs[k + targetPointer] = globalThis.structuredClone(targetLens(access[k])!))
+      void (refs[k + targetPointer] = globalThis.structuredClone(tree.get.defer(...target)(access[k])!))
     }
 
     // Here we rip out all the nested schemas

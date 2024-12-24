@@ -651,139 +651,454 @@ vi.describe("〖⛳️〗‹‹‹ ❲@traversable/openapi❳", () => {
   })
 
   vi.test("〖⛳️〗‹ ❲openapi.query.normalize❳", () => {
-    const normal = openapi.normalize()(ex_07)
-    vi.assert.deepEqual(
-      normal, {
-        paths: {
+    vi.expect(openapi.normalize()(ex_07)).toMatchInlineSnapshot(`
+      {
+        "components": {
+          "schemas": {
+            "/paths/~1v1~1users/get/application~1json/200/parameters/0/schema": {
+              "type": "string",
+            },
+            "/paths/~1v1~1users/get/application~1json/200/parameters/1/schema": {
+              "type": "number",
+            },
+            "/paths/~1v1~1users/get/application~1json/200/requestBody/schema": {
+              "type": "array",
+            },
+            "/paths/~1v1~1users/get/application~1json/200/response/schema": {
+              "properties": {
+                "abc": {
+                  "type": "number",
+                },
+              },
+              "type": "object",
+            },
+            "/paths/~1v1~1users/get/application~1json/404/response/schema": {
+              "properties": {
+                "def": {
+                  "type": "number",
+                },
+              },
+              "type": "object",
+            },
+            "/paths/~1v1~1users/get/text~1html/201/parameters/0/schema": {
+              "type": "string",
+            },
+            "/paths/~1v1~1users/get/text~1html/201/parameters/1/schema": {
+              "type": "number",
+            },
+            "/paths/~1v1~1users/get/text~1html/201/requestBody/schema": {
+              "type": "array",
+            },
+            "/paths/~1v1~1users/get/text~1html/201/response/schema": {
+              "properties": {
+                "ghi": {
+                  "type": "number",
+                },
+              },
+              "type": "object",
+            },
+            "/paths/~1v1~1users/get/text~1html/404/response/schema": {
+              "properties": {
+                "jkl": {
+                  "type": "number",
+                },
+              },
+              "type": "object",
+            },
+            "/paths/~1v1~1users/post/application~1json/204/parameters/0/schema": {
+              "type": "string",
+            },
+            "/paths/~1v1~1users/post/application~1json/204/parameters/1/schema": {
+              "type": "number",
+            },
+            "/paths/~1v1~1users/post/application~1json/204/requestBody/schema": {
+              "type": "array",
+            },
+            "/paths/~1v1~1users/post/application~1json/204/response/schema": {
+              "properties": {
+                "mno": {
+                  "type": "boolean",
+                },
+              },
+              "type": "object",
+            },
+            "/paths/~1v1~1users/post/application~1json/404/response/schema": {
+              "properties": {
+                "pqr": {
+                  "type": "number",
+                },
+              },
+              "type": "object",
+            },
+            "/paths/~1v1~1users/post/text~1html/201/parameters/0/schema": {
+              "type": "string",
+            },
+            "/paths/~1v1~1users/post/text~1html/201/parameters/1/schema": {
+              "type": "number",
+            },
+            "/paths/~1v1~1users/post/text~1html/201/requestBody/schema": {
+              "type": "array",
+            },
+            "/paths/~1v1~1users/post/text~1html/201/response/schema": {
+              "properties": {
+                "stu": {
+                  "type": "number",
+                },
+              },
+              "type": "object",
+            },
+            "/paths/~1v1~1users/post/text~1html/404/response/schema": {
+              "properties": {
+                "vwx": {
+                  "type": "number",
+                },
+              },
+              "type": "object",
+            },
+            "/paths/~1v1~1users~1{id}/get/application~1json/301/parameters/0/schema": {
+              "type": "string",
+            },
+            "/paths/~1v1~1users~1{id}/get/application~1json/301/parameters/1/schema": {
+              "type": "number",
+            },
+            "/paths/~1v1~1users~1{id}/get/application~1json/301/requestBody/schema": {
+              "type": "array",
+            },
+            "/paths/~1v1~1users~1{id}/get/application~1json/301/response/schema": {
+              "properties": {
+                "abc": {
+                  "type": "number",
+                },
+              },
+              "type": "object",
+            },
+            "/paths/~1v1~1users~1{id}/post/application~1json/204/parameters/0/schema": {
+              "type": "string",
+            },
+            "/paths/~1v1~1users~1{id}/post/application~1json/204/parameters/1/schema": {
+              "type": "number",
+            },
+            "/paths/~1v1~1users~1{id}/post/application~1json/204/requestBody/schema": {
+              "type": "array",
+            },
+            "/paths/~1v1~1users~1{id}/post/application~1json/204/response/schema": {
+              "properties": {
+                "mno": {
+                  "type": "boolean",
+                },
+              },
+              "type": "object",
+            },
+            "/paths/~1v1~1users~1{id}/post/application~1json/404/response/schema": {
+              "properties": {
+                "pqr": {
+                  "type": "number",
+                },
+              },
+              "type": "object",
+            },
+            "/paths/~1v1~1users~1{id}/post/text~1html/201/parameters/0/schema": {
+              "type": "string",
+            },
+            "/paths/~1v1~1users~1{id}/post/text~1html/201/parameters/1/schema": {
+              "type": "number",
+            },
+            "/paths/~1v1~1users~1{id}/post/text~1html/201/requestBody/schema": {
+              "type": "array",
+            },
+            "/paths/~1v1~1users~1{id}/post/text~1html/201/response/schema": {
+              "properties": {
+                "stu": {
+                  "type": "number",
+                },
+              },
+              "type": "object",
+            },
+            "/paths/~1v1~1users~1{id}/post/text~1html/404/response/schema": {
+              "properties": {
+                "vwx": {
+                  "type": "number",
+                },
+              },
+              "type": "object",
+            },
+          },
+        },
+        "paths": {
           "/v1/users": {
-            get: {
+            "get": {
               "application/json": {
                 "200": {
-                  response: { schema: { $ref: "/paths/~1v1~1users/get/application~1json/200/response/schema" } },
-                  requestBody: { schema: { $ref: "/paths/~1v1~1users/get/application~1json/200/requestBody/schema" } },
-                  parameters: [
-                    { name: "param_01", in: "query", schema: { $ref: "/paths/~1v1~1users/get/application~1json/200/parameters/0/schema" } }, 
-                    { name: "param_02", in: "header", schema: { $ref: "/paths/~1v1~1users/get/application~1json/200/parameters/1/schema" } },
-                  ]
+                  "parameters": [
+                    {
+                      "in": "query",
+                      "name": "param_01",
+                      "schema": {
+                        "$ref": "#/components/schemas/paths/~1v1~1users/get/application~1json/200/parameters/0/schema",
+                      },
+                    },
+                    {
+                      "in": "header",
+                      "name": "param_02",
+                      "schema": {
+                        "$ref": "#/components/schemas/paths/~1v1~1users/get/application~1json/200/parameters/1/schema",
+                      },
+                    },
+                  ],
+                  "requestBody": {
+                    "schema": {
+                      "$ref": "#/components/schemas/paths/~1v1~1users/get/application~1json/200/requestBody/schema",
+                    },
+                  },
+                  "response": {
+                    "schema": {
+                      "$ref": "#/components/schemas/paths/~1v1~1users/get/application~1json/200/response/schema",
+                    },
+                  },
                 },
-                "404": { response: { schema: { $ref: "/paths/~1v1~1users/get/application~1json/404/response/schema" } } }
-              },
-              "text/html": {
-               "201": { 
-                  response: { schema: { $ref: "/paths/~1v1~1users/get/text~1html/201/response/schema" } },
-                  requestBody: { schema: { $ref: "/paths/~1v1~1users/get/text~1html/201/requestBody/schema" } },
-                  parameters: [
-                    { name: "param_03", in: "query", schema: { $ref: "/paths/~1v1~1users/get/text~1html/201/parameters/0/schema" } },
-                    { name: "param_04", in: "header", schema: { $ref: "/paths/~1v1~1users/get/text~1html/201/parameters/1/schema" } }
-                  ]
+                "404": {
+                  "response": {
+                    "schema": {
+                      "$ref": "#/components/schemas/paths/~1v1~1users/get/application~1json/404/response/schema",
+                    },
+                  },
                 },
-                "404": { response: { schema: { $ref: "/paths/~1v1~1users/get/text~1html/404/response/schema" } } }
-              }
-            },
-            post: {
-              "application/json": {
-                "204": { 
-                  response: { schema: { $ref: "/paths/~1v1~1users/post/application~1json/204/response/schema" } },
-                  requestBody: { schema: { $ref: "/paths/~1v1~1users/post/application~1json/204/requestBody/schema" } },
-                  parameters: [
-                    { name: "param_05", in: "query", schema: { $ref: "/paths/~1v1~1users/post/application~1json/204/parameters/0/schema" } },
-                    { name: "param_06", in: "header", schema: { $ref: "/paths/~1v1~1users/post/application~1json/204/parameters/1/schema" } }
-                  ]
-                },
-                "404": { response: { schema: { $ref: "/paths/~1v1~1users/post/application~1json/404/response/schema" } } }
               },
               "text/html": {
                 "201": {
-                  response: { schema: { $ref: "/paths/~1v1~1users/post/text~1html/201/response/schema" } },
-                  requestBody: { schema: { $ref: "/paths/~1v1~1users/post/text~1html/201/requestBody/schema" } },
-                  parameters: [
-                    { name: "param_07", in: "query", schema: { $ref: "/paths/~1v1~1users/post/text~1html/201/parameters/0/schema" } },
-                    { name: "param_08", in: "header", schema: { $ref: "/paths/~1v1~1users/post/text~1html/201/parameters/1/schema" } }
-                  ]
+                  "parameters": [
+                    {
+                      "in": "query",
+                      "name": "param_03",
+                      "schema": {
+                        "$ref": "#/components/schemas/paths/~1v1~1users/get/text~1html/201/parameters/0/schema",
+                      },
+                    },
+                    {
+                      "in": "header",
+                      "name": "param_04",
+                      "schema": {
+                        "$ref": "#/components/schemas/paths/~1v1~1users/get/text~1html/201/parameters/1/schema",
+                      },
+                    },
+                  ],
+                  "requestBody": {
+                    "schema": {
+                      "$ref": "#/components/schemas/paths/~1v1~1users/get/text~1html/201/requestBody/schema",
+                    },
+                  },
+                  "response": {
+                    "schema": {
+                      "$ref": "#/components/schemas/paths/~1v1~1users/get/text~1html/201/response/schema",
+                    },
+                  },
                 },
-                "404": { response: { schema: { $ref: "/paths/~1v1~1users/post/text~1html/404/response/schema" } } }
-              }
-            }
-          },
-          "/v1/users/{id}": {
-            parameters: [ { name: "id", in: "path", schema: "integer" } ],
-            get: {
-              "application/json": {
-              "301": {
-                  response: { schema: { $ref: "/paths/~1v1~1users~1{id}/get/application~1json/301/response/schema" } },
-                  requestBody: { schema: { $ref: "/paths/~1v1~1users~1{id}/get/application~1json/301/requestBody/schema" } },
-                  parameters: [
-                    { name: "param_01", in: "query", schema: { $ref: "/paths/~1v1~1users~1{id}/get/application~1json/301/parameters/0/schema" } },
-                    { name: "param_02", in: "header", schema: { $ref: "/paths/~1v1~1users~1{id}/get/application~1json/301/parameters/1/schema" } }
-                  ]
-                }
-              }
+                "404": {
+                  "response": {
+                    "schema": {
+                      "$ref": "#/components/schemas/paths/~1v1~1users/get/text~1html/404/response/schema",
+                    },
+                  },
+                },
+              },
             },
-            post: {
+            "post": {
               "application/json": {
                 "204": {
-                  response: { schema: { $ref: "/paths/~1v1~1users~1{id}/post/application~1json/204/response/schema" } },
-                  requestBody: { schema: { $ref: "/paths/~1v1~1users~1{id}/post/application~1json/204/requestBody/schema" } },
-                  parameters: [
-                    { name: "param_05", in: "query", schema: { $ref: "/paths/~1v1~1users~1{id}/post/application~1json/204/parameters/0/schema" } },
-                    { name: "param_06", in: "header", schema: { $ref: "/paths/~1v1~1users~1{id}/post/application~1json/204/parameters/1/schema" } }
-                  ]
+                  "parameters": [
+                    {
+                      "in": "query",
+                      "name": "param_05",
+                      "schema": {
+                        "$ref": "#/components/schemas/paths/~1v1~1users/post/application~1json/204/parameters/0/schema",
+                      },
+                    },
+                    {
+                      "in": "header",
+                      "name": "param_06",
+                      "schema": {
+                        "$ref": "#/components/schemas/paths/~1v1~1users/post/application~1json/204/parameters/1/schema",
+                      },
+                    },
+                  ],
+                  "requestBody": {
+                    "schema": {
+                      "$ref": "#/components/schemas/paths/~1v1~1users/post/application~1json/204/requestBody/schema",
+                    },
+                  },
+                  "response": {
+                    "schema": {
+                      "$ref": "#/components/schemas/paths/~1v1~1users/post/application~1json/204/response/schema",
+                    },
+                  },
                 },
-                "404": { response: { schema: { $ref: "/paths/~1v1~1users~1{id}/post/application~1json/404/response/schema" } } }
+                "404": {
+                  "response": {
+                    "schema": {
+                      "$ref": "#/components/schemas/paths/~1v1~1users/post/application~1json/404/response/schema",
+                    },
+                  },
+                },
               },
               "text/html": {
                 "201": {
-                  response: { schema: { $ref: "/paths/~1v1~1users~1{id}/post/text~1html/201/response/schema" } },
-                  requestBody: { schema: { $ref: "/paths/~1v1~1users~1{id}/post/text~1html/201/requestBody/schema" } },
-                  parameters: [
-                    { name: "param_07", in: "query", schema: { $ref: "/paths/~1v1~1users~1{id}/post/text~1html/201/parameters/0/schema" } },
-                    { name: "param_08", in: "header", schema: { $ref: "/paths/~1v1~1users~1{id}/post/text~1html/201/parameters/1/schema" } }
-                  ]
+                  "parameters": [
+                    {
+                      "in": "query",
+                      "name": "param_07",
+                      "schema": {
+                        "$ref": "#/components/schemas/paths/~1v1~1users/post/text~1html/201/parameters/0/schema",
+                      },
+                    },
+                    {
+                      "in": "header",
+                      "name": "param_08",
+                      "schema": {
+                        "$ref": "#/components/schemas/paths/~1v1~1users/post/text~1html/201/parameters/1/schema",
+                      },
+                    },
+                  ],
+                  "requestBody": {
+                    "schema": {
+                      "$ref": "#/components/schemas/paths/~1v1~1users/post/text~1html/201/requestBody/schema",
+                    },
+                  },
+                  "response": {
+                    "schema": {
+                      "$ref": "#/components/schemas/paths/~1v1~1users/post/text~1html/201/response/schema",
+                    },
+                  },
                 },
-                "404": { response: { schema: { $ref: "/paths/~1v1~1users~1{id}/post/text~1html/404/response/schema" } } }
-              }
-            }
-          }
+                "404": {
+                  "response": {
+                    "schema": {
+                      "$ref": "#/components/schemas/paths/~1v1~1users/post/text~1html/404/response/schema",
+                    },
+                  },
+                },
+              },
+            },
+          },
+          "/v1/users/{id}": {
+            "get": {
+              "application/json": {
+                "301": {
+                  "parameters": [
+                    {
+                      "in": "query",
+                      "name": "param_01",
+                      "schema": {
+                        "$ref": "#/components/schemas/paths/~1v1~1users~1{id}/get/application~1json/301/parameters/0/schema",
+                      },
+                    },
+                    {
+                      "in": "header",
+                      "name": "param_02",
+                      "schema": {
+                        "$ref": "#/components/schemas/paths/~1v1~1users~1{id}/get/application~1json/301/parameters/1/schema",
+                      },
+                    },
+                  ],
+                  "requestBody": {
+                    "schema": {
+                      "$ref": "#/components/schemas/paths/~1v1~1users~1{id}/get/application~1json/301/requestBody/schema",
+                    },
+                  },
+                  "response": {
+                    "schema": {
+                      "$ref": "#/components/schemas/paths/~1v1~1users~1{id}/get/application~1json/301/response/schema",
+                    },
+                  },
+                },
+              },
+            },
+            "parameters": [
+              {
+                "in": "path",
+                "name": "id",
+                "schema": "integer",
+              },
+            ],
+            "post": {
+              "application/json": {
+                "204": {
+                  "parameters": [
+                    {
+                      "in": "query",
+                      "name": "param_05",
+                      "schema": {
+                        "$ref": "#/components/schemas/paths/~1v1~1users~1{id}/post/application~1json/204/parameters/0/schema",
+                      },
+                    },
+                    {
+                      "in": "header",
+                      "name": "param_06",
+                      "schema": {
+                        "$ref": "#/components/schemas/paths/~1v1~1users~1{id}/post/application~1json/204/parameters/1/schema",
+                      },
+                    },
+                  ],
+                  "requestBody": {
+                    "schema": {
+                      "$ref": "#/components/schemas/paths/~1v1~1users~1{id}/post/application~1json/204/requestBody/schema",
+                    },
+                  },
+                  "response": {
+                    "schema": {
+                      "$ref": "#/components/schemas/paths/~1v1~1users~1{id}/post/application~1json/204/response/schema",
+                    },
+                  },
+                },
+                "404": {
+                  "response": {
+                    "schema": {
+                      "$ref": "#/components/schemas/paths/~1v1~1users~1{id}/post/application~1json/404/response/schema",
+                    },
+                  },
+                },
+              },
+              "text/html": {
+                "201": {
+                  "parameters": [
+                    {
+                      "in": "query",
+                      "name": "param_07",
+                      "schema": {
+                        "$ref": "#/components/schemas/paths/~1v1~1users~1{id}/post/text~1html/201/parameters/0/schema",
+                      },
+                    },
+                    {
+                      "in": "header",
+                      "name": "param_08",
+                      "schema": {
+                        "$ref": "#/components/schemas/paths/~1v1~1users~1{id}/post/text~1html/201/parameters/1/schema",
+                      },
+                    },
+                  ],
+                  "requestBody": {
+                    "schema": {
+                      "$ref": "#/components/schemas/paths/~1v1~1users~1{id}/post/text~1html/201/requestBody/schema",
+                    },
+                  },
+                  "response": {
+                    "schema": {
+                      "$ref": "#/components/schemas/paths/~1v1~1users~1{id}/post/text~1html/201/response/schema",
+                    },
+                  },
+                },
+                "404": {
+                  "response": {
+                    "schema": {
+                      "$ref": "#/components/schemas/paths/~1v1~1users~1{id}/post/text~1html/404/response/schema",
+                    },
+                  },
+                },
+              },
+            },
+          },
         },
-        components: {
-          schemas: {
-            "/paths/~1v1~1users/get/application~1json/200/response/schema": { type: "object", properties: { abc: { type: "number" } } },
-            "/paths/~1v1~1users/get/application~1json/200/requestBody/schema": { type: "array" },
-            "/paths/~1v1~1users/get/application~1json/200/parameters/0/schema": { type: "string" },
-            "/paths/~1v1~1users/get/application~1json/200/parameters/1/schema": { type: "number" },
-            "/paths/~1v1~1users/get/application~1json/404/response/schema": { type: "object", properties: { def: { type: "number" } } },
-            "/paths/~1v1~1users/get/text~1html/201/response/schema": { type: "object", properties: { ghi: { type: "number" } } },
-            "/paths/~1v1~1users/get/text~1html/201/requestBody/schema": { type: "array" },
-            "/paths/~1v1~1users/get/text~1html/201/parameters/0/schema": { type: "string" },
-            "/paths/~1v1~1users/get/text~1html/201/parameters/1/schema": { type: "number" },
-            "/paths/~1v1~1users/get/text~1html/404/response/schema": { type: "object", properties: { jkl: { type: "number" } } },
-            "/paths/~1v1~1users/post/application~1json/204/response/schema": { type: "object", properties: { mno: { type: "boolean" } } },
-            "/paths/~1v1~1users/post/application~1json/204/requestBody/schema": { type: "array" },
-            "/paths/~1v1~1users/post/application~1json/204/parameters/0/schema": { type: "string" },
-            "/paths/~1v1~1users/post/application~1json/204/parameters/1/schema": { type: "number" },
-            "/paths/~1v1~1users/post/application~1json/404/response/schema": { type: "object", properties: { pqr: { type: "number" } } },
-            "/paths/~1v1~1users/post/text~1html/201/response/schema": { type: "object", properties: { stu: { type: "number" } } },
-            "/paths/~1v1~1users/post/text~1html/201/requestBody/schema": { type: "array" },
-            "/paths/~1v1~1users/post/text~1html/201/parameters/0/schema": { type: "string" },
-            "/paths/~1v1~1users/post/text~1html/201/parameters/1/schema": { type: "number" },
-            "/paths/~1v1~1users/post/text~1html/404/response/schema": { type: "object", properties: { vwx: { type: "number" } } },
-            "/paths/~1v1~1users~1{id}/get/application~1json/301/response/schema": { type: "object", properties: { abc: { type: "number" } } },
-            "/paths/~1v1~1users~1{id}/get/application~1json/301/requestBody/schema": { type: "array" },
-            "/paths/~1v1~1users~1{id}/get/application~1json/301/parameters/0/schema": { type: "string" },
-            "/paths/~1v1~1users~1{id}/get/application~1json/301/parameters/1/schema": { type: "number" },
-            "/paths/~1v1~1users~1{id}/post/application~1json/204/response/schema": { type: "object", properties: { mno: { type: "boolean" } } }, 
-            "/paths/~1v1~1users~1{id}/post/application~1json/204/requestBody/schema": { type: "array" },
-            "/paths/~1v1~1users~1{id}/post/application~1json/204/parameters/0/schema": { type: "string" },
-            "/paths/~1v1~1users~1{id}/post/application~1json/204/parameters/1/schema": { type: "number" },
-            "/paths/~1v1~1users~1{id}/post/application~1json/404/response/schema": { type: "object", properties: { pqr: { type: "number" } } },
-            "/paths/~1v1~1users~1{id}/post/text~1html/201/response/schema": { type: "object", properties: { stu: { type: "number" } } },
-            "/paths/~1v1~1users~1{id}/post/text~1html/201/requestBody/schema": { type: "array" },
-            "/paths/~1v1~1users~1{id}/post/text~1html/201/parameters/0/schema": { type: "string" },
-            "/paths/~1v1~1users~1{id}/post/text~1html/201/parameters/1/schema": { type: "number" },
-            "/paths/~1v1~1users~1{id}/post/text~1html/404/response/schema": { type: "object", properties: { vwx: { type: "number" } } }
-          }
-        }
       }
-    )
+    `)
+
   })
 })
