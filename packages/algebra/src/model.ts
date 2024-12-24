@@ -23,7 +23,6 @@ const Object_assign = globalThis.Object.assign
 const isObject: (u: unknown) => u is { [x: string]: unknown } = (u): u is never =>
   u !== null && typeof u === "object" && !Array_isArray(u)
 
-
 const areTheSameType
   : (l: Ext, r: Ext) => boolean 
   = (l, r) => "type" in l && "type" in r

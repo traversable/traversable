@@ -77,7 +77,7 @@ export function normalize<R>(...args: Predicate<R>[] | [options: Options, ...pre
       .entries(access)
       .forEach(
         fn.flow(
-          ([pathname, accessor]) => void (accessor[target] = { $ref: sourcePointer + pathname + targetPointer })
+          ([path, accessor]) => void ((accessor as { [x: string]: unknown })[target] = { $ref: sourcePointer + path + targetPointer })
         )
     )
     if (!doc.components) void (doc.components = { schemas: {} })

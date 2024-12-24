@@ -1,5 +1,5 @@
-import { JsonPointer, and, fc, is, show, test, tree } from "@traversable/core"
-import { Option, fn, object } from "@traversable/data"
+import { and, fc, is, or, test, tree } from "@traversable/core"
+import { fn } from "@traversable/data"
 import { openapi } from "@traversable/openapi"
 import * as vi from "vitest"
 
@@ -99,10 +99,8 @@ const ex_01 = {
   },
 }
 
-const ex_07 = {
-  components: {
-    schemas: {},
-  },
+const ex_02 = {
+  components: { schemas: {} },
   paths: {
     "/v1/users": {
       get: {
@@ -312,7 +310,7 @@ const ex_07 = {
 
 vi.describe("〖⛳️〗‹‹‹ ❲@traversable/openapi/query❳", () => {
   vi.test("〖⛳️〗‹ ❲openapi.find❳", () => {
-    vi.assert.deepEqual(
+    vi.expect(
       openapi.find(hasSchema)({
         paths: { schema: { type: "boolean" } },
         components: {
@@ -321,16 +319,28 @@ vi.describe("〖⛳️〗‹‹‹ ❲@traversable/openapi/query❳", () => {
             b: { c: [{ schema: { type: "number" } }] }
           }
         },
-      }),
+      })
+    ).toMatchInlineSnapshot(`
       [
-        ["paths"],
-        ["components", "schemas", "a"],
-        ["components", "schemas", "b", "c", 0],
+        [
+          "paths",
+        ],
+        [
+          "components",
+          "schemas",
+          "a",
+        ],
+        [
+          "components",
+          "schemas",
+          "b",
+          "c",
+          0,
+        ],
       ]
-    )
-  })
+    `)
 
-    vi.assert.deepEqual(
+    vi.expect(
       openapi.find(tree.has("schema", is.any.object))({ 
         schema: { 
           schema: [
@@ -342,74 +352,167 @@ vi.describe("〖⛳️〗‹‹‹ ❲@traversable/openapi/query❳", () => {
             }
           ] 
         } 
-      }),
+      })
+    ).toMatchInlineSnapshot(`
       [
         [],
-        ["schema", "schema", 1],
-        ["schema", "schema", 1, "schema"],
+        [
+          "schema",
+          "schema",
+          1,
+        ],
+        [
+          "schema",
+          "schema",
+          1,
+          "schema",
+        ],
       ]
-    )
+    `)
 
-    vi.assert.deepEqual(
-      openapi.find(hasSchema, isObjectNode)(ex_01), [
+    vi.expect(openapi.find(hasSchema, isObjectNode)(ex_01)).toMatchInlineSnapshot(`
+      [
         [
-          "paths", "/api/v2/items/{id}/item_options", "get", "responses", "200", 
-          "content", "application/json"
+          "paths",
+          "/api/v2/items/{id}/item_options",
+          "get",
+          "responses",
+          "200",
+          "content",
+          "application/json",
         ],
         [
-          "paths", "/api/v2/items/{id}/item_options", "get", "responses", "200", 
-          "content", "application/json", "schema", "allOf", 0
+          "paths",
+          "/api/v2/items/{id}/item_options",
+          "get",
+          "responses",
+          "200",
+          "content",
+          "application/json",
+          "schema",
+          "allOf",
+          0,
         ],
         [
-          "paths", "/api/v2/items/{id}/item_options", "get", "responses", "200", 
-          "content", "application/json", "schema", "allOf", 0, "properties", "meta",
+          "paths",
+          "/api/v2/items/{id}/item_options",
+          "get",
+          "responses",
+          "200",
+          "content",
+          "application/json",
+          "schema",
+          "allOf",
+          0,
+          "properties",
+          "meta",
         ],
         [
-          "paths", "/api/v2/items/{id}/item_options", "get", "responses", "200", 
-          "content", "application/json", "schema", "allOf", 1
+          "paths",
+          "/api/v2/items/{id}/item_options",
+          "get",
+          "responses",
+          "200",
+          "content",
+          "application/json",
+          "schema",
+          "allOf",
+          1,
         ],
         [
-          "paths", "/api/v2/items/{id}/item_options", "get", "responses", "200", "content", "application/json", 
-          "schema", "allOf", 1, "properties", "data", "items"
+          "paths",
+          "/api/v2/items/{id}/item_options",
+          "get",
+          "responses",
+          "200",
+          "content",
+          "application/json",
+          "schema",
+          "allOf",
+          1,
+          "properties",
+          "data",
+          "items",
         ],
         [
-          "paths", "/api/v2/items/{id}/item_options", "get", "responses", "200", "content", "application/json", 
-          "schema", "allOf", 1, "properties", "data", "items", "properties", "id"
+          "paths",
+          "/api/v2/items/{id}/item_options",
+          "get",
+          "responses",
+          "200",
+          "content",
+          "application/json",
+          "schema",
+          "allOf",
+          1,
+          "properties",
+          "data",
+          "items",
+          "properties",
+          "id",
         ],
         [
-          "paths", "/api/v2/items/{id}/item_options", "get", "responses", "200", "content", "application/json", 
-          "schema", "allOf", 1, "properties", "data", "items", "properties", "account_manager",
+          "paths",
+          "/api/v2/items/{id}/item_options",
+          "get",
+          "responses",
+          "200",
+          "content",
+          "application/json",
+          "schema",
+          "allOf",
+          1,
+          "properties",
+          "data",
+          "items",
+          "properties",
+          "account_manager",
         ],
         [
-          "paths", "/api/v2/items/{id}/item_options", "get", "responses", "200", "content", "application/json", 
-          "schema", "allOf", 1, "properties", "data", "items", "properties", "checklist", "items",
+          "paths",
+          "/api/v2/items/{id}/item_options",
+          "get",
+          "responses",
+          "200",
+          "content",
+          "application/json",
+          "schema",
+          "allOf",
+          1,
+          "properties",
+          "data",
+          "items",
+          "properties",
+          "checklist",
+          "items",
         ],
-      ],
-    )
+      ]
+    `)
+  })
 
   vi.test("〖⛳️〗‹ ❲openapi.filter❳", () => {
-    vi.assert.deepEqual(
-      openapi.filter({ hasSchema })({ 
-        schema: { 
-          schema: [
-            { 
-              schema: { 
-                schema: {} 
-              } 
-            }
-          ] 
-        } 
-      }),
-      { 
-        hasSchema: [
-          [], 
-          ["schema", "schema", 0], 
-          ["schema", "schema", 0, "schema"],
-        ] 
+    vi.expect(
+      openapi.filter({ hasSchema })({ schema: { schema: [ { schema: { schema: {} } } ] } })
+    ).toMatchInlineSnapshot(`
+      {
+        "hasSchema": [
+          [],
+          [
+            "schema",
+            "schema",
+            0,
+          ],
+          [
+            "schema",
+            "schema",
+            0,
+            "schema",
+          ],
+        ],
       }
-    )
+    `)
 
-    vi.assert.deepEqual(
+    vi.expect(
       openapi.filter({ hasSchema })({
         paths: { schema: { type: "boolean" } },
         components: {
@@ -418,51 +521,151 @@ vi.describe("〖⛳️〗‹‹‹ ❲@traversable/openapi/query❳", () => {
             b: { c: [{ schema: { type: "number" } }] }
           }
         },
-      }),
+      })
+    ).toMatchInlineSnapshot(`
       {
         "hasSchema": [
-          ["paths"],
-          ["components", "schemas", "a"], 
-          ["components", "schemas", "b", "c", 0],
-        ]
+          [
+            "paths",
+          ],
+          [
+            "components",
+            "schemas",
+            "a",
+          ],
+          [
+            "components",
+            "schemas",
+            "b",
+            "c",
+            0,
+          ],
+        ],
       }
-    )
+    `)
 
-    vi.assert.deepEqual(
-      openapi.filter({ hasSchema, isObjectNode })(ex_01),
+    vi.expect(openapi.filter({ hasSchema, isObjectNode })(ex_01)).toMatchInlineSnapshot(`
       {
-        hasSchema: [['paths', '/api/v2/items/{id}/item_options', 'get', 'responses', '200', 'content', 'application/json']],
-        isObjectNode: [
+        "hasSchema": [
           [
-            'paths', '/api/v2/items/{id}/item_options', 'get', 'responses', '200', 'content', 'application/json', 'schema', 
-            'allOf', 0 
+            "paths",
+            "/api/v2/items/{id}/item_options",
+            "get",
+            "responses",
+            "200",
+            "content",
+            "application/json",
+          ],
+        ],
+        "isObjectNode": [
+          [
+            "paths",
+            "/api/v2/items/{id}/item_options",
+            "get",
+            "responses",
+            "200",
+            "content",
+            "application/json",
+            "schema",
+            "allOf",
+            0,
           ],
           [
-            'paths', '/api/v2/items/{id}/item_options', 'get', 'responses', '200', 'content', 'application/json', 'schema', 
-            'allOf', 0, 'properties', 'meta'
+            "paths",
+            "/api/v2/items/{id}/item_options",
+            "get",
+            "responses",
+            "200",
+            "content",
+            "application/json",
+            "schema",
+            "allOf",
+            0,
+            "properties",
+            "meta",
           ],
           [
-            'paths', '/api/v2/items/{id}/item_options', 'get', 'responses', '200', 'content', 'application/json', 'schema', 
-            'allOf', 1 
+            "paths",
+            "/api/v2/items/{id}/item_options",
+            "get",
+            "responses",
+            "200",
+            "content",
+            "application/json",
+            "schema",
+            "allOf",
+            1,
           ],
           [
-            'paths', '/api/v2/items/{id}/item_options', 'get', 'responses', '200', 'content', 'application/json', 'schema', 
-            'allOf', 1, 'properties', 'data', 'items' ],
-          [
-            'paths', '/api/v2/items/{id}/item_options', 'get', 'responses', '200', 'content', 'application/json', 'schema',
-            'allOf', 1, 'properties', 'data', 'items', 'properties', 'id'
+            "paths",
+            "/api/v2/items/{id}/item_options",
+            "get",
+            "responses",
+            "200",
+            "content",
+            "application/json",
+            "schema",
+            "allOf",
+            1,
+            "properties",
+            "data",
+            "items",
           ],
           [
-            'paths', '/api/v2/items/{id}/item_options', 'get', 'responses', '200', 'content', 'application/json', 'schema',
-            'allOf', 1, 'properties', 'data', 'items', 'properties', 'account_manager'
+            "paths",
+            "/api/v2/items/{id}/item_options",
+            "get",
+            "responses",
+            "200",
+            "content",
+            "application/json",
+            "schema",
+            "allOf",
+            1,
+            "properties",
+            "data",
+            "items",
+            "properties",
+            "id",
           ],
           [
-            'paths', '/api/v2/items/{id}/item_options', 'get', 'responses', '200', 'content', 'application/json', 'schema',
-            'allOf', 1, 'properties', 'data', 'items', 'properties', 'checklist', 'items'
-          ]
-        ]
+            "paths",
+            "/api/v2/items/{id}/item_options",
+            "get",
+            "responses",
+            "200",
+            "content",
+            "application/json",
+            "schema",
+            "allOf",
+            1,
+            "properties",
+            "data",
+            "items",
+            "properties",
+            "account_manager",
+          ],
+          [
+            "paths",
+            "/api/v2/items/{id}/item_options",
+            "get",
+            "responses",
+            "200",
+            "content",
+            "application/json",
+            "schema",
+            "allOf",
+            1,
+            "properties",
+            "data",
+            "items",
+            "properties",
+            "checklist",
+            "items",
+          ],
+        ],
       }
-    )
+    `)
   })
 
   test.prop([fc.nat(), fc.jsonValue().filter(is.nonnullable)], { verbose: 2 })(
@@ -492,52 +695,52 @@ vi.describe("〖⛳️〗‹‹‹ ❲@traversable/openapi/query❳", () => {
       )(json),
     )
   )
-
 })
 
 vi.describe("〖⛳️〗‹‹‹ ❲@traversable/openapi❳", () => {
+
+  vi.test("〖⛳️〗‹ ❲openapi.accessors❳", () => {
+    vi.assert.deepEqual(
+      openapi.accessors(is.any.object)
+      ({}),
+      { ["/"]: {} }
+    )
+
+    vi.assert.deepEqual(
+      openapi.accessors(is.any.object)
+      ({ a: {} }),
+      { 
+        ["/"]: { a: {} },
+        ["/a"]: {},
+      }
+    )
+
+    vi.assert.deepEqual(
+      openapi.accessors(is.any.array)
+      ({ a: [] }),
+      { ["/a"]: [] }
+    )
+
+    vi.assert.deepEqual(
+      openapi.accessors(is.any.record)
+      ({ a: { b: { c: 0 } } }),
+      { 
+        ["/"]: { a: { b: { c: 0 } } },
+        ["/a"]: { b: { c: 0 } },
+        ["/a/b"]: { c: 0 },
+      }
+    )
+  })
+
   vi.test("〖⛳️〗‹ ❲openapi.accessors❳", () => {
     const ex_04 = { abc: { def: { properties: { abc: 123, def: 456, ghi: { jkl: 789 } } } } }
     let accessors = openapi.accessors(tree.has("properties", is.any.object))(ex_04)
+
     void (accessors["/abc/def"].properties = { xyz: 789 })
 
     vi.assert.deepEqual(
       ex_04, 
       { abc: { def: { properties: { xyz: 789 } as unknown }}}
-    )
-  })
-
-  vi.test("〖⛳️〗‹ ❲openapi.accessors❳", () => {
-    const ex_05 = { 
-      a: { 
-        b: {
-          c: { d: 1 }, 
-          e: { f: 2 }, 
-          g: { h: 3 } 
-        }, 
-        i: { j: 4 }, 
-        k: { l: 5 } 
-      }, 
-      m: { n: 6, o: 7 }, 
-      p: { q: 8, r: 9 } 
-    }
-
-    let accessors = openapi.accessors(is.any.object)(ex_05)
-
-    vi.assert.deepEqual(
-      accessors, 
-      {
-        ["/"]: ex_05,
-        '/a': ex_05.a,
-        '/a/b': ex_05.a.b,
-        '/a/b/c': ex_05.a.b.c,
-        '/a/b/e': ex_05.a.b.e,
-        '/a/b/g': ex_05.a.b.g,
-        '/a/i': ex_05.a.i,
-        '/a/k': ex_05.a.k,
-        '/m': ex_05.m,
-        '/p': ex_05.p,
-      }
     )
   })
 
@@ -576,14 +779,13 @@ vi.describe("〖⛳️〗‹‹‹ ❲@traversable/openapi❳", () => {
   })
 
   vi.test("〖⛳️〗‹ ❲openapi.accessors❳: lossless round trip", () => {
-
     ///////////////
     /// ARRANGE ///
     ///////////////
     
-    // We'll be mutating `ex_07`, so here we make a copy of it.
+    // We'll be mutating `ex_02`, so here we make a copy of it.
     // That way, we have something to compare it to when we're done rebuilding it
-    const ex_08 = globalThis.structuredClone(ex_07)
+    const ex_03 = globalThis.structuredClone(ex_02)
 
     // A few helpers to simulate the real use case that we have, which is
     // "moving" schemas from their various levels of nesting throughout the OpenAPI document,
@@ -596,14 +798,13 @@ vi.describe("〖⛳️〗‹‹‹ ❲@traversable/openapi❳", () => {
       from: dequalify,
     }
 
-    const getDocumentSchemas = openapi.accessors(tree.has("schema", tree.has("type", is.string)))
-    let accessors = getDocumentSchemas(ex_07)
+    const getDocumentSchemas = openapi.accessors(tree.has("schema", or(tree.has("type", is.string), tree.has("$ref"))))
+    let accessors = getDocumentSchemas(ex_02)
 
     ///////////////
     ///   ACT   ///
     ///////////////
 
-    
     /** 
      * #### {@link refs `refs`}  
      * 
@@ -611,7 +812,7 @@ vi.describe("〖⛳️〗‹‹‹ ❲@traversable/openapi❳", () => {
      * 
      * - Each key in `refs` must be fully qualified
      * - Each key in `refs` must be JSON-pointer-escaped
-     * - Each key in `refs` must resolve to a schema found in `ex_07`
+     * - Each key in `refs` must resolve to a schema found in `ex_02`
      */
     let refs: { [x: string]: unknown } = {}
 
@@ -621,7 +822,7 @@ vi.describe("〖⛳️〗‹‹‹ ❲@traversable/openapi❳", () => {
       void (refs[Qualifier.to(k)] = globalThis.structuredClone(accessors[k]))
     }
 
-    // Rip out all the nested schemas from `ex_07`:
+    // Rip out all the nested schemas from `ex_02`:
     void globalThis.Object
       .entries(accessors)
       .forEach(
@@ -633,25 +834,23 @@ vi.describe("〖⛳️〗‹‹‹ ❲@traversable/openapi❳", () => {
         )
       )
 
-    // Rebuild `ex_07` by following the references we just ripped out:
+    // Rebuild `ex_02` by following the references we just ripped out:
     for (const k in accessors) {
       const accessor = accessors[k]
       const refPath = qualify(k)
-      const ref: { schema: unknown } = refs[refPath] as never
-      // const accessed = tree.get(ex_07 as never, ...unqualifiedPath)
-      // const referenced = tree.get(refs, ...unqualifiedPath)
+      const ref: { schema: { type: "string" } } = refs[refPath] as never
       accessor.schema = ref.schema
     }
    
     //////////////////
     ///   ASSERT   ///
     //////////////////
-    // None of what we just did should be lossy:
-    vi.assert.deepEqual(ex_07, ex_08)
+    // Check that nothing we just did was lossy:
+    vi.assert.deepEqual(ex_02, ex_03)
   })
 
   vi.test("〖⛳️〗‹ ❲openapi.query.normalize❳", () => {
-    vi.expect(openapi.normalize()(ex_07)).toMatchInlineSnapshot(`
+    vi.expect(openapi.normalize()(ex_02)).toMatchInlineSnapshot(`
       {
         "components": {
           "schemas": {
@@ -1099,6 +1298,5 @@ vi.describe("〖⛳️〗‹‹‹ ❲@traversable/openapi❳", () => {
         },
       }
     `)
-
   })
 })

@@ -145,7 +145,8 @@ filter.loop = fn.loopN<filter.dependencies, void>((src, ks, refs, qs, loop): voi
   }
 })
 
-export function accessors<R>(...predicates: readonly Predicate<R>[]): <T extends {}>(tree: T) => { [x: string]: { [y: string]: unknown } }
+export function accessors<R extends {}>(...guards: ((u: unknown) => u is R)[]): <T extends {}>(tree: T) => { [x: string]: R }
+export function accessors<R extends { [x: string]: unknown }>(...predicates: readonly Predicate<R>[]): <T extends {}>(tree: T) => { [x: string]: R }
 export function accessors(...qs: readonly Predicate[]) {
   return (in_: {}, _out: {} = {}) => (accessors.loop(in_, [], _out, qs, in_), _out)
 }
