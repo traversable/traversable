@@ -1,7 +1,7 @@
 
 import type { Compare } from "@traversable/data"
 import { fn, map, order } from "@traversable/data"
-import { openapi, Weight } from "@traversable/openapi"
+import { Weight, openapi } from "@traversable/openapi"
 import type { Functor } from "@traversable/registry"
 import { type Partial, WeightByType, WeightMap } from "@traversable/registry"
 import { Ext as Schema } from "./model.js"

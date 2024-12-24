@@ -98,7 +98,6 @@ export const WeightMap = {
   },
 } satisfies WeightMap
 
-
 export type RegisterWeight<T extends {}> = Open<T, WeightByType>
 export type RegisterSymbol<
   T,
