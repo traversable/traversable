@@ -15,7 +15,6 @@ declare namespace Predicate {
 declare namespace Inductive {
   type stringIndex<T> = T | { [x: string]: Inductive.stringIndex<T> }
 }
-
 /** 
  * @internal 
  * References are cheap. These aliases allow us to only pay the
@@ -42,18 +41,16 @@ const isJsonObject
   : (u: unknown) => u is Json.object
   = object.isComposite
 /** @internal */
-const isPrimitive 
-  : (u: unknown) => u is null | undefined | boolean | number | string | bigint | symbol
-  = (u): u is any =>  u === undefined 
-            ||        u === null
-            || typeof u === "boolean"
-            || typeof u === "number"
-            || typeof u === "string"
-            || typeof u === "bigint"
-            || typeof u === "symbol"
+const isPrimitive = (u: unknown): u is null | undefined | boolean | number | string | bigint | symbol => 
+  u == null 
+  || typeof u === "boolean"
+  || typeof u === "number"
+  || typeof u === "string"
+  || typeof u === "bigint"
+  || typeof u === "symbol"
 
 /** 
- * @internal
+ * @internal 
  * 
  * This is the runtime implementation for accessing a
  * deeply nested property. It is optimized for performance
@@ -101,19 +98,6 @@ export function hasOwn(
   return typeof key === "symbol" 
     ? isComposite(u) && key in u 
     : Object.hasOwn(u ?? {}, key)
-}
-
-export function mightHave<K extends key.any, T>
-  (key: K, predicate: (u: unknown) => u is T): (u: unknown) => u is { [P in K]+?: T } 
-export function mightHave<K extends key.any, T>(
-  k: K, 
-  p: (u: unknown) => u is T
-): (u: unknown) => u is { [P in K]+?: T } {
-  return (u): u is never => 
-    isComposite(u) && (
-      !hasOwn(u, k) || 
-      (hasOwn(u, k) && p(u[k]))
-    )
 }
 
 /** 
@@ -322,6 +306,12 @@ void (get.defer = get_defer)
  * 
  * Get a deeply nested value from a data structure.
  * 
+ * In many cases, {@link get_defer `tree.get.defer`} is overkill.
+ * 
+ * When your use case requires accessing arbitrarily nested
+ * properties _programmatically_, {@link get_defer `tree.get.defer`}
+ * is a great fit.
+ * 
  * For a variant that is data-first and eargerly applies its
  * arguments, use {@link get `tree.get`}.
  * 
@@ -344,19 +334,22 @@ export function get_defer(
 
 /** 
  * ## {@link has `tree.has`}
- * Given a `path` and an optional `predicate`, {@link has `tree.has`} 
- * returns a new predicate that returns true _iff_ its argument "has"
- * (is traversable by) the provided path.
  * 
- * If `predicate` is defined and the path's target exists, the 
- * predicate will be applied to the target.
+ * The {@link has `tree.has`} utility accepts a path
+ * into a tree, and optionally a type-guard, and returns 
+ * a predicate function that returns true if its argument
+ * "has" a non-nullable value at that address in the
+ * argument.
  * 
- * If no `predicate` is specified, defaults to {@link has.defaults.guard `has.defaults.guard`}.
+ * If the optional type-guard is provided, {@link has `tree.has`}
+ * will also apply the type-guard to the value it finds at
+ * the provided path. If provided, the target of the type-guard
+ * will be applied at the target node of the tree.
  */
-export function has<const KS extends keys.any, T>
-  (...pathspec: [...path: KS, predicate: (u: unknown) => u is T]): (u: unknown) => u is has_path<KS, T>
 export function has<KS extends keys.any>
-  (...pathspec: [...KS]): (u: unknown) => u is has.path<KS>
+  (...params: [...KS]): (u: unknown) => u is has.path<KS>
+export function has<const KS extends keys.any, T>
+  (...params: [...KS, (u: unknown) => u is T]): (u: unknown) => u is has_path<KS, T>
 /// impl.
 export function has
   (...params: [...keys.any] | [...keys.any, (u: any) => u is any]) {
@@ -387,11 +380,9 @@ export declare namespace has {
 }
 
 type has_path<KS extends keys.any, T = {}> 
-  = never | (
-    KS extends nonempty.propsLeft<infer Todo, infer K>
-  ? has_path<Todo, { [P in K]: T }>
-  : T 
-  ) // extends infer U extends {} ? U : never 
+  = KS extends nonempty.propsLeft<infer Todo, infer K>
+  ? has.path<Todo, { [P in K]: T }>
+  : T extends infer U extends {} ? U : never 
 
 type has_maybe<KS extends keys.any, T = {}>
   = KS extends nonempty.propsLeft<infer Todo, infer K>
@@ -415,11 +406,9 @@ interface tentatively<T extends {}> extends newtype<T> {}
  * configurable, see {@link set.Options `set.Options`}.
  * 
  * **Note:** currently, `set` doesn't use any type-level tricks
- * to help guide users away from shooting themselves in the 
- * proverbial foot.
+ * to make sure you don't shoot yourself in the foot. 
  * 
- * We plan to add that in the future. In the meantime, be advised
- * that all the rules and caveats that come with mutation apply.
+ * That will change in the future, just haven't had time
  */
 export const set = mutate
 

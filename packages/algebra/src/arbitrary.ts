@@ -4,11 +4,7 @@ import { Traversable } from "@traversable/core"
 import { fn, object } from "@traversable/data"
 import type { Functor, Partial } from "@traversable/registry"
 
-export { 
-  generateArbitrary as generate, 
-  deriveArbitrary as derive,
-}
-
+export { generateArbitrary as generate, deriveArbitrary as derive }
 
 /**
  * ## {@link Options `Options`}
@@ -92,7 +88,7 @@ export namespace Algebra {
       case Traversable.is.record(x): return "fc.dictionary(fc.lorem(), " + x.additionalProperties + ")"
       case Traversable.is.object(x): return "fc.record(" 
         + "{ " + Object_entries(x.properties).map(object.parseEntry).join(", ") + " }, " 
-        + "{ requiredKeys: [" + (x.meta.required ?? []).map((k) => '"' + k + '"').join(", ") + "]" + " }" 
+        + "{ requiredKeys: [" + (x.required ?? []).map((k) => '"' + k + '"').join(", ") + "]" + " }" 
         + ")"
     }
   }
@@ -107,7 +103,7 @@ function generateArbitrary_fold({
   stripTypes = defaults.stripTypes,
 }: Options = defaults) { // : (term: Traversable.any) => string {
   return fn.flow(
-    Traversable.fromJsonSchema, 
+    Traversable.fromSchema, 
     fn.cata(Traversable.Functor)(Algebra.jit({ arbitraryName, stripTypes })),
   )
 }
@@ -129,6 +125,6 @@ function deriveArbitrary(_?: Options): <T extends Traversable.any>(schema: T) =>
 function deriveArbitrary(_: Options = deriveArbitrary.defaults): {} 
   { return fn.flow(deriveArbitrary_fold) }
 
-// function deriveArbitrary_fold(_?: Options): <const T extends Traversable.any>(term: T) => fc.Arbitrary<Traversable.toType<T>>
-function deriveArbitrary_fold(_: Options = defaults)
-  { return fn.flow(Traversable.fromJsonSchema, fn.cata(Traversable.Functor)(Algebra.arbitrary)) }
+function deriveArbitrary_fold(_?: Options): <const T extends Traversable.any>(term: T) => fc.Arbitrary<Traversable.toType<T>>
+function deriveArbitrary_fold(_: Options = defaults): {}
+  { return fn.flow(Traversable.fromSchema, fn.cata(Traversable.Functor)(Algebra.arbitrary)) }

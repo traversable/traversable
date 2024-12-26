@@ -8,9 +8,3 @@ export interface Props<T, M extends {} = {}> extends newtype<M> { properties: { 
 export interface MaybeAdditionalProps<T, M extends {} = {}> extends newtype<M> { additionalProperties?: T }
 export interface AdditionalProps<T, M extends {} = {}> extends newtype<M> { additionalProperties: T }
 export interface Combinator<T, K extends string> extends newtype<{ [P in K]: readonly T[] }> {}
-
-export type FieldOptionality = typeof FieldOptionality[keyof typeof FieldOptionality]
-export const FieldOptionality = {
-  optionalByDefault: "optionalByDefault",
-  requiredByDefault: "requiredByDefault",
-} as const

@@ -108,12 +108,12 @@ const throw_ = (...args: mut.array): never => {
 const throwWithMessage =
   (msg: string) =>
   (...args: mut.array): never => {
-    globalThis.console.error(JSON.stringify(args.slice(1), null, 2))
+    console.error(JSON.stringify(args.slice(1), null, 2))
     return throw_(msg, ...args)
   }
 
 const assertExhaustive: <t extends any.array>(...impossible: t) => never = (...impossible) => {
-  if (impossible) throw globalThis.Error(`\`exhaustive\` was called, which should never happen`)
+  if (impossible) throw Error(`\`exhaustive\` was called, which should never happen`)
   else return void 0 as never
 }
 

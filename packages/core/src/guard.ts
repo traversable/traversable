@@ -140,7 +140,7 @@ export const anything
  * - {@link tuple `core.is.tuple`}
  * - {@link array_any `core.is.any.array`}
  */
-export function array<T>(guard: (u: unknown) => u is T): (u: unknown) => u is readonly T[]
+export function array<T>(guard: (u: unknown) => u is T): (u: unknown) => u is array<T>
 export function array<T>(guard: (u: unknown) => u is T) 
   { return (u: unknown): u is never => Array_isArray(u) && u.every(guard) }
 
@@ -304,9 +304,10 @@ export function anyOf<const T extends readonly unknown[]>(
 // > extends newtype<T> {}
 
 export type allOf<T extends readonly unknown[], Out = unknown>
-  = never | (
-    T extends nonempty.array<infer H, infer T> ? allOf<T, Out & H> : Out
-  )
+  = T extends nonempty.array<infer H, infer T>
+  ? allOf<T, Out & H>
+  : Out
+  ;
 
 export function allOf<const T extends readonly unknown[]>(
   ...guards: { [x in keyof T]: (u: unknown) => u is T[x] }

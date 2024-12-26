@@ -39,9 +39,6 @@ type symbol_object = typeof symbol_object
 const symbol_REGISTRY = Symbol.for(URI_REGISTRY)
 type symbol_REGISTRY = typeof symbol_REGISTRY
 
-
-
-
 declare namespace URI {
   export { URI_REGISTRY as REGISTRY }
   export {
@@ -76,11 +73,6 @@ namespace URI {
 
   /////////////////////////////////////////////////////
   /// URIs that __do__ have an associated symbol
-  /**
-   * See also:
-   * - NodeJS docs on [https://nodejs.org/api/util.html#utilinspectcustom](util.inspect.custom)
-   */
-  export const nodejs_util_inspect_custom = "nodejs.util.inspect.custom" as const
   export const ref = `${ns}::Ref` as const
   export type ref = typeof URI.ref
   export const leaf = `${ns}::Leaf` as const
@@ -153,11 +145,6 @@ declare namespace symbol_ {
   }
 }
 namespace symbol_ {
-  /**
-   * See also:
-   * - NodeJS docs on [https://nodejs.org/api/util.html#utilinspectcustom](util.inspect.custom)
-   */
-  export const nodejs_util_inspect_custom = Symbol.for(URI.nodejs_util_inspect_custom)
   export const ref = Symbol.for(URI.ref)
   export type ref = typeof symbol_.ref
   export const leaf = Symbol.for(URI.leaf)

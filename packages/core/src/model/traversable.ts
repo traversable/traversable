@@ -476,22 +476,3 @@ function Traversable_unfold<T>(coalgebra: Functor.Coalgebra<Traversable_lambda, 
 const Traversable_fromSchema 
   : <T extends JsonSchema.any | Traversable>(term: T) => Traversable
   = Traversable_unfold(fromSchema as never)
-declare namespace Traversable_fromJsonSchema {
-  type Options = Partial<{
-    fieldOptionality: FieldOptionality
-  }>
-  interface Config extends Required<Options & { isRoot: boolean }> {}
-}
-namespace Traversable_fromJsonSchema {
-
-  export const defaults = {
-    fieldOptionality: "optionalByDefault",
-    isRoot: false,
-  } satisfies Config
-
-  export function fromOptions(opts: Options | undefined, isRoot?: boolean): Config { 
-    return { 
-      fieldOptionality: opts?.fieldOptionality ?? defaults.fieldOptionality,
-      isRoot: typeof isRoot === "boolean" ? isRoot : defaults.isRoot,
-    }
-  }

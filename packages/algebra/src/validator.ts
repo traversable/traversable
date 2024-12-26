@@ -1,11 +1,10 @@
-import { Traversable, is, show, tree } from "@traversable/core"
+import { Traversable, is, tree } from "@traversable/core"
 import { fn } from "@traversable/data"
 import { openapi } from "@traversable/openapi"
 import type { Functor, Partial } from "@traversable/registry"
 
 import * as Sort from "./sort.js"
 import * as Type from "./type.js"
-import { FieldOptionality} from "@traversable/core/model/shared"
 
 export { deriveValidator as derive }
 
@@ -17,7 +16,6 @@ export interface Stream {
   required?: (string | number)[]
 }
 
-interface Config extends Required<Options> {}
 export const defaults = {
   compare: Sort.derive.defaults.compare,
   /**
@@ -27,7 +25,6 @@ export const defaults = {
    * {@link derive `validator.derive`} will take care of resolving them
    * for you if you provide the document via this config option.
    */
-  fieldOptionality: FieldOptionality.optionalByDefault as FieldOptionality,
   document: openapi.doc<openapi.doc>({
     openapi: "3.1.0",
     paths: {},
@@ -54,13 +51,7 @@ namespace RAlgebra {
 
   export const validator: Functor.RAlgebra<Traversable.lambda, Stream> = (n) => {
     switch (true) {
-      default: return fn.exhaustive(n)
-      case Traversable.is.enum(n): return { 
-        go: (path) => n.enum.reduce<string>(
-          (acc, m) => `${acc};if(${path.join("")}!==${show.serialize(m)})return false;})`, 
-          ""
-        )
-      }
+      case Traversable.is.enum(n): return { go: (path) => "" }
       case Traversable.is.null(n): return { go: (path) => `if(${path.join("")}!=null)return false;` }
       case Traversable.is.boolean(n): return {
         go: (path, _, req) =>
@@ -98,7 +89,7 @@ namespace RAlgebra {
                    * Possible optimization: use # of required keys to
                    * short-circuit if target doesn't have at least that many keys
                    */
-                  const isRequired = (n.meta.required ?? []).includes(k)
+                  const isRequired = (n.required ?? []).includes(k)
                   const $next = [...$path, k]
                   const $varname = $next.join("")
                   const $var = `let ${$varname}=${$prev}["${k}"];`
@@ -126,8 +117,9 @@ namespace RAlgebra {
               $check +
               n.items
                 .map(([x, ctx], ix) => {
-                  const $ix = tree.has("meta", "originalIndex", is.number)(x) ? x.meta.originalIndex : ix
+                  const $ix = tree.has("originalIndex", is.number)(x) ? x.originalIndex : ix
                   const $next = [...$path, $ix]
+                  // const $path = [$prev, $ix]
                   const $var = $next.join("")
                   const $binding = `let ${$var}=${$prev}[${$ix}];`
                   return $binding + ctx.go($next, depth, true)
@@ -148,7 +140,8 @@ namespace RAlgebra {
             const $var = $path.join("")
             const $loop = [`for(let i=0;i<${$prev}.length;i++){`, "}"]
             const $binding = `let ${$var}=${$prev}[i];`
-            return "" +
+            return (
+              "" +
               $reqOpen +
               $check +
               $loop[0] +
@@ -156,6 +149,7 @@ namespace RAlgebra {
               [n.items].map(([, ctx]) => ctx.go($path, depth + 1, true))[0] +
               $loop[1] +
               $reqClose
+            )
           },
         }
       }
@@ -166,7 +160,8 @@ namespace RAlgebra {
             const $reqOpen = req ? "" : "if(" + path.join("") + "!==undefined){"
             const $reqClose = req ? "" : "}"
             const $path = path.length === 0 ? [pairwise(depth + 1)] : [pairwise(depth + 1), ...path.slice(1)]
-            const $check = `if(!${$prev}||typeof ${$prev}!=="object"||Array.isArray(${$prev}))return false;`
+            const $check =
+              "" + `if(!${$prev}||typeof ${$prev}!=="object"||Array.isArray(${$prev})` + ")return false;"
             const $keys = `let $k${depth}=Object.keys(${$prev});`
             const $inner = pairwise(depth + 1, path.slice(1).join(""))
             const $binding = `let ${$inner}=${$prev}[$k${depth}[i]];`
@@ -188,9 +183,13 @@ namespace RAlgebra {
       }
       case Traversable.is.allOf(n):
         return { go: (path, depth) => n.allOf.map(([, ctx]) => ctx.go(path, depth, true)).join("") }
+      default:
+        return fn.exhaustive(n)
       ///
-      case Traversable.is.anyOf(n): return fn.throw("UNIMPLEMENETED")
-      case Traversable.is.oneOf(n): return fn.throw("UNIMPLEMENETED")
+      case Traversable.is.anyOf(n):
+        return fn.throw("UNIMPLEMENETED")
+      case Traversable.is.oneOf(n):
+        return fn.throw("UNIMPLEMENETED")
     }
   }
 }
@@ -200,8 +199,8 @@ deriveValidator.fold = (
   { compare = deriveValidator.defaults.compare }: Pick<Options, "compare"> = deriveValidator.defaults,
 ) =>
   fn.flow(
-    Traversable.fromJsonSchema, 
     Sort.derive({ compare }), 
+    Traversable.fromSchema, 
     fn.para(Traversable.Functor)(RAlgebra.validator), 
     (xf) => xf.go([], 0, true),
   );
