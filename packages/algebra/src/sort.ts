@@ -113,7 +113,7 @@ export namespace Coalgebra {
           items: n.items
             .map((x, ix) => [ix, x] satisfies [number, Traversable])
             .sort(order.mapInput(compare($), ([, v]) => v))
-            .map(([ix, x]) => (((x as never as { originalIndex: number }).originalIndex = ix), x)),
+            .map(([ix, x]) => (x.meta.originalIndex = ix, x))
         }
         case Traversable.is.object(n): return {
           ...n,
@@ -198,7 +198,7 @@ function deriveSort({
 }: Options = deriveSort.defaults): {} {
   if (compare) return (
     fn.ana(Traversable.Functor)(
-      Coalgebra.sort(order.mapInput(compare, Traversable.fromSchema))
+      Coalgebra.sort(order.mapInput(compare, Traversable.fromJsonSchema))
     )
   )
   else if (weightMap) {
@@ -214,7 +214,7 @@ function deriveSort({
   }
   else return fn.ana(Traversable.Functor)(
     Coalgebra.sort(
-      order.mapInput(defaults.compare, Traversable.fromSchema),
+      order.mapInput(defaults.compare, Traversable.fromJsonSchema),
     )
   )
 }

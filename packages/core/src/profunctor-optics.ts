@@ -19,8 +19,8 @@ export declare namespace Tuple {
 }
 export namespace Tuple {
   export function of<A, B>(first: A, second: B): Tuple<A, B> { return [first, second] }
-  export function first<T, _>(tuple: Tuple<T, _>): T { return tuple[0] }
-  export function second<_, T>(tuple: Tuple<_, T>): T { return tuple[1] }
+  export function first<A, B>(tuple: Tuple<A, B>): A { return tuple[0] }
+  export function second<A, B>(tuple: Tuple<A, B>): B { return tuple[1] }
 }
 
 /** 
@@ -48,18 +48,21 @@ export declare namespace Either {
 export namespace Either {
   export function left<T>(left: T): Either.left<T> { return { _tag: URI.Left, left } }
   export function right<T>(right: T): Either.right<T> { return { _tag: URI.Right, right } }
+
   export function map<A, B>(f: (a: A) => B): { <T>(either: Either<T, A>): Either<T, B> }
     { return (either) => Either.isRight(either) ? Either.right(f(either.right)) : either }
   export function mapLeft<S, T>(f: (s: S) => T): { <A>(either: Either<S, A>): Either<T, A> }
     { return (either) => Either.isLeft(either) ? Either.left(f(either.left)) : either }
   export function mapBoth<S, T, A, B>(f: (a: A) => B, g: (s: S) => T): { (either: Either<S, A>): Either<T, B> }
     { return (either) => Either.isRight(either) ? map(f)(either) : mapLeft(g)(either) }
+
   export function isRight<T, _>(either: Either<_, T>): either is Either.right<T>
     { return either._tag === URI.Right }
   export function isLeft<T, _>(either: Either<T, _>): either is Either.left<T>
     { return either._tag === URI.Left }
-  export function either<A, B, C>(f: (a: A) => C, g: (b: B) => C): Either.either<A, B, C>
-    { return (either) => Either.isLeft(either) ? f(either.left) : g(either.right) }
+
+  export function fork<A, B, C>(onLeft: (a: A) => C, onRight: (b: B) => C): Either.either<A, B, C>
+    { return (either) => Either.isLeft(either) ? onLeft(either.left) : onRight(either.right) }
 }
 
 /**
@@ -201,7 +204,7 @@ export namespace Prism {
    */
   export const right
     : <B, A>(f: (b: B) => A) => (either: Either<A, B>) => A
-    = (f) => Either.either(fn.identity, f)
+    = (f) => Either.fork(fn.identity, f)
   /** 
    * ### {@link prism `optic.Prism.prism`}
    */

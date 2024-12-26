@@ -52,7 +52,7 @@ declare namespace deriveType {
 }
 
 const deriveType_fold = (options: deriveType.Options = deriveType.defaults) => fn.flow(
-  Traversable.fromSchema, 
+  Traversable.fromJsonSchema, 
   fn.cata(Traversable.Functor)(Algebra.types(options)),
 )
 

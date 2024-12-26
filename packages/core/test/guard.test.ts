@@ -61,11 +61,6 @@ function json(_: arbitrary.Constraints = arbitrary.defaults) {
   ) 
 }
 
-// test.prop([json().tree], {})("testing guard", (guard) => {
-//   console.log(guard)
-//   vi.assert.isTrue(guard)
-// })
-
 function NullNode<T>(constraints?: arbitrary.Constraints): fc.Arbitrary<typeof is.null>
 function NullNode(_: arbitrary.Constraints = arbitrary.defaults): fc.Arbitrary<typeof is.null> 
   /// impl.

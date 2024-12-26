@@ -22,7 +22,7 @@ interface Table {
   FOOT: string
 }
 
-const log = globalThis.console.info
+const log = globalThis.console.info.bind(globalThis.console)
 const inMs = (start: bigint, end: bigint) => (end - start) / 1_000_000n
 const getSummaryPadding = (path: string) => (duration: bigint) =>
   `${duration} milliseconds ${" ".repeat(
