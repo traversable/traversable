@@ -201,11 +201,11 @@ export const parse
   : (numeric: string) => float
   = globalThis.Number.parseFloat
 
-export type Bounded<Min extends number = number, Max extends number = number> = never | [min: Min, max: Max]
+type Bounded<Min extends number = number, Max extends number = number> = never | [min: Min, max: Max]
 type Meet<Max extends number = number> = never | [max: Max]
 type Join<Min extends number = number> = never | [min: Min]
 
-export declare namespace Bounded {
+declare namespace Bounded {
   interface integer<_ extends Join | Meet | Bounded = Bounded> extends newtype<number> {}
 }
 
