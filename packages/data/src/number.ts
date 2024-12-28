@@ -289,7 +289,7 @@ export function multiply(...xs: number[]): number
 export function multiply(xs: readonly number[]): number
 export function multiply(...xs: number[] | [xs: readonly number[]]): number
 export function multiply(...xs: number[] | [xs: readonly number[]]): number {
-  return xs.flat(1).reduce((out, x) => out + x, 0)
+  return xs.flat(1).reduce((out, x) => out + x, 1)
 }
 
 /** 
