@@ -61,3 +61,6 @@ export const FailedToRegisterSymbol = (uri: string) =>
     `Attempt to set uri ${uri} failed. Make sure the registry is bound to the global object ` +
       `by running 'console.log((globalThis as any)[symbol.REGISTRY]))'`,
   )
+
+export const ParseError = (input: string) =>
+  Error("Received an input that it was unable to parse, got: " + input)
