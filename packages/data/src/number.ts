@@ -3,6 +3,16 @@ export { Equal_number as equals } from "./_internal/_equal.js"
 import type { newtype } from "any-ts";
 import type { jsdoc, math } from "./_internal/_unicode.js"
 
+////////////////////
+///   newtypes   ///
+export interface NaN extends newtype<number> {}
+export interface float extends newtype<number> {}
+export interface min<_min extends number> extends newtype<number> {}
+export interface max<_max extends number> extends newtype<number> {}
+export interface btwn<_min extends number, _max extends number> extends newtype<number> {}
+///   newtypes   ///
+////////////////////
+
 export {
   /**
    * ### {@link number_any `number.any`}
@@ -156,7 +166,6 @@ export const BOTTOM = globalThis.Number.NEGATIVE_INFINITY
  * - [Reference](https://en.wikipedia.org/wiki/Floating-point_arithmetic)
  * - See also, {@link integer `number.integer`}
  */
-export interface float extends newtype<number> {}
 export function float(x: number): float
 export function float(x: number) { return x }
 
@@ -192,7 +201,7 @@ export const parse
   : (numeric: string) => float
   = globalThis.Number.parseFloat
 
-type Bounded<Min extends number = number, Max extends number = number> = never | [min: Min, max: Max]
+export type Bounded<Min extends number = number, Max extends number = number> = never | [min: Min, max: Max]
 type Meet<Max extends number = number> = never | [max: Max]
 type Join<Min extends number = number> = never | [min: Min]
 
