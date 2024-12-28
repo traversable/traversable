@@ -389,9 +389,16 @@ export function fromArray<T>(xs: T[]): Option<[T, ...T[]]>
 export function fromArray<T>(xs: T[]) ///impl.
   { return xs.length === 0 ? none() : some(xs) }
 
-export const getOrElse
-  : <U>(orElse: () => U) => <T>(option: Option<T>) => T | U
-  = (orElse) => match({ onSome: (value) => value, onNone: orElse })
+export function getOrElse<U>(orElse: () => U): <T>(option: Option<T>) => T | U
+export function getOrElse<T, U>(option: Option<T>, orElse: () => U): T | U
+export function getOrElse<T, U>(
+  ...args: 
+    | [orElse: () => U] 
+    | [option: Option<T>, orElse: () => U]
+) {
+  return args.length === 1 ? (option: Option<T>) => getOrElse(option, ...args)
+  : match({ onSome: (value) => value, onNone: args[1] })(args[0])
+}
 
 export const toUndefined
   : <T>(option: Option<T>) => T | undefined
