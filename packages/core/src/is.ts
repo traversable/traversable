@@ -4,22 +4,21 @@ export {
   allOf,
   oneOf,
   array,
-  isBigInt as bigint,
-  isBoolean as boolean,
+  bigint,
+  boolean,
   isFalse as false,
   isTrue as true,
   isDate as date,
   defined,
   isFunction as function,
   isIndex as index,
-  isInteger as integer,
   partial,
   isKey as key,
   isLiteral as literal,
   isLiterally as literally,
   isNull as null,
   isNullable as nullable,
-  isNumber as number,
+  number,
   object,
   isPath as path,
   isPrimitive as primitive,
@@ -40,6 +39,7 @@ import type { key, prop } from "@traversable/data"
 import type { empty as Empty, nonempty as NonEmpty, has } from "any-ts"
 
 import { 
+  any as any_,
   array,
   object,
   record,
@@ -53,7 +53,7 @@ export declare namespace any {
   }
 }
 const any_object = object.any
-const any_array = array.any
+const any_array = any_.array
 const any_record = record.any
 export namespace any {
   void (any.object = any_object)

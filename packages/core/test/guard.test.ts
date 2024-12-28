@@ -4,10 +4,10 @@ import { type core, fc, is } from "@traversable/core"
 
 interface json<T = unknown> {
   null: core.is.null
-  boolean: core.is.boolean
-  integer: core.is.integer
-  number: core.is.number
-  string: core.is.string
+  boolean: typeof core.is.boolean
+  // integer: core.is.integer
+  number: typeof core.is.number
+  string: typeof core.is.string
   // allOf: (u: unknown) => u is {}
   anyOf: (u: unknown) => u is T
   array: (u: unknown) => u is readonly T[];
@@ -38,7 +38,7 @@ function json(_: arbitrary.Constraints = arbitrary.defaults) {
     (loop) => ({
       null: NullNode(_),
       boolean: BooleanNode(_),
-      integer: IntegerNode(_),
+      // integer: IntegerNode(_),
       number: NumberNode(_),
       string: StringNode(_),
       array: ArrayNode(loop("tree") as never, _),
@@ -86,12 +86,12 @@ function ArrayNode<T>(
   _: arbitrary.Constraints = arbitrary.defaults
 ): fc.Arbitrary<(u: unknown) => u is readonly T[]>
   /// impl.
-  { return model.map(is.array) }
+  { return model.map((x) => is.array(x)) }
 
-function IntegerNode(constraints?: arbitrary.Constraints): fc.Arbitrary<typeof is.integer>
-function IntegerNode(_: arbitrary.Constraints = arbitrary.defaults): fc.Arbitrary<typeof is.integer>
-  /// impl.
-  { return fc.constant(is.integer) }
+// function IntegerNode(constraints?: arbitrary.Constraints): fc.Arbitrary<typeof is.integer>
+// function IntegerNode(_: arbitrary.Constraints = arbitrary.defaults): fc.Arbitrary<typeof is.integer>
+//   /// impl.
+//   { return fc.constant(is.integer) }
 
 function NumberNode(constraints?: arbitrary.Constraints): fc.Arbitrary<typeof is.number> 
 function NumberNode(_: arbitrary.Constraints = arbitrary.defaults): fc.Arbitrary<typeof is.number> 
@@ -179,6 +179,7 @@ void (ObjectNode.options = ObjectNode_options)
 function ObjectNode_options(): fc.Arbitrary<is.object.Options> {
   return fc.record({
     exactOptionalPropertyTypes: fc.boolean(),
+    ReturnType: fc.constantFrom("AST", "typeguard"),
   }, { requiredKeys: [] })
 }
 
@@ -239,7 +240,7 @@ vi.describe("〖🚑〗‹‹‹ ❲@traversable/core/guard❳", () => {
       mno: is.optional(is.string),
       pqr: is.optional(is.boolean),
       stu: is.optional(is.string),
-    }, { exactOptionalPropertyTypes: true })
+    }, { exactOptionalPropertyTypes: true, ReturnType: "typeguard" })
 
     void vi.assert.isTrue(ex_03({}))
     void vi.assert.isTrue(ex_03({ pqr: true }))
@@ -285,7 +286,7 @@ vi.describe("〖🚑〗‹‹‹ ❲@traversable/core/guard❳: ", () => {
       mno: is.string,
       pqr: is.boolean,
       stu: is.optional(is.string),
-    }, { exactOptionalPropertyTypes: true })
+    }, { exactOptionalPropertyTypes: true, ReturnType: "typeguard" })
 
     void vi.assert.isTrue(ex_06({}))
     void vi.assert.isTrue(ex_06({ pqr: true }))

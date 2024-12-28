@@ -12,7 +12,8 @@ export * as show from "./show.js"
 
 export type Traversable = import("./model/traversable.js").Traversable
 export type JsonSchema = import("./model/json-schema.js").any
-export { JsonSchema, Traversable } from "./model/index.js"
+export type { Extension_register } from "./model/index.js"
+export { JsonSchema, Traversable, Extension } from "./model/index.js"
 
 export { 
   type intersect,
@@ -28,3 +29,6 @@ export {
   oneOf,
   or,
 } from "./guard.js"
+export * as S from "./guard.js"
+
+export * from "./guard/index.js"
