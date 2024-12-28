@@ -1,6 +1,7 @@
 import * as vi from "vitest"
 
 import { type as T } from "@traversable/algebra"
+import { symbol } from "@traversable/registry"
 
 const ex_01 = {
   type: "object",
@@ -66,14 +67,23 @@ vi.describe("〖️⛳️〗‹‹‹ ❲@traversable/algebra/validator❳", () 
     vi.assert.equal(
       T.derive({ 
         type: "record", 
-        additionalProperties: { type: "string" },
+        meta: { nullable: false, optional: false, path: [] },
+        additionalProperties: { type: "string", meta: { nullable: false, optional: false, path: [symbol.record] } },
       }),
       'type Anonymous = Record<string, string>',
     )
     vi.assert.equal(
       T.derive({ 
         type: "record", 
-        additionalProperties: { type: "record", additionalProperties: { type: "string" } },
+        meta: { nullable: false, optional: false, path: [] },
+        additionalProperties: { 
+          type: "record", 
+          meta: { nullable: false, optional: false, path: [symbol.record] }, 
+          additionalProperties: { 
+            type: "string", 
+            meta: { nullable: false, optional: false, path: [symbol.record, symbol.record] },
+          },
+        },
       }),
       'type Anonymous = Record<string, Record<string, string>>',
     )
@@ -82,11 +92,19 @@ vi.describe("〖️⛳️〗‹‹‹ ❲@traversable/algebra/validator❳", () 
   vi.it("〖️⛳️〗› ❲validator.derive❳: ‹tuple› (example-based) recursively sorted for shortest path to failure", () => {
     vi.assert.equal(
       T.derive({
-        type: "tuple", 
+        type: "tuple",
+        meta: { nullable: false, optional: false, path: [] },
         items: [
-          { type: "string" }, 
-          { type: "array", items: { type: "integer" } }, 
-          { type: "boolean" },
+          { type: "string", meta: { nullable: false, optional: false, path: [0] } },
+          {
+            type: "array",
+            meta: { nullable: false, optional: false, path: [1] },
+            items: { type: "integer", meta: { nullable: false, optional: false, path: [1, symbol.array]} },
+          },
+          {
+            type: "boolean",
+            meta: { nullable: false, optional: false, path: [2] },
+          }, 
         ],
       }),
       'type Anonymous = [boolean, string, number[]]',
