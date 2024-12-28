@@ -10,6 +10,7 @@ export type {
 export {
   absorb,
   apply,
+  applyN,
   call,
   exhaustive,
   distribute,
@@ -171,6 +172,10 @@ const absorb
 const apply
   : <const I>(input: I) => <O>(f: (i: I) => O) => O 
   = (a) => (f) => f(a)
+
+const applyN
+  : <const T extends readonly unknown[]>(...args: T) => <O>(f: (...args: T) => O) => O 
+  = (...a) => (f) => f(...a)
 
 const call
   : <T>(fn: () => T) => T 
