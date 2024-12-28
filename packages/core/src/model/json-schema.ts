@@ -1,10 +1,11 @@
 import type { Functor, HKT } from "@traversable/registry"
-
 import { fn } from "@traversable/data"
-import { and, anyOf } from "../guard.js"
+
+import type { Meta } from "./meta.js"
+import type { Enum, Items, MaybeAdditionalProps, Props } from "./shared.js"
 import * as is from "../is.js"
 import * as tree from "../tree.js"
-import type { Enum, Items, MaybeAdditionalProps, Props } from "./shared.js"
+import { and, anyOf } from "../guard.js"
 
 export type {
   JsonSchema as any,
@@ -37,7 +38,7 @@ export {
   JsonSchema_is as is,
 }
 
-interface JsonSchema_Meta { originalIndex?: number }
+interface JsonSchema_Meta extends Meta.JsonSchema {}
 
 type JsonSchema =
   | JsonSchema_Scalar
