@@ -91,6 +91,8 @@ namespace URI {
   export type string_index = typeof URI.string_index
   export const sum = `${ns}::SumType` as const
   export type sum = typeof URI.sum
+  export const constant = `${ns}::Constant` as const
+  export type constant = typeof URI.constant
   export const product = `${ns}::ProductType` as const
   export type product = typeof URI.product
   export const join = `${ns}::Join` as const
@@ -164,6 +166,8 @@ namespace symbol_ {
   ///
   export const sum = Symbol.for(URI.sum)
   export type sum = typeof symbol_.sum
+  export const constant = Symbol.for(URI.constant)
+  export type constant = typeof symbol_.constant
   export const product = Symbol.for(URI.product)
   export type product = typeof symbol_.product
   export const join = Symbol.for(URI.join)

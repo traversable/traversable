@@ -20,7 +20,7 @@ export default defineConfig({
       .map(createAlias)
       .reduce((acc, cur) => ({ ...acc, ...cur }), {}),
     fakeTimers: { toFake: undefined },
-    printConsoleTrace: true,
+    // printConsoleTrace: true,
     sequence: { concurrent: true },
   },
 })

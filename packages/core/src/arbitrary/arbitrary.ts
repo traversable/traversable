@@ -12,7 +12,7 @@ export * from "fast-check"
 import { array, fn, map, object } from "@traversable/data"
 import * as fc from "fast-check"
 
-import * as is from "../is.js"
+import { is } from "../guard/predicates.js"
 import { std } from "./data.js"
 import Country = std.Country
 import Currency = std.Currency

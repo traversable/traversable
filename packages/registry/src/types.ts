@@ -7,13 +7,34 @@ export type inline<T> = T
 export type _ = {} | null | undefined
 export type defined<T> = never | globalThis.Exclude<T, undefined>
 
+export type Showable = null | undefined | boolean | number | bigint | string
+export type Primitive = null | undefined | boolean | number | bigint | string | symbol
+export type Entry<T> = readonly [k: string, v: T]
+export type Entries<T> = readonly Entry<T>[]
+export interface Array<T = unknown> extends newtype<readonly T[]> {}
+
 export type Consumes<T> = T extends (_: infer I) => unknown ? I : never
 export type Produces<T> = T extends (_: never) => infer O ? O : never
+export type Returns<T> = T extends (..._: any) => infer O ? O : never
 export type Partial<T> = never | { -readonly [K in keyof T]+?: T[K] }
 export type Required<T> = never | { -readonly [K in keyof T]-?: T[K] }
 export type KeepFirst<S, T> = never | KeepLast<T, S>
 export type KeepLast<S, T> = never | Force<Omit<S, keyof (S | T)> & T>
 export type Mutable<T> = never | { -readonly [K in keyof T]: T[K] }
+export type Target<S> = S extends Guard<infer T> ? T : S extends Predicate<infer T> ? T : never
+export type Source<T> = T extends (_: infer S) => any ? S : never
+export type AllOf<T> = Intersect<{ [K in keyof T]: Target<T[K]> }, unknown>
+export type AnyOf<T> = Target<T[number & keyof T]>
+export type Intersect<S, O = unknown> = S extends readonly [infer H, ...infer T] ? Intersect<T, O & H> : O
+export type Join<T extends readonly string[], Delimiter extends string = ""> = Join.loop<"", T, Delimiter>
+export declare namespace Join {
+  type loop<Out extends string, S extends readonly unknown[], Delimiter extends string> = S extends readonly [
+    infer H extends string,
+    ...infer T,
+  ]
+    ? loop<`${Out}${Out extends "" ? "" : Delimiter}${H}`, T, Delimiter>
+    : Out
+}
 
 interface Covariant<T extends (_: never) => unknown> {
   (_: never): Produces<T>
@@ -132,11 +153,16 @@ export declare namespace Position {
  *   default behavior. To support this, this implementation exposes
  *   two "slots":
  *
- *   - `0` (corresponds to `in$`)
- *   - `1` (corresponds to `out$`)
+ *   -  `0` (corresponds to `I`)
+ *   - `-1` (corresponds to `O`)
  *
- *   - These names are intentionally
- *   [out-of-band](https://en.wikipedia.org/wiki/Out-of-band)
+ *   **Note:**
+ *   The `-1` slot is intentionally [out-of-band](https://en.wikipedia.org/wiki/Out-of-band)
+ *   so that this type can support users extending it to add additional "arguments".
+ *   If `1` was the "output" channel, then this encoding can't be exploited to take advantage
+ *   of the [natural adjunction](https://en.wikipedia.org/wiki/Tensor-hom_adjunction) that
+ *   exists between an arguments position in a curried function and its index in the same
+ *   function's uncurried form.
  *
  *   - {@link globalThis.Symbol `Symbols`} intentionally avoided
  *   to keep API surface area small, and to keep the API "spec-able"
@@ -250,6 +276,15 @@ export declare namespace Functor {
 }
 
 /**
+ * ## {@link Guard `Guard`}
+ *
+ * Just a plain old TypeScript type-guard.
+ */
+export interface Guard<T = unknown> {
+  (u: any): u is T
+}
+
+/**
  * ## {@link Predicate `Predicate`}
  *
  * A predicate is a unary function that returns a boolean.
@@ -266,7 +301,9 @@ export declare namespace Functor {
  * - the Wikipedia page on
  * [first-order logic](https://en.wikipedia.org/wiki/First-order_logic)
  */
-export type Predicate<in T = any> = (value: T) => boolean
+export interface Predicate<in T = any> {
+  (value: T): boolean
+}
 
 /**
  * ## {@link Predicate `Predicate`}

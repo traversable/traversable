@@ -20,7 +20,8 @@
       "packages/*/build/**/*",
       "packages/*/dist/**/*",
       "packages/*/src/__generated__/**/*",
-      "packages/*/test/__generated__/**/*"
+      "packages/*/test/__generated__/**/*",
+      "packages/core/src/guard/ast.ts"
     ],
     "enabled": true,
     "rules": {

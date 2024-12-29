@@ -1,7 +1,8 @@
+import type { inline } from "any-ts"
+
 import type { prop, props, unicode } from "@traversable/data"
 import { ANSI, char, fn, map } from "@traversable/data"
 import { Invariant, PATTERN } from "@traversable/registry"
-import type { inline } from "any-ts"
 
 type Nullable =
   | undefined

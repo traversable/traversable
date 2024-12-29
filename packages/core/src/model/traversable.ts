@@ -1,7 +1,11 @@
 import { fn, type nonempty } from "@traversable/data"
 import type { Functor, HKT, Merge, Mutable } from "@traversable/registry"
 
-import type { Meta } from "./meta.js"
+import { t } from "../guard/index.js"
+import { is } from "../guard/predicates.js"
+import { has } from "../tree.js"
+import * as JsonSchema from "./json-schema.js"
+import { Meta } from "./meta.js"
 import type { 
   AdditionalProps, 
   Combinator, 
@@ -11,10 +15,6 @@ import type {
   MaybeAdditionalProps, 
   Props 
 } from "./shared.js"
-import * as S from "../guard.js"
-import * as is from "../is.js"
-import * as JsonSchema from "./json-schema.js"
-import { has } from "../tree.js"
 
 export type {
   Traversable,
@@ -88,12 +88,6 @@ type Traversables = [
   Traversable_object,
 ]
 
-type Traversable =
-  | Traversable_Scalar
-  | Traversable_Combinator
-  | Traversable_Special
-  | Traversable_Composite
-  ;
 type Traversable_any =
   | JsonSchema.any
   | Traversable
@@ -137,15 +131,22 @@ type Traversable_Map<F> = {
   object: Traversable_objectF<F>
 }
 
+// path: (keyof any)[],
+
+export interface Meta_Base extends t.infer<typeof Meta_Base> {}
+export const Meta_Base = t.object({
+  nullable: t.optional(t.boolean()),
+  optional: t.optional(t.boolean()),
+  // path: (keyof any)[]
+})
+
+const Traversable_Meta = t.object({ meta: Meta_Base })
+
+
+
 interface Traversable_Meta extends Meta.has<Meta.Base> {}
 interface Traversable_lambda extends HKT { [-1]: Traversable_F<this[0]> }
 ///
-interface Traversable_null extends JsonSchema.null, Traversable_Meta {}
-interface Traversable_boolean extends JsonSchema.boolean, Traversable_Meta {}
-interface Traversable_integer extends JsonSchema.integer, Traversable_Meta {}
-interface Traversable_number extends JsonSchema.number, Traversable_Meta {}
-interface Traversable_string extends JsonSchema.string, Meta.has<Meta.string> {}
-interface Traversable_enum extends Enum<{ type: "enum" }>, Traversable_Meta {}
 ///
 interface Traversable_allOf extends
   Combinator<Traversable, "allOf">,
@@ -299,54 +300,98 @@ const Traversable_Known = [
   "object",
 ] as const satisfies string[]
 
-const Traversable_isNull = JsonSchema.is.null as (u: unknown) => u is Traversable_null
-const Traversable_isBoolean = JsonSchema.is.boolean as (u: unknown) => u is Traversable_boolean
-const Traversable_isInteger = JsonSchema.is.integer as (u: unknown) => u is Traversable_integer
-const Traversable_isNumber = JsonSchema.is.number as (u: unknown) => u is Traversable_number
-const Traversable_isString = JsonSchema.is.string as (u: unknown) => u is Traversable_string
-const Traversable_isEnum: (u: unknown) => u is Traversable_enum = S.object({
-  type: S.const("enum"),
-  enum: S.array(S.any()),
+interface Traversable_null extends JsonSchema.null, Traversable_Meta {}
+const Traversable_null = JsonSchema.null
+const Traversable_isNull = Traversable_null.is as (u: unknown) => u is Traversable_null
+
+interface Traversable_boolean extends JsonSchema.boolean, Traversable_Meta {}
+const Traversable_boolean = JsonSchema.boolean
+const Traversable_isBoolean = Traversable_boolean.is as (u: unknown) => u is Traversable_boolean
+
+interface Traversable_integer extends JsonSchema.integer, Traversable_Meta {}
+const Traversable_integer = JsonSchema.integer
+const Traversable_isInteger = Traversable_integer.is as (u: unknown) => u is Traversable_integer
+
+interface Traversable_number extends JsonSchema.number, Traversable_Meta {}
+const Traversable_number = JsonSchema.number
+const Traversable_isNumber = Traversable_number.is as (u: unknown) => u is Traversable_number
+
+interface Traversable_string extends JsonSchema.string, Meta.has<Meta.string> {}
+const Traversable_string = JsonSchema.string
+const Traversable_isString = Traversable_string.is as (u: unknown) => u is Traversable_string
+
+interface Traversable_enum extends Enum<{ type: "enum" }>, Traversable_Meta {}
+const Traversable_enum = t.object({ 
+  type: t.const("enum"), 
+  enum: t.array(t.any()),
 })
-const Traversable_isOneOf: <T>(u: unknown) => u is Traversable_oneOfF<T> = S.object({
-  type: S.const("oneOf"),
-  oneOf: S.array(S.any()),
+const Traversable_isEnum = Traversable_enum.is as (u: unknown) => u is Traversable_enum
+
+const Traversable_anyOf = t.object({
+  type: t.const("anyOf"),
+  anyOf: t.array(t.any()),
 })
-const Traversable_isAnyOf: <T>(u: unknown) => u is Traversable_anyOfF<T> = S.object({
-  type: S.const("anyOf"),
-  anyOf: S.array(S.any()),
+function Traversable_isAnyOf <T>(u: unknown): u is Traversable_anyOfF<T> 
+  { return Traversable_anyOf.is(u) }
+
+const Traversable_oneOf = t.object({
+  type: t.const("oneOf"),
+  oneOf: t.array(t.any()),
 })
-const Traversable_isAllOf: <T>(u: unknown) => u is Traversable_allOfF<T> = S.object({
-  type: S.const("allOf"),
-  allOf: S.array(S.any()),
+function Traversable_isOneOf<T>(u: unknown): u is Traversable_oneOfF<T> 
+  { return Traversable_oneOf.is(u) }
+
+const Traversable_allOf = t.object({
+  type: t.const("allOf"),
+  allOf: t.array(t.any()),
 })
-const Traversable_isArray: <T>(u: unknown) => u is Traversable_arrayF<T> = S.object({
-  type: S.const("array"),
-  items: S.any(),
+function Traversable_isAllOf<T>(u: unknown): u is Traversable_allOfF<T> 
+  { return Traversable_allOf.is(u) }
+
+const Traversable_array = t.object({
+  type: t.const("array"),
+  items: t.any(),
 })
-const Traversable_isObject: <T>(u: unknown) => u is Traversable_objectF<T> = S.object({
-  type: S.const("object"),
-  properties: S.record(S.any()),
+function Traversable_isArray<T>(u: unknown): u is Traversable_arrayF<T> 
+  { return Traversable_array.is(u) }
+
+const Traversable_object = t.object({
+  type: t.const("object"),
+  properties: t.record(t.any()),
 })
-const Traversable_isTuple: <T>(u: unknown) => u is Traversable_tupleF<T> = S.object({
-  type: S.const("tuple"),
-  items: S.array(S.any()),
+function Traversable_isObject<T>(u: unknown): u is Traversable_objectF<T> 
+  { return Traversable_object.is(u) }
+
+const Traversable_tuple = t.object({
+  type: t.const("tuple"),
+  items: t.array(t.any()),
 })
-const Traversable_isRecord: <T>(u: unknown) => u is Traversable_recordF<T> = S.object({
-  type: S.const("record"),
+const Traversable_isTuple 
+  = Traversable_tuple.is as <T>(u: unknown) => u is Traversable_tupleF<T>
+
+const Traversable_record = t.object({
+  type: t.const("record"),
 })
+const Traversable_isRecord = Traversable_record.is as <T>(u: unknown) => u is Traversable_recordF<T>
+
+const Traversable_Scalar = JsonSchema.Scalar
 const Traversable_isScalar = JsonSchema.is.scalar as (u: unknown) => u is Traversable_Scalar
-const Traversable_isCombinator: <T>(u: unknown) => u is Traversable_Combinator.F<T> = S.anyOf(
-  Traversable_isAllOf<never>,
-  Traversable_isAnyOf<never>,
-  Traversable_isOneOf<never>,
+
+const Traversable_isCombinator = t.anyOf(
+  Traversable_allOf,
+  Traversable_anyOf,
+  Traversable_oneOf,
 )
-const Traversable_isComposite: <T>(u: unknown) => u is Traversable_Composite.F<T> = S.anyOf(
-  Traversable_isArray<never>,
-  Traversable_isRecord<never>,
-  Traversable_isTuple<never>,
-  Traversable_isObject<never>,
+
+const Traversable_Composite = t.anyOf(
+  Traversable_array,
+  Traversable_record,
+  Traversable_tuple,
+  Traversable_object,
 )
+
+function Traversable_isComposite<T>(u: unknown): u is Traversable_Composite.F<T> 
+  { return Traversable_Composite.is(u) }
 
 const is_ = {
   null: Traversable_isNull,
@@ -368,9 +413,31 @@ const is_ = {
   composite: Traversable_isComposite,
 }
 
+type Traversable =
+  | Traversable_Scalar
+  | Traversable_Combinator
+  | Traversable_Special
+  | Traversable_Composite
+  ;
+
 const Traversable_is = Object_assign(
-  function Traversable_is<T>(u: unknown): u is Traversable_F<T> 
-    { return S.anyOf(is_.scalar, is_.combinator, is_.composite)(u) },
+  function Traversable_is<T>(u: unknown): u is Traversable_F<T> { 
+    return t.anyOf(
+      Traversable_null,
+      Traversable_boolean,
+      Traversable_integer,
+      Traversable_number,
+      Traversable_string,
+      Traversable_enum,
+      Traversable_allOf,
+      Traversable_anyOf,
+      Traversable_oneOf,
+      Traversable_array,
+      Traversable_record,
+      Traversable_tuple,
+      Traversable_object,
+    ).is(u)
+  },
   is_,
 )
 
@@ -408,8 +475,8 @@ const Traversable_Functor: Functor<Traversable_lambda, Traversable> = {
 /** @internal */
 const fromJsonSchema = (expr: JsonSchema.any) => {
   const meta = {
-    ...has("originalIndex", is.number)(expr) && { originalIndex: expr.originalIndex },
-    ...has("required", is.array(is.string))(expr) && { required: expr.required },
+    ...has("originalIndex", t.number().is)(expr) && { originalIndex: expr.originalIndex },
+    ...has("required", t.array(t.string()).is)(expr) && { required: expr.required },
   }
   switch (true) {
     default: return fn.softExhaustiveCheck(expr)
@@ -418,7 +485,7 @@ const fromJsonSchema = (expr: JsonSchema.any) => {
     case JsonSchema.is.allOf(expr): return { ...expr, type: "allOf", allOf: expr.allOf, }
     case JsonSchema.is.anyOf(expr): return { ...expr, type: "anyOf", anyOf: expr.anyOf }
     case JsonSchema.is.oneOf(expr): return { ...expr, type: "oneOf", oneOf: expr.oneOf }
-    case JsonSchema.is.array(expr): return { ...meta, ...expr, type: is.any.array(expr.items) ? "tuple" : "array" }
+    case JsonSchema.is.array(expr): return { ...meta, ...expr, type: is.array(expr.items) ? "tuple" : "array" }
     case JsonSchema.is.object(expr): return { ...expr, type: expr.properties ? "object" : "record" }
   }
 }

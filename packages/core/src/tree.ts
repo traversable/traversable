@@ -15,11 +15,6 @@ declare namespace Predicate {
 declare namespace Inductive {
   type stringIndex<T> = T | { [x: string]: Inductive.stringIndex<T> }
 }
-/** 
- * @internal 
- * References are cheap. These aliases allow us to only pay the
- * cost of lookup once.
- */
 /** @internal */
 const isComposite = object.isComposite
 /** @internal */

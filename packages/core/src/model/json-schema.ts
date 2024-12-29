@@ -1,24 +1,31 @@
-import type { Functor, HKT } from "@traversable/registry"
 import { fn } from "@traversable/data"
+import type { Functor, HKT } from "@traversable/registry"
 
+import { t } from "../guard/index.js"
+import { is } from "../guard/predicates.js"
+import * as tree from "../tree.js"
 import type { Meta } from "./meta.js"
 import type { Enum, Items, MaybeAdditionalProps, Props } from "./shared.js"
-import * as is from "../is.js"
-import * as tree from "../tree.js"
-import { and, anyOf } from "../guard.js"
 
 export type {
+  JsonSchema_F as F,
+  JsonSchema_Meta as Meta,
+  JsonSchema_lambda,
+  JsonSchema_allOfF as allOfF,
+  JsonSchema_anyOfF as anyOfF,
+  JsonSchema_oneOfF as oneOfF,
+  JsonSchema_objectF as objectF,
+  JsonSchema_arrayF as arrayF,
+}
+export {
   JsonSchema as any,
   JsonSchema_Combinator as Combinator,
   JsonSchema_Composite as Composite,
-  JsonSchema_F as F,
-  JsonSchema_Meta as Meta,
   JsonSchema_Scalar as Scalar,
   JsonSchema_null as null,
   JsonSchema_enum as enum,
   JsonSchema_boolean as boolean,
   JsonSchema_integer as integer,
-  JsonSchema_lambda,
   JsonSchema_number as number,
   JsonSchema_string as string,
   JsonSchema_allOf as allOf,
@@ -26,11 +33,6 @@ export type {
   JsonSchema_oneOf as oneOf,
   JsonSchema_object as object,
   JsonSchema_array as array,
-  JsonSchema_allOfF as allOfF,
-  JsonSchema_anyOfF as anyOfF,
-  JsonSchema_oneOfF as oneOfF,
-  JsonSchema_objectF as objectF,
-  JsonSchema_arrayF as arrayF,
 }
 
 export {
@@ -39,56 +41,137 @@ export {
 }
 
 interface JsonSchema_Meta extends Meta.JsonSchema {}
+interface JsonSchema_lambda extends HKT { [-1]: JsonSchema_F<this[0]> }
 
-type JsonSchema =
-  | JsonSchema_Scalar
-  | JsonSchema_Combinator
-  | JsonSchema_Composite
-  | JsonSchema_Special
+/** @internal */
+const Object_entries = globalThis.Object.entries
 
-type JsonSchema_null = { type: "null" }
-type JsonSchema_boolean = { type: "boolean" }
-type JsonSchema_integer = { type: "integer" }
-type JsonSchema_number = { type: "number" }
-type JsonSchema_string = { type: "string" }
+interface JsonSchema_null { type: "null" }
+const JsonSchema_null = t.object({ type: t.const("null") })
+const JsonSchema_isNull
+  : (u: unknown) => u is JsonSchema_null
+  = JsonSchema_null.is
+
+interface JsonSchema_boolean { type: "boolean" }
+const JsonSchema_boolean = t.object({ type: t.const("boolean") })
+const JsonSchema_isBoolean
+  : (u: unknown) => u is JsonSchema_boolean
+  = JsonSchema_boolean.is
+
+interface JsonSchema_integer { type: "integer" }
+const JsonSchema_integer = t.object({ type: t.const("integer") })
+const JsonSchema_isInteger
+  : (u: unknown) => u is JsonSchema_integer
+  = JsonSchema_integer.is
+
+interface JsonSchema_number { type: "number" }
+const JsonSchema_number = t.object({ type: t.const("number") })
+const JsonSchema_isNumber
+  : (u: unknown) => u is JsonSchema_number
+  = JsonSchema_number.is
+
+interface JsonSchema_string { type: "string" }
+const JsonSchema_string = t.object({ type: t.const("string") })
+const JsonSchema_isString
+  : (u: unknown) => u is JsonSchema_string
+  = JsonSchema_string.is
+
+interface JsonSchema_enum { enum: readonly unknown[] }
+const JsonSchema_enum = t.object({ enum: t.array(t.any()) })
+const JsonSchema_isEnum
+  : (u: unknown) => u is JsonSchema_enum
+  = JsonSchema_enum.is
+
+type JsonSchema_Special = JsonSchema_enum
 type JsonSchema_Scalar =
   | JsonSchema_null
   | JsonSchema_boolean
   | JsonSchema_integer
   | JsonSchema_number
   | JsonSchema_string
+  ;
+const JsonSchema_Scalar = t.anyOf(
+  JsonSchema_null,
+  JsonSchema_boolean,
+  JsonSchema_integer,
+  JsonSchema_number,
+  JsonSchema_string,
+)
 
-type JsonSchema_enum = { enum: readonly unknown[] }
-type JsonSchema_Special =
-  | JsonSchema_enum
+const JsonSchema_isScalar
+  : (u: unknown) => u is JsonSchema_Scalar
+  = JsonSchema_Scalar.is
 
-type JsonSchema_array =
-  | { type: "array", items: JsonSchema }
-  | { type: "array", items: readonly JsonSchema[] }
+interface JsonSchema_allOf { allOf: readonly JsonSchema[] }
+interface JsonSchema_allOfF<T> { allOf: readonly T[] }
+const JsonSchema_allOf = t.object({ allOf: t.array(t.any()) })
+const JsonSchema_isAllOf
+  : <T>(u: unknown) => u is JsonSchema_allOfF<T>
+  = tree.has("allOf", is.array) as never
 
-type JsonSchema_object = Props<JsonSchema, { type: "object" }> & MaybeAdditionalProps<JsonSchema> 
-type JsonSchema_objectF<T> = Props<T, { type: "object" }> & MaybeAdditionalProps<T>
-type JsonSchema_arrayF<T> =
-  | { type: "array", items: T }
-  | { type: "array", items: readonly T[] }
+interface JsonSchema_anyOf { anyOf: readonly JsonSchema[] }
+interface JsonSchema_anyOfF<T> { anyOf: readonly T[] }
+const JsonSchema_anyOf = t.object({ anyOf: t.array(t.any()) })
+const JsonSchema_isAnyOf
+  : <T>(u: unknown) => u is JsonSchema_anyOfF<T>
+  = JsonSchema_anyOf.is as never
+
+interface JsonSchema_oneOf { oneOf: readonly JsonSchema[] }
+interface JsonSchema_oneOfF<T> { oneOf: readonly T[] }
+const JsonSchema_oneOf = t.object({ oneOf: t.array(t.any()) })
+function JsonSchema_isOneOf<T>(u: unknown): u is JsonSchema_oneOfF<T>
+function JsonSchema_isOneOf(u: unknown) { return JsonSchema_oneOf.is(u) }
+
+interface JsonSchema_array { type: "array", items: JsonSchema | readonly JsonSchema[] }
+interface JsonSchema_arrayF<T> { type: "array", items: T | readonly T[] }
+
+const JsonSchema_array = t.object({ type: t.const("array") })
+function JsonSchema_isArray<T>(u: unknown): u is JsonSchema_arrayF<T> 
+function JsonSchema_isArray(u: unknown) { return JsonSchema_array.is(u) }
+
+interface JsonSchema_object extends 
+  MaybeAdditionalProps<JsonSchema>, 
+  Props<JsonSchema, { type: "object" }> {}
+
+interface JsonSchema_objectF<T> extends 
+  MaybeAdditionalProps<T>, 
+  Props<T, { type: "object" }> {}
+
+const JsonSchema_object = t.object({ type: t.const("object") })
+function JsonSchema_isObject<T>(u: unknown): u is JsonSchema_objectF<T>
+function JsonSchema_isObject(u: unknown) { return JsonSchema_object.is(u) && !("properties" in u) }
+
+type JsonSchema_Combinator =
+  | JsonSchema_allOf
+  | JsonSchema_anyOf
+  | JsonSchema_oneOf
+const JsonSchema_Combinator = t.anyOf(
+  JsonSchema_allOf,
+  JsonSchema_anyOf,
+  JsonSchema_oneOf,
+)
+
+function JsonSchema_isCombinator(u: unknown): u is JsonSchema_Combinator
+function JsonSchema_isCombinator(u: unknown) { return JsonSchema_Combinator.is(u) }
 
 type JsonSchema_Composite =
   | JsonSchema_array
   | JsonSchema_object
+const JsonSchema_Composite = t.anyOf(
+  JsonSchema_array,
+  JsonSchema_object,
+)
 
-type JsonSchema_allOf = { allOf: readonly JsonSchema[] }
-type JsonSchema_anyOf = { anyOf: readonly JsonSchema[] }
-type JsonSchema_oneOf = { oneOf: readonly JsonSchema[] }
-type JsonSchema_allOfF<T> = { allOf: readonly T[] }
-type JsonSchema_anyOfF<T> = { anyOf: readonly T[] }
-type JsonSchema_oneOfF<T> = { oneOf: readonly T[] }
-type JsonSchema_Combinator = 
-  | JsonSchema_allOf
-  | JsonSchema_anyOf
-  | JsonSchema_oneOf
+function JsonSchema_isComposite(u: unknown): u is JsonSchema_array | JsonSchema_object
+function JsonSchema_isComposite(u: unknown) { return JsonSchema_Composite.is(u) }
 
+type JsonSchema =
+  | JsonSchema_Scalar
+  | JsonSchema_Combinator
+  | JsonSchema_Composite
+  | JsonSchema_Special
+  ;
 
-interface JsonSchema_lambda extends HKT { [-1]: JsonSchema_F<this[0]> }
 type JsonSchema_F<T = any> =
   | JsonSchema_Scalar
   | Enum
@@ -98,96 +181,23 @@ type JsonSchema_F<T = any> =
   | Items<T, { type: "array" }>
   | JsonSchema_objectF<T>
   ;
+const JsonSchema = t.anyOf(
+  JsonSchema_null,
+  JsonSchema_boolean,
+  JsonSchema_integer,
+  JsonSchema_number,
+  JsonSchema_string,
+  JsonSchema_allOf,
+  JsonSchema_anyOf,
+  JsonSchema_oneOf,
+  JsonSchema_array,
+  JsonSchema_object,
+)
 
-/** @internal */
-const Object_entries = globalThis.Object.entries
-
-const JsonSchema_isNull 
-  : (u: unknown) => u is JsonSchema_null
-  = tree.has("type", is.literally("null"))
-
-const JsonSchema_isBoolean
-  : (u: unknown) => u is JsonSchema_boolean
-  = tree.has("type", is.literally("boolean"))
-
-const JsonSchema_isInteger 
-  : (u: unknown) => u is JsonSchema_integer
-  = tree.has("type", is.literally("integer"))
-
-const JsonSchema_isNumber 
-  : (u: unknown) => u is JsonSchema_number
-  = tree.has("type", is.literally("number"))
-
-const JsonSchema_isString 
-  : (u: unknown) => u is JsonSchema_string
-  = tree.has("type", is.literally("string"))
-
-const JsonSchema_isEnum
-  : (u: unknown) => u is JsonSchema_enum
-  = tree.has("enum", is.any.array) as never
-
-const JsonSchema_isScalar
-  : (u: unknown) => u is JsonSchema_Scalar 
-  = anyOf(
-    JsonSchema_isNull,
-    JsonSchema_isBoolean,
-    JsonSchema_isInteger,
-    JsonSchema_isNumber,
-    JsonSchema_isString,
-  )
-
-const JsonSchema_isAllOf
-  : <T>(u: unknown) => u is JsonSchema_allOfF<T> 
-  = tree.has("allOf", is.any.array) as never
-
-const JsonSchema_isAnyOf
-  : <T>(u: unknown) => u is JsonSchema_anyOfF<T> 
-  = tree.has("anyOf", is.any.array) as never
-
-const JsonSchema_isOneOf
-  : <T>(u: unknown) => u is JsonSchema_oneOfF<T> 
-  = tree.has("oneOf", is.any.array) as never
-
-const JsonSchema_isArray 
-  : <T>(u: unknown) => u is JsonSchema_arrayF<T> 
-  = tree.has("type", is.literally("array")) as never
-
-const JsonSchema_isObject 
-  : <T>(u: unknown) => u is JsonSchema_objectF<T> 
-  = and(
-    tree.has("type", is.literally("object")),
-    (u: unknown): u is never => is.any.record(u) && !("properties" in u)
-  )
-
-const JsonSchema_isCombinator 
-  : <T>(u: unknown) => u is JsonSchema_Combinator
-  = anyOf(
-    JsonSchema_isAllOf,
-    JsonSchema_isAnyOf,
-    JsonSchema_isOneOf,
-  ) as never
-
-const JsonSchema_isComposite 
-  : (u: unknown) => u is JsonSchema_array | JsonSchema_object
-  = is.or(
-    JsonSchema_isArray,
-    JsonSchema_isObject,
-  ) as never
+const zzz = JsonSchema.toJSON()
 
 function JsonSchema_is<T>(u: unknown): u is JsonSchema_F<T> {
-  return anyOf(
-    JsonSchema_isNull,
-    JsonSchema_isBoolean,
-    JsonSchema_isInteger,
-    JsonSchema_isNumber,
-    JsonSchema_isString,
-    JsonSchema_isEnum,
-    JsonSchema_isArray,
-    JsonSchema_isObject,
-    JsonSchema_isOneOf,
-    JsonSchema_isAnyOf,
-    JsonSchema_isAllOf,
-  )(u)
+  return JsonSchema.is(u)
 }
 
 void (JsonSchema_is.null = JsonSchema_isNull)

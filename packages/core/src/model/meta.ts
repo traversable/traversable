@@ -1,4 +1,5 @@
-import { S } from "@traversable/core/exports"
+import { t } from "../guard/index.js"
+import { Meta_Base as Base } from "./traversable.js"
 
 export { Meta }
 
@@ -10,14 +11,10 @@ declare namespace Meta {
   }
 }
 
+declare namespace Meta { export { Base } }
 declare namespace Meta { 
   type has<T> = { meta: T }
 
-  interface Base {
-    nullable: boolean
-    optional: boolean
-    path: (keyof any)[]
-  }
   interface Traversable<_ = unknown> extends Meta.Base {}
   interface JsonSchema<_ = unknown> { originalIndex?: number }
 
@@ -43,11 +40,14 @@ declare namespace Meta {
   interface Meta_number<_ = unknown> extends Meta.Base, Meta.Numeric {}
 }
 
-function Meta() {}
+function Meta() {
+  return t.object({
+    originalIndex: t.optional(t.number()),
+  })
+}
 
-Meta.is = S.object({
-  originalIndex: S.optional(S.number),
-})
+Meta.is = Meta().is
 
-interface Meta extends S.infer<typeof Meta.is> {}
+interface Meta extends t.infer<ReturnType<typeof Meta>> {}
+
 

@@ -1,5 +1,5 @@
 import type { key, keys, unicode } from "@traversable/data"
-import type { Indexable as S } from "@traversable/registry"
+import type { Entries, Indexable as S } from "@traversable/registry"
 import type { some } from "any-ts"
 
 /** @internal */
@@ -158,6 +158,18 @@ export function forEach
   (...args: [eff: mapfn<S, void>] | [object: S, eff: mapfn<S, void>]): 
     void | ((object: S) => void) /// impl.
   { return args.length === 1 ? map(...args) : void map(...args) }
+
+export namespace map {
+  export function entries<S, T>(f: (s: S) => T): (F: Entries<S>) => Entries<T>
+  export function entries<S, T>(f: (s: S) => T) 
+    { return (F: Entries<S>) => F.map(([k, v]) => [k, f(v)] satisfies [string, any]) }
+  export function record<S, T>(f: (s: S) => T): (F: Record<string, S>) => Record<string, T>
+  export function record<S, T>(f: (s: S) => T): (F: Record<string, S>) => Record<string, T> 
+    { return (F) => Object.fromEntries(Object.entries(F).map(([k, v]) => [k, f(v)] satisfies [string, any])) }
+  export function object<S, T>(f: (s: S) => T): <R extends Record<string, S>>(F: R) => { [K in keyof R]: T }
+  export function object<S, T>(f: (s: S) => T) { return map.record(f) }
+}
+
 
 // function unsafeBind<T extends {}, K extends keyof any, V>(
 //   object: T, 
