@@ -16,7 +16,7 @@ export {
   fromAST,
 }
 
-import { core, is, tree } from "@traversable/core"
+import { core, t, tree } from "@traversable/core"
 import { 
   Option, 
   array, 
@@ -95,13 +95,13 @@ function matchOptionality
     )
   }
 
-const normalizeNullability = tree.has("nullable", core.is.true)
+const normalizeNullability = tree.has("nullable", t.is.true)
 
 const normalizeOptionality 
   : (context: Internal.Context_object<any.dict>) => Option<readonly string[]>
   = ($) => fn.pipe(
     $.required,
-    Option.guard(core.is.array(core.is.string)),
+    Option.flatMap(Option.guard(t.array$(t.is.string))),
   )
 
 const parseAdditional 
@@ -119,7 +119,7 @@ const parseAdditional
 
 const parseExample
   : <T extends {}>(guard?: (u: unknown) => u is T) => (node: unknown, _prev?: Internal.Context, _$refs?: Refs) => Option<T>
-  = (guard = core.is.nonnullable as never) => fn.flow(
+  = (guard = t.is.nonnullable as never) => fn.flow(
     Option.guard(tree.has("example", guard)),
     Option.map(object.get.defer("example"))
   )
@@ -311,9 +311,9 @@ declare namespace Context {
 
   
 const OptionalFields = {
-  description: core.is.string,
-  additionalProperties: core.is.string,
-  required: core.is.array(core.is.string),
+  description: t.is.string,
+  additionalProperties: t.is.string,
+  required: t.is.array(t.is.string),
 } as const
 
 const createOptionalFieldsShape = <S, T extends S>(example: (src: S) => src is T) => ({
@@ -398,7 +398,7 @@ namespace Context {
         object.intersect.defer({
           additionalProperties: parseAdditional(node, prev, $refs),
           required: parseOptionality(node, prev),
-          example: parseExample(core.is.object.any)(node, prev, $refs),
+          example: parseExample(t.is.object)(node, prev, $refs),
         }),
         pair.duplicate,
         x=>x,
@@ -422,11 +422,10 @@ namespace Context {
       Context.apply(node, xf),
       object.intersect.defer({
         path: [...prev.path, symbol.string],
-        example: parseExample(core.is.any.record)(node),
+        example: parseExample(t.is.object)(node),
       }),
     )
   }
-
 
   /** TODO: rename to `handleArrayItems`? */
   export function handleArray(
@@ -438,7 +437,7 @@ namespace Context {
       ...prev,
       path: [...prev.path, symbol.number],
       /** Example is for the parent node (the array itself, not the `items` node) */
-      example: parseExample(core.is.any.array)(node),
+      example: parseExample(t.is.array)(node),
       userDefined: xf(prev.userDefined),
       isRequired: "required" in prev && Option.is(prev.required) && Option.isNone(prev.required),
       isNullable: normalizeNullability(items),
@@ -456,7 +455,7 @@ namespace Context {
       prev,
       Context.apply(node, xf),
       object.intersect.defer({
-        example: parseExample(core.is.array.any)(node),
+        example: parseExample(t.is.array)(node),
         minItems: node.minItems,
         maxItems: node.maxItems,
       }),
@@ -502,13 +501,13 @@ namespace Context {
         )
         const localDescription = fn.pipe(
           dereferenced,
-          Option.guard(tree.has("description", core.is.string)),
+          Option.guard(tree.has("description", t.is.string)),
           Option.map(object.get.defer("description")),
         )
         const optional = {
           isNullable: fn.pipe(
             dereferenced,
-            Option.guard(tree.has("nullable", core.is.boolean)),
+            Option.guard(tree.has("nullable", t.is.boolean)),
             Option.map((n) => n.nullable),
             Option.getOrElse(() => false),
           ),
@@ -591,7 +590,7 @@ namespace Context {
         object.intersect.defer({
           path: [...prev.path, ...optionality],
           format: Option.fromNullable(node.format),
-          example: parseExample(core.is.string)(node),
+          example: parseExample(t.is.string)(node),
         }),
       )
     }
@@ -604,7 +603,7 @@ namespace Context {
       prev,
       Context.apply(node, xf),
       object.intersect.defer({
-        example: parseExample(core.is.number)(node),
+        example: parseExample(t.is.number)(node),
         format: Option.fromNullable(node.format),
         maximum: Option.fromNullable(node.maximum),
         minimum: Option.fromNullable(node.minimum),
@@ -621,7 +620,7 @@ namespace Context {
       prev,
       Context.apply(node, xf),
       object.intersect.defer({
-        example: parseExample(core.is.number)(node),
+        example: parseExample(t.is.number)(node),
         format: Option.fromNullable(node.format),
         maximum: Option.fromNullable(node.maximum),
         minimum: Option.fromNullable(node.minimum),
@@ -1054,12 +1053,12 @@ namespace Nullary {
     return fn.pipe(
       Nullary.byName, 
       object.transform.defer({
-        string: (x) => ((context: Internal.Context_string) => ({ value: core.is.function(hooks?.string) ? hooks.string(fromInternalString(context)) : hooks?.string ?? "" })),
-        number: () => ((context: Internal.Context_number) => ({ value: core.is.function(hooks?.number) ? hooks.number(fromInternalNumber(context)) : hooks?.number ?? "" })),
-        integer: () => ((context: Internal.Context_integer) => ({ value: core.is.function(hooks?.integer) ? hooks.integer(fromInternalInteger(context)) : hooks?.integer ?? "" })),
-        boolean: () => ((context: Internal.Context) => ({ value: core.is.function(hooks?.boolean) ? hooks.boolean(context) : hooks?.boolean ?? "" })),
+        string: (x) => ((context: Internal.Context_string) => ({ value: t.is.function(hooks?.string) ? hooks.string(fromInternalString(context)) : hooks?.string ?? "" })),
+        number: () => ((context: Internal.Context_number) => ({ value: t.is.function(hooks?.number) ? hooks.number(fromInternalNumber(context)) : hooks?.number ?? "" })),
+        integer: () => ((context: Internal.Context_integer) => ({ value: t.is.function(hooks?.integer) ? hooks.integer(fromInternalInteger(context)) : hooks?.integer ?? "" })),
+        boolean: () => ((context: Internal.Context) => ({ value: t.is.function(hooks?.boolean) ? hooks.boolean(context) : hooks?.boolean ?? "" })),
         /** @deprecated - use `nullable` on {@link Context `Context`} instead */
-        null: () => ((context: Internal.Context) => ({ value: core.is.function(hooks?.null) ? hooks.null(context) : hooks?.null ?? "" })),
+        null: () => ((context: Internal.Context) => ({ value: t.is.function(hooks?.null) ? hooks.null(context) : hooks?.null ?? "" })),
       }),
     )
   }
@@ -1118,31 +1117,31 @@ namespace Unary {
       object.transform.defer({
         array: () => ({ 
           before: (context: Internal.Context_array) => 
-            (node: Schema.any) => tree.has("before", core.is.function)(hooks?.array) 
+            (node: Schema.any) => tree.has("before", t.is.function)(hooks?.array) 
               ? hooks.array.before(node, fromInternalArray(context)) 
               : node,
           after: (context: Internal.Context_array) => 
-            (node: string) => tree.has("after", core.is.function)(hooks?.array)
+            (node: string) => tree.has("after", t.is.function)(hooks?.array)
               ? hooks.array.after(node, fromInternalArray(context))
               : node,
         }),
         const: () => ({
           before: (context: Internal.Context) => 
-            (node: any.literal) => tree.has("before", core.is.function)(hooks?.const)
+            (node: any.literal) => tree.has("before", t.is.function)(hooks?.const)
               ? hooks.const.before(node, fromInternal(context))
               : node,
           after: (context: Internal.Context) => 
-            (node: string) => tree.has("after", core.is.function)(hooks?.const)
+            (node: string) => tree.has("after", t.is.function)(hooks?.const)
               ? hooks.const.after(node, fromInternal(context))
               : node,
         }),
         record: () => ({
           before: (context: Internal.Context_record) => 
-            (node: Schema.any) => tree.has("before", core.is.function)(hooks?.record)
+            (node: Schema.any) => tree.has("before", t.is.function)(hooks?.record)
               ? hooks!.record!.before?.(node, fromInternal(context))! 
               : node,
           after: (context: Internal.Context_record) => 
-            (node: string) => tree.has("after", core.is.function)(hooks?.record)
+            (node: string) => tree.has("after", t.is.function)(hooks?.record)
               ? hooks.record.after(node, fromInternal(context))
               : node,
         }),
@@ -1373,7 +1372,7 @@ namespace Root {
 
   export const banner
     : (hook: UserDefinitions["banner"]) => Root.Hooks["banner"]
-    = (hook) => core.is.defined(hook)
+    = (hook) => t.is.defined(hook)
       ? ($) => typeof hook === "string" ? hook : hook(fromInternal($))
       : fallbacks.banner
 
@@ -1394,15 +1393,15 @@ namespace Root {
   export const imports
     : (hook: UserDefinitions["imports"]) => Root.Hooks[`imports`] 
     = (hook) => !hook ? fallbacks.imports 
-      : ($) => (identifier) => core.is.function(hook) 
+      : ($) => (identifier) => t.is.function(hook) 
       ? hook(identifier, fromInternal($)) 
-      : core.is.string(hook) ? [hook] : hook
+      : t.is.string(hook) ? [hook] : hook
 
   export const identifier
     : (hook: UserDefinitions["identifier"]) => Root.Hooks[`identifier`] 
     = (hook) => ($) => (identifier, body) => 
       !hook ? fallbacks.identifier($)(identifier, body)
-      : core.is.string(hook) ? hook : hook(identifier, body, fromInternal($))
+      : t.is.string(hook) ? hook : hook(identifier, body, fromInternal($))
 
   export function defineHooks<H extends Part<Root.UserDefinitions>>(hooks?: H): Root.Hooks
   export function defineHooks(userland: Part<Root.UserDefinitions>): Root.Hooks {

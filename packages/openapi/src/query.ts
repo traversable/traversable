@@ -1,7 +1,7 @@
-import { JsonPointer, is, tree } from "@traversable/core"
+import { JsonPointer, t, tree } from "@traversable/core"
 import { fn } from "@traversable/data"
 import type { prop, props } from "@traversable/data"
-import { Invariant } from "@traversable/registry"
+import { Invariant, SCOPE } from "@traversable/registry"
 import type { Predicate } from "./types.js"
 
 export interface Dictionary
@@ -78,7 +78,7 @@ export function find(...qs: readonly Predicate[])
   { return (in_: {}, _out = []) => (void find.loop(in_, [], _out, qs), _out) }
 
 export declare namespace find {
-  type dependencies = [
+  type Deps = [
     src: {} | null | undefined, 
     path: prop.any[],
     refs: prop.any[][], 
@@ -87,16 +87,16 @@ export declare namespace find {
 }
 
 /// impl.
-find.loop = fn.loopN<find.dependencies, void>((src, ks, refs, qs, loop): void => {
+find.loop = fn.loopN<find.Deps, void>((src, ks, refs, qs, loop): void => {
   for (const q of qs) if (q(src, ks)) { 
     void refs.push(ks)
     break 
   }
   switch (true) {
-    case is.nullable(src): break
-    case is.primitive(src): break
-    case is.any.array(src): return src.forEach((x, ix) => loop(x, [...ks, ix], refs, qs))
-    case is.any.object(src): return Object_keys(src).forEach((k) => loop(src[k], [...ks, k], refs, qs))
+    case t.is.nullable(src): break
+    case t.is.primitive(src): break
+    case t.is.array(src): return src.forEach((x, ix) => loop(x, [...ks, ix], refs, qs))
+    case t.is.object(src): return Object_keys(src).forEach((k) => loop(src[k], [...ks, k], refs, qs))
     default: return Invariant.IllegalState("@traversable/openapi/find", src)
   }
 })
@@ -123,7 +123,7 @@ export function filter(qs: { [x: string]: Predicate }) /// impl.
   { return (in_: {}, _out = {}) => (filter.loop(in_, [], _out, Object_entries(qs)), _out) }
 
 export declare namespace filter {
-  type dependencies = [
+  type Deps = [
     node: {} | null | undefined, 
     path: prop.any[], 
     refs: { [x: string]: unknown[] }, 
@@ -131,17 +131,17 @@ export declare namespace filter {
   ]
 }
 
-filter.loop = fn.loopN<filter.dependencies, void>((src, ks, refs, qs, loop): void => {
+filter.loop = fn.loopN<filter.Deps, void>((src, ks, refs, qs, loop): void => {
   for (const [k, q] of qs) if (q(src, ks)) (
     void (refs[k] ??= []),
     void (refs[k].push(ks))
   )
   switch (true) {
-    case is.nullable(src): break
-    case is.primitive(src): break
-    case is.any.array(src): return src.forEach((x, ix) => loop(x, [...ks, ix], refs, qs))
-    case is.any.object(src): return Object_keys(src).forEach((k) => loop(src[k], [...ks, k], refs, qs))
-    default: return Invariant.IllegalState("@traversable/openapi/filter", src)
+    case t.is.nullable(src): break
+    case t.is.primitive(src): break
+    case t.is.array(src): return src.forEach((x, ix) => loop(x, [...ks, ix], refs, qs))
+    case t.is.object(src): return Object_keys(src).forEach((k) => loop(src[k], [...ks, k], refs, qs))
+    default: return Invariant.IllegalState(`${SCOPE}/openapi/filter`, src)
   }
 })
 
@@ -152,7 +152,7 @@ export function accessors(...qs: readonly Predicate[]) {
 }
 
 export declare namespace accessors {
-  type dependencies = [
+  type Deps = [
     cursor: {} | null | undefined, 
     path: prop.any[], 
     access: { [x: string]: {} | null | undefined },
@@ -161,32 +161,35 @@ export declare namespace accessors {
   ]
 }
 
-accessors.loop = fn.loopN<accessors.dependencies, void>((cursor, ks, access, qs, root, loop): void => {
+accessors.loop = fn.loopN<accessors.Deps, void>((cursor, ks, access, qs, root, loop): void => {
   for (const q of qs) if (q(cursor, ks)) {
     access[JsonPointer.fromPath(ks) || "/"] = tree.accessor(...ks)(root)
     // console.log("cursor", cursor)
     // console.log("ks", ks)
   }
     switch (true) {
-      case is.nullable(cursor): break
-      case is.primitive(cursor): break
-      case is.any.array(cursor): 
+      case t.is.nullable(cursor): break
+      case t.is.primitive(cursor): break
+      case t.is.array(cursor): 
         return cursor.forEach((x, ix) => loop(x, [...ks, ix], access, qs, root))
-      case is.any.object(cursor): 
+      case t.is.object(cursor): 
         return Object_keys(cursor).forEach((k) => loop(cursor[k], [...ks, k], access, qs, root))
       default: 
-        return Invariant.IllegalState("@traversable/openapi/accessors", cursor)
+        return Invariant.IllegalState(`${SCOPE}/openapi/accessors`, cursor)
     }
 
 })
 
 const qualifier = "/components/schemas"
-const qualify = (key: string) => qualifier + key
-const unqualify = (key: string) => key.startsWith(qualifier) ? key.substring(qualifier.length) : key
-
+const qualify = <K extends string>(key: K) => `${qualifier}${key}` as const
+type Unqualify<Rm extends string, S extends string> = S extends `${Rm}${infer T}` ? T : S
+function unqualify<K extends string>(key: K): Unqualify<typeof qualifier, K> 
+function unqualify<K extends string>(key: K) {
+  return key.startsWith(qualifier) ? key.substring(qualifier.length) : key
+}
 
 export declare namespace normalize {
-  type dependencies = [
+  type Deps = [
     cursor: {} | null | undefined, 
     path: prop.any[], 
     access: { [x: string]: {} | null | undefined },

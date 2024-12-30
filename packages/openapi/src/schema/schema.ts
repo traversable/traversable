@@ -854,11 +854,11 @@ export namespace has {
   void (has.const = hasConst)
   ///
   export const items = tree.has("items")
-  export const itemsSetToFalse = tree.has("items", core.is.literally(false))
-  export const properties = tree.has("properties", core.is.object.any)
+  export const itemsSetToFalse = tree.has("items", core.t.is.literally(false))
+  export const properties = tree.has("properties", core.t.is.object)
   export const additionalProperties = tree.has(
     "additionalProperties",
-    core.or(core.is.boolean, core.is.object.any),
+    core.t.or$(core.t.is.boolean, core.t.is.object),
   )
   export const atLeastOneProperty
     : (u: { properties?: {} }) => boolean 

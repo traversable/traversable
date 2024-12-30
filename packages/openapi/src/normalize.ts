@@ -1,4 +1,4 @@
-import { JsonPointer, core, is, tree } from "@traversable/core"
+import { JsonPointer, core, t, tree } from "@traversable/core"
 import { fn, type props } from "@traversable/data"
 
 import type { Partial } from "@traversable/registry"
@@ -53,11 +53,11 @@ export function normalize<R>(...args: Predicate<R>[] | [options: Options, ...pre
   const sourcePointer = `#${JsonPointer.fromPath(source)}` as const
   const targetPredicate = tree.has(
     ...target, 
-    core.anyOf(
-      tree.has("type", is.string),
-      tree.has("allOf", is.any.array),
-      tree.has("anyOf", is.any.array),
-      tree.has("oneOf", is.any.array),
+    core.t.anyof$(
+      tree.has("type", t.is.string),
+      tree.has("allOf", t.is.array),
+      tree.has("anyOf", t.is.array),
+      tree.has("oneOf", t.is.array),
     )
   )
 

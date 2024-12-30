@@ -1,7 +1,5 @@
-import { fc, is, test, tree } from "@traversable/core"
 import * as vi from "vitest"
 
-import { fn } from "@traversable/data"
 import { openapi } from "@traversable/openapi"
 
 const [hooks] = openapi.Interpreter.define({

@@ -1,4 +1,4 @@
-import { core, fc, is, tree, zip } from "@traversable/core"
+import { core, fc, t, tree, zip } from "@traversable/core"
 import { fn, map, object } from "@traversable/data"
 import { http } from "@traversable/http"
 import { PATTERN } from "@traversable/registry"
@@ -13,7 +13,7 @@ type inline<T> = T
 type autocomplete<T> = T | (string & {})
 
 /** @internal */
-const predicate = tree.has("schemas", tree.has("type", is.string))
+const predicate = tree.has("schemas", tree.has("type", t.is.string))
 /** @internal */
 const normalize = N.normalize(predicate)
 
@@ -712,7 +712,7 @@ export function mediatype(_: mediatype.Constraints = mediatype.defaults) {
     {
       schema: constraints.schema ?? mediatype.defaults.schema, // fc.oneof(Ref.typedef, Schema.any),
       ...constraints?.include?.description && { description: fc.lorem() },
-      ...constraints?.include?.examples && { examples: fc.dictionary(fc.jsonValue().filter(core.is.notNull)) },
+      ...constraints?.include?.examples && { examples: fc.dictionary(fc.jsonValue().filter((x) => x !== null)) },
       // encoding: fc.dictionary(fc.string(), Encoding),
       // TODO: `Mediatype` is disjoint on `example` and `examples` IRL
       // const ExampleXORExamples = fc.oneof(Example, Finite.Examples)

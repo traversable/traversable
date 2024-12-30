@@ -1,13 +1,13 @@
-import { and, fc, is, or, test, tree } from "@traversable/core"
+import { fc, t, test, tree } from "@traversable/core"
 import { fn } from "@traversable/data"
 import { openapi } from "@traversable/openapi"
 import * as vi from "vitest"
 
-const hasSchema = tree.has("schema", is.any.object)
+const hasSchema = tree.has("schema", t.is.object)
 const Array_isArray = globalThis.Array.isArray
-const isObjectNode = and(
-  tree.has("type", is.literally("object")),
-  tree.has("properties", is.any.object),
+const isObjectNode = t.and$(
+  tree.has("type", t.is.literally("object")),
+  tree.has("properties", t.is.object),
 )
 
 const ex_01 = {
@@ -341,7 +341,7 @@ vi.describe("〖⛳️〗‹‹‹ ❲@traversable/openapi/query❳", () => {
     `)
 
     vi.expect(
-      openapi.find(tree.has("schema", is.any.object))({ 
+      openapi.find(tree.has("schema", t.is.object))({ 
         schema: { 
           schema: [
             { schema: "non-object, should not appear among query results" },
@@ -668,7 +668,7 @@ vi.describe("〖⛳️〗‹‹‹ ❲@traversable/openapi/query❳", () => {
     `)
   })
 
-  test.prop([fc.nat(), fc.jsonValue().filter(is.nonnullable)], { verbose: 2 })(
+  test.prop([fc.nat(), fc.jsonValue().filter(t.is.nonnullable)], { verbose: 2 })(
     "〖🌍〗‹ ❲openapi.query «» openapi.filter❳", 
     (n, json) => vi.assert.deepEqual(
       openapi.query({ 
@@ -682,7 +682,7 @@ vi.describe("〖⛳️〗‹‹‹ ❲@traversable/openapi/query❳", () => {
     )
   )
 
-  test.prop([fc.nat(), fc.jsonValue().filter(is.nonnullable)], {})(
+  test.prop([fc.nat(), fc.jsonValue().filter(t.is.nonnullable)], {})(
     "〖🌍〗‹ ❲openapi.query «» openapi.find❳", 
     (n, json) => vi.assert.deepEqual(
       openapi.query([
@@ -701,13 +701,13 @@ vi.describe("〖⛳️〗‹‹‹ ❲@traversable/openapi❳", () => {
 
   vi.test("〖⛳️〗‹ ❲openapi.accessors❳", () => {
     vi.assert.deepEqual(
-      openapi.accessors(is.any.object)
+      openapi.accessors(t.is.object)
       ({}),
       { ["/"]: {} }
     )
 
     vi.assert.deepEqual(
-      openapi.accessors(is.any.object)
+      openapi.accessors(t.is.object)
       ({ a: {} }),
       { 
         ["/"]: { a: {} },
@@ -716,13 +716,13 @@ vi.describe("〖⛳️〗‹‹‹ ❲@traversable/openapi❳", () => {
     )
 
     vi.assert.deepEqual(
-      openapi.accessors(is.any.array)
+      openapi.accessors(t.is.array)
       ({ a: [] }),
       { ["/a"]: [] }
     )
 
     vi.assert.deepEqual(
-      openapi.accessors(is.any.record)
+      openapi.accessors(t.is.object)
       ({ a: { b: { c: 0 } } }),
       { 
         ["/"]: { a: { b: { c: 0 } } },
@@ -734,7 +734,7 @@ vi.describe("〖⛳️〗‹‹‹ ❲@traversable/openapi❳", () => {
 
   vi.test("〖⛳️〗‹ ❲openapi.accessors❳", () => {
     const ex_04 = { abc: { def: { properties: { abc: 123, def: 456, ghi: { jkl: 789 } } } } }
-    let accessors = openapi.accessors(tree.has("properties", is.any.object))(ex_04)
+    let accessors = openapi.accessors(tree.has("properties", t.is.object))(ex_04)
 
     void (accessors["/abc/def"].properties = { xyz: 789 })
 
@@ -759,7 +759,7 @@ vi.describe("〖⛳️〗‹‹‹ ❲@traversable/openapi❳", () => {
       c: { a: 8, b: 9 } 
     }
 
-    let accessors = openapi.accessors(is.any.object)(ex_06)
+    let accessors = openapi.accessors(t.is.object)(ex_06)
 
     vi.assert.deepEqual(
       accessors, 
@@ -798,7 +798,7 @@ vi.describe("〖⛳️〗‹‹‹ ❲@traversable/openapi❳", () => {
       from: dequalify,
     }
 
-    const getDocumentSchemas = openapi.accessors(tree.has("schema", or(tree.has("type", is.string), tree.has("$ref"))))
+    const getDocumentSchemas = openapi.accessors(tree.has("schema", t.or$(tree.has("type", t.is.string), tree.has("$ref"))))
     let accessors = getDocumentSchemas(ex_02)
 
     ///////////////

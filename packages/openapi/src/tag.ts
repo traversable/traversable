@@ -14,9 +14,9 @@ const Array_isArray
 export type URI = typeof URI[keyof typeof URI]
 export const URI = object.pick(
   symbol, 
-  "union",
-  "disjoint",
-  "intersection",
+  "anyOf",
+  "oneOf",
+  "allOf",
   "null",
   "boolean",
   "integer",
@@ -41,9 +41,9 @@ export type Tag =
   | Tag.integer
   | Tag.number
   | Tag.string
-  | Tag.intersection
-  | Tag.union
-  | Tag.disjoint
+  | Tag.allOf
+  | Tag.anyOf
+  | Tag.oneOf
   | Tag.record
   | Tag.tuple
   | Tag.array
@@ -59,9 +59,9 @@ export declare namespace Tag {
     Tag_integer as integer,
     Tag_number as number,
     Tag_string as string,
-    Tag_intersection as intersection,
-    Tag_union as union,
-    Tag_disjoint as disjoint,
+    Tag_allOf as allOf,
+    Tag_anyOf as anyOf,
+    Tag_oneOf as oneOf,
     Tag_record as record,
     Tag_tuple as tuple,
     Tag_array as array,
@@ -74,17 +74,17 @@ export declare namespace Tag {
   interface Tag_integer { [symbol.tag]: symbol.integer, type: "integer" }
   interface Tag_number { [symbol.tag]: symbol.number, type: "number" }
   interface Tag_string { [symbol.tag]: symbol.string, type: "string" }
-  interface Tag_intersection { [symbol.tag]: symbol.intersection, allOf: readonly Tag[] }
-  interface Tag_union { [symbol.tag]: symbol.union, anyOf: readonly Tag[] }
-  interface Tag_disjoint { [symbol.tag]: symbol.disjoint, oneOf: readonly Tag[] }
+  interface Tag_allOf { [symbol.tag]: symbol.allOf, allOf: readonly Tag[] }
+  interface Tag_anyOf { [symbol.tag]: symbol.anyOf, anyOf: readonly Tag[] }
+  interface Tag_oneOf { [symbol.tag]: symbol.oneOf, oneOf: readonly Tag[] }
   interface Tag_array { [symbol.tag]: symbol.array, type: "array", items: Tag }
   interface Tag_record { [symbol.tag]: symbol.record, type: "object", additionalProperties: Tag, properties?: { [x: string]: Tag } }
   interface Tag_tuple { [symbol.tag]: symbol.tuple, type: "array", items: readonly Tag[] }
   interface Tag_object { [symbol.tag]: symbol.object, type: "object", properties: { [x: string]: Tag } }
 
-  interface intersectionF<R> { [symbol.tag]: symbol.intersection, allOf: readonly R[] }
-  interface unionF<R> { [symbol.tag]: symbol.union, anyOf: readonly R[] }
-  interface disjointF<R> { [symbol.tag]: symbol.disjoint, oneOf: readonly R[] }
+  interface allOfF<R> { [symbol.tag]: symbol.allOf, allOf: readonly R[] }
+  interface unionF<R> { [symbol.tag]: symbol.anyOf, anyOf: readonly R[] }
+  interface oneOfF<R> { [symbol.tag]: symbol.oneOf, oneOf: readonly R[] }
   interface arrayF<R> { [symbol.tag]: symbol.array, type: "array", items: R }
   interface recordF<R> { [symbol.tag]: symbol.record, type: "object", additionalProperties: R, properties?: { [x: string]: R } }
   interface tupleF<R> { [symbol.tag]: symbol.tuple, type: "array", items: readonly R[] }
@@ -103,9 +103,9 @@ export declare namespace Tag {
     | { [symbol.tag]: symbol.object, type: "object", properties: { [x: string]: T } }
     | { [symbol.tag]: symbol.array, type: "array", items: T }
     | { [symbol.tag]: symbol.record, type: "object", additionalProperties: T, properties?: { [x: string]: T } }
-    | { [symbol.tag]: symbol.intersection, allOf: readonly T[] }
-    | { [symbol.tag]: symbol.union, anyOf: readonly T[] }
-    | { [symbol.tag]: symbol.disjoint, oneOf: readonly T[] }
+    | { [symbol.tag]: symbol.allOf, allOf: readonly T[] }
+    | { [symbol.tag]: symbol.anyOf, anyOf: readonly T[] }
+    | { [symbol.tag]: symbol.oneOf, oneOf: readonly T[] }
     ;
   type rm<T> 
     = T extends Scalar ? T 
@@ -149,9 +149,9 @@ export function tagAlgebra<T>(xs: Schema.F<T>): T
 export function tagAlgebra<T>(xs: Schema.F<T>) {
   if (!("type" in xs)) switch (true) {
     default: return fn.exhaustive(xs)
-    case "allOf" in xs: return { ...xs, [symbol.tag]: symbol.intersection }
-    case "anyOf" in xs: return { ...xs, [symbol.tag]: symbol.intersection }
-    case "oneOf" in xs: return { ...xs, [symbol.tag]: symbol.disjoint }
+    case "allOf" in xs: return { ...xs, [symbol.tag]: symbol.allOf }
+    case "anyOf" in xs: return { ...xs, [symbol.tag]: symbol.anyOf }
+    case "oneOf" in xs: return { ...xs, [symbol.tag]: symbol.oneOf }
   }
   else switch (true) {
     default: return fn.exhaustive(xs)

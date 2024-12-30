@@ -11,7 +11,7 @@
 
 import { 
   core,
-  is,
+  t,
   tree,
 } from "@traversable/core"
 import { 
