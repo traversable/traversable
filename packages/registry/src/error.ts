@@ -1,4 +1,5 @@
 import { default as pkg } from "./__generated__/__manifest__.js"
+import { SCOPE } from "./version.js"
 
 function throw_<T>(v: T): never {
   throw v
@@ -25,9 +26,9 @@ Error.withTrace = <
   })
 
 export const SymbolNotFound = (symbol: symbol) =>
-  Error(`'@traversable/registry' was unable to locate symbol 'Symbol(${symbol.toString()})`)
+  Error(`'${SCOPE}/registry' was unable to locate symbol 'Symbol(${symbol.toString()})`)
 
-export const URINotFound = (uri: string) => Error(`'@traversable/registry' was unable to locate uri '${uri}'`)
+export const URINotFound = (uri: string) => Error(`'${SCOPE}/registry' was unable to locate uri '${uri}'`)
 
 export const FileNotFound = (filename: string) => Error("FileNotFound")("'" + filename + "'")
 

@@ -103,20 +103,20 @@ namespace URI {
   export type finite = typeof URI.finite
   export const nonfinite = `${ns}::NonFinite` as const
   export type nonfinite = typeof URI.nonfinite
-  export const union = `${ns}::Union` as const
+  export const anyOf = `${ns}::AnyOf` as const
   export const integer = `${ns}::Integer` as const
   export type integer = typeof URI.integer
-  export type union = typeof URI.union
+  export type anyOf = typeof URI.anyOf
   export const array = `${ns}::Array` as const
   export type array = typeof URI.array
   export const record = `${ns}::Record` as const
   export type record = typeof URI.record
   export const tuple = `${ns}::Tuple` as const
   export type tuple = typeof URI.tuple
-  export const intersection = `${ns}::Intersection` as const
-  export type intersection = typeof URI.intersection
-  export const disjoint = `${ns}::DisjointUnion` as const
-  export type disjoint = typeof URI.disjoint
+  export const allOf = `${ns}::AllOf` as const
+  export type allOf = typeof URI.allOf
+  export const oneOf = `${ns}::OneOf` as const
+  export type oneOf = typeof URI.oneOf
   export const tag = `${ns}::tag` as const
   export type tag = typeof URI.tag
   /// URIs that __do__ have an associated symbol
@@ -178,8 +178,8 @@ namespace symbol_ {
   export type finite = typeof symbol_.finite
   export const nonfinite = Symbol.for(URI.nonfinite)
   export type nonfinite = typeof symbol_.nonfinite
-  export const union = Symbol.for(URI.union)
-  export type union = typeof symbol_.union
+  export const anyOf = Symbol.for(URI.anyOf)
+  export type anyOf = typeof symbol_.anyOf
   export const integer = Symbol.for(URI.integer)
   export type integer = typeof symbol_.integer
   export const array = Symbol.for(URI.array)
@@ -188,10 +188,10 @@ namespace symbol_ {
   export type record = typeof symbol_.record
   export const tuple = Symbol.for(URI.tuple)
   export type tuple = typeof symbol_.tuple
-  export const intersection = Symbol.for(URI.intersection)
-  export type intersection = typeof symbol_.intersection
-  export const disjoint = Symbol.for(URI.disjoint)
-  export type disjoint = typeof symbol_.disjoint
+  export const allOf = Symbol.for(URI.allOf)
+  export type allOf = typeof symbol_.allOf
+  export const oneOf = Symbol.for(URI.oneOf)
+  export type oneOf = typeof symbol_.oneOf
   export const tag = Symbol.for(URI.tag)
   export type tag = typeof symbol_.tag
 }

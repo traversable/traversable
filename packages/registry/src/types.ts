@@ -171,13 +171,14 @@ export declare namespace Position {
 export interface HKT<I = unknown, O = unknown> extends newtype<{ [0]: I; [-1]: O }> {}
 export type apply<F extends HKT, T extends F[0]> = never | (F & { [0]: T })[-1]
 export type apply$<F, T> = never | (F & { [0]: T; [-1]: unknown })[-1]
+export type apply_<F extends HKT, T> = never | (F & { [0]: T })[-1]
 export type forall<F extends HKT> = HKT.apply<F, unknown>
 
 export declare function apply$<F>(F: F): <T>(t: T) => HKT.apply$<F, T>
 
 type HKT_const<T> = HKT<unknown, T>
 export declare namespace HKT {
-  export { apply, apply$, forall, HKT_const as const }
+  export { apply, apply$, apply_, forall, HKT_const as const }
   export interface satisfies<F extends HKT> extends newtype<F[0] & {}> {}
   export type unapply<F extends HKT> = F extends HKT & infer T ? T : never
   export type product<F extends HKT, T> = HKT.apply<F, [F, T]>
