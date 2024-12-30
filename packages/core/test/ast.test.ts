@@ -1,12 +1,11 @@
 import * as vi from "vitest"
 
-import type { Entries, Functor, HKT, Option, Result } from "@traversable/registry"
-import { symbol, URI } from "@traversable/registry"
 import { fn } from "@traversable/data"
+import type { Entries, Functor, HKT, Option, Result } from "@traversable/registry"
+import { URI, symbol } from "@traversable/registry"
 
-import { fc, show, TagTree, test, toString, toPaths } from "@traversable/core"
+import { TagTree, fc, show, t, test, toPaths, toString } from "@traversable/core"
 import type { TagTreeMap } from "@traversable/core"
-import { fromSeed, interpretPath } from "@traversable/core/guard/ast-lite"
 
 type Options = Partial<fc.OneOfConstraints>
 const defaults = {
@@ -105,6 +104,7 @@ const defaults = {
 const tagTree = ($: Options = defaults) => fc.letrec(
   (loop: fc.LetrecTypedTie<TagTreeMap>) => ({
     null: fc.constant(TagTree.make.null()),
+    anyOf: fc.array(loop("tree")).map(TagTree.make.anyOf),
     boolean: fc.constant(TagTree.make.boolean()),
     integer: fc.constant(TagTree.make.integer()),
     number: fc.constant(TagTree.make.number()),
@@ -149,48 +149,54 @@ const obj = tagTree({ maxDepth: 10, depthSize: "large" }).tree
 
 vi.describe(`〖⛳️️〗‹‹‹ ❲@traversable/core/ast❳`, () => {
   vi.it(`〖️⛳️️〗 ›  ❲ast.toPaths❳: empty object case`, () => {
-    const ex_01 = fromSeed([ symbol.object, [["a", [symbol.object, []]]]])
+    const ex_01 = t.Lite.fromSeed([ symbol.object, [["a", [symbol.object, []]]]])
     const paths_01 = toPaths(ex_01)
     vi.assert.deepEqual(ex_01, { _tag: "object", _type: { a: { _tag: "object", _type: {} } } })
     vi.assert.deepEqual( paths_01, [["a", { leaf: {} }]])
   })
   vi.it(`〖️⛳️️〗 ›  ❲ast.toPaths❳: empty tuple case`, () => {
-    const ex_02 = fromSeed([ symbol.object, [["a", [symbol.tuple, []]]]])
+    const ex_02 = t.Lite.fromSeed([ symbol.object, [["a", [symbol.tuple, []]]]])
     const paths_02 = toPaths(ex_02)
     vi.assert.deepEqual(ex_02, { _tag: "object", _type: { a: { _tag: "tuple", _type: [] } } }) 
     vi.assert.deepEqual(paths_02, [["a", { leaf: [] }]])
   })
-  vi.it(`〖️⛳️️〗 ›  ❲ast.interpretPath❳`, () => {
+  vi.it(`〖️⛳️️〗 ›  ❲ast.path.interpreter❳`, () => {
+    const ex_01 = [ 
+      "aBc", 
+      "j",
+      1,
+      "k",
+      0,
+      symbol.record,
+      symbol.array,
+      "deF",
+      symbol.optional,
+      symbol.optional,
+      "GHi",
+      { leaf: "null" },
+    ] as const
+
     vi.assert.equal(
-      interpretPath([
-        "aBc", 
-        "j", 1, 
-        "k", 0, 
-        symbol.record, 
-        symbol.array, 
-        "deF", 
-        symbol.optional, 
-        symbol.optional, 
-        "GHi", 
-        { leaf: "null" } 
-      ]).join(""), 
+      t.path.interpreter(
+        t.path.docs, 
+        ex_01
+      ).join(""), 
       "aBc.j[1].k[0][string][number].deF?.GHi"
     )
   })
 
   test.prop([obj], {})("generated", (obj) => {
-    const ast = fromSeed(obj)
+    const ast = t.Lite.fromSeed(obj)
     const paths = toPaths(ast)
 
-
     console.log("\n\nAST\n", show.serialize(ast, "leuven"))
-    console.log(fromSeed([ symbol.object, [['a', [symbol.object, []]]] ])) 
-    console.log(toPaths(fromSeed([ symbol.object, [['a', [symbol.object, []]]] ])))
+    console.log(t.Lite.fromSeed([ symbol.object, [['a', [symbol.object, []]]] ])) 
+    console.log(toPaths(t.Lite.fromSeed([ symbol.object, [['a', [symbol.object, []]]] ])))
     console.log("\n\ntoPaths\n", show.serialize(paths, "leuven"))
 
     for (const ks of paths) {
       console.log("ks", ks)
-      console.log("interpreted", interpretPath(ks))
+      console.log("interpreted", t.path.interpreter(t.path.docs, ks))
     }
 
   // aBc[1][0][string].deF?.GHi

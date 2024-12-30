@@ -24,6 +24,7 @@ export {
   object,
   optional,
 } from "./ast.js"
+export * as path from "./path.js"
 
 /// TODO: TMP
 export * as Lite from "./ast-lite.js"

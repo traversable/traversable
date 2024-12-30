@@ -37,7 +37,12 @@ export const nullable$ = <T>(guard: (u: unknown) => u is T) => or$(guard, null_)
 
 ///////////////////////
 ///    composite    ///
-export const literally = <T extends {} | null | undefined>(value: T) => (u: unknown): u is T => Object_is(value, u)
+export function literally<T extends {} | null | undefined>(value: T): (u: unknown) => u is T 
+export function literally<T extends {} | null | undefined>(...values: readonly T[]): (u: unknown) => u is T 
+export function literally(...values: readonly ({} | null | undefined)[]): (u: unknown) => u is never {
+  return (u): u is never => values.includes(u)
+}
+
 export const key = anyof$(symbol, number, string)
 export const showable = (u: unknown) => u == null
   || typeof u === "boolean"
@@ -50,6 +55,14 @@ export const primitive = (u: unknown) => u == null
   || typeof u === "bigint"
   || typeof u === "string"
   || typeof u === "symbol"
+export const true_ = (u: unknown): u is true => u === true
+export const false_ = (u: unknown): u is false => u === false
 
-// export const showable = anyof$(null_, undefined_, boolean, number, bigint, string, symbol)
-// export const primitive = anyof$(null_, undefined_, boolean, number, bigint, string, symbol)
+export const defined = (u: {} | null | undefined): u is {} | null => u !== undefined
+export const notnull = (u: {} | null | undefined): u is {} | undefined => u !== null
+export const nullable = (u: {} | null | undefined): u is null | undefined => u == null
+export const nonnullable = (u: {} | null | undefined): u is {} => u != null
+
+export const nonempty = {
+  array: <T>(xs: T[] | readonly T[]): xs is { [0]: T } & typeof xs => xs.length > 1
+}

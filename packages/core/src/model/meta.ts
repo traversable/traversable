@@ -1,5 +1,5 @@
 import { t } from "../guard/index.js"
-import { Meta_Base as Base } from "./traversable.js"
+import type { Meta_Base as Base } from "./traversable.js"
 
 export { Meta }
 
@@ -13,7 +13,7 @@ declare namespace Meta {
 
 declare namespace Meta { export { Base } }
 declare namespace Meta { 
-  type has<T> = { meta: T }
+  type has<T> = { meta?: T }
 
   interface Traversable<_ = unknown> extends Meta.Base {}
   interface JsonSchema<_ = unknown> { originalIndex?: number }

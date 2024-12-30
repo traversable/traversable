@@ -61,7 +61,6 @@ export declare namespace AST {
     _type: T,
     is(u: unknown): u is unknown
   }
-  type F<T> = NodeF<null> | NodeF<boolean>
 }
 
 export namespace AST {

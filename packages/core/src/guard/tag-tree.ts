@@ -23,6 +23,8 @@ export type TagTree_record = [_tag: symbol.record, _type: TagTree]
 export type TagTree_recordF<T> = [_tag: symbol.record, _type: T]
 export type TagTree_tuple = [_tag: symbol.tuple, _type: readonly TagTree[]]
 export type TagTree_tupleF<T> = [_tag: symbol.tuple, _type: readonly T[]]
+export type TagTree_anyOf = [_tag: symbol.anyOf, _type: readonly TagTree[]]
+export type TagTree_anyOfF<T> = [_tag: symbol.anyOf, _type: readonly T[]]
 export type TagTree_object = [_tag: symbol.object, _type: Entries<TagTree>]
 export type TagTree_objectF<T> = [_tag: symbol.object, _type: Entries<T>]
 
@@ -44,6 +46,7 @@ export type TagTree =
   | TagTree_optional
   | TagTree_array
   | TagTree_record
+  | TagTree_anyOf
   | TagTree_tuple
   | TagTree_object
   ;
@@ -54,6 +57,7 @@ export type Unary = {
   [symbol.record]: TagTree.recordLambda
   [symbol.tuple]: TagTree.tupleLambda
   [symbol.object]: TagTree.objectLambda
+  [symbol.anyOf]: TagTree.anyOfLambda
 }
 
 export type TagTreeMap = {
@@ -73,6 +77,7 @@ export declare namespace TagTree {
   interface lambda extends HKT { [-1]: TagTree.F<this[0]> }
   interface optionalLambda extends HKT { [-1]: TagTree_optionalF<this[0]> }
   interface arrayLambda extends HKT { [-1]: TagTree_arrayF<this[0]> }
+  interface anyOfLambda extends HKT { [-1]: TagTree_anyOfF<this[0]> }
   interface tupleLambda extends HKT { [-1]: TagTree_tupleF<this[0]> }
   interface objectLambda extends HKT { [-1]: TagTree_objectF<this[0]> }
   interface recordLambda extends HKT { [-1]: TagTree_recordF<this[0]> }
@@ -82,6 +87,7 @@ export declare namespace TagTree {
     | TagTree_arrayF<T>
     | TagTree_recordF<T>
     | TagTree_tupleF<T>
+    | TagTree_anyOfF<T>
     | TagTree_objectF<T>
     ;
 }
@@ -103,6 +109,7 @@ export namespace TagTree {
     optional: unary(symbol.optional),
     array: unary(symbol.array),
     record: unary(symbol.record),
+    anyOf: unary(symbol.anyOf),
     tuple: unary(symbol.tuple),
     object: unary(symbol.object),
   } satisfies Record<string, (_: never) => TagTree>
@@ -118,11 +125,11 @@ export namespace TagTree {
           case x[0] === symbol.boolean:
           case x[0] === symbol.integer:
           case x[0] === symbol.number:
-          case x[0] === symbol.string:
-          case x[0] === symbol.boolean: return x
+          case x[0] === symbol.string: return x
           case x[0] === symbol.array: 
           case x[0] === symbol.optional:
           case x[0] === symbol.record: return [x[0], f(x[1])]
+          case x[0] === symbol.anyOf:
           case x[0] === symbol.tuple: return [x[0], map(x[1], f)]
           case x[0] === symbol.object: return [x[0], map.entries(f)(x[1])]
         }

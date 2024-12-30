@@ -5,7 +5,7 @@ import { t } from "../guard/index.js"
 import { is } from "../guard/predicates.js"
 import { has } from "../tree.js"
 import * as JsonSchema from "./json-schema.js"
-import { Meta } from "./meta.js"
+import type { Meta } from "./meta.js"
 import type { 
   AdditionalProps, 
   Combinator, 
@@ -27,6 +27,7 @@ export type {
   Traversable_Combinator as Combinator,
   Traversable_Composite as Composite,
   Traversable_Special as Special,
+  Traversable_toType as toType,
   ///
   Traversable_null as null,
   Traversable_boolean as boolean,
@@ -137,14 +138,12 @@ export interface Meta_Base extends t.infer<typeof Meta_Base> {}
 export const Meta_Base = t.object({
   nullable: t.optional(t.boolean()),
   optional: t.optional(t.boolean()),
-  // path: (keyof any)[]
+  path: t.optional(t.array(t.anyOf(t.symbol(), t.number(), t.string()))),
 })
 
 const Traversable_Meta = t.object({ meta: Meta_Base })
-
-
-
 interface Traversable_Meta extends Meta.has<Meta.Base> {}
+
 interface Traversable_lambda extends HKT { [-1]: Traversable_F<this[0]> }
 ///
 ///
