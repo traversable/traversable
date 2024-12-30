@@ -1,4 +1,4 @@
-import { Traversable, is, tree } from "@traversable/core"
+import { Traversable, t, tree } from "@traversable/core"
 import { fn } from "@traversable/data"
 import { openapi } from "@traversable/openapi"
 import type { Functor, Partial } from "@traversable/registry"
@@ -117,7 +117,7 @@ namespace RAlgebra {
               $check +
               n.items
                 .map(([x, ctx], ix) => {
-                  const $ix = tree.has("originalIndex", is.number)(x) ? x.originalIndex : ix
+                  const $ix = tree.has("originalIndex", t.is.number)(x) ? x.originalIndex : ix
                   const $next = [...$path, $ix]
                   // const $path = [$prev, $ix]
                   const $var = $next.join("")

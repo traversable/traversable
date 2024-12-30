@@ -1,4 +1,4 @@
-import { core, fc, show, test, tree } from "@traversable/core"
+import { core, fc, show, t, test, tree } from "@traversable/core"
 import * as vi from "vitest"
 
 import { arbitrary as Arbitrary, validator as Validator, arbitrary } from "@traversable/algebra"
@@ -95,8 +95,8 @@ const Schema = {
 
 const Case = {
   Intersection: defineCase("Intersection", {
-    oracle: core.and(
-      tree.has("abc", core.is.boolean), 
+    oracle: t.and$(
+      tree.has("abc", t.is.boolean), 
       (u: unknown): u is { def?: boolean } => {
         if (u !== null && typeof u === "object" && "def" in u) {
           return typeof u.def === "boolean"
@@ -114,7 +114,7 @@ const Case = {
     + '})',
   }),
   Record: defineCase("Record", {
-    oracle: core.is.record(core.is.string),
+    oracle: t.record$(t.is.string),
     expected: ''
     + '(function($0$){if(!$0$||typeof $0$!=="object"||Array.isArray($0$))return false;'
     + 'let $k0=Object.keys($0$);'
@@ -126,7 +126,7 @@ const Case = {
     + '})'
   }),
   RecordOfRecords: defineCase("RecordOfRecords", {
-    oracle: core.is.record(core.is.record(core.is.string)),
+    oracle: t.record$(t.record$(t.is.string)),
     expected: ''
     + '(function($0$){if(!$0$||typeof $0$!=="object"||Array.isArray($0$))return false;'
     + 'let $k0=Object.keys($0$);'
@@ -143,7 +143,7 @@ const Case = {
     + '})',
   }),
   RecordOfStrings: defineCase("RecordOfStrings", {
-    oracle: core.is.record(core.is.array(core.is.string)),
+    oracle: t.record$(t.array$(t.is.string)),
     expected: ''
     + '(function($0$){if(!$0$||typeof $0$!=="object"||Array.isArray($0$))return false;'
     + 'let $k0=Object.keys($0$);'
@@ -159,7 +159,7 @@ const Case = {
     + '})',
   }),
   Tuple: defineCase("Tuple", {
-    oracle: core.is.tuple(core.is.string, core.is.array(core.is.integer), core.is.boolean),
+    oracle: t.tuple(t.is.string, t.array$(t.is.integer), t.is.boolean),
     expected: ''
     + '(function($0$){if(!Array.isArray($0$))return false;'
     + 'let $0$2=$0$[2];'

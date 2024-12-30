@@ -78,14 +78,16 @@ vi.describe("〖️⛳️〗‹‹‹ ❲@traversable/algebra/arbitrary❳", () 
     vi.assert.equal(
       A.generate()({ 
         type: "record", 
-        additionalProperties: { type: "string" },
+        additionalProperties: { type: "string", meta: {} },
+        meta: {}
       }),
       'const Arbitrary = fc.dictionary(fc.lorem(), fc.lorem())',
     )
     vi.assert.equal(
       A.generate()({ 
         type: "record", 
-        additionalProperties: { type: "record", additionalProperties: { type: "string" } },
+        additionalProperties: { type: "record", additionalProperties: { type: "string", meta: {} }, meta: {} },
+        meta: {},
       }),
       'const Arbitrary = fc.dictionary(fc.lorem(), fc.dictionary(fc.lorem(), fc.lorem()))',
     )
@@ -96,10 +98,11 @@ vi.describe("〖️⛳️〗‹‹‹ ❲@traversable/algebra/arbitrary❳", () 
       A.generate()({
         type: "tuple", 
         items: [
-          { type: "string" }, 
-          { type: "array", items: { type: "integer" } }, 
-          { type: "boolean" },
+          { type: "string", meta: {} }, 
+          { type: "array", items: { type: "integer", meta: {} }, meta: {} }, 
+          { type: "boolean", meta: {} },
         ],
+        meta: {},
       }),
       'const Arbitrary = fc.tuple(fc.lorem(), fc.array(fc.integer()), fc.boolean())',
     )

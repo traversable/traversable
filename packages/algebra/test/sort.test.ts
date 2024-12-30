@@ -1,6 +1,7 @@
 import * as vi from "vitest"
 
 import { sort } from "@traversable/algebra"
+import type { Traversable } from "@traversable/core"
 
 vi.describe("〖️⛳️〗‹‹‹ ❲@traversable/algebra/sort❳", () => {
   vi.it("〖️⛳️〗› ❲sort.deep❳", () => {
@@ -8,8 +9,8 @@ vi.describe("〖️⛳️〗‹‹‹ ❲@traversable/algebra/sort❳", () => {
     const input_00 = {
       type: "object", 
       properties: {
-        Z: { type: "string" }, 
-        V: { type: "object", properties: { vv_2: { type: "string" }, vv_1: { type: "null" } }},
+        Z: { type: "string", meta: {} }, 
+        V: { type: "object", properties: { vv_2: { type: "string", meta: {} }, vv_1: { type: "null" } } },
         W: { type: "object", properties: { ww_1: { type: "null" }, ww_2: { type: "null" } }},
         Y: { type: "object", properties: {} },
         U: { type: "array", items: { type: "null" } },
@@ -23,7 +24,7 @@ vi.describe("〖️⛳️〗‹‹‹ ❲@traversable/algebra/sort❳", () => {
           } 
         }, 
       }
-    } as const
+    } as const satisfies Traversable
 
     const expected_01: [string, unknown][] = [
       ["Z", { type: "string" }],
@@ -57,99 +58,114 @@ vi.describe("〖️⛳️〗‹‹‹ ❲@traversable/algebra/sort❳", () => {
     const actual_03 = sort.derive()({
       type: "object", 
       properties: {
-        six: { type: "number" }, 
-        four: { type: "integer" },
+        six: { type: "number", meta: {} }, 
+        four: { type: "integer", meta: {} },
         eighteen: { 
           type: "tuple", 
           items: [
             { 
               type: "object", 
               properties: { 
-                rThree: { type: "object", properties: { B: { type: "null" }, C: { type: "null" }, A: { type: "null" } } }, 
-                rTwo: { type: "number" }, 
-                rFour: { type: "object", properties: { A: { type: "null" }, B: { type: "null" }, C: { type: "null" } } }, 
-                rOne: { type: "boolean" }, 
-                rFive: { type: "object", properties: { C: { type: "null" }, A: { type: "null" }, B: { type: "null" } } }, 
-              } 
+                rThree: { type: "object", properties: { B: { type: "null", meta: {} }, C: { type: "null", meta: {} }, A: { type: "null", meta: {} } }, meta: {} }, 
+                rTwo: { type: "number", meta: {} }, 
+                rFour: { type: "object", properties: { A: { type: "null", meta: {} }, B: { type: "null", meta: {} }, C: { type: "null", meta: {} } }, meta: {} },
+                rOne: { type: "boolean", meta: {} }, 
+                rFive: { type: "object", properties: { C: { type: "null", meta: {} }, A: { type: "null", meta: {} }, B: { type: "null", meta: {} } }, meta: {} }, 
+              },
+              meta: {},
             },
-            { type: "null" },
-          ] 
+            { type: "null", meta: {} },
+          ],
+          meta: {},
         },
-        seventeen: { type: "tuple", items: [] },
-        eight: { type: "string" }, 
-        fifteen: { type: "object", properties: { A: { type: "null" }, B: { type: "null" } } },
-        nine: { type: "string" }, 
-        two: { type: "boolean" }, 
-        sixteen: { type: "object", properties: { B: { type: "null" }, A: { type: "null" } } },
+        seventeen: { type: "tuple", items: [], meta: {} },
+        eight: { type: "string", meta: {} }, 
+        fifteen: { type: "object", properties: { A: { type: "null", meta: {} }, B: { type: "null", meta: {} } }, meta: {} },
+        nine: { type: "string", meta: {} }, 
+        two: { type: "boolean", meta: {} }, 
+        sixteen: { type: "object", properties: { B: { type: "null", meta: {} }, A: { type: "null", meta: {} } }, meta: {} },
         twelve: { 
           type: "record", 
-          additionalProperties: { 
+          additionalProperties: {
             type: "record",
             additionalProperties: {
               type: "anyOf",
               anyOf: [
-                { type: "object", properties: {} },
-                { type: "null" },
+                { type: "object", properties: {}, meta: {} },
+                { type: "null", meta: {} },
                 { 
                   type: "allOf", 
                   allOf: [
                     { 
                       type: "object", 
                       properties: { 
-                        C: { type: "array", items: { type: "string" } }, 
-                        A: { type: "array", items: { type: "null" } }, 
-                        B: { type: "array", items: { type: "boolean" } }, 
-                      } 
+                        C: { type: "array", items: { type: "string", meta: {} }, meta: {} }, 
+                        A: { type: "array", items: { type: "null", meta: {} }, meta: {} }, 
+                        B: { type: "array", items: { type: "boolean", meta: {} }, meta: {} }, 
+                      },
+                      meta: {},
                     }
-                  ]
+                  ],
+                  meta: {},
                 }
-              ] 
-            }
+              ], 
+              meta: {},
+            },
+            meta: {},
           },
+          meta: {},
         },
         eleven: { 
           type: "record", 
-          additionalProperties: { 
+          additionalProperties: {
             type: "record",
             additionalProperties: {
               type: "anyOf",
               anyOf: [
-                { type: "object", properties: {} },
+                { type: "object", properties: {}, meta: {} },
                 { 
                   type: "allOf", 
                   allOf: [
                     { 
                       type: "object", 
                       properties: { 
-                        C: { type: "array", items: { type: "string" } }, 
-                        A: { type: "array", items: { type: "null" } }, 
-                        B: { type: "array", items: { type: "boolean" } }, 
-                      } 
+                        C: { type: "array", items: { type: "string", meta: {} }, meta: {} }, 
+                        A: { type: "array", items: { type: "null", meta: {} }, meta: {} }, 
+                        B: { type: "array", items: { type: "boolean", meta: {} }, meta: {} }, 
+                      }, 
+                      meta: {},
                     }
-                  ] 
+                  ],
+                  meta: {},
                 }
-              ] 
-            }
+              ], 
+              meta: {},
+            },
+            meta: {},
           },
+          meta: {},
         },
-        three: { type: "boolean" },
-        seven: { type: "number" }, 
+        three: { type: "boolean", meta: {} },
+        seven: { type: "number", meta: {} }, 
         fourteen: {
           type: "object", 
-          properties: { 
+          properties: {
             A: { 
               type: "tuple", 
-              items: [{ type: "string" }]
-            } 
-          } 
+              items: [{ type: "string", meta: {} }],
+              meta: {},
+            }
+          },
+          meta: {},
         }, 
-        ten: { type: "string" }, 
-        five: { type: "integer" },
-        U: { type: "array", items: { type: "boolean" } },
-        T: { type: "array", items: { type: "null" } },
-        one: { type: "null" },
-        thirteen: { type: "object", properties: {} },
-      }
+        ten: { type: "string", meta: {} }, 
+        five: { type: "integer", meta: {} },
+        U: { type: "array", items: { type: "boolean", meta: {} }, meta: {} },
+        T: { type: "array", items: { type: "null", meta: {} }, meta: {} },
+        one: { type: "null", meta: {} },
+        thirteen: { type: "object", properties: {}, meta: {} },
+      },
+      meta: {},
     })
     vi.expect(Object.entries((actual_03.properties.eighteen.items[1] as any).properties)).toMatchInlineSnapshot(`
       [
