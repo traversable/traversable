@@ -1,4 +1,4 @@
-import { is, tree } from "@traversable/core"
+import { t, tree } from "@traversable/core"
 import { array, fn, object } from "@traversable/data"
 import type { any } from "any-ts"
 
@@ -332,7 +332,7 @@ const isAnyStatusCode: (u: unknown) => u is AnyStatusCode = array.includes(Statu
 const isSpecificStatusCode: {
   <Status extends AnyStatusCode>(status: Status): (u: unknown) => u is Status
   <Status extends AnyStatusCode>(...statuses: readonly Status[]): (u: unknown) => u is Status
-} = is.literally
+} = t.is.literally
 
 /**
  * ### {@link hasAnyStatusCode `http.Status.hasAny`}

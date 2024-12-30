@@ -1,4 +1,4 @@
-import { is } from "@traversable/core"
+import { t } from "@traversable/core"
 import { array, object } from "@traversable/data"
 
 export {
@@ -44,4 +44,4 @@ const isAnyMediaType = array.includes(MediaTypes)
 
 const isSpecificMediaType: <MediaType extends AnyMediaType>(
   mediaType: MediaType,
-) => (u: unknown) => u is MediaType = is.literally
+) => (u: unknown) => u is MediaType = t.is.literally
