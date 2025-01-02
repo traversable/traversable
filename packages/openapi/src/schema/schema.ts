@@ -854,11 +854,11 @@ export namespace has {
   void (has.const = hasConst)
   ///
   export const items = tree.has("items")
-  export const itemsSetToFalse = tree.has("items", core.t.is.literally(false))
-  export const properties = tree.has("properties", core.t.is.object)
+  export const itemsSetToFalse = tree.has("items", core.is.literally(false))
+  export const properties = tree.has("properties", core.is.object)
   export const additionalProperties = tree.has(
     "additionalProperties",
-    core.t.or$(core.t.is.boolean, core.t.is.object),
+    core.or$(core.is.boolean, core.is.object),
   )
   export const atLeastOneProperty
     : (u: { properties?: {} }) => boolean 
@@ -869,6 +869,6 @@ export namespace has {
 function simulateOptional<K extends keyof any, V>(key: K, value: V): { [P in K]+?: V }
 function simulateOptional<K extends keyof any, V>(key: K, value: V) {
   return { 
-    ...Math.random() > NEGATIVE_INFINITY && { [key]: value } 
+    ...Math.random() > 0 && { [key]: value } 
   }
 }
