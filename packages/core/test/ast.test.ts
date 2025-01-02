@@ -1,16 +1,8 @@
 import * as vi from "vitest"
 
 import { fn } from "@traversable/data"
-import type { 
-  Entries,
-  Functor,
-  HKT,
-  Option,
-  Result,
-} from "@traversable/registry"
 
 import { symbol } from "@traversable/registry"
-import type { TagTreeMap } from "@traversable/core"
 import {
   t,
   fc,
@@ -19,6 +11,7 @@ import {
   TagTree,
   test,
   toPaths,
+  path,
 } from "@traversable/core"
 
 type Options = Partial<fc.OneOfConstraints>
@@ -115,19 +108,25 @@ const defaults = {
  * ]
  */
 
-const seed = ($: Options = defaults) => fc.letrec(
-  (loop: fc.LetrecTypedTie<TagTreeMap>) => ({
-    null: fc.constant(TagTree.make[symbol.null]()),
-    anyOf: fc.array(loop("tree")).map(TagTree.make[symbol.anyOf]),
-    boolean: fc.constant(TagTree.make[symbol.boolean]()),
-    integer: fc.constant(TagTree.make[symbol.integer]()),
-    number: fc.constant(TagTree.make[symbol.number]()),
-    string: fc.constant(TagTree.make[symbol.string]()),
-    optional: loop("tree").map(TagTree.make[symbol.optional]),
-    array: loop("tree").map(TagTree.make[symbol.array]),
-    record: loop("tree").map(TagTree.make[symbol.record]),
-    tuple: fc.array(loop("tree")).map(TagTree.make[symbol.tuple]),
-    object: fc.entries(loop("tree")).map(TagTree.make[symbol.object]),
+type Nodes = never | { [K in keyof typeof TagTree.byName]: ReturnType<TagTree.byName<K>> }
+type Seed = never | Nodes & { tree: Nodes[keyof Nodes] }
+
+const seed = ($: Options = defaults) => fc.letrec<Seed>(
+  (loop) => ({
+    any: fc.constant(TagTree.byName.any()),
+    null: fc.constant(TagTree.byName.null()),
+    boolean: fc.constant(TagTree.byName.boolean()),
+    constant: fc.constant(TagTree.byName.constant()),
+    integer: fc.constant(TagTree.byName.integer()),
+    number: fc.constant(TagTree.byName.number()),
+    string: fc.constant(TagTree.byName.string()),
+    allOf: fc.array(loop("tree")).map(TagTree.byName.allOf),
+    anyOf: fc.array(loop("tree")).map(TagTree.byName.anyOf),
+    optional: loop("tree").map(TagTree.byName.optional),
+    array: loop("tree").map(TagTree.byName.array),
+    record: loop("tree").map(TagTree.byName.record),
+    tuple: fc.array(loop("tree")).map(TagTree.byName.tuple),
+    object: fc.entries(loop("tree")).map(TagTree.byName.object),
     tree: fc.oneof(
       $,
       loop("any"),
@@ -146,25 +145,20 @@ const seed = ($: Options = defaults) => fc.letrec(
   })
 )
 
-const obj = seed({ maxDepth: 10, depthSize: "large" }).tree
-
-
-
-
+const obj = seed({ maxDepth: 10, depthSize: "large" }).any
 
 vi.describe(`〖⛳️️〗‹‹‹ ❲@traversable/core/ast❳`, () => {
   vi.it(`〖️⛳️️〗 ›  ❲ast.toPaths❳: empty object case`, () => {
     const zz = [ symbol.array, [symbol.string]] satisfies TagTree
-    // const ex_01 = fromSeed([ symbol.array, [symbol.string]])
     const ex_01 = fromSeed([ symbol.object, [["a", [symbol.object, []]]]])
     const paths_01 = toPaths(ex_01)
-    vi.assert.deepEqual(ex_01, { _tag: "object", _() { return { a: { _tag: "object", _type: {} } } } })
+    vi.assert.deepEqual(ex_01, { _tag: "object", _def: { a: { _tag: "object", _type: {} } } })
     vi.assert.deepEqual( paths_01, [["a", { leaf: {} }]])
   })
   vi.it(`〖️⛳️️〗 ›  ❲ast.toPaths❳: empty tuple case`, () => {
     const ex_02 = fromSeed([ symbol.object, [["a", [symbol.tuple, []]]]])
     const paths_02 = toPaths(ex_02)
-    vi.assert.deepEqual(ex_02, { _tag: "object", _type: { a: { _tag: "tuple", _type: [] } } })
+    vi.assert.deepEqual(ex_02, { _tag: "object", _def: { a: { _tag: "tuple", _type: [] } } })
     vi.assert.deepEqual(paths_02, [["a", { leaf: [] }]])
   })
   vi.it(`〖️⛳️️〗 ›  ❲ast.path.interpreter❳`, () => {
@@ -184,8 +178,8 @@ vi.describe(`〖⛳️️〗‹‹‹ ❲@traversable/core/ast❳`, () => {
     ] as const
 
     vi.assert.equal(
-      t.path.interpreter(
-        t.path.docs,
+      path.interpreter(
+        path.docs,
         ex_01
       ).join(""),
       "aBc.j[1].k[0][string][number].deF?.GHi"
@@ -193,17 +187,17 @@ vi.describe(`〖⛳️️〗‹‹‹ ❲@traversable/core/ast❳`, () => {
   })
 
   test.prop([obj], {})("generated", (obj) => {
-    const ast = t.Lite.fromSeed(obj)
+    const ast = fromSeed(obj)
     const paths = toPaths(ast)
 
     console.log("\n\nAST\n", show.serialize(ast, "leuven"))
-    console.log(t.Lite.fromSeed([ symbol.object, [['a', [symbol.object, []]]] ]))
-    console.log(toPaths(t.Lite.fromSeed([ symbol.object, [['a', [symbol.object, []]]] ])))
+    console.log(fromSeed([ symbol.object, [['a', [symbol.object, []]]] ]))
+    console.log(toPaths(fromSeed([ symbol.object, [['a', [symbol.object, []]]] ])))
     console.log("\n\ntoPaths\n", show.serialize(paths, "leuven"))
 
     for (const ks of paths) {
       console.log("ks", ks)
-      console.log("interpreted", t.path.interpreter(t.path.docs, ks))
+      console.log("interpreted", path.interpreter(path.docs, ks))
     }
 
   // aBc[1][0][string].deF?.GHi

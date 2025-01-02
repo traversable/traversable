@@ -34,10 +34,12 @@ export * as t from "./guard.js"
 //   symbol,
 // } from "./guard.js"
 
+export * as path from "./toPaths.js"
 export { toPaths } from "./toPaths.js"
 export { toJSON } from "./toJSON.js"
 export { toString } from "./toString.js"
-export { fromSeed } from "./fromSeed.js"
+export type { TagTreeMap } from "./fromSeed.js"
+export { fromSeed, TagTree } from "./fromSeed.js"
 
 import type { AST, Config, Tag } from "./ast.js"
 declare module "@traversable/core" {

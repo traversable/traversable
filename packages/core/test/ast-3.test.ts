@@ -1,48 +1,215 @@
 import * as vi from "vitest"
 import type { integer } from "@traversable/registry"
-import { symbol } from "@traversable/registry"
 
-import type { TagTreeMap } from "@traversable/core"
-import { ast as t, fc, test, TagTree } from "@traversable/core"
+import { ast as t, fc, fromSeed, test, TagTree, show } from "@traversable/core"
+import { fn, map } from "@traversable/data"
 
-type Options = Partial<fc.OneOfConstraints>
-const defaults = {
-  depthIdentifier: { depth: 1 },
-  depthSize: "medium",
-  maxDepth: 10,
-  withCrossShrink: false,
-} satisfies Required<Options>
+namespace Arbitrary {
+  export type Options = Partial<fc.OneOfConstraints>
+  export const defaults = {
+    depthIdentifier: { depth: 1 },
+    depthSize: "medium",
+    maxDepth: 10,
+    withCrossShrink: false,
+  } satisfies Required<Arbitrary.Options>
 
-const seed = ($: Options = defaults) => fc.letrec(
-  (loop: fc.LetrecTypedTie<TagTreeMap>) => ({
-    null: fc.constant(TagTree.make[symbol.null]()),
-    anyOf: fc.array(loop("tree")).map(TagTree.make[symbol.anyOf]),
-    boolean: fc.constant(TagTree.make[symbol.boolean]()),
-    integer: fc.constant(TagTree.make[symbol.integer]()),
-    number: fc.constant(TagTree.make[symbol.number]()),
-    string: fc.constant(TagTree.make[symbol.string]()),
-    optional: loop("tree").map(TagTree.make[symbol.optional]),
-    array: loop("tree").map(TagTree.make[symbol.array]),
-    record: loop("tree").map(TagTree.make[symbol.record]),
-    tuple: fc.array(loop("tree")).map(TagTree.make[symbol.tuple]),
-    object: fc.entries(loop("tree")).map(TagTree.make[symbol.object]),
-    tree: fc.oneof(
-      $,
-      loop("any"),
-      loop("null"),
-      loop("anyOf"),
-      loop("boolean"),
-      loop("array"),
-      loop("object"),
-      loop("record"),
-      loop("tuple"),
-      loop("integer"),
-      loop("number"),
-      loop("string"),
-      loop("optional"),
+  export type LetrecTagTree = {
+    any: TagTree.any;
+    allOf: TagTree.allOfF<readonly TagTree[]>;
+    anyOf: TagTree.anyOfF<readonly TagTree[]>;
+    array: TagTree.arrayF<TagTree>;
+    boolean: TagTree.boolean;
+    const: never;
+    integer: TagTree.integer;
+    null: TagTree.null;
+    number: TagTree.number;
+    object: TagTree.objectF<Record<string, TagTree>>;
+    optional: TagTree.optionalF<TagTree>;
+    record: TagTree.recordF<Record<string, TagTree>>;
+    string: TagTree.string;
+    tuple: TagTree.tupleF<readonly TagTree[]>;
+    tree: TagTree.F<unknown>;
+  }
+
+  export const letrecTagTree 
+    : (options?: Arbitrary.Options) => fc.LetrecValue<LetrecTagTree>
+    = ($ = Arbitrary.defaults) => fc.letrec(
+      (loop: fc.LetrecTypedTie<LetrecTagTree>) => ({
+        any: fc.constant(TagTree.byName.any()),
+        allOf: fc.array(loop("tree")).map(TagTree.byName.allOf),
+        anyOf: fc.array(loop("tree")).map(TagTree.byName.anyOf),
+        array: loop("tree").map(TagTree.byName.array),
+        boolean: fc.constant(TagTree.byName.boolean()),
+        const: fc.constant(TagTree.byName.constant()),
+        integer: fc.constant(TagTree.byName.integer()),
+        null: fc.constant(TagTree.byName.null()),
+        number: fc.constant(TagTree.byName.number()),
+        object: fc.entries(loop("tree")).map(TagTree.byName.object),
+        optional: loop("tree").map(TagTree.byName.optional),
+        record: loop("tree").map(TagTree.byName.record),
+        string: fc.constant(TagTree.byName.string()),
+        tuple: fc.array(loop("tree")).map(TagTree.byName.tuple),
+        tree: fc.oneof(
+          $,
+          loop("any"),
+          loop("null"),
+          loop("anyOf"),
+          loop("boolean"),
+          loop("array"),
+          loop("object"),
+          loop("record"),
+          loop("tuple"),
+          loop("integer"),
+          loop("number"),
+          loop("string"),
+          loop("optional"),
+        )
+      })
     )
-  })
+
+  export const terminal
+    : fc.Arbitrary<t.Terminal>
+    = fc.constantFrom(...t.Terminals)
+  
+  export type LetrecShort = (
+    & { tree: t.AST.Short }
+    & {
+      booleans: "boolean" | "boolean[]" | "boolean{}";
+      symbols: "symbol" | "symbol[]" | "symbol{}";
+      integers: "integer" | "integer[]" | "integer{}";
+      numbers: "number" | "number[]" | "number{}";
+      strings: "string" | "string[]" | "string{}";
+    }
+    & {
+      allOf: readonly ["&", t.AST.Short[]]
+      anyOf: readonly ["|", t.AST.Short[]]
+      array: readonly ["[]", t.AST.Short]
+      record: readonly ["{}", t.AST.Short]
+      tuple: readonly t.AST.Short[]
+      object: Record<string, t.AST.Short>
+    } 
+  )
+
+  export const maybeOptionalProperty = fc
+    .tuple(fc.identifier(), fc.boolean())
+    .map(([prop, isRequired]) => isRequired ? prop : `${prop}?`)
+
+  export const optionalsDictionary = <T>(model: fc.Arbitrary<T>) => 
+    fc.dictionary(maybeOptionalProperty, model)
+
+  export const letrecShort
+    : (options?: Arbitrary.Options) => fc.LetrecValue<LetrecShort>
+    = ($ = Arbitrary.defaults) => fc.letrec(
+      (loop) => ({
+        booleans: fc.constantFrom("boolean", "boolean[]", "boolean{}"),
+        symbols: fc.constantFrom("symbol", "symbol[]", "symbol{}"),
+        integers: fc.constantFrom("integer", "integer[]", "integer{}"),
+        numbers: fc.constantFrom("number", "number[]", "number{}"),
+        strings: fc.constantFrom("string", "string[]", "string{}"),
+        allOf: fc.tuple(fc.constant("&"), fc.array(loop("tree"))),
+        anyOf: fc.tuple(fc.constant("|"), fc.array(loop("tree"))),
+        array: fc.tuple(fc.constant("[]"), loop("tree")),
+        record: fc.tuple(fc.constant("{}"), loop("tree")),
+        tuple: fc.array(loop("tree")),
+        object: optionalsDictionary(loop("tree")),
+        tree: fc.oneof(
+          $,
+          loop("booleans"),
+          loop("symbols"),
+          loop("integers"),
+          loop("numbers"),
+          loop("strings"),
+          loop("allOf"),
+          loop("anyOf"),
+          loop("array"),
+          loop("record"),
+          loop("tuple"),
+          loop("object"),
+        ),
+      })
+    )
+}
+
+const tagTree = Arbitrary.letrecTagTree({ 
+  depthIdentifier: Arbitrary.defaults.depthIdentifier,
+  depthSize: Arbitrary.defaults.depthSize,
+  maxDepth: Arbitrary.defaults.maxDepth,
+  withCrossShrink: Arbitrary.defaults.withCrossShrink,
+})
+
+const makeAstNode = fn.flow(
+  Arbitrary.letrecShort,
+  (xs) => xs.tree.map(t.fromSeed),
 )
+
+const nodeArbitrary = makeAstNode({ 
+  depthIdentifier: Arbitrary.defaults.depthIdentifier,
+  depthSize: "xsmall",
+  maxDepth: 3,
+  withCrossShrink: Arbitrary.defaults.withCrossShrink,
+})
+
+// Arbitrary.letrecShort({ 
+//   depthIdentifier: Arbitrary.defaults.depthIdentifier,
+//   depthSize: "xsmall",
+//   maxDepth: 3,
+//   withCrossShrink: Arbitrary.defaults.withCrossShrink,
+// })
+
+
+  // : fc.Arbitrary<t.AST.Short>
+
+vi.describe(`〖⛳️〗‹‹‹ ❲@traversable/core/ast❳`, () => {
+
+  test.prop([nodeArbitrary], { endOnFailure: false })(
+    `〖⛳️〗› ❲ast: constructors❳`, (node) => {
+      // console.log("tagTree", tagTree)
+      console.log("astNode", node)
+      // console.log("fromSeed(tagTree)", fromSeed(tagTree))
+      // console.log("t.fromSeed(short)", show.serialize(t.fromSeed(short), "leuven"))
+      // console.log("fromSeed(seed)", fromSeed(seed))
+      vi.assert.isTrue(true)
+      
+    }
+  )
+
+	// vi.it(`〖⛳️〗› ❲ast: fromShorthand❳`, () => {
+  //   console.log("null", t.short(null)())
+  //   console.log("boolean", t.short("boolean")())
+  //   console.log("boolean[]", t.short("boolean[]")())
+  //   console.log("boolean{}", t.short("boolean{}")())
+
+  //   console.log("number", t.short("number")())
+  //   console.log("number[]", t.short("number[]")())
+  //   console.log("number{}", t.short("number{}")())
+
+  //   console.log("integer", t.short("integer")())
+  //   console.log("integer[]", t.short("integer[]")())
+  //   console.log("integer{}", t.short("integer{}")())
+
+  //   console.log("string", t.short("string")())
+  //   console.log("string[]", t.short("string[]")())
+  //   console.log("string{}", t.short("string{}")())
+
+  //   console.log("tuple", t.short(["number", "string", "boolean"])())
+  //   console.log("object", t.short({ a: "number", b: "string", c: "boolean" })())
+
+  //   console.log("object", t.short({ a: "number", b: "string", c: "boolean" })())
+
+  //   console.log("record", t.short("{}", "string")())
+
+  //   t.fromSeed()
+
+    // console.log("string[]", t.short("string[]")())
+    // console.log("string{}", t.short("string{}")())
+
+    // console.log("string", t.short("&", {})())
+    // console.log("string[]", t.short("string[]")())
+    // console.log("string{}", t.short("string{}")())
+  // })
+
+    
+})
 
 vi.describe("〖🧙〗‹‹‹ ❲@traversable/core/ast❳", () => {
   vi.it("〖🧙〗› ❲ast.short❳", () => {
@@ -189,25 +356,25 @@ vi.describe("〖🧙〗‹‹‹ ❲@traversable/core/ast❳", () => {
     )
   })
 
-  vi.it("〖🧙〗› ❲ast.toType❳", () => {
-    vi.assertType<null>(t.toType(t.short(null)))
-    vi.assertType<"abc">(t.toType(t.short("'abc'")))
-    vi.assertType<boolean>(t.toType(t.short("boolean")))
-    vi.assertType<symbol>(t.toType(t.short("symbol")))
-    vi.assertType<integer>(t.toType(t.short("integer")))
-    vi.assertType<number>(t.toType(t.short("number")))
-    vi.assertType<string>(t.toType(t.short("string")))
-    vi.assertType<boolean[]>(t.toType(t.short("boolean[]")))
-    vi.assertType<symbol[]>(t.toType(t.short("symbol[]")))
-    vi.assertType<integer[]>(t.toType(t.short("integer[]")))
-    vi.assertType<number[]>(t.toType(t.short("number[]")))
-    vi.assertType<string[]>(t.toType(t.short("string[]")))
-    vi.assertType<Record<string, boolean>>(t.toType(t.short("boolean{}")))
-    vi.assertType<Record<string, symbol>>(t.toType(t.short("symbol{}")))
-    vi.assertType<Record<string, integer>>(t.toType(t.short("integer{}")))
-    vi.assertType<Record<string, number>>(t.toType(t.short("number{}")))
-    vi.assertType<Record<string, string>>(t.toType(t.short("string{}")))
-    vi.assertType<[boolean, string, number]>(t.toType(t.short(["boolean", "string", "number"])))
+  vi.it("〖🧙〗› ❲ast.typeof❳", () => {
+    vi.assertType<null>(t.typeof(t.short(null)))
+    vi.assertType<"abc">(t.typeof(t.short("'abc'")))
+    vi.assertType<boolean>(t.typeof(t.short("boolean")))
+    vi.assertType<symbol>(t.typeof(t.short("symbol")))
+    vi.assertType<integer>(t.typeof(t.short("integer")))
+    vi.assertType<number>(t.typeof(t.short("number")))
+    vi.assertType<string>(t.typeof(t.short("string")))
+    vi.assertType<boolean[]>(t.typeof(t.short("boolean[]")))
+    vi.assertType<symbol[]>(t.typeof(t.short("symbol[]")))
+    vi.assertType<integer[]>(t.typeof(t.short("integer[]")))
+    vi.assertType<number[]>(t.typeof(t.short("number[]")))
+    vi.assertType<string[]>(t.typeof(t.short("string[]")))
+    vi.assertType<Record<string, boolean>>(t.typeof(t.short("boolean{}")))
+    vi.assertType<Record<string, symbol>>(t.typeof(t.short("symbol{}")))
+    vi.assertType<Record<string, integer>>(t.typeof(t.short("integer{}")))
+    vi.assertType<Record<string, number>>(t.typeof(t.short("number{}")))
+    vi.assertType<Record<string, string>>(t.typeof(t.short("string{}")))
+    vi.assertType<[boolean, string, number]>(t.typeof(t.short(["boolean", "string", "number"])))
 
     vi.assertType
     <
@@ -218,7 +385,7 @@ vi.describe("〖🧙〗‹‹‹ ❲@traversable/core/ast❳", () => {
         }
       }
     >
-    (t.toType(t.short(
+    (t.typeof(t.short(
       {
         a: "boolean[]",
         b: {
@@ -232,7 +399,7 @@ vi.describe("〖🧙〗‹‹‹ ❲@traversable/core/ast❳", () => {
       & { a: boolean }
       & { b: string[] }
     >
-    (t.toType(t.short(
+    (t.typeof(t.short(
       "&",
       { a: "boolean" },
       { b: "string[]" },
@@ -243,13 +410,13 @@ vi.describe("〖🧙〗‹‹‹ ❲@traversable/core/ast❳", () => {
       | { a: string }
       | { b: null }
     >
-    (t.toType(t.short(
+    (t.typeof(t.short(
       "|",
       { a: "string" },
       { b: null },
     )))
 
-    vi.assertType<{ a: { b: string[] } }[]>(t.toType(t.short("[]", { a: { b: "string[]" } })))
+    vi.assertType<{ a: { b: string[] } }[]>(t.typeof(t.short("[]", { a: { b: "string[]" } })))
 
     vi.assertType
     <
@@ -261,7 +428,7 @@ vi.describe("〖🧙〗‹‹‹ ❲@traversable/core/ast❳", () => {
         }
       }
     >
-    (t.toType(t.short(
+    (t.typeof(t.short(
       {
         a: "number",
         "b?": "boolean",
@@ -289,7 +456,7 @@ vi.describe("〖🧙〗‹‹‹ ❲@traversable/core/ast❳", () => {
       }
     >
     (
-      t.toType(
+      t.typeof(
         t.short(
           "&", 
           {
@@ -317,3 +484,28 @@ vi.describe("〖🧙〗‹‹‹ ❲@traversable/core/ast❳", () => {
 
 })
 
+
+  // export type Terminals = typeof terminals
+  // export const terminals = {
+  //   boolean: fc.constant("boolean"),
+  //   booleans: fc.constant("boolean[]"),
+  //   booleanDict: fc.constant("boolean{}"),
+  //   symbol: fc.constant("symbol"),
+  //   symbols: fc.constant("symbol[]"),
+  //   symbolDict: fc.constant("symbol{}"),
+  //   integer: fc.constant("integer"),
+  //   integers: fc.constant("integer[]"),
+  //   integerDict: fc.constant("integer{}"),
+  //   number: fc.constant("number"),
+  //   numbers: fc.constant("number[]"),
+  //   numberDict: fc.constant("number{}"),
+  //   string: fc.constant("string"),
+  //   strings: fc.constant("string[]"),
+  //   stringDict: fc.constant("string{}"),
+  // }
+  // export const tag = fc.oneof(
+  //   fc.constant("|"),
+  //   fc.constant("&"),
+  //   fc.constant("[]"),
+  //   fc.constant("{}"),
+  // )

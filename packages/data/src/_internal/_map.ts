@@ -160,9 +160,20 @@ export function forEach
   { return args.length === 1 ? map(...args) : void map(...args) }
 
 export namespace map {
-  export function entries<S, T>(f: (s: S) => T): (F: Entries<S>) => Entries<T>
-  export function entries<S, T>(f: (s: S) => T) 
-    { return (F: Entries<S>) => F.map(([k, v]) => [k, f(v)] satisfies [string, any]) }
+  export function entries<S, T>(record: Entries<S>, f: (s: S, k: string) => T): Entries<T>
+  export function entries<S, T>(f: (s: S, k: string) => T): (record: Entries<S>) => Entries<T>
+  export function entries<S, T>(
+    ...args: 
+      | [f: (s: S, k: string) => T]
+      | [fa: Entries<S>, f: (s: S, k: string) => T]
+  ): Entries<T> | ((fa: Entries<S>) => Entries<T>) { 
+    if (args.length === 1) return (fa: Entries<S>) => map.entries(fa, args[0])
+    else {
+      const [fa, f] = args
+      return fa.map(([k, v], ix) => [k, f(v, k)] satisfies [string, any])
+    }
+  }
+
   export function record<S, T>(f: (s: S) => T): (F: Record<string, S>) => Record<string, T>
   export function record<S, T>(f: (s: S) => T): (F: Record<string, S>) => Record<string, T> 
     { return (F) => Object.fromEntries(Object.entries(F).map(([k, v]) => [k, f(v)] satisfies [string, any])) }

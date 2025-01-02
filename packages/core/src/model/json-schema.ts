@@ -53,11 +53,6 @@ const JsonSchema_isNull
   : (u: unknown) => u is JsonSchema_null
   = JsonSchema_null.is
 
-  declare const thing: unknown
-  if(JsonSchema_isNull(thing)) {
-    thing
-  }
-
 interface JsonSchema_boolean { type: "boolean" }
 const JsonSchema_boolean = t.object({ type: t.const("boolean") })
 const JsonSchema_isBoolean

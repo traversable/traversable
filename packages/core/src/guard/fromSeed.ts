@@ -1,6 +1,6 @@
 import { fn, map } from "@traversable/data"
 import type { Entries, Functor, HKT } from "@traversable/registry"
-import { symbol } from "@traversable/registry"
+import { symbol, URI } from "@traversable/registry"
 
 import * as t from "./ast-3.js"
 
@@ -43,6 +43,7 @@ export type Nullary = {
   [symbol.string]: TagTree_string
   [symbol.constant]: TagTree_const
 }
+
 export type Unary = {
   [symbol.constant]: TagTree_const
   [symbol.allOf]: TagTree_allOf
@@ -53,6 +54,7 @@ export type Unary = {
   [symbol.tuple]: TagTree_tuple
   [symbol.object]: TagTree_object
 }
+
 export type Unary$ = {
   [symbol.allOf]: TagTree.allOfLambda
   [symbol.anyOf]: TagTree.anyOfLambda
@@ -62,6 +64,7 @@ export type Unary$ = {
   [symbol.tuple]: TagTree.tupleLambda
   [symbol.object]: TagTree.objectLambda
 }
+
 export type TagTreeMap = 
   & Nullary 
   & Unary$
@@ -90,15 +93,43 @@ export type TagTree =
   | TagTree_tuple
   | TagTree_object
   ;
+
+export declare namespace TagTree {
+  export {
+    TagTree_any as any,
+    TagTree_null as null,
+    TagTree_boolean as boolean,
+    TagTree_integer as integer,
+    TagTree_number as number,
+    TagTree_string as string,
+    TagTree_Scalar as Scalar,
+    TagTree_const as const,
+    TagTree_allOf as allOf,
+    TagTree_allOfF as allOfF,
+    TagTree_anyOf as anyOf,
+    TagTree_anyOfF as anyOfF,
+    TagTree_optional as optional,
+    TagTree_optionalF as optionalF,
+    TagTree_array as array,
+    TagTree_arrayF as arrayF,
+    TagTree_record as record,
+    TagTree_recordF as recordF,
+    TagTree_tuple as tuple,
+    TagTree_tupleF as tupleF,
+    TagTree_object as object,
+    TagTree_objectF as objectF,
+  }
+}
+
 export declare namespace TagTree {
   interface lambda extends HKT { [-1]: TagTree.F<this[0]> }
-  interface allOfLambda extends HKT { [-1]: TagTree_allOfF<this[0]> }
-  interface anyOfLambda extends HKT { [-1]: TagTree_anyOfF<this[0]> }
+  interface allOfLambda extends HKT { [-1]: TagTree_allOfF<readonly this[0][]> }
+  interface anyOfLambda extends HKT { [-1]: TagTree_anyOfF<readonly this[0][]> }
   interface optionalLambda extends HKT { [-1]: TagTree_optionalF<this[0]> }
   interface arrayLambda extends HKT { [-1]: TagTree_arrayF<this[0]> }
-  interface tupleLambda extends HKT { [-1]: TagTree_tupleF<this[0]> }
-  interface objectLambda extends HKT { [-1]: TagTree_objectF<this[0]> }
-  interface recordLambda extends HKT { [-1]: TagTree_recordF<this[0]> }
+  interface tupleLambda extends HKT { [-1]: TagTree_tupleF<readonly this[0][]> }
+  interface objectLambda extends HKT { [-1]: TagTree_objectF<Record<string, this[0]>> }
+  interface recordLambda extends HKT { [-1]: TagTree_recordF<Record<string, this[0]>> }
   type F<T> = 
     | TagTree_Scalar
     | TagTree_const
@@ -115,26 +146,46 @@ export namespace TagTree {
   export function nullary<Tag extends keyof Nullary>(tag: Tag): () => Extract<TagTree_Scalar, [Tag]>
   export function nullary(tag: Nullary[keyof Nullary][0]) { return () => [tag] as never }
   ///
-  export function unary<Tag extends keyof Unary$, F extends Unary$[Tag]>(x: Tag): 
-    <T extends HKT.apply<F, unknown>[1]>(x: T) => HKT.apply<F, T>
+  export function unary<Tag extends keyof Unary$>(x: Tag): 
+    (x: any) => HKT.apply<Unary$[Tag], TagTree>
   export function unary<Tag extends TagTree[0]>(tag: Tag) { return <T>(x: T) => [tag, x] }
+
+  export type byName<URI extends keyof typeof byName> = typeof byName[URI]
+  export const byName = {
+    any: nullary(symbol.any),
+    null: nullary(symbol.null),
+    boolean: nullary(symbol.boolean),
+    integer: nullary(symbol.integer),
+    number: nullary(symbol.number),
+    string: nullary(symbol.string),
+    constant: nullary(symbol.constant),
+    allOf: unary(symbol.allOf),
+    anyOf: unary(symbol.anyOf),
+    optional: unary(symbol.optional),
+    array: unary(symbol.array),
+    record: unary(symbol.record),
+    tuple: unary(symbol.tuple),
+    object: unary(symbol.object),
+  } as const
+
   ///
   export const make = {
-    [symbol.any]: nullary(symbol.any),
-    [symbol.null]: nullary(symbol.null),
-    [symbol.boolean]: nullary(symbol.boolean),
-    [symbol.integer]: nullary(symbol.integer),
-    [symbol.number]: nullary(symbol.number),
-    [symbol.string]: nullary(symbol.string),
-    [symbol.constant]: nullary(symbol.constant),
-    [symbol.allOf]: unary(symbol.allOf),
-    [symbol.anyOf]: unary(symbol.anyOf),
-    [symbol.optional]: unary(symbol.optional),
-    [symbol.array]: unary(symbol.array),
-    [symbol.record]: unary(symbol.record),
-    [symbol.tuple]: unary(symbol.tuple),
-    [symbol.object]: unary(symbol.object),
-  } satisfies Record<keyof TagTreeMap, (_: never) => TagTree>
+    [symbol.any]: byName.any,
+    [symbol.null]: byName.null,
+    [symbol.boolean]: byName.boolean,
+    [symbol.integer]: byName.integer,
+    [symbol.number]: byName.number,
+    [symbol.string]: byName.string,
+    [symbol.constant]: byName.constant,
+    [symbol.allOf]: byName.allOf,
+    [symbol.anyOf]: byName.anyOf,
+    [symbol.optional]: byName.optional,
+    [symbol.array]: byName.array,
+    [symbol.record]: byName.record,
+    [symbol.tuple]: byName.tuple,
+    [symbol.object]: byName.object,
+  } as const // satisfies Record<keyof TagTreeMap, (_: never) => TagTree>
+
 }
 
 const Object_fromEntries = globalThis.Object.fromEntries
