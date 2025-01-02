@@ -4,9 +4,7 @@ import type { Force, Guard, HKT, Join, Partial, Returns, inline, integer } from 
 import { symbol } from "@traversable/registry"
 
 import { Json } from "@traversable/core/json"
-import { anyof$, array$, is, optional$, record$ } from "./predicates.js"
-
-// interface lambda extends HKT { [-1]:  }
+import { anyOf$, array$, is, optional$, record$ } from "./predicates.js"
 
 /////////////////////
 ///    aliases    ///
@@ -269,14 +267,15 @@ export class type<T extends t.Config> {
   toString(): ReturnType<t.Config["toString"]>
   toString(): ReturnType<T["toString"]>
   toString() { return this.config.toString() }
-  _toType(): ReturnType<T["_toType"]>
-  _toType(): ReturnType<t.Config["_toType"]>
-  _toType(): ReturnType<T["_toType"]>
-  _toType() { return this._type }
+  _(): ReturnType<T["_toType"]>
+  _(): ReturnType<t.Config["_toType"]>
+  _(): ReturnType<T["_toType"]>
+  _() { return this._type }
   constructor(public config: T) {
     Object_assign(this, config)
     this.toJSON = config.toJSON as never
     this._tag = config._tag
+    // this._ = this._type
     this.is = config.is
   }
 }
@@ -309,7 +308,7 @@ export function leaf<Tag extends Tag.Atomic, T>(_tag: Tag, _type?: T) {
 
 ///////////////////
 ///    const    ///
-export interface const_<T extends Json | undefined> {
+export interface const_<T> {
   _tag: "const"
   _type: T
   _toType(): this["_type"],
@@ -318,7 +317,7 @@ export interface const_<T extends Json | undefined> {
   toString(): string
 }
 ///
-export const const_ = <T extends Json>(x: T): const_<T> => ({
+export const const_ = <T>(x: T): const_<T> => ({
   _toType,
   _tag: Tag.const,
   _type: x as typeof x,
@@ -448,7 +447,7 @@ export const anyOf_ = <T extends readonly AST.Node[]>(xs: T): anyOf_<T> => ({
   _toType,
   _tag: Tag.anyOf,
   _type: {} as never,
-  is: anyof$(...xs.map((x) => x.is)) as never,
+  is: anyOf$(...xs.map((x) => x.is)) as never,
   toString: () => anyOf_toString(xs),
   toJSON: () => anyOf_toJSON(xs),
 }) as const satisfies t.Config
@@ -464,7 +463,7 @@ export class null$
 ////////////////////
 ///    const     ///
 export class
-  const$<T extends Json>
+  const$<T>
   extends type<const_<T>>
   { constructor(_: T, _opts?: const__.Options) { super(const_(_)) } }
 
@@ -863,8 +862,7 @@ const abc = object({
       e: array(array(boolean()))
     })
   })
-}).toJSON()
-
+})
 
 // interface property<T extends {}> extends newtype<T> {}
 // interface optionalProperty<T extends {}> extends inline<{ [symbol.optional]: true }>, newtype<T> {}

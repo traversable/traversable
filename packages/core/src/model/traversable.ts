@@ -134,7 +134,7 @@ type Traversable_Map<F> = {
 
 // path: (keyof any)[],
 
-export interface Meta_Base extends t.infer<typeof Meta_Base> {}
+export interface Meta_Base extends t.typeof<typeof Meta_Base> {}
 export const Meta_Base = t.object({
   nullable: t.optional(t.boolean()),
   optional: t.optional(t.boolean()),

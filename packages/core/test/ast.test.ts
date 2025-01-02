@@ -1,11 +1,25 @@
 import * as vi from "vitest"
 
 import { fn } from "@traversable/data"
-import type { Entries, Functor, HKT, Option, Result } from "@traversable/registry"
-import { URI, symbol } from "@traversable/registry"
+import type { 
+  Entries,
+  Functor,
+  HKT,
+  Option,
+  Result,
+} from "@traversable/registry"
 
-import { TagTree, fc, show, t, test, toPaths, toString } from "@traversable/core"
+import { symbol } from "@traversable/registry"
 import type { TagTreeMap } from "@traversable/core"
+import {
+  t,
+  fc,
+  fromSeed,
+  show,
+  TagTree,
+  test,
+  toPaths,
+} from "@traversable/core"
 
 type Options = Partial<fc.OneOfConstraints>
 const defaults = {
@@ -101,22 +115,24 @@ const defaults = {
  * ]
  */
 
-const tagTree = ($: Options = defaults) => fc.letrec(
+const seed = ($: Options = defaults) => fc.letrec(
   (loop: fc.LetrecTypedTie<TagTreeMap>) => ({
-    null: fc.constant(TagTree.make.null()),
-    anyOf: fc.array(loop("tree")).map(TagTree.make.anyOf),
-    boolean: fc.constant(TagTree.make.boolean()),
-    integer: fc.constant(TagTree.make.integer()),
-    number: fc.constant(TagTree.make.number()),
-    string: fc.constant(TagTree.make.string()),
-    optional: loop("tree").map(TagTree.make.optional),
-    array: loop("tree").map(TagTree.make.array),
-    record: loop("tree").map(TagTree.make.record),
-    tuple: fc.array(loop("tree")).map(TagTree.make.tuple),
-    object: fc.entries(loop("tree")).map(TagTree.make.object),
+    null: fc.constant(TagTree.make[symbol.null]()),
+    anyOf: fc.array(loop("tree")).map(TagTree.make[symbol.anyOf]),
+    boolean: fc.constant(TagTree.make[symbol.boolean]()),
+    integer: fc.constant(TagTree.make[symbol.integer]()),
+    number: fc.constant(TagTree.make[symbol.number]()),
+    string: fc.constant(TagTree.make[symbol.string]()),
+    optional: loop("tree").map(TagTree.make[symbol.optional]),
+    array: loop("tree").map(TagTree.make[symbol.array]),
+    record: loop("tree").map(TagTree.make[symbol.record]),
+    tuple: fc.array(loop("tree")).map(TagTree.make[symbol.tuple]),
+    object: fc.entries(loop("tree")).map(TagTree.make[symbol.object]),
     tree: fc.oneof(
       $,
+      loop("any"),
       loop("null"),
+      loop("anyOf"),
       loop("boolean"),
       loop("array"),
       loop("object"),
@@ -130,39 +146,30 @@ const tagTree = ($: Options = defaults) => fc.letrec(
   })
 )
 
-// export const _astFromTagTree = (term: TagTree.F<t.AST.Node>) => {
-//   switch (true) {
-//     default: return (console.log("EXHAUSTIVE FAIL IN '_astFromTagTree'", term), term) // fn.exhaustive(term)
-//     case term[0] === symbol.null: return t.null()
-//     case term[0] === symbol.boolean: return t.boolean()
-//     case term[0] === symbol.integer: return t.integer()
-//     case term[0] === symbol.number: return t.number()
-//     case term[0] === symbol.string: return t.string()
-//     case term[0] === symbol.array: return t.array(term[1])
-//     case term[0] === symbol.optional: return t.optional(term[1])
-//     case term[0] === symbol.object: return t.object(Object.fromEntries(term[1]))
-//   }
-// }
-// const astFromTagTree = fn.cata(TagTree.Functor)(_astFromTagTree)
+const obj = seed({ maxDepth: 10, depthSize: "large" }).tree
 
-const obj = tagTree({ maxDepth: 10, depthSize: "large" }).tree
+
+
+
 
 vi.describe(`〖⛳️️〗‹‹‹ ❲@traversable/core/ast❳`, () => {
   vi.it(`〖️⛳️️〗 ›  ❲ast.toPaths❳: empty object case`, () => {
-    const ex_01 = t.Lite.fromSeed([ symbol.object, [["a", [symbol.object, []]]]])
+    const zz = [ symbol.array, [symbol.string]] satisfies TagTree
+    // const ex_01 = fromSeed([ symbol.array, [symbol.string]])
+    const ex_01 = fromSeed([ symbol.object, [["a", [symbol.object, []]]]])
     const paths_01 = toPaths(ex_01)
-    vi.assert.deepEqual(ex_01, { _tag: "object", _type: { a: { _tag: "object", _type: {} } } })
+    vi.assert.deepEqual(ex_01, { _tag: "object", _() { return { a: { _tag: "object", _type: {} } } } })
     vi.assert.deepEqual( paths_01, [["a", { leaf: {} }]])
   })
   vi.it(`〖️⛳️️〗 ›  ❲ast.toPaths❳: empty tuple case`, () => {
-    const ex_02 = t.Lite.fromSeed([ symbol.object, [["a", [symbol.tuple, []]]]])
+    const ex_02 = fromSeed([ symbol.object, [["a", [symbol.tuple, []]]]])
     const paths_02 = toPaths(ex_02)
-    vi.assert.deepEqual(ex_02, { _tag: "object", _type: { a: { _tag: "tuple", _type: [] } } }) 
+    vi.assert.deepEqual(ex_02, { _tag: "object", _type: { a: { _tag: "tuple", _type: [] } } })
     vi.assert.deepEqual(paths_02, [["a", { leaf: [] }]])
   })
   vi.it(`〖️⛳️️〗 ›  ❲ast.path.interpreter❳`, () => {
-    const ex_01 = [ 
-      "aBc", 
+    const ex_01 = [
+      "aBc",
       "j",
       1,
       "k",
@@ -178,9 +185,9 @@ vi.describe(`〖⛳️️〗‹‹‹ ❲@traversable/core/ast❳`, () => {
 
     vi.assert.equal(
       t.path.interpreter(
-        t.path.docs, 
+        t.path.docs,
         ex_01
-      ).join(""), 
+      ).join(""),
       "aBc.j[1].k[0][string][number].deF?.GHi"
     )
   })
@@ -190,7 +197,7 @@ vi.describe(`〖⛳️️〗‹‹‹ ❲@traversable/core/ast❳`, () => {
     const paths = toPaths(ast)
 
     console.log("\n\nAST\n", show.serialize(ast, "leuven"))
-    console.log(t.Lite.fromSeed([ symbol.object, [['a', [symbol.object, []]]] ])) 
+    console.log(t.Lite.fromSeed([ symbol.object, [['a', [symbol.object, []]]] ]))
     console.log(toPaths(t.Lite.fromSeed([ symbol.object, [['a', [symbol.object, []]]] ])))
     console.log("\n\ntoPaths\n", show.serialize(paths, "leuven"))
 
@@ -210,14 +217,14 @@ vi.describe(`〖⛳️️〗‹‹‹ ❲@traversable/core/ast❳`, () => {
 // type Entries<T> = readonly Entry<T>[]
 
 // namespace map {
-//   export function array<S, T>(f: (s: S) => T): (F: readonly S[]) => readonly T[] 
+//   export function array<S, T>(f: (s: S) => T): (F: readonly S[]) => readonly T[]
 //   export function array<S, T>(f: (s: S) => T): (F: readonly S[]) => readonly T[] { return (F: readonly S[]) => F.map(f) }
 //   ///
 //   export function entries<S, T>(f: (s: S) => T): (F: Entries<S>) => Entries<T>
 //   export function entries<S, T>(f: (s: S) => T) { return (F: Entries<S>) => F.map(([k, v]) => [k, f(v)] satisfies [string, any]) }
 //   ///
-//   export function record<S, T>(f: (s: S) => T): (F: Record<string, S>) => Record<string, T> 
-//   export function record<S, T>(f: (s: S) => T): (F: Record<string, S>) => Record<string, T> 
+//   export function record<S, T>(f: (s: S) => T): (F: Record<string, S>) => Record<string, T>
+//   export function record<S, T>(f: (s: S) => T): (F: Record<string, S>) => Record<string, T>
 //     { return (F: Record<string, S>) => Object.fromEntries(map.entries(f)(Object.entries(F))) }
 //   ///
 //   export function object<S, T>(f: (s: S) => T): <const R extends { [x: string]: S }>(repr: R) => { [K in keyof R]: T }
@@ -241,12 +248,12 @@ vi.describe(`〖⛳️️〗‹‹‹ ❲@traversable/core/ast❳`, () => {
 //   array: ReturnType<typeof t.array<T>>
 //   object: ReturnType<typeof t.object<{ [x: string]: T }>>
 //   optional: ReturnType<typeof t.optional<T>>
-//   tree: 
-//     | this["null"] 
-//     | this["boolean"] 
-//     | this["number"] 
-//     | this["string"] 
-//     | this["array"] 
+//   tree:
+//     | this["null"]
+//     | this["boolean"]
+//     | this["number"]
+//     | this["string"]
+//     | this["array"]
 //     | this["object"]
 //     | this["optional"]
 // }
@@ -258,7 +265,7 @@ vi.describe(`〖⛳️️〗‹‹‹ ❲@traversable/core/ast❳`, () => {
 // interface Arr extends Wrap<symbol.array> {}
 // interface Obj extends Wrap<symbol.object> {}
 
-// type TagTree = 
+// type TagTree =
 //   | [_tag: symbol.null]
 //   | [_tag: symbol.boolean]
 //   | [_tag: symbol.integer]
@@ -271,7 +278,7 @@ vi.describe(`〖⛳️️〗‹‹‹ ❲@traversable/core/ast❳`, () => {
 
 // interface TagTree_lambda extends HKT { [-1]: TagTreeF<this[0]> }
 
-// type TagTreeF<T> = 
+// type TagTreeF<T> =
 //   | [_tag: symbol.null]
 //   | [_tag: symbol.boolean]
 //   | [_tag: symbol.integer]
@@ -303,7 +310,7 @@ vi.describe(`〖⛳️️〗‹‹‹ ❲@traversable/core/ast❳`, () => {
 //   }
 // }
 
-// // interface 
+// // interface
 
 // const coalgebra: Functor.Coalgebra<TagTree_lambda, TagTree> = (pair) => {
 //   switch (true) {
@@ -374,11 +381,11 @@ vi.describe(`〖⛳️️〗‹‹‹ ❲@traversable/core/ast❳`, () => {
 
 
 // const scalar = fc.oneof(
-//   fc.constant(null), 
-//   fc.boolean(), 
-//   fc.integer(), 
-//   fc.float(), 
-//   fc.lorem(), 
+//   fc.constant(null),
+//   fc.boolean(),
+//   fc.integer(),
+//   fc.float(),
+//   fc.lorem(),
 // )
 
 // const tagTree = ($: Options = defaults) => fc.letrec((loop) => ({
@@ -406,7 +413,7 @@ vi.describe(`〖⛳️️〗‹‹‹ ❲@traversable/core/ast❳`, () => {
 // )
 
 
-// // type TagTree = 
+// // type TagTree =
 // //   | "null"
 // //   | "boolean"
 // //   | "number"
@@ -529,7 +536,7 @@ vi.describe(`〖⛳️️〗‹‹‹ ❲@traversable/core/ast❳`, () => {
 //       ]
 //     ]
 //   ]
-// ] 
+// ]
 
 
 
@@ -557,52 +564,52 @@ vi.describe(`〖⛳️️〗‹‹‹ ❲@traversable/core/ast❳`, () => {
 // function boolean_(constraints?: arbitrary.Constraints)
 //   : fc.Arbitrary<ReturnType<typeof t.boolean>>
 // function boolean_(_: arbitrary.Constraints = arbitrary.defaults)
-//   : fc.Arbitrary<ReturnType<typeof t.boolean>> 
+//   : fc.Arbitrary<ReturnType<typeof t.boolean>>
 //   { return fc.constant(t.boolean()) }
 
 // function number_(constraints?: arbitrary.Constraints)
 //   : fc.Arbitrary<ReturnType<typeof t.number>>
 // function number_(_: arbitrary.Constraints = arbitrary.defaults)
-//   : fc.Arbitrary<ReturnType<typeof t.number>> 
-//   { return fc.constant(t.number()) } 
+//   : fc.Arbitrary<ReturnType<typeof t.number>>
+//   { return fc.constant(t.number()) }
 
 // function string_(constraints?: arbitrary.Constraints)
 //   : fc.Arbitrary<ReturnType<typeof t.string>>
 // function string_(_: arbitrary.Constraints = arbitrary.defaults)
-//   : fc.Arbitrary<ReturnType<typeof t.string>> 
+//   : fc.Arbitrary<ReturnType<typeof t.string>>
 //   { return fc.constant(t.string()) }
 
 // function array_<T extends t.AST.Node>(
-//   model: fc.Arbitrary<T>, 
+//   model: fc.Arbitrary<T>,
 //   constraints?: arbitrary.Constraints
 // ): fc.Arbitrary<ReturnType<typeof t.array<T>>>
 // function array_<T extends t.AST.Node>(
-//   node: fc.Arbitrary<T>, 
+//   node: fc.Arbitrary<T>,
 //   _: arbitrary.Constraints = arbitrary.defaults
 // ): fc.Arbitrary<ReturnType<typeof t.array<T>>>
 //   { return node.map((x) => t.array(x)) }
 
 // function optional_<T extends t.AST.Node>(
-//   model: fc.Arbitrary<T>, 
+//   model: fc.Arbitrary<T>,
 //   constraints?: arbitrary.Constraints
 // ): fc.Arbitrary<ReturnType<typeof t.optional<T>>>
 // function optional_<T extends t.AST.Node>(
-//   node: fc.Arbitrary<T>, 
+//   node: fc.Arbitrary<T>,
 //   _: arbitrary.Constraints = arbitrary.defaults
 // ): fc.Arbitrary<ReturnType<typeof t.optional<T>>>
 //   { return node.map<ReturnType<typeof t.optional<T>>>(t.optional) }
 
 // // function object_<T extends { [x: string]: t.AST.Node } = {}>
 // //   (model: fc.Arbitrary<T>, constraints?: arbitrary.Constraints)
-// //   : fc.Arbitrary<ReturnType<typeof t.object<T>>> 
+// //   : fc.Arbitrary<ReturnType<typeof t.object<T>>>
 
 // // function object_<T extends { [x: string]: t.AST.Node } = {}>(
-// //   model: fc.Arbitrary<T>, 
+// //   model: fc.Arbitrary<T>,
 // //   _: arbitrary.Constraints = arbitrary.defaults
-// // ): fc.Arbitrary<ReturnType<typeof t.object<T>>> 
+// // ): fc.Arbitrary<ReturnType<typeof t.object<T>>>
 // //   { return fc.dictionary(model).map((xs) => t.object(xs)) }
 
-// // function object_(model: fc.Arbitrary<t.AST.Node>, _: arbitrary.Constraints = arbitrary.defaults): 
+// // function object_(model: fc.Arbitrary<t.AST.Node>, _: arbitrary.Constraints = arbitrary.defaults):
 // //   fc.Arbitrary<ReturnType<typeof t.object>>
 // //   { return fc.dictionary(model).map((xs) => t.object(xs)) }
 
@@ -636,7 +643,7 @@ vi.describe(`〖⛳️️〗‹‹‹ ❲@traversable/core/ast❳`, () => {
 // // }))
 
 // type Options = Partial<
-//   fc.OneOfConstraints 
+//   fc.OneOfConstraints
 //   & {
 
 //   }
@@ -701,8 +708,8 @@ vi.describe(`〖⛳️️〗‹‹‹ ❲@traversable/core/ast❳`, () => {
 // //   }, { requiredKeys: [] })
 // // }
 
-// // function BigIntNode(constraints?: arbitrary.Constraints): fc.Arbitrary<typeof S.bigint> 
-// // function BigIntNode(_: arbitrary.Constraints = arbitrary.defaults): fc.Arbitrary<typeof S.bigint> 
+// // function BigIntNode(constraints?: arbitrary.Constraints): fc.Arbitrary<typeof S.bigint>
+// // function BigIntNode(_: arbitrary.Constraints = arbitrary.defaults): fc.Arbitrary<typeof S.bigint>
 // //   /// impl.
 // //   { return fc.constant(S.bigint) }
 
@@ -710,14 +717,14 @@ vi.describe(`〖⛳️️〗‹‹‹ ❲@traversable/core/ast❳`, () => {
 // //   T extends { [x: string]: (u: any) => u is unknown },
 // //   S extends S.object.from<T> = S.object.from<T>
 // //   >(
-// //   model: fc.Arbitrary<T>, 
+// //   model: fc.Arbitrary<T>,
 // //   constraints?: arbitrary.Constraints
-// // ): fc.Arbitrary<typeof S.object<T, S>> 
+// // ): fc.Arbitrary<typeof S.object<T, S>>
 
 
 // // function AnyOfNode<
 // // // T extends readonly unknown[]
-// //   const T extends { [x: string]: (u: any) => u is unknown }, 
+// //   const T extends { [x: string]: (u: any) => u is unknown },
 // //   S extends S.object.from<T> = S.object.from<T>
 // // >(
 // //   model: fc.Arbitrary<T>,
@@ -727,41 +734,41 @@ vi.describe(`〖⛳️️〗‹‹‹ ❲@traversable/core/ast❳`, () => {
 // // function AnyOfNode<T>(
 // //   model: fc.Arbitrary<((u: unknown) => u is T)[]>,
 // //   constraints?: arbitrary.Constraints
-// // ): fc.Arbitrary<(u: unknown) => u is T> 
+// // ): fc.Arbitrary<(u: unknown) => u is T>
 
 // // function AnyOfNode<T>(
 // //   model: fc.Arbitrary<unknown>,
 // //   constraints?: arbitrary.Constraints
-// // ): fc.Arbitrary<(u: unknown) => u is T> 
+// // ): fc.Arbitrary<(u: unknown) => u is T>
 
 // // function AnyOfNode<T>(
 // //   model: fc.Arbitrary<((u: unknown) => u is T)[]>,
 // //   _: arbitrary.Constraints = arbitrary.defaults
-// // ): fc.Arbitrary<(u: unknown) => u is T> 
+// // ): fc.Arbitrary<(u: unknown) => u is T>
 // //   /// impl.
 // //   { return model.map((fns) => S.anyOf(...fns)) }
 
 // // function AllOfNode<T extends { [x: string]: unknown }>(
 // //   model: fc.Arbitrary<(u: unknown) => u is T> ,
 // //   constraints?: arbitrary.Constraints
-// // ): fc.Arbitrary<(u: unknown) => u is S.allOf<readonly T[]>> 
+// // ): fc.Arbitrary<(u: unknown) => u is S.allOf<readonly T[]>>
 
 // // function AllOfNode<T>(
 // //   model: fc.Arbitrary<(u: unknown) => u is T> ,
 // //   _: arbitrary.Constraints = arbitrary.defaults
-// // ): fc.Arbitrary<(u: unknown) => u is S.allOf<readonly T[]>> 
+// // ): fc.Arbitrary<(u: unknown) => u is S.allOf<readonly T[]>>
 // //   /// impl.
 // //   { return fc.array(model).map((fns) => S.allOf(...fns)) }
 
 
-// /** 
+// /**
 //  * =========================
 //  *    EXAMPLE-BASED TESTS
 //  * =========================
-//  * 
+//  *
 //  * These tests are included as a form of documentation only.
-//  * 
-//  * The actual tests (the ones that give us confidence) 
+//  *
+//  * The actual tests (the ones that give us confidence)
 //  * are located in the `describe` block directly below this one.
 //  */
 // // vi.describe("〖🚑〗‹‹‹ ❲@traversable/core/guard❳", () => {
@@ -797,8 +804,8 @@ vi.describe(`〖⛳️️〗‹‹‹ ❲@traversable/core/ast❳`, () => {
 // //     void vi.assert.isTrue(ex_02({ pqr: false, mno: "true" }))
 // //     void vi.assert.isFalse(ex_02({ mno: true }))
 // //     void vi.assert.isFalse(ex_02({ pqr: "true" }))
-// //     /** 
-// //      * "stu" field here can be `undefined` because 
+// //     /**
+// //      * "stu" field here can be `undefined` because
 // //      * `exactOptionalPropertyTypes` has not been set
 // //      * (defaults to false)
 // //      */
@@ -948,9 +955,9 @@ vi.describe(`〖⛳️️〗‹‹‹ ❲@traversable/core/ast❳`, () => {
 // // } as const
 
 
-// /** 
+// /**
 //  * ## {@link json `json`}
-//  */ 
+//  */
 // // function json<T extends json>(constraints?: arbitrary.Constraints): fc.LetrecValue<T>
 // // function json(_: arbitrary.Constraints = arbitrary.defaults) {
 // //   return fc.letrec(
@@ -973,5 +980,5 @@ vi.describe(`〖⛳️️〗‹‹‹ ❲@traversable/core/ast❳`, () => {
 // //         loop("null"),
 // //       ),
 // //     })
-// //   ) 
+// //   )
 // // }

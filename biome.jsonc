@@ -21,7 +21,9 @@
       "packages/*/dist/**/*",
       "packages/*/src/__generated__/**/*",
       "packages/*/test/__generated__/**/*",
-      "packages/core/src/guard/ast.ts"
+      "packages/core/src/guard/ast.ts",
+      "packages/core/src/guard/ast-lite.ts",
+      "packages/core/src/guard/guard.ts"
     ],
     "enabled": true,
     "rules": {

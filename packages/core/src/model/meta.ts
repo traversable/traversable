@@ -48,6 +48,5 @@ function Meta() {
 
 Meta.is = Meta().is
 
-interface Meta extends t.infer<ReturnType<typeof Meta>> {}
-
+interface Meta extends t.typeof<ReturnType<typeof Meta>> {}
 

@@ -1,15 +1,17 @@
 import * as _ from "./_internal.js"
 
 export {
-  allof$,
+  allOf$,
   and$,
-  anyof$,
+  anyOf$,
   array$,
   nullable$,
+  object$,
   optional$,
   or$,
   record$,
-} from "./_internal.js"
+  tuple$,
+} from "./combinators.js"
 
 export const is = {
   any: _.any,
@@ -25,8 +27,8 @@ export const is = {
   nonempty: _.nonempty,
   nonnullable: _.nonnullable,
   notnull: _.notnull,
-  nullable: _.nullable,
   null: _.null_,
+  nullable: _.nullable,
   number: _.number,
   object: _.object,
   primitive: _.primitive,
@@ -36,3 +38,17 @@ export const is = {
   true: _.true_,
   undefined: _.undefined_,
 }
+
+/** 
+ * **deprecated**
+ *   😵 😵 😵 😵
+ *   😵 😵 😵 😵
+ *   😵 😵 😵 😵
+ * **deprecated**
+ */
+export {
+  /** @deprecated 💀 use allOf$ instead */
+  allOf$ as allof$,
+  /** @deprecated 💀 use allOf$ instead */
+  anyOf$ as anyof$,
+} from "./combinators.js"

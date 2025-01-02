@@ -1,34 +1,43 @@
 export { 
   is,
-  allof$,
+  allOf$,
+  anyOf$,
   and$,
-  anyof$,
   array$,
   nullable$,
+  object$,
   optional$,
   or$,
   record$,
+  tuple$,
 } from "./predicates.js"
-export type { AST, Config, Meta, infer } from "./ast.js"
-export {
-  any,
-  anyOf,
-  null,
-  const,
-  boolean,
-  integer,
-  number,
-  record,
-  string,
-  array,
-  object,
-  optional,
-} from "./ast.js"
-export * as path from "./path.js"
 
-/// TODO: TMP
-export * as Lite from "./ast-lite.js"
-/// TODO: TMP
+export * as ast from "./ast-3.js"
+
+export type { Guard } from "./guard.js"
+export * as t from "./guard.js"
+
+// {
+//   // type infer,
+//   any,
+//   anyOf,
+//   null,
+//   const,
+//   boolean,
+//   integer,
+//   number,
+//   record,
+//   string,
+//   array,
+//   object,
+//   optional,
+//   symbol,
+// } from "./guard.js"
+
+export { toPaths } from "./toPaths.js"
+export { toJSON } from "./toJSON.js"
+export { toString } from "./toString.js"
+export { fromSeed } from "./fromSeed.js"
 
 import type { AST, Config, Tag } from "./ast.js"
 declare module "@traversable/core" {
@@ -57,6 +66,15 @@ declare module "@traversable/core" {
   const optional_: typeof import("./ast.js").optional_
   type optional_toJSON<T extends AST.Node = AST.Node> = import("./ast.js").optional_toJSON<T>
   type optional_toString<T extends AST.Node = AST.Node> = import("./ast.js").optional_toString<T>
-  // const toJSON: typeof import("./ast.js").toJSON
-  // const toString: typeof import("./ast.js").toString
 }
+
+// export * as path from "./toPaths.js"
+// const toJSON: typeof import("./ast.js").toJSON
+// const toString: typeof import("./ast.js").toString
+// export type { AST, Config, Meta, infer } from "./ast.js"
+// export type { AST } from "./ast-lite.js"
+// export { toJSON, toString } from "./ast.js"
+/** @deprecated use `allOf$` instead */
+// allof$,
+/** @deprecated use `anyOf$` instead */
+// anyof$,

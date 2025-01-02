@@ -537,7 +537,7 @@ vi.describe("〖🧙〗‹‹‹ ❲@traversable/core/tree❳", () => {
     }
   } as const
 
-  vi.it("〖🧙〗› tree.get", () => {
+  vi.it("〖🧙〗› ❲tree.get❳", () => {
     vi.assertType<readonly [13, { v: 14 }]>
       (tree.get(input_01, "m", "o", "p", 3, "q", "r", 1, "t", "u"))
 
@@ -596,7 +596,7 @@ vi.describe("〖🧙〗‹‹‹ ❲@traversable/core/tree❳", () => {
     >(tree.get(input_01, "a"))
   })
 
-  vi.it("〖🧙〗› tree.get.defer", () => {
+  vi.it("〖🧙〗› ❲tree.get.defer❳", () => {
     vi.assertType<readonly [13, { v: 14 }]>
       (tree.get.defer("m", "o", "p", 3, "q", "r", 1, "t", "u")(input_01))
 

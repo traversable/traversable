@@ -1,5 +1,9 @@
 import type { key, keys } from "@traversable/data"
-import { symbol } from "@traversable/registry"
+import { fn } from "@traversable/data"
+import { symbol as Sym } from "@traversable/registry"
+import type { Array, Functor } from "@traversable/registry"
+
+import { AST } from "./ast-3.js"
 import type { Leaf, Pathspec } from "./types.js"
 
 export type Handler<K = never, O extends string = string> = (k: [K] extends [never] ? keyof any : K, prev?: keyof any, next?: keyof any | Leaf) => O | false
@@ -32,9 +36,9 @@ export function defineMatcher<O extends string>(
 export function defineMatcher(predicate: (k: key.any) => boolean, handler: Handler) 
   { return { predicate, handler } }
 
-const isRecordSymbol = (k: key.any): k is symbol.record => k === symbol.record
-const isArraySymbol = (k: key.any): k is symbol.record => k === symbol.array
-const isOptionalSymbol = (k: key.any): k is symbol.record => k === symbol.optional
+const isRecordSymbol = (k: key.any): k is Sym.record => k === Sym.record
+const isArraySymbol = (k: key.any): k is Sym.record => k === Sym.array
+const isOptionalSymbol = (k: key.any): k is Sym.record => k === Sym.optional
 const isString = (k: key.any): k is string => typeof k === "string"
 const isNumber = (k: key.any): k is number => typeof k === "number"
 
@@ -61,7 +65,7 @@ export const docs = [
   defineMatcher(isString, (k, prev): DotPrefixed => `${prev == null ? "" : "."}${k}`),
   defineMatcher(isArraySymbol, () => `[number]` as const),
   defineMatcher(isRecordSymbol, () => `[string]` as const),
-  defineMatcher(isOptionalSymbol, (_, prev) => prev === symbol.optional || prev === symbol.nullable ? false : "?"),
+  defineMatcher(isOptionalSymbol, (_, prev) => prev === Sym.optional || prev === Sym.nullable ? false : "?"),
 ] as const satisfies Matcher[]
 
 /** 
@@ -81,7 +85,7 @@ export const docs = [
  * the corresponding handler function is applied to the match.
  * 
  * **Note:** If no match is found, the path segment will not be kept. If you'd 
- * like to change that behavior, you can pass `() => true, k => k` for the 
+ * like to change that behavior, you can pass `[() => true, k => k]` for the 
  * final matcher.
  */
 export function interpreter<T extends readonly Matcher[]>(matchers: T, ks: Pathspec): keys.any 
@@ -99,3 +103,42 @@ export function interpreter($: readonly Matcher[], _: Pathspec) {
   }
   return out.filter((_) => _ !== false)
 }
+
+export const path = (x: Leaf, ...xs: keys.any): Array<Pathspec> => [[...xs, x]]
+export const prepend = (k: key.any, y?: key.any) => (xs: Pathspec): Pathspec => [...y ? [k, y] : [k], ...xs]
+
+export namespace Recursive {
+  export const toPaths: Functor.Algebra<AST.lambda, Array<Pathspec>> = (n) => {
+    switch (true) {
+      default: return fn.exhaustive(n)
+      case n._tag === "null":
+      case n._tag === "boolean":
+      case n._tag === "symbol":
+      case n._tag === "integer":
+      case n._tag === "number": 
+      case n._tag === "string": 
+      case n._tag === "any": 
+      case n._tag === "const": return path({ leaf: n._tag })
+      case n._tag === "optional": return n._def.map(prepend(Sym.optional))
+      case n._tag === "array": return n._def.map(prepend(Sym.array))
+      case n._tag === "record": return n._def.map(prepend(Sym.record))
+      case n._tag === "allOf": return n._def.length === 0
+        ? path({ leaf: n._def }) 
+        : n._def.flatMap((ks, i) => ks.map(prepend(Sym.allOf, i)))
+      case n._tag === "anyOf": return n._def.length === 0
+        ? path({ leaf: n._def }) 
+        : n._def.flatMap((ks, i) => ks.map(prepend(Sym.anyOf, i)))
+      case n._tag === "tuple": return n._def.length === 0
+        ? path({ leaf: n._def }) 
+        : n._def.flatMap((ks, i) => ks.map(prepend(i)))
+      case n._tag === "object": {
+        const xs = Object.entries(n._def) 
+        return xs.length === 0
+          ? path({ leaf: n._def }) 
+          : xs.flatMap(([k, ks]) => ks.map(prepend(k))) 
+      }
+    }
+  }
+}
+
+export const toPaths = AST.fold(Recursive.toPaths)

@@ -1,8 +1,3 @@
-import type { AllOf, AnyOf, Guard, Primitive, Showable } from "@traversable/registry"
-
-/** @internal */
-const Object_is = globalThis.Object.is
-
 ////////////////////
 ///    atomic    ///
 export const function_ = (u: unknown): u is (...args: any) => unknown => typeof u === "function"
@@ -22,19 +17,6 @@ export const symbol = (u: unknown): u is symbol => typeof u === "symbol"
 ///    type-guards    ///
 /////////////////////////
 
-/////////////////////////
-///    combinators    ///
-export const or$ = <S, T>(f: (u: unknown) => u is S, g: (u: unknown) => u is T) => (u: unknown): u is S | T => f(u) || g(u)
-export const and$ = <S, T>(f: (u: unknown) => u is S, g: (u: unknown) => u is T) => (u: unknown): u is S & T => f(u) && g(u)
-export const anyof$ = <S extends readonly Guard[], T = AnyOf<S>>(...guards: [...S]) => (u: unknown): u is T => guards.some((f) => f(u))
-export const allof$ = <S extends readonly Guard[], T = AllOf<S>>(...guards: [...S]) => (u: unknown): u is T => guards.every((f) => f(u))
-export const array$ = <T>(guard: (u: unknown) => u is T) => (u: unknown): u is readonly T[] => array(u) && u.every(guard)
-export const record$ = <T>(guard: (u: unknown) => u is T) => (u: unknown): u is Record<string, T> => object(u) && Object.values(u).every(guard)
-export const optional$ = <T>(guard: (u: unknown) => u is T) => or$(guard, undefined_)
-export const nullable$ = <T>(guard: (u: unknown) => u is T) => or$(guard, null_)
-///    combinators    ///
-/////////////////////////
-
 ///////////////////////
 ///    composite    ///
 export function literally<T extends {} | null | undefined>(value: T): (u: unknown) => u is T 
@@ -43,7 +25,12 @@ export function literally(...values: readonly ({} | null | undefined)[]): (u: un
   return (u): u is never => values.includes(u)
 }
 
-export const key = anyof$(symbol, number, string)
+///////////////////
+///    misc.    ///
+export const key = (u: unknown): u is keyof any => 
+     typeof u === "string" 
+  || typeof u === "number" 
+  || typeof u === "symbol"
 export const showable = (u: unknown) => u == null
   || typeof u === "boolean"
   || typeof u === "number"
@@ -55,6 +42,7 @@ export const primitive = (u: unknown) => u == null
   || typeof u === "bigint"
   || typeof u === "string"
   || typeof u === "symbol"
+
 export const true_ = (u: unknown): u is true => u === true
 export const false_ = (u: unknown): u is false => u === false
 
