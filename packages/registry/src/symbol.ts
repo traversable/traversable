@@ -2,7 +2,7 @@ export { symbol_ as symbol, URI }
 
 const ns = "@traversable/registry/URI" as const
 const URI_REGISTRY = `${ns}::KnownSymbolRegistry`
-
+///
 const URI_null = `${ns}::Null` as const
 type URI_null = typeof URI_null
 const URI_undefined = `${ns}::Undefined` as const
@@ -19,7 +19,11 @@ const URI_string = `${ns}::String` as const
 type URI_string = typeof URI_string
 const URI_object = `${ns}::Object` as const
 type URI_object = typeof URI_object
-
+const URI_any = `${ns}::Any` as const
+type URI_any = typeof URI_any
+const URI_unknown = `${ns}::Unknown` as const
+type URI_unknown = typeof URI_unknown
+///
 const symbol_null = Symbol.for(URI_null)
 type symbol_null = typeof symbol_null
 const symbol_undefined = Symbol.for(URI_undefined)
@@ -37,21 +41,11 @@ type symbol_string = typeof symbol_string
 const symbol_object = Symbol.for(URI_object)
 type symbol_object = typeof symbol_object
 const symbol_REGISTRY = Symbol.for(URI_REGISTRY)
+const symbol_any = Symbol.for(URI_any)
+type symbol_any = typeof symbol_any
+const symbol_unknown = Symbol.for(URI_unknown)
+type symbol_unknown = typeof symbol_unknown
 type symbol_REGISTRY = typeof symbol_REGISTRY
-
-declare namespace URI {
-  export { URI_REGISTRY as REGISTRY }
-  export {
-    URI_null as null,
-    URI_undefined as undefined,
-    URI_boolean as boolean,
-    URI_symbol as symbol,
-    URI_number as number,
-    URI_bigint as bigint,
-    URI_string as string,
-    URI_object as object,
-  }
-}
 
 namespace URI {
   /////////////////////////////////////////////////////
@@ -86,6 +80,8 @@ namespace URI {
   export const unit = `${ns}::Unit` as const
   export type unit = typeof URI.unit
   export const numeric_index = `${ns}::NumericIndex` as const
+  export const TypeError = `${ns}TypeError` as const
+  export type TypeError = typeof URI.TypeError
   export type numeric_index = typeof URI.numeric_index
   export const string_index = `${ns}::StringIndex` as const
   export type string_index = typeof URI.string_index
@@ -104,9 +100,9 @@ namespace URI {
   export const nonfinite = `${ns}::NonFinite` as const
   export type nonfinite = typeof URI.nonfinite
   export const anyOf = `${ns}::AnyOf` as const
+  export type anyOf = typeof URI.anyOf
   export const integer = `${ns}::Integer` as const
   export type integer = typeof URI.integer
-  export type anyOf = typeof URI.anyOf
   export const array = `${ns}::Array` as const
   export type array = typeof URI.array
   export const record = `${ns}::Record` as const
@@ -123,7 +119,25 @@ namespace URI {
   /////////////////////////////////////////////////////
 }
 
+declare namespace URI {
+  export { URI_REGISTRY as REGISTRY }
+  export {
+    URI_any as any,
+    URI_unknown as unknown,
+    URI_null as null,
+    URI_undefined as undefined,
+    URI_boolean as boolean,
+    URI_symbol as symbol,
+    URI_number as number,
+    URI_bigint as bigint,
+    URI_string as string,
+    URI_object as object,
+  }
+}
+
 void (URI.REGISTRY = URI_REGISTRY)
+void (URI.any = URI_any)
+void (URI.unknown = URI_unknown)
 void (URI.null = URI_null)
 void (URI.undefined = URI_undefined)
 void (URI.boolean = URI_boolean)
@@ -133,19 +147,6 @@ void (URI.bigint = URI_bigint)
 void (URI.string = URI_string)
 void (URI.object = URI_object)
 
-declare namespace symbol_ {
-  export { symbol_REGISTRY as REGISTRY }
-  export {
-    symbol_null as null,
-    symbol_undefined as undefined,
-    symbol_boolean as boolean,
-    symbol_symbol as symbol,
-    symbol_number as number,
-    symbol_bigint as bigint,
-    symbol_string as string,
-    symbol_object as object,
-  }
-}
 namespace symbol_ {
   export const ref = Symbol.for(URI.ref)
   export type ref = typeof symbol_.ref
@@ -159,6 +160,8 @@ namespace symbol_ {
   export type optional = typeof symbol_.optional
   export const unit = Symbol.for(URI.unit)
   export type unit = typeof symbol_.unit
+  export const TypeError = Symbol.for(URI.TypeError)
+  export type TypeError = typeof symbol_.TypeError
   export const numeric_index = Symbol.for(URI.numeric_index)
   export type numeric_index = typeof symbol_.numeric_index
   export const string_index = Symbol.for(URI.string_index)
@@ -196,7 +199,24 @@ namespace symbol_ {
   export type tag = typeof symbol_.tag
 }
 
+declare namespace symbol_ {
+  export { symbol_REGISTRY as REGISTRY }
+  export {
+    symbol_any as any,
+    symbol_unknown as unknown,
+    symbol_null as null,
+    symbol_undefined as undefined,
+    symbol_boolean as boolean,
+    symbol_symbol as symbol,
+    symbol_number as number,
+    symbol_bigint as bigint,
+    symbol_string as string,
+    symbol_object as object,
+  }
+}
 void (symbol_.REGISTRY = symbol_REGISTRY)
+void (symbol_.any = symbol_any)
+void (symbol_.unknown = symbol_unknown)
 void (symbol_.undefined = symbol_undefined)
 void (symbol_.null = symbol_null)
 void (symbol_.boolean = symbol_boolean)

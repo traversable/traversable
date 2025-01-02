@@ -4,9 +4,20 @@ export type * from "./types.js"
 export type { emoji, gitmoji, jsdoc, math } from "./utf-16.js"
 export type { integer, number } from "./newtypes.js"
 export type { string } from "./newtypes.js"
+export type { Finite } from "./finite.js"
+export { finite } from "./finite.js"
 
 export * from "./version.js"
 export * as Invariant from "./error.js"
+export type { 
+  NonFinite,
+  NonFiniteBoolean ,
+  NonFiniteIndex, 
+  NonFiniteNumber, 
+  NonFiniteString, 
+  TypeError,
+} from "./error.js"
+
 export { PATTERN } from "./pattern.js"
 export { URI, symbol } from "./symbol.js"
 export type {

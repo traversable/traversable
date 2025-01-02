@@ -15,7 +15,7 @@ export interface Array<T = unknown> extends newtype<readonly T[]> {}
 
 export type Consumes<T> = T extends (_: infer I) => unknown ? I : never
 export type Produces<T> = T extends (_: never) => infer O ? O : never
-export type Returns<T> = T extends (..._: any) => infer O ? O : never
+export type Returns<T> = T extends (..._: any) => infer O ? O : T
 export type Partial<T> = never | { -readonly [K in keyof T]+?: T[K] }
 export type Required<T> = never | { -readonly [K in keyof T]-?: T[K] }
 export type KeepFirst<S, T> = never | KeepLast<T, S>
@@ -188,22 +188,6 @@ export declare namespace HKT {
 // export interface Fix_<F> extends HKT<F, Fix_<F>> {}
 
 /**
- * ## {@link Fix `Fix`}
- *
- * @example
- *  import { HKT, Fix } from "@traversable/registry"
- */
-export interface Fix<F> {
-  get fix(): Fix<this>
-  get unfix(): F
-}
-export type Unfix<F extends Fix<any>> = F["unfix"]
-
-// export interface Fix<F> extends HKT<F, Fix<F>> {}
-// export interface Fix<F> extends HKT<Fix<F>> { [-1]: this, unfix: HKT<F, Fix<F>>[0] }
-// export interface Fix<F> extends HKT<Fix<F>>, newtype<{ unfix: HKT<F, Fix<F>> }> {}
-
-/**
  * ## {@link Countable `Countable`}
  *
  * Greatest-lower bound of the set of "indexable" values.
@@ -257,17 +241,138 @@ export interface Enumerable<T = unknown> extends Spreadable<T> {
  * ## {@link Functor `Functor`}
  */
 export interface Functor<F extends HKT = HKT, _F = any> {
-  _F?: 1 extends _F & 0 ? F : Extract<_F, HKT>
   map<S, T>(f: (s: S) => T): (F: HKT.apply<F, S>) => HKT.apply<F, T>
+  _F?: 1 extends _F & 0 ? F : Extract<_F, HKT>
+}
+
+/** 
+ * ## {@link Fix `Fix`}
+ * 
+ * Like functions in math, functors can (and often do) have "fix points".
+ * 
+ * I'm a visual learner, so I like to think of a functor's fixpoint like a
+ * [vanishing point](https://en.wikipedia.org/wiki/Vanishing_point).
+ * 
+ * Mathematicians might take issue with the comparison, but I find it helpful
+ * when building an intuition.
+ * 
+ * When you're modeling recursive data types in the type system, it can
+ * sometimes get really tricky. TypeScript does _an amazing_ job of hiding
+ * some of that complexity.
+ * 
+ * To see what I mean, let's model JSON as a type. Here's one way we could
+ * do that:
+ * 
+ * ```typescript
+ * type Scalar = null | boolean | number | string
+ * type Json =
+ *   | Scalar
+ *   | Json[]
+ *   | { [x: string]: Json }
+ * ```
+ * 
+ * If you've worked with TypeScript for a while, the fact that you can refer to
+ * `Json` inside the definition might seem totally normal. But the fact that 
+ * TypeScript pulls this off is actually really impressive.
+ * 
+ * So what's the problem?
+ * 
+ * The problem is that this is ✨magical✨ -- in both senses.
+ * 
+ * If you try using the `Json` type we created, pretty soon you'll run into a
+ * problem: `undefined`.
+ * 
+ * Or more precisely: `Json` doesn't support with _optional properties_, because
+ * optional properties unify a property with `undefined`.
+ * 
+ * A naive attempt to fix this problem might look like this:
+ * 
+ * ```typescript
+ * type Json2 = undefined | Json
+ * ```
+ * 
+ * But that won't work either, since `Json2` can only express `undefined` at the
+ * root level -- `{ x: number, y: number, name?: number }` for example won't work,
+ * because the `undefined` is nested in the tree.
+ * 
+ * Okay, you might say: so update `Json` type to include `undefined` first-class. 
+ * 
+ * And that would work as a partial solution. But it also might not work, since 
+ * it could introduce bugs elsewhere in the system where we don't want `undefined`
+ * leaking into our data structures at any level.
+ * 
+ * Really, the problem is that we're trying to use a single type to model different
+ * things, and we don't have a good way to express what we want without copy/pasting
+ * the implementations. 
+ * 
+ * These 2 types are _related_, but slightly different, and we
+ * don't have a good way to express that relationship. 
+ * 
+ * Which in this case is probably okay -- it's not everyday that
+ * we need to incorporate upstream changes to the JSON spec (fortunately), so its
+ * unlikely that the two will "drift" over time.
+ * 
+ * But what if we needed more flexibility? What if we expect the recursive data structure
+ * we're modeling will change, or even worse, what if we needed to allow users to
+ * extend it arbitrarily?
+ * 
+ * And that's not even the start of the problem. What about operations that take 
+ * `Json` as input and reduce it down to something else? Even if you found a nice 
+ * pattern for doing that, as soon as you turn to a new recursive domain, you have
+ * to resolve all of those problems, and there's no way to re-use anything from
+ * the `Json` domain, since with recursion, the problems are _almost always_ unique to
+ * the use case.
+ * 
+ * I've got some good news and some bad news.
+ * 
+ * The good news is that it is possible to represent recursive data types, and
+ * operations over recursive data types, in a way that is reusable. And it turns out,
+ * a lot of the code that we write for one domain _will transfer_ to other recursive
+ * problems.
+ * 
+ * The bad news is that the solution, although actually pretty elegant if you take 
+ * the time to work through it, looks pretty damn scary.
+ * 
+ * The nice thing about using a library for this kind of thing is that you don't
+ * actually need to grok {@link Fix `Fix`} or {@link Unfix `Unfix`} to be able to
+ * use some of the abstractions that fall out of its use.
+ * 
+ * One tidbit that I found interesting is the relationship between a functor's 
+ * fixpoint and the Y-combinator. In fact, depending on your level of abstraction,
+ * you _could_ almost say they're "the same".
+ * 
+ * See also:
+ * - {@link Functor `Functor`}
+ * - I found 
+ *   [this explanation](https://stackoverflow.com/questions/45916299/understanding-the-fix-datatype-in-haskell/45916939#45916939)
+ *   pretty helpful, but YMMV
+ */
+export interface Fix<F extends HKT, T> { next: Fix.unfix<F, T> }
+export declare namespace Fix {
+  type unfix<F extends HKT, T> = HKT.apply<F, Fix<F, T>>
+}
+
+export namespace Fix {
+  export const fix
+    : <F extends HKT, T>(F: Fix.unfix<F, T>) => Fix<F, T>
+    = (F) => ({ next: F })
+  export const unfix
+    : <F extends HKT, T>(F: Fix<F, T>) => Fix.unfix<F, T> 
+    = (F) => F.next
+}
+
+export interface Pointed<F extends HKT> { of<T>(t: T): HKT.apply<F, T> }
+
+export interface Fold<F extends HKT, T, S> {
+  (fixed: Fix<F, S>): T
 }
 
 export declare namespace Functor {
-  type map<F extends HKT> =
-    | never
-    | {
-        <S, T>(st: (s: S) => T): { (F: HKT.apply<F, S>): HKT.apply<F, T> }
-        <S, T>(F: HKT.apply<F, S>, st: (s: S) => T): HKT.apply<F, T>
-      }
+  type map<F extends HKT> = never | {
+    <S, T>(F: HKT.apply<F, S>, st: (s: S) => T): HKT.apply<F, T>
+    <S, T>(st: (s: S) => T): { (F: HKT.apply<F, S>): HKT.apply<F, T> }
+  }
+
   // type AlgebraFromFunctor<F extends Functor, T> = never | { (term: HKT.apply<F["_F"] & {}, T>): T }
   type Algebra<F extends HKT, T> = never | { (term: HKT.apply<F, T>): T }
   type Coalgebra<F extends HKT, T> = never | { (expr: T): HKT.apply<F, T> }
@@ -375,22 +480,22 @@ export type Force<T> = never | { -readonly [K in keyof T]: T[K] }
 /**
  * ### {@link Spread `Spread`}
  *
- * Preserves JSDoc annotations. If a property is has JSDoc annotations in both
- * {@link T `T`} and {@link U `U`}, the docs for the property in {@link U `U`}
- * are concatenated onto the end of the docs for the property in {@link T `T`}.
+ * Preserves JSDoc annotations. If a property has JSDoc annotations in both
+ * {@link S `S`} and {@link T `T`}, the docs for the property in {@link T `T`}
+ * are concatenated onto the end of the docs for the property in {@link S `S`}.
  */
-export type Spread<T, U, _K extends keyof (T | U) = keyof (T | U)> =
+export type Spread<S, T, _ extends keyof (S | T) = keyof (S | T)> =
   | never
-  | (Pick<T | U, _K> & Omit<T, _K> & Omit<U, _K>)
+  | (Pick<S | T, _> & Omit<S, _> & Omit<T, _>)
 
 /**
  * ### {@link Merge `Merge`}
  *
  * Preserves JSDoc annotations. If a property is has JSDoc annotations in both
- * {@link T `T`} and {@link U `U`}, the docs for the property in {@link U `U`}
- * are concatenated onto the end of the docs for the property in {@link T `T`}.
+ * {@link S `S`} and {@link T `T`}, the docs for the property in {@link T `T`}
+ * are concatenated onto the end of the docs for the property in {@link S `S`}.
  */
-export type Merge<T, U> = never | Force<Spread<T, U>>
+export type Merge<S, T> = never | Force<Spread<S, T>>
 
 export type Part<T, K extends keyof T = never> = [K] extends [never]
   ? never | Partial<T>
@@ -627,7 +732,7 @@ export interface OpenRecord<T extends {}> extends newtype<T> {}
 
 export declare namespace Open {
   /**
-   * ### {@link HKT `Open.Kind`}
+   * ### {@link lambda `Open.lambda`}
    *
    * Partially apply an {@link OpenRecord}. Gives users an
    * extension point where they can apply their own semantics
@@ -645,8 +750,8 @@ export declare namespace Open {
    * // updates to `Wrapper[0]` will be observed here 🠙🠙🠙
    *
    * declare function configure<const T extends {}>(overrides: T & Partial<Options>):
-   *   Open.Kind<T, Options, Wrapper>
-   *   //                    ^^ pass the wrapper to `Open.Kind`
+   *   Open.lambda<T, Options, Wrapper>
+   *   //                     ^^ pass the wrapper to `Open.lamda`
    *
    * // Note that `ex_01` is wrapped with `YourSemantics`
    * const ex_01 = configure({ indentation: "\t", CUSTOM: "hey", })
@@ -664,9 +769,9 @@ export declare namespace Open {
   type lambda<
     T extends {},
     Base,
-    Kind extends HKT,
+    F extends HKT,
     _ extends Force<T & Required<Omit<Base, keyof T>>> = Force<T & Required<Omit<Base, keyof T>>>,
-  > = HKT.apply<Kind, _>
+  > = HKT.apply<F, _>
   interface Record<T extends {}> extends newtype<T> {}
 }
 
@@ -674,3 +779,19 @@ export declare namespace Open {
 // interface Capture extends HKT<(_: any) => unknown> {
 //   [-1]: <T extends Parameters<this[0] & {}>[0]>(_: T) => ReturnType<this[0] & {}>
 // }
+
+
+/**
+ * ## {@link Fix `Fix`}
+ *
+ * @example
+ *  import { HKT, Fix } from "@traversable/registry"
+ */
+// export interface Fix<F> {
+//   get fix(): Fix<this>
+//   get unfix(): F
+// }
+// export type Unfix<F extends Fix<any>> = F["unfix"]
+// export interface Fix<F> extends HKT<F, Fix<F>> {}
+// export interface Fix<F> extends HKT<Fix<F>> { [-1]: this, unfix: HKT<F, Fix<F>>[0] }
+// export interface Fix<F> extends HKT<Fix<F>>, newtype<{ unfix: HKT<F, Fix<F>> }> {}
