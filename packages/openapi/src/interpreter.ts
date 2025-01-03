@@ -28,7 +28,7 @@ import {
   type prop, 
   string,
 } from "@traversable/data"
-import type { Force, Pick, Part, Partial } from "@traversable/registry"
+import type { Force, Part, Partial, Pick } from "@traversable/registry"
 import { symbol } from "@traversable/registry"
 import type { any } from "any-ts"
 

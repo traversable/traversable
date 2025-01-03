@@ -254,6 +254,7 @@ const loopRefs = fn.loopN<[_: Serializable, ctx: serialize.Context], void>(
       case (typeof  _) === "string":
       case (typeof  _) === "symbol":
       case (typeof  _) === "bigint": return void 0
+      case (typeof _) === "function": return "Function(" + (_ as globalThis.Function).name + ")"
       case Array_isArray(_): {
         if ($.seen.has(_)) {
           const pathToSeen = $.seen.get(_)
@@ -298,6 +299,7 @@ const loop = fn.loopN<[_: Serializable, $: serialize.Context], string>(
       case (typeof  _) === "number": return $.colors.number($.hooks.number(_, $))
       case (typeof  _) === "string": return $.colors.string($.hooks.string(_, $))
       case (typeof  _) === "bigint": return $.hooks.bigint(_, $)
+      case (typeof _) === "function": return "Function(" + (_ as globalThis.Function).name + ")"
       case Array_isArray(_): {
         if ($.seen.has(_)) return $.colors.circular($.hooks.circular(_, $))
         else void ($.seen.set(_, $.path))

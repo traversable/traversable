@@ -1,7 +1,7 @@
-import type { Functor } from "@traversable/registry"
 import { fn } from "@traversable/data"
+import type { Functor } from "@traversable/registry"
 import type { Json } from "../json.js"
-import { AST } from "./ast-3.js"
+import { AST } from "./ast.js"
 
 export namespace Recursive {
   export const toJSON: Functor.Algebra<AST.lambda, Json> = (term) => {

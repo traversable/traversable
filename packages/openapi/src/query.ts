@@ -1,4 +1,4 @@
-import { JsonPointer, t, tree } from "@traversable/core"
+import { JsonPointer, is, t, tree } from "@traversable/core"
 import { fn } from "@traversable/data"
 import type { prop, props } from "@traversable/data"
 import { Invariant, SCOPE } from "@traversable/registry"
@@ -93,10 +93,10 @@ find.loop = fn.loopN<find.Deps, void>((src, ks, refs, qs, loop): void => {
     break 
   }
   switch (true) {
-    case t.is.nullable(src): break
-    case t.is.primitive(src): break
-    case t.is.array(src): return src.forEach((x, ix) => loop(x, [...ks, ix], refs, qs))
-    case t.is.object(src): return Object_keys(src).forEach((k) => loop(src[k], [...ks, k], refs, qs))
+    case is.nullable(src): break
+    case is.primitive(src): break
+    case is.array(src): return src.forEach((x, ix) => loop(x, [...ks, ix], refs, qs))
+    case is.object(src): return Object_keys(src).forEach((k) => loop(src[k], [...ks, k], refs, qs))
     default: return Invariant.IllegalState("@traversable/openapi/find", src)
   }
 })
@@ -137,10 +137,10 @@ filter.loop = fn.loopN<filter.Deps, void>((src, ks, refs, qs, loop): void => {
     void (refs[k].push(ks))
   )
   switch (true) {
-    case t.is.nullable(src): break
-    case t.is.primitive(src): break
-    case t.is.array(src): return src.forEach((x, ix) => loop(x, [...ks, ix], refs, qs))
-    case t.is.object(src): return Object_keys(src).forEach((k) => loop(src[k], [...ks, k], refs, qs))
+    case is.nullable(src): break
+    case is.primitive(src): break
+    case is.array(src): return src.forEach((x, ix) => loop(x, [...ks, ix], refs, qs))
+    case is.object(src): return Object_keys(src).forEach((k) => loop(src[k], [...ks, k], refs, qs))
     default: return Invariant.IllegalState(`${SCOPE}/openapi/filter`, src)
   }
 })
@@ -168,11 +168,11 @@ accessors.loop = fn.loopN<accessors.Deps, void>((cursor, ks, access, qs, root, l
     // console.log("ks", ks)
   }
     switch (true) {
-      case t.is.nullable(cursor): break
-      case t.is.primitive(cursor): break
-      case t.is.array(cursor): 
+      case is.nullable(cursor): break
+      case is.primitive(cursor): break
+      case is.array(cursor): 
         return cursor.forEach((x, ix) => loop(x, [...ks, ix], access, qs, root))
-      case t.is.object(cursor): 
+      case is.object(cursor): 
         return Object_keys(cursor).forEach((k) => loop(cursor[k], [...ks, k], access, qs, root))
       default: 
         return Invariant.IllegalState(`${SCOPE}/openapi/accessors`, cursor)

@@ -27,11 +27,11 @@ vi.describe("〖️⛳️〗‹‹‹ ❲@traversable/algebra/sort❳", () => {
     } as const satisfies Traversable
 
     const expected_01: [string, unknown][] = [
-      ["Z", { type: "string" }],
+      ["Z", { type: "string", meta: {} }],
       ["Y", { type: "object", properties: {} }],
       ["X", { type: "object", properties: { xx_1: { type: "tuple", items: [{ type: "string", originalIndex: 0 }] } } }],
       ["W", { type: "object", properties: { ww_1: { type: "null" }, ww_2: { type: "null" } } }],
-      ["V", { type: "object", properties: { vv_1: { type: "null" }, vv_2: { type: "string" } } }],
+      ["V", { type: "object", properties: { vv_1: { type: "null" }, vv_2: { type: "string", meta: {} } } }],
       ["U", { type: "array", items: { type: "null" } }],
     ]
 
@@ -47,7 +47,7 @@ vi.describe("〖️⛳️〗‹‹‹ ❲@traversable/algebra/sort❳", () => {
     const input_02 = Object.entries(input_00.properties.V.properties)
     const expected_02 = [
       ["vv_1", { type: "null" }],
-      ["vv_2", { type: "string" }],
+      ["vv_2", { type: "string", meta: {} }],
     ]
 
     vi.assert.notDeepEqual(actual_02, input_02)
@@ -172,26 +172,32 @@ vi.describe("〖️⛳️〗‹‹‹ ❲@traversable/algebra/sort❳", () => {
         [
           "rOne",
           {
+            "meta": {},
             "type": "boolean",
           },
         ],
         [
           "rTwo",
           {
+            "meta": {},
             "type": "number",
           },
         ],
         [
           "rThree",
           {
+            "meta": {},
             "properties": {
               "A": {
+                "meta": {},
                 "type": "null",
               },
               "B": {
+                "meta": {},
                 "type": "null",
               },
               "C": {
+                "meta": {},
                 "type": "null",
               },
             },
@@ -201,14 +207,18 @@ vi.describe("〖️⛳️〗‹‹‹ ❲@traversable/algebra/sort❳", () => {
         [
           "rFour",
           {
+            "meta": {},
             "properties": {
               "A": {
+                "meta": {},
                 "type": "null",
               },
               "B": {
+                "meta": {},
                 "type": "null",
               },
               "C": {
+                "meta": {},
                 "type": "null",
               },
             },
@@ -218,14 +228,18 @@ vi.describe("〖️⛳️〗‹‹‹ ❲@traversable/algebra/sort❳", () => {
         [
           "rFive",
           {
+            "meta": {},
             "properties": {
               "A": {
+                "meta": {},
                 "type": "null",
               },
               "B": {
+                "meta": {},
                 "type": "null",
               },
               "C": {
+                "meta": {},
                 "type": "null",
               },
             },
@@ -237,58 +251,74 @@ vi.describe("〖️⛳️〗‹‹‹ ❲@traversable/algebra/sort❳", () => {
     vi.expect(actual_03.properties.eighteen.items).toMatchInlineSnapshot(`
       [
         {
+          "meta": {},
           "originalIndex": 1,
           "type": "null",
         },
         {
+          "meta": {},
           "originalIndex": 0,
           "properties": {
             "rFive": {
+              "meta": {},
               "properties": {
                 "A": {
+                  "meta": {},
                   "type": "null",
                 },
                 "B": {
+                  "meta": {},
                   "type": "null",
                 },
                 "C": {
+                  "meta": {},
                   "type": "null",
                 },
               },
               "type": "object",
             },
             "rFour": {
+              "meta": {},
               "properties": {
                 "A": {
+                  "meta": {},
                   "type": "null",
                 },
                 "B": {
+                  "meta": {},
                   "type": "null",
                 },
                 "C": {
+                  "meta": {},
                   "type": "null",
                 },
               },
               "type": "object",
             },
             "rOne": {
+              "meta": {},
               "type": "boolean",
             },
             "rThree": {
+              "meta": {},
               "properties": {
                 "A": {
+                  "meta": {},
                   "type": "null",
                 },
                 "B": {
+                  "meta": {},
                   "type": "null",
                 },
                 "C": {
+                  "meta": {},
                   "type": "null",
                 },
               },
               "type": "object",
             },
             "rTwo": {
+              "meta": {},
               "type": "number",
             },
           },
@@ -302,60 +332,70 @@ vi.describe("〖️⛳️〗‹‹‹ ❲@traversable/algebra/sort❳", () => {
         [
           "one",
           {
+            "meta": {},
             "type": "null",
           },
         ],
         [
           "two",
           {
+            "meta": {},
             "type": "boolean",
           },
         ],
         [
           "three",
           {
+            "meta": {},
             "type": "boolean",
           },
         ],
         [
           "four",
           {
+            "meta": {},
             "type": "integer",
           },
         ],
         [
           "five",
           {
+            "meta": {},
             "type": "integer",
           },
         ],
         [
           "six",
           {
+            "meta": {},
             "type": "number",
           },
         ],
         [
           "seven",
           {
+            "meta": {},
             "type": "number",
           },
         ],
         [
           "eight",
           {
+            "meta": {},
             "type": "string",
           },
         ],
         [
           "nine",
           {
+            "meta": {},
             "type": "string",
           },
         ],
         [
           "ten",
           {
+            "meta": {},
             "type": "string",
           },
         ],
@@ -366,42 +406,54 @@ vi.describe("〖️⛳️〗‹‹‹ ❲@traversable/algebra/sort❳", () => {
               "additionalProperties": {
                 "anyOf": [
                   {
+                    "meta": {},
                     "properties": {},
                     "type": "object",
                   },
                   {
                     "allOf": [
                       {
+                        "meta": {},
                         "properties": {
                           "A": {
                             "items": {
+                              "meta": {},
                               "type": "null",
                             },
+                            "meta": {},
                             "type": "array",
                           },
                           "B": {
                             "items": {
+                              "meta": {},
                               "type": "boolean",
                             },
+                            "meta": {},
                             "type": "array",
                           },
                           "C": {
                             "items": {
+                              "meta": {},
                               "type": "string",
                             },
+                            "meta": {},
                             "type": "array",
                           },
                         },
                         "type": "object",
                       },
                     ],
+                    "meta": {},
                     "type": "allOf",
                   },
                 ],
+                "meta": {},
                 "type": "anyOf",
               },
+              "meta": {},
               "type": "record",
             },
+            "meta": {},
             "type": "record",
           },
         ],
@@ -412,51 +464,65 @@ vi.describe("〖️⛳️〗‹‹‹ ❲@traversable/algebra/sort❳", () => {
               "additionalProperties": {
                 "anyOf": [
                   {
+                    "meta": {},
                     "type": "null",
                   },
                   {
+                    "meta": {},
                     "properties": {},
                     "type": "object",
                   },
                   {
                     "allOf": [
                       {
+                        "meta": {},
                         "properties": {
                           "A": {
                             "items": {
+                              "meta": {},
                               "type": "null",
                             },
+                            "meta": {},
                             "type": "array",
                           },
                           "B": {
                             "items": {
+                              "meta": {},
                               "type": "boolean",
                             },
+                            "meta": {},
                             "type": "array",
                           },
                           "C": {
                             "items": {
+                              "meta": {},
                               "type": "string",
                             },
+                            "meta": {},
                             "type": "array",
                           },
                         },
                         "type": "object",
                       },
                     ],
+                    "meta": {},
                     "type": "allOf",
                   },
                 ],
+                "meta": {},
                 "type": "anyOf",
               },
+              "meta": {},
               "type": "record",
             },
+            "meta": {},
             "type": "record",
           },
         ],
         [
           "thirteen",
           {
+            "meta": {},
             "properties": {},
             "type": "object",
           },
@@ -464,14 +530,17 @@ vi.describe("〖️⛳️〗‹‹‹ ❲@traversable/algebra/sort❳", () => {
         [
           "fourteen",
           {
+            "meta": {},
             "properties": {
               "A": {
                 "items": [
                   {
+                    "meta": {},
                     "originalIndex": 0,
                     "type": "string",
                   },
                 ],
+                "meta": {},
                 "type": "tuple",
               },
             },
@@ -481,11 +550,14 @@ vi.describe("〖️⛳️〗‹‹‹ ❲@traversable/algebra/sort❳", () => {
         [
           "fifteen",
           {
+            "meta": {},
             "properties": {
               "A": {
+                "meta": {},
                 "type": "null",
               },
               "B": {
+                "meta": {},
                 "type": "null",
               },
             },
@@ -495,11 +567,14 @@ vi.describe("〖️⛳️〗‹‹‹ ❲@traversable/algebra/sort❳", () => {
         [
           "sixteen",
           {
+            "meta": {},
             "properties": {
               "A": {
+                "meta": {},
                 "type": "null",
               },
               "B": {
+                "meta": {},
                 "type": "null",
               },
             },
@@ -510,6 +585,7 @@ vi.describe("〖️⛳️〗‹‹‹ ❲@traversable/algebra/sort❳", () => {
           "seventeen",
           {
             "items": [],
+            "meta": {},
             "type": "tuple",
           },
         ],
@@ -518,64 +594,81 @@ vi.describe("〖️⛳️〗‹‹‹ ❲@traversable/algebra/sort❳", () => {
           {
             "items": [
               {
+                "meta": {},
                 "originalIndex": 1,
                 "type": "null",
               },
               {
+                "meta": {},
                 "originalIndex": 0,
                 "properties": {
                   "rFive": {
+                    "meta": {},
                     "properties": {
                       "A": {
+                        "meta": {},
                         "type": "null",
                       },
                       "B": {
+                        "meta": {},
                         "type": "null",
                       },
                       "C": {
+                        "meta": {},
                         "type": "null",
                       },
                     },
                     "type": "object",
                   },
                   "rFour": {
+                    "meta": {},
                     "properties": {
                       "A": {
+                        "meta": {},
                         "type": "null",
                       },
                       "B": {
+                        "meta": {},
                         "type": "null",
                       },
                       "C": {
+                        "meta": {},
                         "type": "null",
                       },
                     },
                     "type": "object",
                   },
                   "rOne": {
+                    "meta": {},
                     "type": "boolean",
                   },
                   "rThree": {
+                    "meta": {},
                     "properties": {
                       "A": {
+                        "meta": {},
                         "type": "null",
                       },
                       "B": {
+                        "meta": {},
                         "type": "null",
                       },
                       "C": {
+                        "meta": {},
                         "type": "null",
                       },
                     },
                     "type": "object",
                   },
                   "rTwo": {
+                    "meta": {},
                     "type": "number",
                   },
                 },
                 "type": "object",
               },
             ],
+            "meta": {},
             "type": "tuple",
           },
         ],
@@ -583,8 +676,10 @@ vi.describe("〖️⛳️〗‹‹‹ ❲@traversable/algebra/sort❳", () => {
           "T",
           {
             "items": {
+              "meta": {},
               "type": "null",
             },
+            "meta": {},
             "type": "array",
           },
         ],
@@ -592,8 +687,10 @@ vi.describe("〖️⛳️〗‹‹‹ ❲@traversable/algebra/sort❳", () => {
           "U",
           {
             "items": {
+              "meta": {},
               "type": "boolean",
             },
+            "meta": {},
             "type": "array",
           },
         ],

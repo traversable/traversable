@@ -324,7 +324,9 @@ const Traversable_enum = t.object({
   type: t.const("enum"), 
   enum: t.array(t.any()),
 })
-const Traversable_isEnum = Traversable_enum.is as (u: unknown) => u is Traversable_enum
+const Traversable_isEnum = (u: unknown): u is Traversable_enum => {
+  return Traversable_enum.is(u)
+}
 
 const Traversable_anyOf = t.object({
   type: t.const("anyOf"),
@@ -380,7 +382,7 @@ const Traversable_isCombinator = t.anyOf(
   Traversable_allOf,
   Traversable_anyOf,
   Traversable_oneOf,
-)
+).is
 
 const Traversable_Composite = t.anyOf(
   Traversable_array,

@@ -1,9 +1,11 @@
 import { default as pkg } from "./__generated__/__manifest__.js"
-import { SCOPE } from "./version.js"
-import type { newtype } from "./types.js"
 import { symbol } from "./symbol.js"
+import type { newtype } from "./types.js"
+import { SCOPE } from "./version.js"
 
-export interface TypeError<Msg extends string, Got> extends newtype<{ [symbol.TypeError]: Msg }> { Got: Got }
+export interface TypeError<Msg extends string, Got> extends newtype<{ [symbol.TypeError]: Msg }> {
+  Got: Got
+}
 export type NonFinite<T> = never | TypeError<"Unexpected non-finite type:", T>
 export type NonFiniteIndex<T> = never | TypeError<"Unexpected non-finite index signature:", T>
 export type NonFiniteBoolean = never | NonFinite<boolean>

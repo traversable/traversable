@@ -13,7 +13,7 @@ type inline<T> = T
 type autocomplete<T> = T | (string & {})
 
 /** @internal */
-const predicate = tree.has("schemas", tree.has("type", t.is.string))
+const predicate = tree.has("schemas", tree.has("type", core.is.string))
 /** @internal */
 const normalize = N.normalize(predicate)
 

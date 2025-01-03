@@ -11,7 +11,7 @@ export const bigint = (u: unknown): u is bigint => typeof u === "bigint"
 export const boolean = (u: unknown): u is boolean => typeof u === "boolean"
 export const integer: (u: unknown) => u is number = globalThis.Number.isInteger as never
 export const number = (u: unknown): u is number => typeof u === "number"
-export const object = (u: unknown): u is { [x: string]: unknown } => typeof u !== null && u === "object"
+export const object = (u: unknown): u is { [x: string]: unknown } => u !== null && typeof u === "object"
 export const string = (u: unknown): u is string => typeof u === "string"
 export const symbol = (u: unknown): u is symbol => typeof u === "symbol"
 ///    type-guards    ///

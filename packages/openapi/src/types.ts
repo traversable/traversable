@@ -1,4 +1,4 @@
-import { fc, t, tree } from "@traversable/core";
+import { core, fc, tree } from "@traversable/core";
 import type { prop } from "@traversable/data"
 import { object } from "@traversable/data"
 import type { HKT, KeepLast, Mutable, Partial } from "@traversable/registry";
@@ -203,9 +203,9 @@ export declare namespace Schema_Node {
 
 export const Schema_is
   : (u: unknown) => u is Schema
-  = t.anyof$(
-    tree.has("type", t.is.literally(...DataTypes)),
-    tree.has("$ref", t.is.string),
+  = core.anyOf$(
+    tree.has("type", core.is.literally(...DataTypes)),
+    tree.has("$ref", core.is.string),
     Schema_isAllOf,
     Schema_isAnyOf,
     Schema_isOneOf,
@@ -213,30 +213,30 @@ export const Schema_is
 
 export const Schema_isRef
   : (u: unknown) => u is $ref
-  = tree.has("$ref", t.is.string)
+  = tree.has("$ref", core.is.string)
 
 export function Schema_isOneOf(u: Schema | $ref): u is Schema_oneOf<Schema>
 export function Schema_isOneOf<T>(u: unknown): u is Schema_oneOf<T>
 export function Schema_isOneOf(u: unknown): u is Schema_oneOf<Schema> {
-  return tree.has("oneOf", t.array$(Schema_is))(u)
+  return tree.has("oneOf", core.array$(Schema_is))(u)
 }
 
 export function Schema_isAnyOf(u: Schema | $ref): u is Schema_anyOf<Schema>
 export function Schema_isAnyOf<T>(u: unknown): u is Schema_anyOf<T>
 export function Schema_isAnyOf(u: unknown): u is Schema_anyOf<Schema> {
-  return tree.has("anyOf", t.array$(Schema_is))(u)
+  return tree.has("anyOf", core.array$(Schema_is))(u)
 }
 
 export function Schema_isAllOf(u: Schema | $ref): u is Schema_allOf<Schema>
 export function Schema_isAllOf<T>(u: unknown): u is Schema_allOf<T>
 export function Schema_isAllOf(u: unknown): u is Schema_allOf<Schema> {
-  return tree.has("allOf", t.array$(Schema_is))(u)
+  return tree.has("allOf", core.array$(Schema_is))(u)
 }
 
 export const Schema_isNull
   : (u: unknown) => u is Schema_null
-  = t.allof$(
-    tree.has("type", t.is.literally(DataType.null)),
+  = core.allOf$(
+    tree.has("type", core.is.literally(DataType.null)),
     // tree.has("enum", 0, core.is.literally(null)),
     // tree.has("nullable", core.is.literally(true)),
   ) as never
@@ -245,34 +245,34 @@ export const Schema_isConst = tree.has("const")
 
 export const Schema_isBoolean
   : (u: unknown) => u is Schema_boolean
-  = tree.has("type", t.is.literally(DataType.boolean))
+  = tree.has("type", core.is.literally(DataType.boolean))
 
 export const Schema_isInteger 
   : (u: unknown) => u is Schema_integer
-  = tree.has("type", t.is.literally(DataType.integer))
+  = tree.has("type", core.is.literally(DataType.integer))
 
 export const Schema_isNumber
   : (u: unknown) => u is Schema_number
-  = tree.has("type", t.is.literally(DataType.number))
+  = tree.has("type", core.is.literally(DataType.number))
 
 export const Schema_isString
   : (u: unknown) => u is Schema_string
-  = tree.has("type", t.is.literally(DataType.string))
+  = tree.has("type", core.is.literally(DataType.string))
 
 export const Schema_isObject
-  = (u: unknown): u is Schema_object => t.allof$(
-    tree.has("type", t.is.literally(DataType.object)),
+  = (u: unknown): u is Schema_object => core.allOf$(
+    tree.has("type", core.is.literally(DataType.object)),
     tree.has("properties", (u): u is typeof u => {
       if (u === null || typeof u !== "object") return false
-      else if (t.is.array(u)) return false
-      else return !("additionalProperties" in u) && t.record$(Schema_is)(u)
+      else if (core.is.array(u)) return false
+      else return !("additionalProperties" in u) && core.record$(Schema_is)(u)
     }),
   )(u)
 
 export const Schema_isRecord
   : (u: unknown) => u is Schema_record
-  = t.allof$(
-    tree.has("type", t.is.literally(DataType.object)),
+  = core.allOf$(
+    tree.has("type", core.is.literally(DataType.object)),
     (u): u is never => u !== null && typeof u === "object" && !("properties" in u),
     // tree.has("properties"),
     tree.has("additionalProperties", Schema_is),
@@ -281,22 +281,22 @@ export const Schema_isRecord
 export const Schema_isArray: {
   // (u: Schema | $ref): u is Schema_array<Schema>
   (u: unknown): u is Schema_array
-} = t.allof$(
-  tree.has("type", t.is.literally(DataType.array)),
+} = core.allOf$(
+  tree.has("type", core.is.literally(DataType.array)),
   tree.has("items", (u): u is typeof u => !Array_isArray(u) /* Schema_is */)
 )
 
 export const Schema_isTuple: {
   (u: unknown): u is Schema_tuple
-} = (u: unknown): u is Schema_tuple => t.allof$(
-  tree.has("type", t.is.literally(DataType.array)),
-  tree.has("items", t.is.array),
+} = (u: unknown): u is Schema_tuple => core.allOf$(
+  tree.has("type", core.is.literally(DataType.array)),
+  tree.has("items", core.is.array),
 )(u)
 
 export function Schema_isCombinator(u: Schema | $ref): u is Schema_combinator<Schema>
 export function Schema_isCombinator(u: unknown): u is Schema_combinator
 export function Schema_isCombinator(u: unknown): u is Schema_combinator {
-  return t.anyof$(
+  return core.anyOf$(
     Schema_isAllOf,
     Schema_isAnyOf,
     Schema_isOneOf,
@@ -306,7 +306,7 @@ export function Schema_isCombinator(u: unknown): u is Schema_combinator {
 export const Schema_isScalar: {
   (u: Schema | $ref): u is Schema_scalar
   (u: unknown): u is Schema_scalar
-} = t.anyof$(
+} = core.anyOf$(
   Schema_isNull,
   Schema_isBoolean,
   Schema_isInteger,

@@ -1,868 +1,938 @@
-import type { key } from "@traversable/data"
-import { object as O, map } from "@traversable/data"
-import type { Force, Guard, HKT, Join, Partial, Returns, inline, integer } from "@traversable/registry"
+import { fn, map } from "@traversable/data"
+import type {
+  Force,
+  Functor,
+  HKT,
+  Intersect,
+  TypeError,
+  integer,
+  newtype,
+} from "@traversable/registry"
 import { symbol } from "@traversable/registry"
+import { allOf$, anyOf$, array$, object$, optional$, record$, tuple$ } from "./combinators.js"
+import { is } from "./predicates.js"
 
-import { Json } from "@traversable/core/json"
-import { anyOf$, array$, is, optional$, record$ } from "./predicates.js"
-
-/////////////////////
-///    aliases    ///
-export { 
+export {
+  typeof_ as typeof,
+  AST,
+  Functor,
+  fold,
+  unfold,
+  short,
   null_ as null,
+  boolean_ as boolean,
+  symbol_ as symbol,
   integer_ as integer,
-  const__ as const,
-}
-///    aliases    ///
-/////////////////////
-
-export type infer<T extends { _toType(): unknown }> = Returns<T["_toType"]>
-export interface Meta {}
-export interface Config {
-  _type: unknown
-  _tag: string
-  _toType(): unknown
-  toString(): string
-  toJSON(): unknown
-  is: unknown
+  number_ as number,
+  string_ as string,
+  any_ as any,
+  const_ as const,
+  optional_ as optional,
+  array_ as array,
+  record_ as record,
+  tuple_ as tuple,
+  allOf_ as allOf,
+  anyOf_ as anyOf,
+  object_ as object,
 }
 
-//////////////////////
-///    internal    ///
+type ScalarShortName = keyof AST.ScalarMap
+
 /** @internal */
-type integer_ = integer
+type TerminalArrays_<T extends TerminalSeeds = TerminalSeeds> = never | { [I in keyof T]: `${T[I]}[]` }
 /** @internal */
-const Object_keys: <T extends {}>(x: T) => (keyof T)[] = globalThis.Object.keys
-/** @internal */
-const Object_assign = globalThis.Object.assign
-/** @internal */
-const _toType = (() => void {} as never)
-/** @internal */
-const hasOwnProperty = globalThis.Object.prototype.hasOwnProperty
-///    internal    ///
-//////////////////////
+type TerminalRecords_<T extends TerminalSeeds = TerminalSeeds> = { [I in keyof T]: `${T[I]}{}` }
 
-export declare namespace AST {
-  interface Node {
-    toString(): string,
-    toJSON(): unknown,
-    _toType(): unknown
-    _tag: Tag,
-    _type: unknown,
-    is(u: unknown): u is unknown
+export const TerminalSeeds = ["string", "number", "boolean", "symbol", "integer", "any"] as const satisfies ScalarShortName[]
+export type TerminalSeeds = typeof TerminalSeeds
+export const TerminalArrays = TerminalSeeds.map((sn) => `${sn}[]` as const) as TerminalArrays_
+export type TerminalArrays = typeof TerminalArrays
+export const TerminalRecords = TerminalSeeds.map((sn) => `${sn}{}` as const) as TerminalRecords_
+export type TerminalRecords = typeof TerminalRecords
+export const Terminals = [...TerminalSeeds, ...TerminalArrays, ...TerminalRecords]
+export type Terminals = typeof Terminals
+export type Terminal = Terminals[number]
+
+declare namespace AST { export { typeof_ as typeof } }
+declare namespace AST {
+  interface Leaf<T = any> { _tag: string, _def: unknown, is: (u: unknown) => u is T }
+  interface Branch<T = unknown> extends AST.Leaf { _children: T }
+  interface Node extends AST.Leaf { _children?: unknown }
+
+  const ScalarName: keyof typeof ScalarMap
+  type ScalarName<T> = [T] extends [typeof ScalarName] ? typeof ScalarName : never
+
+  type ScalarMap = typeof ScalarMap
+  const ScalarMap: {
+    symbol: symbol_
+    boolean: boolean_
+    integer: integer_
+    number: number_
+    string: string_
+    any: any_
   }
-  interface NodeF<T> {
-    toString(): string,
-    toJSON(): unknown,
-    _toType(): unknown
-    _tag: Tag,
-    _type: T,
-    is(u: unknown): u is unknown
-  }
+
+
+  const Terminal:
+    & ScalarMap
+    & { [K in keyof ScalarMap as `${K}[]`]: array_<ScalarMap[K]> }
+    & { [K in keyof ScalarMap as `${K}{}`]: record_<ScalarMap[K]> }
+
+  type Composite =
+    | readonly AST.Short[]
+    | { [x: string]: AST.Short }
+
+  type ScalarConst =
+    | number
+    | true
+    | false
+    | `'${string}'`
+    | `"${string}"`
+    | `\`${string}\``
+
+  type Const =
+    | ScalarConst
+    | readonly Const[]
+    | { [x: string]: Const }
+
+  type Short =
+    | null
+    | readonly ["[]", Short]
+    | readonly ["{}", Short]
+    | readonly ["|", ...Short[]]
+    | readonly ["&", ...Short[]]
+    | Terminal
+    | Composite
+    | Const
+
+  type ShortF<T> =
+    | null
+    | Terminal
+    | readonly ["[]", T]
+    | readonly ["{}", T]
+    | readonly ["|", ...T[]]
+    | readonly ["&", ...T[]]
+    | readonly T[]
+    | { [x: string]: T }
+    // | Const
+
+  interface ShortLambda extends HKT { [-1]: ShortF<this[0]> }
+
+  type fromShort<S>
+    = S extends null ? null_
+    : S extends Terminal ? typeof Terminal[S]
+    : S extends readonly ["&", ...infer T extends AST.Short[]] ? allOf_<{ -readonly [Ix in keyof T]: fromShort<T[Ix]> }>
+    : S extends readonly ["|", ...infer T extends AST.Short[]] 
+      ? { -readonly [Ix in keyof T]: fromShort<T[Ix]> } extends 
+      infer U extends AST.Node[] ? anyOf_<U> & { is: (u: unknown) => u is U[number] }
+      : never
+    : S extends readonly ["[]", AST.Short] ? array_<AST.fromShort<S[1]>>
+    : S extends readonly ["{}", AST.Short] ? record_<AST.fromShort<S[1]>>
+    : S extends object
+      ? S extends readonly unknown[] ? tuple_<{ -readonly [Ix in keyof S]: fromShort<S[Ix]> }>
+      : S extends { [x: string]: unknown } ? object_<object_._fromShort<S>>
+    : never
+    : const_<const_.parse<S>>
+    ;
+
+  type F<T> =
+    | null_
+    | boolean_
+    | symbol_
+    | integer_
+    | number_
+    | string_
+    | any_
+    | const_<any>
+    | optional_<T>
+    | array_<T>
+    | record_<T>
+    | allOf_<readonly T[]>
+    | anyOf_<readonly T[]>
+    | tuple_<readonly T[]>
+    | object_<{ [x: string]: T }>
+    ;
+
+  interface lambda extends HKT { [-1]: F<this[0]> }
 }
 
-export namespace AST {
-  export const is
-    : (u: unknown) => u is AST.Node
-    = (u): u is never => object({
-      _tag: string(),
-      _type: any(),
-    }).is(u)
-}
 
-export type OptionalKeys<T extends { [x: string]: AST.Node }, K extends keyof T = keyof T> 
-  = (K extends K ? T[K]["_tag"] extends Tag.optional ? K : never : never) extends infer K extends keyof T ? K : never
-export type Clean<T, _ = [keyof T] extends [never] ? unknown : T> = _
-export type ApplyOptionality<
-  T extends { [x: string]: AST.Node }, 
-  Opt extends keyof T = OptionalKeys<T>, 
-  Req extends keyof T = Exclude<keyof T, Opt>
-> = Force<
-  & Clean<{ [K in Opt]+?: T[K]["_type"] }>
-  & Clean<{ [K in Req]-?: T[K]["_type"] }>
->
-export function optionalKeys<T extends { [x: string]: AST.Node }>(xs: T): OptionalKeys<T>[] 
-export function optionalKeys<T extends { [x: string]: AST.Node }>(xs: T) 
-  { return Object_keys(xs).filter((k) => xs[k]._tag === Tag.optional) }
-  // { return Object_keys(xs).map((k) => (console.log("k", k, xs[k]), k)).filter((k) => xs[k]._tag === Tag.optional) }
+declare const test: HKT.apply<AST.ShortLambda, AST.Node>
 
-export const toJSON = {
-  null: { _tag: "null", /* _type: null */ },
-  boolean: { _tag: "boolean", /* _type: void 0 as never as boolean */ },
-  integer: { _tag: "integer", /* _type: void 0 as never as integer */ },
-  number: { _tag: "number", /* _type: void 0 as never as number */ },
-  string: { _tag: "string", /* _type: void 0 as never as string */ },
-  any: { _tag: "any", /* _type: void 0 as unknown */ },
-} as const satisfies Record<string, { _tag: string, _type?: unknown }> 
+function typeof_<S>(s: S): typeof_<S>
+function typeof_<S>(s: S) { return s }
 
-/////////////////////
-///    tagging    ///
-export const Tags = [
-  toJSON.null._tag,
-  toJSON.boolean._tag,
-  toJSON.integer._tag,
-  toJSON.number._tag,
-  toJSON.string._tag,
-  "array",
-  "object",
-  "optional",
-  "const",
-  "anyOf",
-  "record",
-  // "never"
-  // "undefined",
-  // "bigint",
-  // "tuple",
-  "any",
-] as const satisfies string[]
-export const Tag = O.fromKeys(Tags)
-export type Tag = typeof Tag[keyof typeof Tag]
-export type Tag_null = never | typeof toJSON["null"]["_tag"]
-export type Tag_boolean = never | typeof toJSON["boolean"]["_tag"]
-export type Tag_number = never | typeof toJSON["number"]["_tag"]
-export type Tag_integer = never | typeof toJSON["integer"]["_tag"]
-export type Tag_string = never | typeof toJSON["string"]["_tag"]
-export type Tag_array = never | array_toJSON["_tag"]
-export type Tag_object = never | object_toJSON["_tag"]
-export type Tag_optional = never | optional_toJSON["_tag"]
-export type Tag_any = never | typeof toJSON["any"]["_tag"]
-export type Tag_const = never | const_toJSON["_tag"]
-export type Tag_anyOf = never | anyOf_toJSON["_tag"]
-export type Tag_record = never | record_toJSON["_tag"]
-// typeof toJSON["any"]["_tag"]
-///
-// type Tag_never = never | never_toJSON["_tag"]
-// type Tag_undefined = never | never_toJSON["_undefined"]
-// type Tag_bigint = never | bigint_toJSON["_tag"]
-// type Tag_tuple = never | tuple_toJSON["_tag"]
-// type Tag_record = never | record_toJSON["_tag"]
+type typeof_<S>
+  = S extends Nullary ? S["_def"]
+  : S extends const_<any> ? const_.parse<S["_def"]>
+  : S extends optional_<infer T> ? undefined | typeof_<T>
+  : S extends array_<infer T> ? typeof_<T>[]
+  : S extends record_<infer T> ? globalThis.Record<string, typeof_<T>>
+  : S extends tuple_<infer T> ? { -readonly [I in keyof T]: typeof_<T[I]> }
+  : S extends allOf_<infer T extends readonly unknown[]> ? Intersect<{ [I in keyof T]: typeof_<T[I]> }>
+  : S extends anyOf_<infer T extends readonly unknown[]> ? typeof_<T[number]>
+  : S extends object_<infer T> ? object_._type<T>
+  : S
+  ;
 
-type Tag_Scalar = Tag_null | Tag_boolean | Tag_integer | Tag_number | Tag_string
-type Tag_Atomic = Tag_Scalar | Tag_any
-export declare namespace Tag {
-  export {
-    Tag_null as null,
-    Tag_boolean as boolean,
-    Tag_integer as integer,
-    Tag_number as number,
-    Tag_string as string,
-    Tag_array as array,
-    Tag_object as object,
-    Tag_optional as optional,
-    Tag_record as record,
-    Tag_any as any,
-    Tag_anyOf as anyOf,
-    /// 
-    Tag_Scalar as Scalar,
-    Tag_Atomic as Atomic,
-    // Tag_never as never,
-    // Tag_undefined as undefined,
-    // Tag_integer as integer,
-    // Tag_bigint as bigint,
-    // Tag_const as const,
-    // Tag_tuple as tuple,
-    // Tag_record as record,
-  }
-}
-///     tagging    ///
-//////////////////////
-
-////////////////////
-///    toJSON    ///
-///    scalars
-///    object
-export type object_toJSON<T extends { [x: string]: AST.Node } = { [x: string]: AST.Node }> 
-  = never | { _tag: "object", _type: { -readonly [K in keyof T]: ReturnType<T[K]["toJSON"]> } }
-export function object_toJSON<const T extends { [x: string]: AST.Node }>(_: T): object_toJSON<T>
-export function object_toJSON<const T extends { [x: string]: AST.Node }>(_: T)
-  { return { _tag: Tag.object, _type: Object.fromEntries(Object.entries(_).map(([k, v]) => [k, v.toJSON()])) } }
-///    array
-export type array_toJSON<T extends AST.Node = AST.Node> = { _tag: "array", _type: ReturnType<T["toJSON"]> } 
-export function array_toJSON<T extends AST.Node>(_: T): array_toJSON<T>
-  { return { _tag: Tag.array, _type: _.toJSON() as never } }
-///    optional
-export type optional_toJSON<T extends AST.Node = AST.Node> = { _tag: "optional", _type: ReturnType<T["toJSON"]> }
-export function optional_toJSON<T extends AST.Node>(_: T): optional_toJSON<T>
-  { return { _tag: Tag.optional, _type: _.toJSON() as never } }
-///    cons
-export type const_toJSON<T extends Json | undefined = {}> = never | { _tag: "const", _type: T }
-export function const_toJSON<T extends Json>(_: T): const_toJSON<T> { return { _tag: Tag.const, _type: _ } }
-
-export type anyOf_toJSON<T extends readonly AST.Node[] = readonly AST.Node[]> = { _tag: "anyOf", _type: { [K in keyof T]: ReturnType<T[K]["toJSON"]> } }
-export function anyOf_toJSON<const T extends readonly AST.Node[]>(_: T): anyOf_toJSON<T> 
-export function anyOf_toJSON<const T extends readonly AST.Node[]>(_: T) 
-  { { return { _tag: Tag.anyOf, _type: _.map((x) => x.toJSON() ) } } }
-
-export type record_toJSON<T extends AST.Node = AST.Node> = { _tag: "record", _type: ReturnType<T["toJSON"]> }
-export function record_toJSON<const T extends AST.Node>(_: T): record_toJSON<T> 
-export function record_toJSON<const T extends AST.Node>(_: T) { { return { _tag: Tag.record, _type: _.toJSON() } } }
-
-// export type never_toJSON = never | { _tag: "never", _type: never }
-// export const never_toJSON = { _tag: Tag.never, _type: void 0 as never }
-// export type undefined_toJSON = never | { _tag: "undefined", _type: undefined }
-// export const undefined_toJSON = { _tag: Tag.undefined, _type: undefined }
-// export type bigint_toJSON = never | { _tag: "bigint", _type: bigint }
-// export const bigint_toJSON = { _tag: Tag.bigint, _type: bigint }
-// export type tuple_toJSON = never | { _tag: "tuple", _type: tuple }
-// export const tuple_toJSON = { _tag: Tag.tuple, _type: tuple }
-// export type record_toJSON = never | { _tag: "record", _type: record }
-// export const record_toJSON = { _tag: Tag.record, _type: record }
-///    toJSON    ///
-////////////////////
-
-////////////////////
-///    guards    ///
-
-export const object_is = <T extends { [x: string]: AST.Node }>(xs: T) => (u: unknown): u is object_is<T> => is.object(u) && validateShape(xs, u)
-export const object_isEOPT = <T extends { [x: string]: AST.Node }>(xs: T) => (u: unknown): u is object_is<T> => is.object(u) && validateShapeEOPT(xs, u)
-export type object_is<T extends { [x: string]: AST.Node }> = { [K in keyof T]: never | ReturnType<T[K]["_toType"]> }
-///    guards    ///
-////////////////////
-
-//////////////////////
-///    toString    ///
-///    scalars
-export const toString = {
-  null: toJSON.null._tag,
-  boolean: toJSON.boolean._tag,
-  integer: toJSON.integer._tag,
-  number: toJSON.number._tag,
-  string: toJSON.string._tag,
-  any: toJSON.any._tag,
-} as const
-///    array
-export type array_toString<T extends AST.Node> = never | `(${ReturnType<T["toString"]>})[]`
-///    object
-export type object_toString = never | `{ ${string} }`
-export function object_toString<T extends { [x: string]: AST.Node }>(x: T): object_toString
-export function object_toString<T extends { [x: string]: AST.Node }>(x: T) { 
-  const entries = Object.entries(x)
-  return entries.length === 0 ? "{}" : "{ " + Object.entries(x).map(([k, v]) => ['"' + k + '"', v.toString()].join(": ")).join(", ") + " }" 
-}
-///    optional
-export type optional_toString<T extends AST.Node> = never | `undefined | ${ReturnType<T["toString"]>}`
-export function optional_toString<T extends AST.Node>(x: T): optional_toString<T> 
-  { return x.toString() + " | undefined" as never }
-export const const_toString = JSON.stringify
-export type anyOf_toString<T extends readonly AST.Node[]> = Join<{ [K in keyof T]: ReturnType<T[K]["toString"]> }, " | ">
-export function anyOf_toString<T extends readonly AST.Node[]>(xs: T): anyOf_toString<T>
-export function anyOf_toString<T extends readonly AST.Node[]>(xs: T) { return xs.map((x) => x.toString()).join(" | ") }
-export type record_toString<T extends AST.Node> = `Record<string, ${ReturnType<T["toString"]>}>`
-export function record_toString<T extends AST.Node>(_: T): record_toString<T> 
-export function record_toString<T extends AST.Node>(_: T) { return "Record<" + _.toString() + ">" }
-///    toString    ///
-//////////////////////
-
-//////////////////
-///    base    ///
-export class type<T extends t.Config> {
-  _tag: T["_tag"]
-  _type!: T["_type"]
-  is: T["is"]
-  toJSON():  ReturnType<T["toJSON"]>
-  toJSON(): ReturnType<t.Config["toJSON"]>
-  toJSON(): ReturnType<T["toJSON"]>
-  toJSON() { return this.config.toJSON() }
-  toString(): ReturnType<T["toString"]>
-  toString(): ReturnType<t.Config["toString"]>
-  toString(): ReturnType<T["toString"]>
-  toString() { return this.config.toString() }
-  _(): ReturnType<T["_toType"]>
-  _(): ReturnType<t.Config["_toType"]>
-  _(): ReturnType<T["_toType"]>
-  _() { return this._type }
-  constructor(public config: T) {
-    Object_assign(this, config)
-    this.toJSON = config.toJSON as never
-    this._tag = config._tag
-    // this._ = this._type
-    this.is = config.is
-  }
-}
-///    base    ///
-//////////////////
-
-/////////////////////
-///    scalars    ///
-export interface leaf<Tag extends Tag.Atomic, T> {
-  _tag: Tag
-  _type: T
-  _toType(): this["_type"]
-  toJSON(): typeof toJSON[Tag]
-  toString(): typeof toString[Tag]
-  is: Guard<this["_type"]>
-}
-export function leaf<Tag extends Tag.Atomic, T>(tag: Tag, type?: T): leaf<Tag, T>
-export function leaf<Tag extends Tag.Atomic, T>(_tag: Tag, _type?: T) {
-  return {
-    _tag,
-    toJSON() { return toJSON[_tag] },
-    toString() { return toString[_tag] },
-    is: is[_tag],
-    ...(Math.random() > 1 && { _type: void 0 }) as { _type: never },
-    _toType,
-  }
-}
-///    scalars    ///
-/////////////////////
-
-///////////////////
-///    const    ///
-export interface const_<T> {
-  _tag: "const"
-  _type: T
-  _toType(): this["_type"],
-  is: Guard<this["_type"]>
-  toJSON(): { _tag: "const", _type: T }
-  toString(): string
-}
-///
-export const const_ = <T>(x: T): const_<T> => ({
-  _toType,
-  _tag: Tag.const,
-  _type: x as typeof x,
-  is: is.literally(x) as never,
-  toJSON() { return { _tag: Tag.const, _type: x } },
-  toString() { return const_toString(x) },
-} as const) satisfies t.Config
-///    array    ///
-///////////////////
-
-///////////////////
-///    array    ///
-export interface array_<T extends AST.Node> {
-  _tag: "array"
-  _type: readonly T["_type"][]
-  _toType(): this["_type"],
-  is: Guard<this["_type"]>
-  toJSON(): { _tag: "array", _type: ReturnType<T["toJSON"]> }
-  toString(): array_toString<T>
-}
-///
-export const array_ = <T extends AST.Node>(x: T): array_<T> => ({
-  _toType,
-  _tag: Tag.array,
-  _type: [],
-  is: array$(x.is) as never,
-  toJSON() { return array_toJSON(x) },
-  toString() { return "(" + x["toString"]() + ")" + "[]" as never },
-} as const) satisfies t.Config
-///    array    ///
-///////////////////
-
-////////////////////
-///    record    ///
-export interface record_<T extends AST.Node> {
-  _tag: "record"
-  _type: Record<string, T["_type"]>
-  _toType(): this["_type"],
-  is: Guard<this["_type"]>
-  toJSON(): { _tag: "record", _type: ReturnType<T["toJSON"]> }
-  toString(): `Record<string, ${ReturnType<T["toString"]>}>`
-  // array_toString<T>
-}
-///
-export const record_ = <T extends AST.Node>(x: T): record_<T> => ({
-  _toType,
-  _tag: "record",
-  _type: void 0 as never,
-  is: record$(x.is),
-  toJSON() { return record_toJSON(x) },
-  toString() { return record_toString(x) },
-})
-///    record    ///
-////////////////////
-
-//////////////////////
-///    optional    ///
-export interface optional_<T extends AST.Node> {
-  _tag: Tag.optional
-  _type: undefined | ReturnType<T["_toType"]>
-  _toType(): this["_type"],
-  is: Guard<this["_type"]>
-  toJSON(): { _tag: "optional", _type: ReturnType<T["toJSON"]> }
-  toString(): optional_toString<T>
-  meta: optional.Meta
-}
-///
-export const optional_ = <T extends AST.Node>(x: T): optional_<T> => ({
-  _tag: Tag.optional,
-  _type: undefined,
-  _toType,
-  is: optional$(x.is) as Guard<ReturnType<T["_toType"]>>,
-  toJSON() { return optional_toJSON(x) },
-  toString() { return optional_toString(x) },
-  meta: optional.meta,
-} as const) satisfies t.Config & optional.Options
-///    optional    ///
-//////////////////////
-
-////////////////////
-///    object    ///
-
-export interface object_<T extends { [x: string]: AST.Node }> {
-  _tag: "object"
-  _type: ApplyOptionality<T>
-  _toType(): this["_type"]
-  toString(): object_toString
-  toJSON(): object_toJSON<T>
-  is: Guard<{ [K in keyof T]: never | ReturnType<T[K]["_toType"]> }>
-  meta: { optionalKeys: readonly OptionalKeys<T>[] },
-}
-
-export const objectDefault = <const T extends { [x: string]: AST.Node }>(xs: T): object_<T> => ({
-  _toType,
-  _tag: Tag.object,
-  _type: {} as never,
-  is: object_is(xs),
-  toString: () => object_toString(xs),
-  toJSON: () => object_toJSON(xs),
-  meta: { optionalKeys: optionalKeys(xs) }
-} as const) satisfies t.Config & { meta: object.Meta }
-
-export const objectEOPT = <const T extends { [x: string]: AST.Node }>(xs: T): object_<T> => ({
-  _toType,
-  _tag: Tag.object,
-  _type: {} as never,
-  is: object_isEOPT(xs),
-  toString: () => object_toString(xs),
-  toJSON: () => object_toJSON(xs),
-  meta: { optionalKeys: optionalKeys(xs) }
-} as const) satisfies t.Config & { meta: object.Meta }
-///    object    ///
-////////////////////
-
-///////////////////
-///    anyOf    ///
-export interface anyOf_<T extends readonly AST.Node[]> {
-  _tag: "anyOf"
-  _type: ReturnType<T[number]["_toType"]>
-  _toType(): this["_type"]
-  is: Guard<this["_type"]>
-  toString(): anyOf_toString<T>
-  toJSON(): { _tag: "anyOf", _type: { [K in keyof T]: ReturnType<T[K]["toJSON"]> } }
-}
-
-export const anyOf_ = <T extends readonly AST.Node[]>(xs: T): anyOf_<T> => ({
-  _toType,
-  _tag: Tag.anyOf,
-  _type: {} as never,
-  is: anyOf$(...xs.map((x) => x.is)) as never,
-  toString: () => anyOf_toString(xs),
-  toJSON: () => anyOf_toJSON(xs),
-}) as const satisfies t.Config
-
-///    anyOf    ///
-///////////////////
-
-////////////////////
-///    null     ///
-export class null$
-  extends type<leaf<Tag.null, null>>
-  { constructor(_opts?: null_.Options) { super(leaf(toJSON.null._tag, /** toJSON.null._type */)) } }
-////////////////////
-///    const     ///
-export class
-  const$<T>
-  extends type<const_<T>>
-  { constructor(_: T, _opts?: const__.Options) { super(const_(_)) } }
-
-export declare namespace t {
-  export { 
-    null$ as null, 
-    const$ as const,
-    Meta,
-    Config,
-  }
-}
-
-export namespace t {
-  void (t.null = null$)
-  void (t.const = const$)
-  /////////////////
-  ///    any    ///
-  export class 
-    /** @ts-ignore */
-    any extends type<leaf<Tag.any, unknown>> { constructor(_opts?: any.Options) { super(leaf(toJSON.any._tag, toJSON.any._type))}}
-  /////////////////////
-  ///    boolean    ///
-  export class
-    /** @ts-ignore */
-    boolean
-    extends type<leaf<Tag.boolean, boolean>>
-    { constructor(_opts?: boolean.Options) { super(leaf(toJSON.boolean._tag /*, toJSON.boolean._type */)) } }
-
-  ////////////////////
-  ///    integer    ///
-  export class
-    /** @ts-ignore */
-    integer
-    extends type<leaf<Tag.integer, integer_>>
-    { constructor(_opts?: integer_.Options) { super(leaf(toJSON.integer._tag, /* toJSON.integer._type */)) } }
-
-  ////////////////////
-  ///    number    ///
-  export class
-    /** @ts-ignore */
-    number
-    extends type<leaf<Tag.number, number>>
-    { constructor(_opts?: number.Options) { super(leaf(toJSON.number._tag, /* toJSON.number._type) */)) } }
-
-  ////////////////////
-  ///    string    ///
-  export class
-    /** @ts-ignore */
-    string
-    extends type<leaf<Tag.string, string>>
-    { constructor(_opts?: string.Options) { super(leaf(toJSON.string._tag, void 0 as never as string)) } }
-
-  ////////////////////
-  ///    object    ///
-  export class
-    /** @ts-ignore */
-    object
-    <const S extends { [x: string]: AST.Node } = {}> extends type<object_<S>> { 
-      constructor(public _: S, opts?: object.Options) { 
-        const proto = opts?.exactOptionalPropertyTypes ? objectEOPT(_) : objectDefault(_)
-        super(proto) 
-        this.optionalKeys = optionalKeys(_)
-      } 
-      optionalKeys: OptionalKeys<S>[]
-      // map<T>(f: (s: AST.Node) => T): { [x: string]: T } 
-      //   { return Object.fromEntries(Object.entries(this._).map(([k, v]) => [k, f(v)])) }
+const Functor: Functor<AST.lambda, AST.Node> = {
+  map(f) {
+    return (x) => {
+      switch (true) {
+        default: return fn.exhaustive(x)
+        case x._tag === "null": return null_()
+        case x._tag === "boolean": return boolean_()
+        case x._tag === "symbol": return symbol_()
+        case x._tag === "integer": return integer_()
+        case x._tag === "number": return number_()
+        case x._tag === "string": return string_()
+        case x._tag === "any": return any_()
+        case x._tag === "const": return const_(x._def)
+        case x._tag === "optional": return optional_.def(f(x._def)) as never
+        case x._tag === "array": return array_.def(f(x._def)) as never
+        case x._tag === "record": return record_.def(f(x._def)) as never
+        case x._tag === "allOf": return allOf_.def(x._def.map(f)) as never
+        case x._tag === "anyOf": return anyOf_.def(x._def.map(f)) as never
+        case x._tag === "tuple": return tuple_.def(x._def.map(f)) as never
+        case x._tag === "object": return object_.def(map(x._def, f))
+      }
     }
-
-  ///////////////////
-  ///    array    ///
-  export class array<T extends AST.Node> extends type<array_<T>>
-    { constructor(public _: T, _opts?: array.Options) { super(array_(_)) } }
-
-  //////////////////////
-  ///    optional    ///
-  export class optional<T extends AST.Node> extends type<optional_<T>> { 
-    meta: optional.Meta
-    constructor(public _: T, _opts?: optional.Options) { 
-      super(optional_(_)) 
-      this.meta = { [symbol.optional]: true }
-    } 
   }
-
-  ///////////////////
-  ///    anyOf    ///
-  export class anyOf<const T extends readonly AST.Node[]> extends type<anyOf_<T>> 
-    { constructor(public _: T, _opts?: anyOf.Options) { super(anyOf_(_)) } }
-
-  ////////////////////
-  ///    record    ///
-  export class record<const T extends AST.Node> extends type<record_<T>> 
-    { constructor(public _: T, _opts?: record.Options) { super(record_(_)) } }
 }
 
-/////////////////
-///    any    ///
-export function any(): t.any { return new t.any() } 
-export declare namespace any { type Meta = t.Meta; type Options<Meta extends any.Meta = {}> = { meta: Meta } }
-///    any    ///
-/////////////////
+/** @internal */
+const Object_keys = globalThis.Object.keys
+/** @internal */
+const Object_values = globalThis.Object.values
+/** @internal */
+const Object_entries = globalThis.Object.entries
+/** @internal */
+const Array_isArray = globalThis.Array.isArray
+
+function fold<T>(algebra: Functor.Algebra<AST.lambda, T>)
+  { return fn.cata(Functor)(algebra) }
+function unfold<T>(coalgebra: Functor.Coalgebra<AST.lambda, T>)
+  { return fn.ana(Functor)(coalgebra) }
+
+function AST() {}
+AST.fold = fold
+AST.unfold = unfold
+AST.Functor = Functor
+
+type Nullary =
+  | null_
+  | boolean_
+  | symbol_
+  | integer_
+  | number_
+  | string_
+  | any_
+  ;
+
+type NullaryTag = typeof NullaryTag[keyof typeof NullaryTag]
+const NullaryTag = {
+  any: "any",
+  string: "string",
+  number: "number",
+  boolean: "boolean",
+  symbol: "symbol",
+  null: "null",
+  integer: "integer",
+} as const
+
+type Tag = typeof Tag[keyof typeof Tag]
+const Tag = {
+  ...NullaryTag,
+  object: "object",
+  array: "array",
+  allOf: "allOf",
+  const: "const",
+  tuple: "tuple",
+  optional: "optional",
+  record: "record",
+  anyOf: "anyOf",
+} as const
 
 //////////////////
-///    null    ///
-export function null_(): t.null
-export function null_<Meta extends null_.Meta>(opts: null_.Options<Meta>): t.null
-export function null_<Meta extends null_.Meta>(opts?: null_.Options<Meta>): t.null
-export function null_($?: null_.Options): t.null
-  { return new t.null($) }
-///
-export declare namespace null_ {
-  type Meta = t.Meta
-  type Options<Meta extends null_.Meta = {}> = {
-    meta: Meta
-  }
+///    NULL    ///
+interface null_ { 
+  _tag: typeof Tag.null
+  _def: typeof null_.spec 
+  is: (u: unknown) => u is null
 }
-///    null    ///
+function null_(): null_
+function null_() { 
+  return { 
+    _tag: Tag.null, 
+    _def: symbol.null as never, 
+    is: is.null,
+  } 
+}
+declare namespace null_ {
+  const spec: null
+  type Short = typeof shorthand
+  const shorthand: null
+  type shorthand<T> = [T] extends [typeof null_.shorthand] ? typeof null_.shorthand : never
+}
+///    NULL    ///
 //////////////////
 
-///////////////////
-///    const    ///
-export function const__<T extends Json>(type: T): t.const<T>
-export function const__<T extends Json>(type: T, opts: const__.Options): t.const<T>
-export function const__<T extends Json>(type: T, opts?: const__.Options): t.const<T>
-export function const__(_: Json, $: const__.Options = const__.defaults): t.const<Json>
-  { return new t.const(_, $) }
-///
-export declare namespace const__ {
-  type Meta = t.Meta
-  type Options<Meta extends const__.Meta = {}> = Partial<{
-    meta: Meta
-  }>
+
+/////////////////////
+///    BOOLEAN    ///
+interface boolean_ { 
+  _tag: typeof Tag.boolean
+  _def: typeof boolean_.spec
+  is: (u: unknown) => u is boolean
 }
-export namespace const__ {
-  export const meta = {} satisfies Required<const__.Meta>
-  export const defaults = { meta } satisfies Required<Options>
+
+function boolean_(): boolean_
+function boolean_() {
+  return {
+    _tag: Tag.boolean,
+    _def: symbol.boolean as never,
+    is: is.boolean
+  }
 }
-///    const    ///
-///////////////////
+
+declare namespace boolean_ {
+  const spec: boolean
+  type Short = typeof shorthand
+  const shorthand: typeof Tag.boolean
+  type shorthand<T> = [T] extends [typeof boolean_.shorthand] ? typeof boolean_.shorthand : never
+}
+///    BOOLEAN    ///
+/////////////////////
+
+
+////////////////////
+///    SYMBOL    ///
+interface symbol_ { 
+  _tag: typeof Tag.symbol
+  _def: typeof symbol_.spec
+  is: (u: unknown) => u is symbol
+}
+function symbol_(): symbol_
+function symbol_() {
+  return {
+    ...symbol_.def,
+    is: is.symbol,
+  }
+}
+
+declare namespace symbol_ {
+  const spec: symbol
+  type Short = typeof shorthand
+  const shorthand: typeof Tag.symbol
+  type shorthand<T> = [T] extends [typeof symbol_.shorthand] ? typeof symbol_.shorthand : never
+}
+namespace symbol_ {
+  export const def = {
+    _tag: Tag.symbol,
+    _def: symbol.symbol as never
+  }
+}
+///    SYMBOL    ///
+////////////////////
 
 
 /////////////////////
-///    boolean    ///
-export function boolean(): t.boolean
-export function boolean<Meta extends boolean.Meta>(opts: boolean.Options<Meta>): t.boolean
-export function boolean<Meta extends boolean.Meta>(opts?: boolean.Options<Meta>): t.boolean
-export function boolean($?: boolean.Options): t.boolean
-  { return new t.boolean($) }
-///
-export declare namespace boolean {
-  type Meta = t.Meta
-  type Options<Meta extends boolean.Meta = {}> = {
-    meta: Meta
+///    INTEGER    ///
+interface integer_ { 
+  _tag: typeof Tag.integer
+  _def: typeof integer_.spec
+  is: (u: unknown) => u is integer
+}
+function integer_(): integer_ { 
+  return {
+    ...integer_.def,
+    is: is.integer as (u: unknown) => u is integer,
   }
 }
-///    boolean    ///
-/////////////////////
-
-////////////////////
-///    string    ///
-export function string(): t.string
-export function string<Meta extends string.Meta>(opts: string.Options<Meta>): t.string
-export function string<Meta extends string.Meta>(opts?: string.Options<Meta>): t.string
-export function string($?: string.Options): t.string
-  { return new t.string($) }
-///
-export declare namespace string {
-  type Meta = t.Meta
-  type Options<Meta extends string.Meta = {}> = {
-    meta: Meta
-  }
-}
-///    string    ///
-////////////////////
-
-////////////////////
-///    number    ///
-export function number(): t.number
-export function number<Meta extends number.Meta>(opts: number.Options<Meta>): t.number
-export function number<Meta extends number.Meta>(opts?: number.Options<Meta>): t.number
-export function number($?: number.Options): t.number
-  { return new t.number($) }
-///
-export declare namespace number {
-  type Meta = t.Meta
-  type Options<Meta extends number.Meta = {}> = {
-    meta: Meta
-  }
-}
-///    number    ///
-////////////////////
-
-/////////////////////
-///    integer    ///
-function integer_(): t.integer
-function integer_<Meta extends integer_.Meta>(opts: integer_.Options<Meta>): t.integer
-function integer_<Meta extends integer_.Meta>(opts?: integer_.Options<Meta>): t.integer
-function integer_($?: integer_.Options): t.integer
-  { return new t.integer($) }
-///
 declare namespace integer_ {
-  type Meta = t.Meta
-  type Options<Meta extends integer_.Meta = {}> = {
-    meta: Meta
+  const spec: integer
+  type Short = typeof shorthand
+  const shorthand: typeof Tag.integer
+  type shorthand<T> = [T] extends [typeof integer_.shorthand] ? typeof integer_.shorthand : never
+}
+namespace integer_ {
+  export const def = {
+    _tag: Tag.integer,
+    _def: symbol.integer as never as integer,
   }
 }
-///    number    ///
-////////////////////
+///    INTEGER    ///
+/////////////////////
+
 
 ////////////////////
-///    object    ///
-export function object<T extends { [x: string]: AST.Node }>(types: T): t.object<T>
-export function object<T extends { [x: string]: AST.Node }, M extends object.Meta>(types: T, opts: object.Options<M>): t.object<T>
-export function object<T extends { [x: string]: AST.Node }, M extends object.Meta>(types: T, opts?: object.Options<M>): t.object<T>
-export function object(
-  xs: Record<string, AST.Node>, $: object.Options = object.defaults): t.object<{}> {
-  return new t.object(xs, $) 
+///    NUMBER    ///
+interface number_ { 
+  _tag: typeof Tag.number
+  _def: typeof number_.spec 
+  is: (u: unknown) => u is number
 }
-///
-export declare namespace object {
-  interface Meta extends t.Meta { optionalKeys: readonly (keyof any)[] }
-  type Options<Meta extends object.Meta = object.Meta> = Partial<{
-    meta: Meta
-    exactOptionalPropertyTypes: boolean
-  }>
+function number_(): number_ { 
+  return { 
+    _tag: Tag.number, 
+    _def: symbol.number as never, 
+    is: is.number 
+  } 
 }
-export namespace object {
-  export const meta: Required<object.Meta> = {
-    optionalKeys: []
-  } satisfies Required<object.Meta>
-  export const defaults = { 
-    meta,
-    exactOptionalPropertyTypes: true,
-  } satisfies Required<object.Options>
+
+declare namespace number_ {
+  const spec: number
+  type Short = typeof shorthand
+  const shorthand: typeof Tag.number
+  type shorthand<T> = [T] extends [typeof number_.shorthand] ? typeof number_.shorthand : never
 }
-///    object    ///
+///    NUMBER    ///
 ////////////////////
 
-export const hasOptions = <T extends readonly AST.Node[]>(u: anyOf.arguments<T>): u is [...types: [...T]] => u.every(AST.is)
-export function separateArguments<T extends readonly AST.Node[]>(args: anyOf.arguments<T>): [types: T, opts: anyOf.Options]
-export function separateArguments<T extends readonly AST.Node[]>(args: anyOf.arguments<T>) {
-  return hasOptions(args) ? [args.slice(1), args[args.length - 1]] : [args, {} satisfies anyOf.Options]
+
+////////////////////
+///    STRING    ///
+interface string_ { 
+  _tag: typeof Tag.string
+  _def: typeof string_.spec
+  is: (u: unknown) => u is string
 }
+function string_(): string_ {
+  return {
+    _tag: Tag.string,
+    _def: symbol.string as never,
+    is: is.string
+  }
+}
+
+declare namespace string_ {
+  const spec: string
+  const shorthand: typeof Tag.string
+  type Short = typeof string_.shorthand
+  type shorthand<T> = [T] extends [typeof string_.shorthand] ? typeof string_.shorthand : never
+}
+///    STRING    ///
+////////////////////
+
+
+/////////////////
+///    ANY    ///
+interface any_ { 
+  _tag: typeof Tag.any
+  _def: typeof any_.spec
+  is: (u: unknown) => u is unknown
+}
+function any_(): any_
+function any_() {
+  return {
+    _tag: Tag.any,
+    _def: symbol.any as never,
+    is: is.any,
+  }
+}
+
+declare namespace any_ {
+  const spec: unknown
+  const shorthand: typeof Tag.any
+  type Short = typeof any_.shorthand
+  type shorthand<T> = [T] extends [typeof any_.shorthand] ? typeof any_.shorthand : never
+}
+///    ANY    ///
+/////////////////
 
 
 ///////////////////
-///    anyOf    ///
-export function anyOf<T extends readonly AST.Node[]>(...types: [...T]): t.anyOf<T> 
-export function anyOf<T extends readonly AST.Node[]>(...args: [...T, opts: anyOf.Options]): t.anyOf<T> 
-export function anyOf<T extends readonly AST.Node[]>(...args: [...T, opts?: anyOf.Options]): t.anyOf<T> 
-export function anyOf<T extends readonly AST.Node[]>(...args: anyOf.arguments<T>): t.anyOf<T> { 
-  const [xs, $] = separateArguments(args)
-  return new t.anyOf(xs, $) 
+///    CONST    ///
+interface const_<S> { 
+  _tag: typeof Tag.const
+  _def: S
+  is: (u: unknown) => u is S
+}
+function const_<const T>(v: T): const_<const_.parse<T>>
+function const_<const T>(v: T) {
+  return {
+    ...const_.def(v),
+    is: is.literally(v),
+  }
 }
 
-anyOf(string(), number()).is
-
-///
-export declare namespace anyOf {
-  type Meta = t.Meta
-  type Options<Meta extends anyOf.Meta = {}> = Partial<{ meta: Meta }>
-  type arguments<T extends readonly AST.Node[] = readonly AST.Node[]> = never
-    | [...types: T]
-    | [...types: T, opts?: anyOf.Options]
+declare namespace const_ {
+  const spec: unknown
+  const children: unknown
+  type shorthand<T>
+    = [T] extends [string]
+    ? [T] extends [`'${string}'`] ? `'${string}'`
+    : [T] extends [`"${string}"`] ? `"${string}"`
+    : [T] extends [`\`${string}\``] ? `\`${string}\``
+    : never : unknown
+  interface def<T extends typeof const_.spec> { _tag: typeof Tag.const, _def: T }
+  type validate<S>
+    = [S] extends [string] ?
+    | [S] extends [ `'${string}'` ] ? `'${string}'`
+    : [S] extends [ `"${string}"` ] ? `"${string}"`
+    : [S] extends [`\`${string}\``] ? `\`${string}\``
+    : TypeError<`'const' requires string literals to be be wrapped in quotes (for example, pass '"hi"' instead of 'hi')`, S>
+    : unknown
+  type parse<S>
+    = [S] extends [ `'${infer T}'` ] ? T
+    : [S] extends [ `"${infer T}"` ] ? T
+    : [S] extends [`\`${infer T}\``] ? T
+    : S
     ;
 }
-export namespace anyOf {
-}
-///    anyOf    ///
-///////////////////
-
-///////////////////
-///    array    ///
-export function array<T extends AST.Node>(type: T): t.array<T>
-export function array<T extends AST.Node>(type: T, opts: array.Options): t.array<T>
-export function array<T extends AST.Node>(type: T, opts?: array.Options): t.array<T>
-export function array(_: AST.Node, $: array.Options = array.defaults): t.array<AST.Node>
-  { return new t.array(_, $) }
-///
-export declare namespace array {
-  type Meta = t.Meta
-  type Options<Meta extends array.Meta = {}> = {
-    readonly?: boolean
-    meta: Meta
-  }
-}
-export namespace array {
-  export const meta = {} satisfies array.Meta
-  export const defaults = {
-    meta,
-    readonly: false,
-  } satisfies Required<array.Options>
-}
-///    array    ///
-///////////////////
-
-////////////////////
-///    record    ///
-export function record<T extends AST.Node>(type: T): t.record<T>
-export function record<T extends AST.Node>(type: T, opts: record.Options): t.record<T>
-export function record<T extends AST.Node>(type: T, opts?: record.Options): t.record<T>
-export function record(_: AST.Node, $: record.Options = array.defaults): t.record<AST.Node>
-  { return new t.record(_, $) }
-///
-export declare namespace record {
-  type Meta = t.Meta
-  type Options<Meta extends array.Meta = {}> = {
-    readonly?: boolean
-    meta: Meta
-  }
-}
-///    record    ///
-////////////////////
-
-//////////////////////
-///    optional    ///
-export function optional<T extends AST.Node>(type: T): t.optional<T>
-export function optional<T extends AST.Node>(type: T, opts: optional.Options): t.optional<T>
-export function optional<T extends AST.Node>(type: T, opts?: optional.Options): t.optional<T>
-export function optional(_: AST.Node, $?: optional.Options): t.optional<AST.Node>
-  { return new t.optional(_, $) }
-
-export declare namespace optional {
-  interface Meta extends t.Meta, inline<{ [symbol.optional]: true }> {}
-  type Options<Meta extends optional.Meta = { [symbol.optional]: true }> = {
-    meta: Meta
-  }
-}
-export namespace optional {
-  export const meta = { 
-    [symbol.optional]: true 
-  } satisfies optional.Meta
-  export const defaults = { 
-    meta 
-  } satisfies optional.Options
-}
-///    optional    ///
-//////////////////////
-
-////////////////////////
-///    validation    ///
-export function isOptional<T extends AST.Node>(u: unknown): u is optional_<T> { 
-  return !!(u as any)?.meta?.[symbol.optional] 
-}
-export function isOptionalNotUndefined<T extends AST.Node>(u: unknown): u is optional_<T> { 
-  return isOptional(u) && u.is(undefined) === false 
-}
-export function isComposite<T>(u: unknown): u is { [x: string]: T } { 
-  return u !== null && typeof u === "object" 
-}
-
-function hasOwn<K extends key.any>(u: unknown, key: K): u is { [P in K]: unknown }
-function hasOwn(u: unknown, key: key.any): u is { [x: string]: unknown } {
-  return typeof key === "symbol" 
-    ? isComposite(u) && key in u 
-    : hasOwnProperty.call(u, key)
-}
-
-function validateShape<T extends { [x: string]: AST.Node }>(xs: T, u: { [x: string]: unknown }) {
-  const s = map(xs, (x) => x.is)
-  for (const k in s) {
-    const check = s[k]
-    switch (true) {
-      case isOptional(s[k]) && !hasOwn(u, k): continue
-      case isOptional(s[k]) && hasOwn(u, k) && u[k] === undefined: continue
-      case isOptional(s[k]) && hasOwn(u, k) && check(u[k]): continue
-      case isOptional(s[k]) && hasOwn(u, k) && !check(u[k]): return false
-      case hasOwn(u, k) && check(u[k]) === true: continue
-      default: throw globalThis.Error("in 'validateShape': illegal state")
+namespace const_ {
+  export function def<T extends typeof const_.spec>(v: T): const_.def<T> { 
+    return { 
+      _tag: Tag.const,
+      _def: v,
     }
   }
-  return true
+}
+///    CONST    ///
+///////////////////
+
+
+//////////////////////
+///    OPTIONAL    ///
+interface optional_<S> { 
+  _tag: typeof Tag.optional
+  _def: S
+  is: (u: unknown) => u is undefined | typeof_<S>
+}
+function optional_<S extends typeof optional_.children>(s: S): optional_<S>
+function optional_<S extends typeof optional_.children>(s: S) {
+  return {
+    ...optional_.def(s),
+    is: optional$(s.is),
+  }
 }
 
-function validateShapeEOPT<T extends { [x: string]: AST.Node }>(xs: T, u: { [x: string]: unknown }) {
-  const s = map(xs, (x) => x.is)
-  for (const k in s) {
-    const check = s[k]
+declare namespace optional_ {
+  const spec: unknown
+  const children: AST.Node
+  const shorthand: `${string}?`
+  type Short = typeof optional_.shorthand
+  type shorthand<T> = [T] extends [typeof optional_.shorthand] ? typeof optional_.shorthand : never
+  ///
+  interface def<S extends typeof optional_.spec> { _tag: typeof Tag.optional, _def: S }
+  ///
+  function type<S extends typeof optional_.children>(s: S): undefined | S["_def"]
+  type _type<S extends typeof optional_.children> = undefined | S["_def"]
+  interface type<S extends typeof optional_.children> { _type: optional_._type<S> }
+}
+namespace optional_ {
+  export function def<S extends typeof optional_.spec>(s: S): optional_.def<S>
+    { return { _tag: Tag.optional, _def: s } }
+}
+///    OPTIONAL    ///
+//////////////////////
+
+
+////////////////////
+///    ALL OF    ///
+interface allOf_<S> { 
+  _tag: typeof Tag.allOf
+  _def: S
+  // is: (u: unknown) => u is S
+}
+function allOf_<
+  S extends typeof allOf_.children,
+  T extends 
+  | { [Ix in keyof S]: typeof_<S[Ix]> }
+  = { [Ix in keyof S]: typeof_<S[Ix]> }
+>(...ss: S): allOf_<S> & { is: (u: unknown) => u is Intersect<T> }
+function allOf_<S extends typeof allOf_.children>(...ss: S) { 
+  return {
+    ...allOf_.def(ss),
+    is: allOf$(...ss.map((s) => s.is)),
+  }
+}
+
+declare namespace allOf_ {
+  const spec: readonly unknown[]
+  const children: readonly AST.Node[]
+  const shorthand: Short<AST.Short>
+  type Short<T> = readonly ["&", ...readonly T[]]
+  type shorthand<T> = [T] extends [Short<T>] ? Short<T> : never
+  type fromShort<S extends typeof allOf_.spec> = never | allOf_<{ -readonly [Ix in keyof S]: AST.fromShort<S[Ix]> }>
+  ///
+  interface def<S extends typeof allOf_.spec> { _tag: typeof Tag.allOf, _def: S }
+  ///
+  function type<S extends typeof allOf_.children>(ss: S): allOf_.type<S>
+  interface type<S extends typeof allOf_.children> { _type: allOf_._type<S> }
+  type _type<S extends typeof allOf_.children> = never | Intersect<[...{ [K in keyof S]: S[K]["_def"] }]>
+}
+namespace allOf_ {
+  export function def<S extends typeof allOf_.spec>(ss: S): allOf_.def<S> { return { _tag: Tag.allOf, _def: ss } }
+}
+///    ALL OF    ///
+////////////////////
+
+
+////////////////////
+///    ANY OF    ///
+interface anyOf_<S extends typeof anyOf_.spec> { 
+  _tag: typeof Tag.anyOf
+  _def: S
+  // is: (u: unknown) => u is { [Ix in keyof S]: typeof_<S[Ix]> }
+}
+function anyOf_<
+  S extends typeof anyOf_.children, 
+  T extends 
+  | { [Ix in keyof S]: typeof_<S[Ix]> }
+  = { [Ix in keyof S]: typeof_<S[Ix]> }
+>(...ss: S): anyOf_<S> & { is: (u: unknown) => u is T[number] }
+function anyOf_<S extends typeof anyOf_.children>(...ss: S) {
+  return {
+    ...anyOf_.def(ss),
+    is: anyOf$(...ss.map((s) => s.is)),
+  }
+}
+
+declare namespace anyOf_ {
+  const spec: readonly unknown[]
+  const children: readonly AST.Node[]
+  const shorthand: Short<AST.Short>
+  type Short<T> = readonly ["|", ...readonly T[]]
+  type shorthand<T> = [T] extends [anyOf_.Short<T>] ? anyOf_.Short<T> : never
+  type fromShort<S extends typeof anyOf_.spec> = never | anyOf_<{ -readonly [Ix in keyof S]: AST.fromShort<S[Ix]> }>
+  ///
+  interface def<S extends typeof anyOf_.spec> { _tag: typeof Tag.anyOf, _def: S }
+  ///
+  function type<S extends typeof anyOf_.children>(ss: S): anyOf_.type<S>
+  type _type<S extends typeof anyOf_.children> = never | S[number]["_def"]
+  interface type<S extends typeof anyOf_.children> { _type: anyOf_._type<S> }
+}
+namespace anyOf_ {
+  export function def<S extends typeof anyOf_.spec>(ss: S): anyOf_.def<S> { return { _tag: Tag.anyOf, _def: ss } }
+}
+///    ANY OF    ///
+////////////////////
+
+
+///////////////////
+///    ARRAY    ///
+interface array_<S> { 
+  _tag: typeof Tag.array
+  _def: S
+  is: (u: unknown) => u is typeof_<S>
+}
+function array_<S extends typeof array_.children>(s: S): array_<S>
+function array_<S extends typeof array_.children>(s: S) { 
+  return {
+    ...array_.def(s),
+    is: array$(s.is),
+  }
+}
+
+declare namespace array_ {
+  const spec: unknown
+  const children: AST.Node
+  type fromShort<S> = never | array_<AST.fromShort<S>>
+  const shorthand: Short<AST.Short>
+  type Short<T> = readonly ["[]", T]
+  interface def<S extends typeof array_.spec> { _tag: typeof Tag.array, _def: S }
+  ///
+  function type<S extends typeof array_.children>(s: S): array_.type<S>
+  type _type<S extends typeof array_.children> = never | S["_def"][]
+  interface type<S extends typeof array_.children> { _type: array_._type<S> }
+}
+namespace array_ {
+  export function def<S extends typeof array_.spec>(s: S): array_.def<S>
+  export function def<S extends typeof array_.spec>(s: S): array_.def<S>
+    { return { _tag: Tag.array, _def: s } }
+}
+///    ARRAY    ///
+///////////////////
+
+
+////////////////////
+///    RECORD    ///
+interface record_<S> { 
+  _tag: typeof Tag.record
+  _def: S
+  is: (u: unknown) => u is globalThis.Record<string, typeof_<S>>
+}
+function record_<S extends typeof record_.children>(s: S): record_<S>
+function record_<S extends typeof record_.children>(s: S) { 
+  return {
+    ...record_.def(s),
+    is: record$(s.is),
+  }
+}
+
+declare namespace record_ {
+  const spec: unknown
+  const children: AST.Node
+  type fromShort<T> = never | record_<AST.fromShort<T>>
+
+  const shorthand: Short<AST.Short>
+  type Short<T> = readonly ["{}", T]
+
+  ///
+  interface def<S extends typeof record_.spec> { _tag: typeof Tag.record, _def: S }
+  ///
+  function type<S extends typeof record_.children>(s: S): record_.type<S>
+  type _type<S extends typeof record_.children> = never | globalThis.Record<string, S["_def"]>
+  interface type<S extends typeof record_.children> { _type: record_._type<S> }
+}
+namespace record_ {
+  export function def<S extends typeof record_.spec>(s: S): record_.def<S> { return { _tag: Tag.record, _def: s } }
+}
+///    RECORD    ///
+////////////////////
+
+
+///////////////////
+///    TUPLE    ///
+interface tuple_<S> { 
+  _tag: typeof Tag.tuple
+  _def: S
+  is: (u: unknown) => u is { [Ix in keyof S]: typeof_<S[Ix]> }
+}
+function tuple_<S extends typeof tuple_.children>(...ss: S): tuple_<S>
+function tuple_<S extends typeof tuple_.children>(...ss: S) { 
+  return {
+    ...tuple_.def(ss),
+    is: tuple$(...ss.map((s) => s.is)),
+  }
+}
+
+declare namespace tuple_ {
+  type spec<T> = readonly T[]
+  const spec: tuple_.spec<unknown>
+  const children: tuple_.spec<AST.Node>
+  const shorthand: Short<AST.Short>
+  type Short<T> = readonly T[]
+
+  type shorthand<T> = [T] extends [typeof tuple_.shorthand] ? typeof tuple_.shorthand : never
+  type fromShort<T extends typeof tuple_.shorthand> = never | tuple_<{ -readonly [I in keyof T]: AST.fromShort<T[I]> }>
+  ///
+  interface def<S extends typeof tuple_.spec> { _tag: typeof Tag.tuple, _def: S }
+  ///
+  function type<S extends typeof tuple_.children>(ss: S): tuple_.type<S>
+  type _type<S extends typeof tuple_.children> = never | { [K in keyof S]: S[K]["_def"] }
+  interface type<S extends typeof tuple_.children> { _type: tuple_._type<S> }
+}
+namespace tuple_ {
+  export function def<S extends typeof tuple_.spec>(ss: S): tuple_.def<S> 
+    { return { _tag: Tag.tuple, _def: ss } }
+}
+///    TUPLE    ///
+///////////////////
+
+
+////////////////////
+///    OBJECT    ///
+interface object_<S> { 
+  _tag: typeof Tag.object
+  _def: S
+  _opt: object_._opt<S>[]
+  is: (u: unknown) => u is { [K in keyof S]: typeof_<S[K]> }
+}
+
+function object_<S extends typeof object_.children>(xs: S): object_<S>
+function object_<S extends typeof object_.children>(xs: S) {
+  return {
+    _tag: Tag.object,
+    _def: object_.def(xs),
+    _opt: object_._opt(xs),
+    is: object$(map(xs, (x) => x.is))
+  }
+}
+
+namespace object_ {
+  export function hasQuestionMark<K extends string>(key: K): key is K & `${string}?` { return key.endsWith("?") }
+  export function rmQuestionMark<K extends string>(key: K): string { return key.endsWith("?") ? key.slice(0, -1) : key }
+  export function _opt<S>(children: { [x: string]: S }): _opt<S>[]
+  export function _opt<S extends { [x: string]: unknown }>(children: S): string[]
+    { return Object_keys(children).filter(hasQuestionMark).map((k) => k.slice(0, -1)) }
+
+  export function def<S extends typeof object_.spec>(children: S): object_<S>
+  export function def(children: typeof object_.children): { [x: string]: unknown } {
+    let out: { [x: string]: unknown } = {}
+    const ks = Object_keys(children)
+    for (let ix = 0, len = ks.length; ix < len; ix++) {
+      const k = ks[ix]
+      out[rmQuestionMark(k)] = hasQuestionMark(k) ? optional_(children[k]) : children[k]
+    }
+    return out
+  }
+}
+
+declare namespace object_ {
+  const spec: never | { [x: string]: unknown }
+  const children: never | { [x: string]: AST.Node }
+  ///
+  const shorthand: never | Short<AST.Short>
+  type Short<T> = never | { [x: string]: T }
+  type shorthand<T> = [T] extends [typeof object_.shorthand] ? typeof object_.shorthand : never
+  type fromShort<T extends typeof object_.shorthand> = never | object_<_fromShort<T>>
+  ///
+  interface def<S extends typeof object_.spec> {
+    _tag: typeof Tag.object,
+    _def: S
+    _opt: object_._opt<S>
+  }
+  ///
+  function type<S extends typeof object_.children>(s: S): object_.type<S>
+  interface type<S extends typeof object_.children> { _type: object_._type<S> }
+  type _type<
+    S,
+    Opt extends object_._opt<S> = object_._opt<S>,
+    Req extends Exclude<keyof S, Opt> = Exclude<keyof S, Opt>
+  > = never | Force<
+    & $<{ [K in Opt]+?: AST.typeof<S[K]> }>
+    & $<{ [K in Req]-?: AST.typeof<S[K]> }>
+  >;
+  ///
+  type $<T> = [keyof T] extends [never] ? unknown : T
+  type _opt<T, K extends keyof T = keyof T> = K extends K ? T[K] extends optional_.def<any> ? K : never : never
+  type hasQuestionMark<T, K extends string & keyof T = string & keyof T> = K extends `${string}?` ? K : never
+  type noQuestionMark<T, K extends keyof T = keyof T> = K extends `${string}?` ? never : K
+  ///
+  type _fromShort<
+    S,
+    Opt extends object_.hasQuestionMark<S> = object_.hasQuestionMark<S>,
+    Req extends object_.noQuestionMark<S> = object_.noQuestionMark<S>
+  > = never | Force<
+    & $<{ [K in Opt as K extends `${infer _}?` ? _ : K]: optional_<AST.fromShort<S[K]>> }>
+    & $<{ [K in Req]-?: AST.fromShort<S[K]> }>
+  >
+}
+///    OBJECT    ///
+////////////////////
+
+const isScalarShortName = (s: string): s is Terminal => Terminals.includes(s as never)
+const isShorthand = (_: unknown): _ is AST.Short => true
+const isTerminal = (u: unknown): u is Terminal => typeof u === "string" && isScalarShortName(u)
+const isArrayShorthand = <T>(u: unknown): u is array_.Short<T> => Array_isArray(u) && u[0] === "[]"
+const isRecordShorthand = <T>(u: unknown): u is record_.Short<T> => Array_isArray(u) && u[0] === "{}"
+const isTupleShorthand = <T>(u: unknown): u is tuple_.Short<T> => Array_isArray(u) && u.every(isShorthand)
+const isObjectShorthand = <T>(u: unknown): u is object_.Short<T> => !!u && typeof u === "object" && Object_values(u).every(isShorthand)
+const isAllOfShorthand = <T>(u: unknown): u is allOf_.Short<T> => Array_isArray(u) && u[0] === "|"
+const isAnyOfShorthand = <T>(u: unknown): u is anyOf_.Short<T> => Array_isArray(u) && u[0] === "&"
+const isConstStringLiteral
+  : (u: unknown) => u is `'${string}'` | `"${string}"` | `\`${string}\``
+  = (u): u is never =>
+    typeof u === "string" && (
+      u.startsWith("'") && u.endsWith("'") ||
+      u.startsWith("`") && u.endsWith("`") ||
+      u.startsWith(`"`) && u.endsWith(`"`)
+    )
+
+// TODO: fix type assertion
+const parseConstStringLiteral = (s: AST.Short): never => (isConstStringLiteral(s) ? s.slice(1, -1) : s) as never
+
+const terminalMap = {
+  boolean: boolean_,
+  "boolean[]": fn.flow(boolean_, array_),
+  "boolean{}": fn.flow(boolean_, record_),
+  symbol: symbol_,
+  "symbol[]": fn.flow(symbol_, array_),
+  "symbol{}": fn.flow(symbol_, record_),
+  integer: integer_,
+  "integer[]": fn.flow(integer_, array_),
+  "integer{}": fn.flow(integer_, record_),
+  number: number_,
+  "number[]": fn.flow(number_, array_),
+  "number{}": fn.flow(number_, record_),
+  string: string_,
+  "string[]": fn.flow(string_, array_),
+  "string{}": fn.flow(string_, record_),
+  any: any_,
+  "any[]": fn.flow(any_, array_),
+  "any{}": fn.flow(any_, record_),
+} as const satisfies { [K in keyof typeof AST.Terminal]: () => typeof AST.Terminal[K] }
+
+type tail<S> = S extends readonly [any, ...infer T] ? T : never
+function tail<const T extends readonly unknown[]>(xs: T): tail<T>
+function tail<const T extends readonly unknown[]>(xs: T)
+  { return xs.slice(1) }
+
+const ShortFunctor: Functor<AST.ShortLambda, AST.Short> = {
+  map: (f) => (x) => {
     switch (true) {
-      case isOptionalNotUndefined(check) && hasOwn(u, k) && u[k] === undefined: return false
-      case isOptional(check) && !hasOwn(u, k): continue // u[k] === undefined: continue
-      case !check(u[k]): return false
-      default: continue
+      default: return (console.info("exhaustive check in ast.ShortFunctor, x:", x), x)
+      case x === null: return x
+      case isTerminal(x): return x
+      case isArrayShorthand(x): return [x[0], f(x[1])]
+      case isRecordShorthand(x): return [x[0], f(x[1])]
+      case isAllOfShorthand(x): return [x[0], f(x[1])]
+      case isAnyOfShorthand(x): return [x[0], f(x[1])]
+      case isObjectShorthand(x): return map(x, f)
+      case isTupleShorthand(x): return map(x, f)
+      case isConstStringLiteral(x): return f(parseConstStringLiteral(x)) as never
     }
   }
-  return true
 }
 
-///    validation    ///
-////////////////////////
+function foldShort<T>(algebra: Functor.Algebra<AST.ShortLambda, T>)
+  { return fn.cata(ShortFunctor)(algebra) }
+function unfoldShort<T>(coalgebra: Functor.Coalgebra<AST.ShortLambda, T>)
+  { return fn.ana(ShortFunctor)(coalgebra) }
 
-const abc = object({ 
-  a: object({ 
-    b: object({ 
-      c: optional(integer_()),
-      d: string(),
-      e: array(array(boolean()))
-    })
-  })
-})
+export namespace Recursive {
+  export const fromSeed: Functor.Algebra<AST.ShortLambda, AST.Node> = (x) => {
+    switch (true) {
+      default: return (console.info("exhaustive check in ast.Recursive.fromSeed, x:", x), x)
+      case x === null: return null_()
+      case isTerminal(x): return terminalMap[x]()
+      case isArrayShorthand(x): return array_(x[1])
+      case isRecordShorthand(x): return record_(x[1])
+      case isAllOfShorthand(x): return allOf_(...tail(x))
+      case isAnyOfShorthand(x): return anyOf_(...tail(x))
+      case isTupleShorthand(x): return tuple_(...x)
+      case isObjectShorthand(x): return object_(x)
+      case isConstStringLiteral(x): return const_(parseConstStringLiteral(x))
+    }
+  }
+}
 
-// interface property<T extends {}> extends newtype<T> {}
-// interface optionalProperty<T extends {}> extends inline<{ [symbol.optional]: true }>, newtype<T> {}
+export const fromSeed = foldShort(Recursive.fromSeed)
+
+
+/**
+ * @example
+ * type Short =
+ *   | null
+ *   | readonly ["[]", Short]
+ *   | readonly ["{}", Short]
+ *   | readonly ["|", ...Short[]]
+ *   | readonly ["&", ...Short[]]
+ *   | Terminal
+ *   | Composite
+ *   | Const
+ */
+
+// const matchShorthand = (s: AST.Short) => {
+//   return (_: any) => {
+//     switch (true) {
+//       case s === null: return null_()
+//       case isTerminal(s): return terminalMap[s]()
+//       case isArrayShorthand(s): return array_(s[1])
+//       case isRecordShorthand(s): return record_(_)
+//       case isTupleShorthand(s): return tuple_(s)
+//       case isObjectShorthand(s): return object_(s)
+//       case isAllOfShorthand(s): return allOf_(_)
+//       case isAnyOfShorthand(s): return anyOf_(_)
+//       case isConstStringLiteral(s): return const_(_)
+//       case typeof s === "number": return const_(_)
+//       case typeof s === "boolean": return const_(_)
+//       default: return (fn.softExhaustiveCheck(s), const_(_))
+//     }
+//   }
+// }
+
+const short: {
+  (s: null): null_
+  (s: undefined): null_
+  <const S extends Terminal>(s: S): typeof AST.Terminal[S]
+  <const S extends readonly AST.Short[]>($: "|", ...ss: S): anyOf_.fromShort<S>
+  <const S extends readonly AST.Short[]>($: "&", ...ss: S): allOf_.fromShort<S>
+  <const S extends AST.Short>($: "[]", s: S): array_.fromShort<S>
+  <const S extends AST.Short>($: "{}", s: S): record_.fromShort<S>
+  <const S extends object_.shorthand<S>>(s: S): object_.fromShort<S>
+  <const S extends tuple_.shorthand<S>>(ss: S): tuple_.fromShort<S>
+  <const S extends const_.validate<S>>(s: S): const_<S>
+} = (fromSeed as never)

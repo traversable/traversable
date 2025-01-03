@@ -1,4 +1,4 @@
-import { Json, t } from "@traversable/core"
+import { Json, is, t } from "@traversable/core"
 import { Option, fn, type keys, map, number, object, pair } from "@traversable/data"
 import { Invariant } from "@traversable/registry"
 import { Schema } from "./schema/exports.js"
@@ -253,7 +253,7 @@ export namespace fromJSON {
       pair.duplicate,
       pair.mapBoth(
         fn.flow(
-          Option.guard(t.is.nonempty.array),
+          Option.guard(is.nonempty.array),
           Option.map(fn.flow(map(loop), x => x as never)),
           Option.getOrElse(() => [] as readonly Schema.any[]),
           object.bind("items"),
@@ -288,7 +288,7 @@ export namespace fromJSON {
     switch (true) {
       case number.isNonFinite(node):
       case Json.is.null(node): return fromJSON.fromNull()
-      case t.is.bigint(node): return fromJSON.fromBigint(node)
+      case is.bigint(node): return fromJSON.fromBigint(node)
       case Json.is.number(node): return fromJSON.fromScalar(node)
       case Json.is.string(node): return fromJSON.fromScalar(node)
       case Json.is.boolean(node): return fromJSON.fromScalar(node)

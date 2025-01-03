@@ -47,7 +47,6 @@ interface JsonSchema_lambda extends HKT { [-1]: JsonSchema_F<this[0]> }
 const Object_entries = globalThis.Object.entries
 
 interface JsonSchema_null { type: "null" }
-
 const JsonSchema_null = t.object({ type: t.const('"null"') })
 const JsonSchema_isNull
   : (u: unknown) => u is JsonSchema_null
@@ -102,6 +101,8 @@ const JsonSchema_Scalar = t.anyOf(
 const JsonSchema_isScalar
   : (u: unknown) => u is JsonSchema_Scalar
   = JsonSchema_Scalar.is
+
+
 
 interface JsonSchema_allOf { allOf: readonly JsonSchema[] }
 interface JsonSchema_allOfF<T> { allOf: readonly T[] }

@@ -65,7 +65,10 @@ namespace schema {
           case schema.isRequired(shape[k]) && !hasOwn(u, k): return false
           case schema.isRequired(shape[k]) && hasOwn(u, k) && check(u[k]) === true: continue
           case hasOwn(u, k) && check(u[k]) === true: continue
-          default: throw globalThis.Error("in 'validateShape': illegal state")
+          default: return false
+
+          // )
+          // throw globalThis.Error("in 'validateShape': illegal state")
           // TODO: remove this check and `continue` in default (for the semantics, not behavior) 
           // after you've verified that you haven't missed any cases
           // case hasOwn(u, k) && check(u[k]): continue
@@ -151,6 +154,8 @@ function object$<T extends { [x: string]: (u: any) => boolean }>(
     switch (true) {
       case u === null: return false
       case !isObject(u): return false
+      // TODO: make configurable?
+      // case Array_isArray(u): return false
       case _.exactOptionalPropertyTypes: return schema.validateShapeEOPT(shape, u)
       case !_.exactOptionalPropertyTypes: return schema.validateShape(shape, u)
       default: throw globalThis.Error("in 'object.of': illegal state")

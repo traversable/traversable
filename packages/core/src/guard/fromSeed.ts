@@ -1,8 +1,8 @@
 import { fn, map } from "@traversable/data"
 import type { Entries, Functor, HKT } from "@traversable/registry"
-import { symbol, URI } from "@traversable/registry"
+import { URI, symbol } from "@traversable/registry"
 
-import * as t from "./ast-3.js"
+import * as t from "./ast.js"
 
 export type TagTree_null = [_tag: symbol.null]
 export type TagTree_boolean = [_tag: symbol.boolean]

@@ -837,8 +837,12 @@ export const fanin
  * - {@link para `fn.para`}
  */
 
-export function ana<F extends HKT, _F>(Functor: Functor<F, _F>): 
-  <T>(coalgebra: Functor.Coalgebra<F, T>) => <S extends _F>(term: S) => HKT.apply<F, T>
+export function ana
+  <F extends HKT, _F>(Functor: Functor<F, _F>):
+  <T>(coalgebra: Functor.Coalgebra<F, T>) 
+    => <S extends _F>(term: S) 
+    => HKT.apply<F, T>
+
 /// impl.
 export function ana<F extends HKT>(Functor: Functor<F>) {
   return <T>(coalgebra: Functor.Coalgebra<F, T>) => {
@@ -859,8 +863,12 @@ export function ana<F extends HKT>(Functor: Functor<F>) {
  * - {@link hylo `fn.hylo`}
  * - {@link para `fn.para`}
  */
-export function cata<F extends HKT, _F>(F: Functor<F, _F>): 
-  <T>(algebra: Functor.Algebra<F, T>) => <S extends _F>(term: S) => T
+
+export function cata
+  <F extends HKT, _F>(F: Functor<F, _F>): 
+  <T>(algebra: Functor.Algebra<F, T>) 
+    => <S extends _F>(term: S) 
+    => T
 
 export function cata<F extends HKT>(F: Functor<F>) {
   return <T>(algebra: Functor.Algebra<F, T>) => {
@@ -882,8 +890,11 @@ export function cata<F extends HKT>(F: Functor<F>) {
  * - {@link hylo `fn.hylo`}
  */
 
-export function para<F extends HKT, _F>(F: Functor<F, _F>): 
-  <T>(ralgebra: Functor.RAlgebra<F, T>) => <S extends _F>(term: S) => T 
+export function para
+  <F extends HKT, _F>(F: Functor<F, _F>): 
+  <T>(ralgebra: Functor.RAlgebra<F, T>) 
+    => <S extends _F>(term: S) 
+    => T 
     
 export function para<F extends HKT>(F: Functor<F>) {
   return <T>(ralgebra: Functor.RAlgebra<F, T>) => {
@@ -919,7 +930,8 @@ export function para<F extends HKT>(F: Functor<F>) {
  * - {@link cata `fn.cata`}
  * - {@link hylo `fn.hylo`}
  */
-export function apo<F extends HKT>(F: Functor<F>): 
+export function apo
+  <F extends HKT>(F: Functor<F>): 
   <T>(coalgebra: Functor.RCoalgebra<F, T>) 
     => (expr: T)
     => HKT.apply<F, T> 

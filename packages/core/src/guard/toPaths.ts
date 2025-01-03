@@ -3,7 +3,7 @@ import { fn } from "@traversable/data"
 import { symbol as Sym } from "@traversable/registry"
 import type { Array, Functor } from "@traversable/registry"
 
-import { AST } from "./ast-3.js"
+import { AST } from "./ast.js"
 import type { Leaf, Pathspec } from "./types.js"
 
 export type Handler<K = never, O extends string = string> = (k: [K] extends [never] ? keyof any : K, prev?: keyof any, next?: keyof any | Leaf) => O | false
@@ -109,8 +109,9 @@ export const prepend = (k: key.any, y?: key.any) => (xs: Pathspec): Pathspec => 
 
 export namespace Recursive {
   export const toPaths: Functor.Algebra<AST.lambda, Array<Pathspec>> = (n) => {
+    console.log(JSON.stringify(n, null, 2))
     switch (true) {
-      default: return fn.exhaustive(n)
+      default: return (console.error(n), fn.exhaustive(n))
       case n._tag === "null":
       case n._tag === "boolean":
       case n._tag === "symbol":

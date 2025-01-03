@@ -1,4 +1,4 @@
-import { Extension, Traversable, t } from "@traversable/core"
+import { Extension, Traversable, is, t } from "@traversable/core"
 import { Option, array, fn, type key, type keys, map, object, string } from "@traversable/data"
 import type { Functor, Partial, Required, newtype } from "@traversable/registry"
 import { Invariant, symbol } from "@traversable/registry"
@@ -28,7 +28,7 @@ export type Options<T = unknown> = {
   handlers?: Partial<Extension.Handlers<string>>
 }
 
-export type Flags = t.infer<typeof Flags>
+export type Flags = t.typeof<typeof Flags>
 const Flags = t.object({
   nominalTypes: t.boolean(),
   preferInterfaces: t.boolean(),
@@ -144,10 +144,10 @@ const multilineComment = (u: unknown, options?: { indentBy?: number, wrap?: bool
     (node, indent, loop) => {
       switch(true) {
         default: return Invariant.ParseError(JSON.stringify(node, null, 2))("multilineComment")
-        case t.is.string(node): return '"' + string.escape(node) + '"'
-        case t.is.symbol(node): return globalThis.String(node)
-        case t.is.showable(node): return node + ""
-        case t.is.array(node): return node.length === 0 ? "[]" : fn.pipe(
+        case is.string(node): return '"' + string.escape(node) + '"'
+        case is.symbol(node): return globalThis.String(node)
+        case is.showable(node): return node + ""
+        case is.array(node): return node.length === 0 ? "[]" : fn.pipe(
           node,
           map((xs) => loop(xs, indent + indentBy)),
           array.join(",\n * " + pad(indent)),
@@ -157,7 +157,7 @@ const multilineComment = (u: unknown, options?: { indentBy?: number, wrap?: bool
           ),
           string.between("[", "]"),
         )
-        case t.is.object(node): {
+        case is.object(node): {
           const entries = Object_entries(node)
           return entries.length === 0 ? "{}" : fn.pipe(
             entries,
@@ -216,7 +216,7 @@ function buildJsDoc(deps: BuildJsDocDeps) {
         ...(Option.isSome(deps.ctx.example) ? ["\n", " * @example", "\n", " * " + multilineComment(deps.ctx.example.value, { wrap: false })] : []),
         "\n */",
         "\n"
-      ].filter(t.is.nonnullable).join(" ")
+      ].filter(is.nonnullable).join(" ")
     }
   }
 }
@@ -291,7 +291,7 @@ const baseHandlers = {
 const nominalHandlers = {
   ...baseHandlers,
   integer() { return "number.integer" },
-  string(n) { return isKnownStringFormat(n.meta.format) ? KnownStringFormats[n.meta.format] : "string" },
+  string(n) { return isKnownStringFormat(n.meta?.format) ? KnownStringFormats[n.meta.format] : "string" },
 } satisfies Extension.BuiltIns<string>
 
 const extendedHandlers = {

@@ -53,11 +53,11 @@ export function normalize<R>(...args: Predicate<R>[] | [options: Options, ...pre
   const sourcePointer = `#${JsonPointer.fromPath(source)}` as const
   const targetPredicate = tree.has(
     ...target, 
-    core.t.anyof$(
-      tree.has("type", t.is.string),
-      tree.has("allOf", t.is.array),
-      tree.has("anyOf", t.is.array),
-      tree.has("oneOf", t.is.array),
+    core.anyOf$(
+      tree.has("type", core.is.string),
+      tree.has("allOf", core.is.array),
+      tree.has("anyOf", core.is.array),
+      tree.has("oneOf", core.is.array),
     )
   )
 

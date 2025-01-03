@@ -1,6 +1,6 @@
-import type { Functor } from "@traversable/registry"
-import { AST } from "./ast-3.js"
 import { fn } from "@traversable/data"
+import type { Functor } from "@traversable/registry"
+import { AST } from "./ast.js"
 
 /** @internal */
 const stringify = globalThis.JSON.stringify

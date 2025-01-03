@@ -9,12 +9,12 @@ export { finite } from "./finite.js"
 
 export * from "./version.js"
 export * as Invariant from "./error.js"
-export type { 
+export type {
   NonFinite,
-  NonFiniteBoolean ,
-  NonFiniteIndex, 
-  NonFiniteNumber, 
-  NonFiniteString, 
+  NonFiniteBoolean,
+  NonFiniteIndex,
+  NonFiniteNumber,
+  NonFiniteString,
   TypeError,
 } from "./error.js"
 
