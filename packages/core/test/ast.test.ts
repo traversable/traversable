@@ -233,13 +233,7 @@ vi.describe("〖🧙〗‹‹‹ ❲@traversable/core/ast❳", () => {
     vi.assertType(t.short("[]", null))
     vi.assertType(t.short("{}", null))
     vi.assertType(t.short(["boolean", "string", "number"]))
-    //                                                         ^?
     vi.assertType(t.short(["boolean", "string", "number"]))
-
-    t.tuple(t.boolean(), t.string(), t.number())
-
-
-
 
     vi.assertType
     <
@@ -374,29 +368,6 @@ vi.describe("〖🧙〗‹‹‹ ❲@traversable/core/ast❳", () => {
       })
 
     )
-
-    // <
-    //   t.allOf<[
-    //     t.object<{
-    //       a: t.array<t.string>
-    //       b: t.array<t.number>
-    //       c: t.record<t.array<t.boolean>>
-    //       d: t.optional<
-    //         t.allOf<[
-    //           t.object<{ x: t.optional<t.number> }>,
-    //           t.object<{ y: t.optional<t.number> }>,
-    //           t.object<{ z: t.optional<t.number> }>
-    //         ]>
-    //       >
-    //       e: t.anyOf<[
-    //         t.object<{ xs: t.anyOf<[t.null, t.array<t.number>]> }>, 
-    //         t.object<{ ys: t.anyOf<[t.null, t.array<t.number>]> }>, 
-    //         t.object<{ zs: t.anyOf<[t.null, t.array<t.number>]> }>
-    //       ]>
-    //     }>
-    //   ]>
-    // >
-
   })
 
   vi.it("〖🧙〗› ❲ast.typeof❳", () => {
