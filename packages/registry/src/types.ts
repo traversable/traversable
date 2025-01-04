@@ -39,21 +39,12 @@ export declare namespace Join {
     : Out
 }
 
-interface Covariant<T extends (_: never) => unknown> {
-  (_: never): Produces<T>
-}
-interface Contravariant<T extends (_: never) => unknown> {
-  (_: Consumes<T>): void
-}
-interface Invariant<T extends (_: never) => unknown> {
-  (_: Consumes<T>): Produces<T>
-}
 interface Bivariant<T extends { (_: never): unknown }> extends newtype<{ _(_: Consumes<T>): Produces<T> }> {}
 
 export declare namespace Position {
-  type covariant<T> = never | Covariant<{ (_: never): T }>
-  type invariant<T> = never | Invariant<{ (_: T): T }>
-  type contra<T> = never | Contravariant<{ (_: T): void }>
+  type covariant<T> = never | { (_: never): T }
+  type contravariant<T> = never | { (_: T): void }
+  type invariant<T> = never | { (_: T): T }
   /**
    * ## {@link bivariant `Position.bivariant`}
    *
@@ -182,7 +173,7 @@ export declare function apply$<F>(F: F): <T>(t: T) => HKT.apply$<F, T>
 type HKT_const<T> = HKT<unknown, T>
 export declare namespace HKT {
   export { apply, apply$, apply_, forall, HKT_const as const }
-  export interface satisfies<F extends HKT> extends newtype<F[0] & {}> {}
+  // export interface satisfies<F extends HKT> extends newtype<F[0] & {}> {}
   export type unapply<F extends HKT> = F extends HKT & infer T ? T : never
   export type product<F extends HKT, T> = HKT.apply<F, [F, T]>
   export type sum<F extends HKT, T> = HKT.apply<F, Either<F, T>>
@@ -368,10 +359,12 @@ export interface Fold<F extends HKT, T, S> {
 }
 
 export declare namespace Functor {
-  type map<F extends HKT> = never | {
-    <S, T>(F: HKT.apply<F, S>, f: (s: S) => T): HKT.apply<F, T>
-    <S, T>(f: (s: S) => T): { (F: HKT.apply<F, S>): HKT.apply<F, T> }
-  }
+  type map<F extends HKT> =
+    | never
+    | {
+        <S, T>(F: HKT.apply<F, S>, f: (s: S) => T): HKT.apply<F, T>
+        <S, T>(f: (s: S) => T): { (F: HKT.apply<F, S>): HKT.apply<F, T> }
+      }
 
   // type AlgebraFromFunctor<F extends Functor, T> = never | { (term: HKT.apply<F["_F"] & {}, T>): T }
   type Algebra<F extends HKT, T> = never | { (term: HKT.apply<F, T>): T }
@@ -796,70 +789,69 @@ export declare namespace Open {
 // export interface Fix<F> extends HKT<F, Fix<F>> {}
 // export interface Fix<F> extends HKT<Fix<F>> { [-1]: this, unfix: HKT<F, Fix<F>>[0] }
 // export interface Fix<F> extends HKT<Fix<F>>, newtype<{ unfix: HKT<F, Fix<F>> }> {}
-export interface Invariant<F extends HKT> extends Typeclass<F> {
-  readonly imap: Functor.imap<F>
-}
+// export interface Invariant<F extends HKT> extends Typeclass<F> {
+//   readonly imap: Functor.imap<F>
+// }
 
-export declare namespace Group {
-  interface semiproduct<F extends HKT> extends Invariant<F> {
-    product: <L, R, LO, RO>(
-      left: HKT.apply<F, [L, LO]>,
-      right: HKT.apply<F, [R, RO]>,
-    ) => HKT.apply<F, [product: [L, R], LO | RO]>
+// export declare namespace Group {
+//   interface semiproduct<F extends HKT> extends Invariant<F> {
+//     product: <L, R, LO, RO>(
+//       left: HKT.apply<F, [L, LO]>,
+//       right: HKT.apply<F, [R, RO]>,
+//     ) => HKT.apply<F, [product: [L, R], LO | RO]>
+//     productMany: <A, O>(
+//       self: HKT.apply<F, [A, O]>,
+//       collection: globalThis.Iterable<HKT.apply<F, [A, O]>>,
+//     ) => HKT.apply<F, [xs: [A, ...Array<A>], O]>
+//   }
+// }
 
-    productMany: <A, O>(
-      self: HKT.apply<F, [A, O]>,
-      collection: globalThis.Iterable<HKT.apply<F, [A, O]>>,
-    ) => HKT.apply<F, [xs: [A, ...Array<A>], O]>
-  }
-}
+// export interface Product<F extends HKT>
+//   extends Applicative.new<F>,
+//     Group.semiproduct<F>,
+//     Product.sequence<F> {}
 
-export interface Product<F extends HKT>
-  extends Applicative.new<F>,
-    Group.semiproduct<F>,
-    Product.sequence<F> {}
+// export declare namespace Product {
+//   interface sequence<F extends HKT> {
+//     productAll: <O, A>(xs: Iterable<HKT.apply<F, [A, O]>>) => HKT.apply<F, [Array<A>, O]>
+//   }
+// }
 
-export declare namespace Product {
-  interface sequence<F extends HKT> {
-    productAll: <O, A>(xs: Iterable<HKT.apply<F, [A, O]>>) => HKT.apply<F, [Array<A>, O]>
-  }
-}
+// export interface Applicative<F extends HKT> extends Functor<F>, Product<F> {}
 
-export interface Applicative<F extends HKT> extends Functor<F>, Product<F> {}
+// export declare namespace Applicative {
+//   export { of as new }
+//   export interface of<F extends HKT> extends Typeclass<F> {
+//     of<A>(a: A): HKT.apply<F, [unknown, never, never, A]>
+//   }
+// }
 
-export declare namespace Applicative {
-  export { of as new }
-  export interface of<F extends HKT> extends Typeclass<F> {
-    of<A>(a: A): HKT.apply<F, [unknown, never, never, A]>
-  }
-}
+// /**
+//  * TODO: see if you can replace the `_F` type parameter in {@link Functor `Functor`}
+//  * with a {@link Typeclass} instance
+//  */
+// export interface Typeclass<F extends HKT> {
+//   readonly [symbol.typeclass]?: F
+// }
 
-/**
- * TODO: see if you can replace the `_F` type parameter in {@link Functor `Functor`}
- * with a {@link Typeclass} instance
- */
-export interface Typeclass<F extends HKT> {
-  readonly [symbol.typeclass]?: F
-}
+// export interface Traversable<T extends HKT<[target: _, O?: _]>> extends Typeclass<T> {
+//   traverse: Traversable.traverse<T>
+// }
 
-export interface Traversable<T extends HKT<[target: _, O?: _]>> extends Typeclass<T> {
-  traverse: Traversable.traverse<T>
-}
-
-export declare namespace Traversable {
-  interface traverse<T extends HKT<[target: _, O?: _]>> {
-    <F extends HKT<[target: _, O?: _]>>(
-      F: Applicative<F>,
-    ): <A, B, FO>(
-      traversal: (a: A) => HKT.apply<F, [B, FO]>,
-    ) => <TO>(traversable: HKT.apply<T, [A, TO]>) => HKT.apply<F, [HKT.apply<T, [B, TO]>, FO]>
-  }
-  interface traverse<T extends HKT<[target: _, O?: _]>> {
-    <F extends HKT<[target: _, O?: _]>>(
-      F: Applicative<F>,
-    ): <A, B, FO, TO>(
-      traversable: HKT.apply<T, [A, TO]>,
-      traversal: (a: A) => HKT.apply<F, [B, FO]>,
-    ) => HKT.apply<F, [HKT.apply<T, [B, TO]>, FO]>
-  }
-}
+// export declare namespace Traversable {
+//   interface traverse<T extends HKT<[target: _, O?: _]>> {
+//     <F extends HKT<[target: _, O?: _]>>(
+//       F: Applicative<F>,
+//     ): <A, B, FO>(
+//       traversal: (a: A) => HKT.apply<F, [B, FO]>,
+//     ) => <TO>(traversable: HKT.apply<T, [A, TO]>) => HKT.apply<F, [HKT.apply<T, [B, TO]>, FO]>
+//   }
+//   interface traverse<T extends HKT<[target: _, O?: _]>> {
+//     <F extends HKT<[target: _, O?: _]>>(
+//       F: Applicative<F>,
+//     ): <A, B, FO, TO>(
+//       traversable: HKT.apply<T, [A, TO]>,
+//       traversal: (a: A) => HKT.apply<F, [B, FO]>,
+//     ) => HKT.apply<F, [HKT.apply<T, [B, TO]>, FO]>
+//   }
+// }

@@ -53,7 +53,12 @@ export const Terminals = [...TerminalSeeds, ...TerminalArrays, ...TerminalRecord
 export type Terminals = typeof Terminals
 export type Terminal = Terminals[number]
 
-declare namespace AST { export { typeof_ as typeof } }
+declare namespace AST { 
+  export { 
+    typeof_ as typeof,
+    Terminal,
+  } 
+}
 declare namespace AST {
   interface Leaf<T = any> { _tag: string, _def: unknown, is: (u: unknown) => u is T }
   interface Branch<T = unknown> extends AST.Leaf { _children: T }
@@ -903,7 +908,7 @@ export const fromSeed = foldShort(Recursive.fromSeed)
 const short: {
   (s: null): null_
   (s: undefined): null_
-  <const S extends Terminal>(s: S): typeof AST.Terminal[S]
+  <const S extends Terminal>(s: S): typeof AST.TerminalByTag[S]
   <const S extends string>(s: S): const_<const_.parse<S>>
   <const S extends readonly AST.Short[]>($: "|", ...ss: S): anyOf_.fromShort<S>
   <const S extends readonly AST.Short[]>($: "&", ...ss: S): allOf_.fromShort<S>

@@ -14,21 +14,21 @@ namespace Arbitrary {
   } satisfies Required<Arbitrary.Options>
 
   export type LetrecTagTree = {
-    any: TagTree.any;
-    allOf: TagTree.allOfF<readonly TagTree[]>;
-    anyOf: TagTree.anyOfF<readonly TagTree[]>;
-    array: TagTree.arrayF<TagTree>;
-    boolean: TagTree.boolean;
-    const: never;
-    integer: TagTree.integer;
-    null: TagTree.null;
-    number: TagTree.number;
-    object: TagTree.objectF<Record<string, TagTree>>;
-    optional: TagTree.optionalF<TagTree>;
-    record: TagTree.recordF<Record<string, TagTree>>;
-    string: TagTree.string;
-    tuple: TagTree.tupleF<readonly TagTree[]>;
-    tree: TagTree.F<unknown>;
+    any: TagTree.any
+    allOf: TagTree.allOfF<readonly TagTree[]>
+    anyOf: TagTree.anyOfF<readonly TagTree[]>
+    array: TagTree.arrayF<TagTree>
+    boolean: TagTree.boolean
+    const: TagTree.const
+    integer: TagTree.integer
+    null: TagTree.null
+    number: TagTree.number
+    object: TagTree.objectF<Record<string, TagTree>>
+    optional: TagTree.optionalF<TagTree>
+    record: TagTree.recordF<Record<string, TagTree>>
+    string: TagTree.string
+    tuple: TagTree.tupleF<readonly TagTree[]>
+    tree: TagTree.F<unknown>
   }
 
   export const letrecTagTree 
@@ -229,10 +229,10 @@ vi.describe("〖🧙〗‹‹‹ ❲@traversable/core/ast❳", () => {
     vi.assertType<t.record<t.number>>(t.short("number{}"))
     vi.assertType<t.array<t.string>>(t.short("string[]"))
     vi.assertType<t.record<t.string>>(t.short("string{}"))
-    vi.assertType<t.array<t.null>>(t.short("[]", null))
-    // vi.assertType<t.array<t.null>>(t.short("[]", null))
-    vi.assertType<t.record<t.null>>(t.short("{}", null))
-    vi.assertType<t.tuple<[t.boolean, t.string, t.number]>>(t.short(["boolean", "string", "number"]))
+    vi.assertType(t.short("[]", null))
+    vi.assertType(t.short("[]", null))
+    vi.assertType(t.short("{}", null))
+    vi.assertType(t.short(["boolean", "string", "number"]))
     //                                                         ^?
     vi.assertType(t.short(["boolean", "string", "number"]))
 
