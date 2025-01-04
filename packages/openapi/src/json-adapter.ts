@@ -6,11 +6,11 @@ import { Schema } from "./schema/exports.js"
 export type toJSON<T> 
   = T extends { type: "null" } ? null
   : T extends { type: "integer" | "number" | "string" | "boolean"; const: infer S } ? S
-  : T extends { type: "array"; items: infer S extends readonly unknown[] } ? { [k in keyof S]: toJSON<S[k]> }
+  : T extends { type: "array"; items: infer S extends readonly unknown[] } ? { [K in keyof S]: toJSON<S[K]> }
   : T extends { type: "array"; items: infer S } ? toJSON<S>[]
   : T extends { type: "object"; additionalProperties: infer A, properties: infer P } 
-  ? Record<string, toJSON<A>> & { [k in keyof P]: toJSON<P[k]> }
-  : T extends { type: "object"; properties: infer S } ? { [k in keyof S]: toJSON<S[k]> }
+  ? Record<string, toJSON<A>> & { [K in keyof P]: toJSON<P[K]> }
+  : T extends { type: "object"; properties: infer S } ? { [K in keyof S]: toJSON<S[K]> }
   : T
 
 /** 
@@ -84,8 +84,6 @@ export namespace toJSON {
     string() { return "" },
   } as const satisfies Required<toJSON.Normalizer>
 
-  // now, show hover binding doesn't work (cmd+k cmd+i doesn't show)
-  // until i scroll back up, and the hover panel is in view
   export const loop 
     : (normalize?: toJSON.Normalizer) => (a: Schema.any) => unknown
     = (normalize) => fn.loop((node, loop) => {
@@ -254,8 +252,8 @@ export namespace fromJSON {
       pair.mapBoth(
         fn.flow(
           Option.guard(is.nonempty.array),
-          Option.map(fn.flow(map(loop), x => x as never)),
-          Option.getOrElse(() => [] as readonly Schema.any[]),
+          Option.map(fn.flow(map(loop), _ => _ as Schema.any[])),
+          Option.getOrElse(() => []),
           object.bind("items"),
         ),
         node => ({ 
@@ -264,7 +262,7 @@ export namespace fromJSON {
           maxItems: node.length,
         })
       ),
-      fn.tupled(object.intersect),
+      pair.applyPair(object.intersect),
     )
 
   const objectBase = {

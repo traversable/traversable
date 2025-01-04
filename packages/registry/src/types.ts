@@ -4,14 +4,17 @@ import type { URI } from "./symbol.js"
 export type { newtype } from "any-ts"
 
 export type inline<T> = T
-export type _ = {} | null | undefined
+export type _ = unknown
 export type defined<T> = never | globalThis.Exclude<T, undefined>
 
 export type Showable = null | undefined | boolean | number | bigint | string
 export type Primitive = null | undefined | boolean | number | bigint | string | symbol
 export type Entry<T> = readonly [k: string, v: T]
 export type Entries<T> = readonly Entry<T>[]
-export interface Array<T = unknown> extends newtype<readonly T[]> {}
+export interface Array<T = unknown, Length extends number = number> extends newtype<readonly T[]> {
+  length: Length
+}
+export interface Dict<T = unknown, K extends keyof any = string> extends newtype<{ [P in K]: T }> {}
 
 export type Consumes<T> = T extends (_: infer I) => unknown ? I : never
 export type Produces<T> = T extends (_: never) => infer O ? O : never
@@ -54,10 +57,10 @@ export declare namespace Position {
   /**
    * ## {@link bivariant `Position.bivariant`}
    *
-   * When TypeScript checks a _function_ type, what you get is something like the
-   * type-level equivalent of [Opposite Day](https://www.youtube.com/watch?v=pod4NRWn_Ak).
+   * When TypeScript checks a _function_ type, you get the type-level
+   * equivalent of [Opposite Day](https://www.youtube.com/watch?v=pod4NRWn_Ak).
    *
-   * Essentially, the normal rules of assignment work _exactly_ backwards:
+   * Essentially, all the normal rules of assignability work _exactly_ backwards:
    *
    * ```typescript
    * type Producer<T> = (_: any) => T
@@ -185,8 +188,6 @@ export declare namespace HKT {
   export type sum<F extends HKT, T> = HKT.apply<F, Either<F, T>>
 }
 
-// export interface Fix_<F> extends HKT<F, Fix_<F>> {}
-
 /**
  * ## {@link Countable `Countable`}
  *
@@ -248,13 +249,14 @@ export interface Functor<F extends HKT = HKT, _F = any> {
 /**
  * ## {@link Fix `Fix`}
  *
- * Like functions in math, functors can (and often do) have "fix points".
+ * Like _functions_ in math, _**F**unctors_ (sometimes capitalized to avoid
+ * confusion with the term "function") can (and often do) have "fix points".
  *
- * I'm a visual learner, so I like to think of a functor's fixpoint like a
+ * I'm a visual learner, so I like to think of a Functor's fixpoint like a
  * [vanishing point](https://en.wikipedia.org/wiki/Vanishing_point).
  *
- * Mathematicians might take issue with the comparison, but I find it helpful
- * when building an intuition.
+ * Mathematicians might take issue with the comparison, but I personally
+ * found it useful for building an intuition.
  *
  * When you're modeling recursive data types in the type system, it can
  * sometimes get really tricky. TypeScript does _an amazing_ job of hiding
@@ -326,9 +328,7 @@ export interface Functor<F extends HKT = HKT, _F = any> {
  * I've got some good news and some bad news.
  *
  * The good news is that it is possible to represent recursive data types, and
- * operations over recursive data types, in a way that is reusable. And it turns out,
- * a lot of the code that we write for one domain _will transfer_ to other recursive
- * problems.
+ * operations over recursive data types, in a way that is reusable.
  *
  * The bad news is that the solution, although actually pretty elegant if you take
  * the time to work through it, looks pretty damn scary.
@@ -337,9 +337,9 @@ export interface Functor<F extends HKT = HKT, _F = any> {
  * actually need to grok {@link Fix `Fix`} or {@link Unfix `Unfix`} to be able to
  * use some of the abstractions that fall out of its use.
  *
- * One tidbit that I found interesting is the relationship between a functor's
+ * One tidbit that I found interesting is the relationship between a Functor's
  * fixpoint and the Y-combinator. In fact, depending on your level of abstraction,
- * you _could_ almost say they're "the same".
+ * you _could_ almost say [they're "the same"](https://en.wikipedia.org/wiki/Isomorphism).
  *
  * See also:
  * - {@link Functor `Functor`}
@@ -348,15 +348,15 @@ export interface Functor<F extends HKT = HKT, _F = any> {
  *   pretty helpful, but YMMV
  */
 export interface Fix<F extends HKT, T> {
-  next: Fix.unfix<F, T>
+  unfix: Fix.unfix<F, T>
 }
 export declare namespace Fix {
   type unfix<F extends HKT, T> = HKT.apply<F, Fix<F, T>>
 }
 
 export namespace Fix {
-  export const fix: <F extends HKT, T>(F: Fix.unfix<F, T>) => Fix<F, T> = (F) => ({ next: F })
-  export const unfix: <F extends HKT, T>(F: Fix<F, T>) => Fix.unfix<F, T> = (F) => F.next
+  export const fix: <F extends HKT, T>(F: Fix.unfix<F, T>) => Fix<F, T> = (F) => ({ unfix: F })
+  export const unfix: <F extends HKT, T>(F: Fix<F, T>) => Fix.unfix<F, T> = (F) => F.unfix
 }
 
 export interface Pointed<F extends HKT> {
@@ -368,12 +368,10 @@ export interface Fold<F extends HKT, T, S> {
 }
 
 export declare namespace Functor {
-  type map<F extends HKT> =
-    | never
-    | {
-        <S, T>(F: HKT.apply<F, S>, st: (s: S) => T): HKT.apply<F, T>
-        <S, T>(st: (s: S) => T): { (F: HKT.apply<F, S>): HKT.apply<F, T> }
-      }
+  type map<F extends HKT> = never | {
+    <S, T>(F: HKT.apply<F, S>, f: (s: S) => T): HKT.apply<F, T>
+    <S, T>(f: (s: S) => T): { (F: HKT.apply<F, S>): HKT.apply<F, T> }
+  }
 
   // type AlgebraFromFunctor<F extends Functor, T> = never | { (term: HKT.apply<F["_F"] & {}, T>): T }
   type Algebra<F extends HKT, T> = never | { (term: HKT.apply<F, T>): T }
@@ -512,6 +510,8 @@ export type Require<T, K extends keyof T = never> = [K] extends [never]
   : KeepLast<T, { -readonly [P in K]-?: T[P] }>
 
 export type Optional<T, K extends keyof T = keyof T> = never | { [P in K]+?: T[P] }
+
+export type Capitalize<T> = globalThis.Capitalize<`${T & Showable}`>
 
 /**
  * ## {@link Sort `Sort`}
@@ -796,3 +796,70 @@ export declare namespace Open {
 // export interface Fix<F> extends HKT<F, Fix<F>> {}
 // export interface Fix<F> extends HKT<Fix<F>> { [-1]: this, unfix: HKT<F, Fix<F>>[0] }
 // export interface Fix<F> extends HKT<Fix<F>>, newtype<{ unfix: HKT<F, Fix<F>> }> {}
+export interface Invariant<F extends HKT> extends Typeclass<F> {
+  readonly imap: Functor.imap<F>
+}
+
+export declare namespace Group {
+  interface semiproduct<F extends HKT> extends Invariant<F> {
+    product: <L, R, LO, RO>(
+      left: HKT.apply<F, [L, LO]>,
+      right: HKT.apply<F, [R, RO]>,
+    ) => HKT.apply<F, [product: [L, R], LO | RO]>
+
+    productMany: <A, O>(
+      self: HKT.apply<F, [A, O]>,
+      collection: globalThis.Iterable<HKT.apply<F, [A, O]>>,
+    ) => HKT.apply<F, [xs: [A, ...Array<A>], O]>
+  }
+}
+
+export interface Product<F extends HKT>
+  extends Applicative.new<F>,
+    Group.semiproduct<F>,
+    Product.sequence<F> {}
+
+export declare namespace Product {
+  interface sequence<F extends HKT> {
+    productAll: <O, A>(xs: Iterable<HKT.apply<F, [A, O]>>) => HKT.apply<F, [Array<A>, O]>
+  }
+}
+
+export interface Applicative<F extends HKT> extends Functor<F>, Product<F> {}
+
+export declare namespace Applicative {
+  export { of as new }
+  export interface of<F extends HKT> extends Typeclass<F> {
+    of<A>(a: A): HKT.apply<F, [unknown, never, never, A]>
+  }
+}
+
+/**
+ * TODO: see if you can replace the `_F` type parameter in {@link Functor `Functor`}
+ * with a {@link Typeclass} instance
+ */
+export interface Typeclass<F extends HKT> {
+  readonly [symbol.typeclass]?: F
+}
+
+export interface Traversable<T extends HKT<[target: _, O?: _]>> extends Typeclass<T> {
+  traverse: Traversable.traverse<T>
+}
+
+export declare namespace Traversable {
+  interface traverse<T extends HKT<[target: _, O?: _]>> {
+    <F extends HKT<[target: _, O?: _]>>(
+      F: Applicative<F>,
+    ): <A, B, FO>(
+      traversal: (a: A) => HKT.apply<F, [B, FO]>,
+    ) => <TO>(traversable: HKT.apply<T, [A, TO]>) => HKT.apply<F, [HKT.apply<T, [B, TO]>, FO]>
+  }
+  interface traverse<T extends HKT<[target: _, O?: _]>> {
+    <F extends HKT<[target: _, O?: _]>>(
+      F: Applicative<F>,
+    ): <A, B, FO, TO>(
+      traversable: HKT.apply<T, [A, TO]>,
+      traversal: (a: A) => HKT.apply<F, [B, FO]>,
+    ) => HKT.apply<F, [HKT.apply<T, [B, TO]>, FO]>
+  }
+}

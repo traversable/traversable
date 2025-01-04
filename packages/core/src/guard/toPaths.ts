@@ -48,17 +48,16 @@ const isNumber = (k: key.any): k is number => typeof k === "number"
  * The pre-defined path DSL for documenting a node's path into a data
  * structure.
  *
- * **Note:** In each of the examples below, the path resolves to `1`:
+ * **Note:** In each of the examples below, the path in the `syntax` column points to `<needle>`:
  * 
- * |  **type**              |  **example**                   |  **syntax**     |
- * |------------------------|--------------------------------|-----------------|
- * |  finite record         |  `{ abc: { def: 1 } }`         |  `abc.def`      |
- * |  finite array (tuple)  |  `{ abc: [1, 2, 3] }`          |  `abc[0]`       |
- * |  non-finite array      |  `{ abc: 1[] }`                |  `abc[number]`  |
- * |  non-finite records    |  `{ abc: Record<string, 1> }`  |  `abc[string]`  |
- * |  optional property     |  `{ abc?: { def: 1 } }`        |  `abc?.def`     |
- * |  nullable property     |  `{ abc: null \| { def: 1 } }`  |  `abc?.def`     |
- * 
+ * |  **type**                     |  **example**                           |  **syntax**     |
+ * |-------------------------------|----------------------------------------|-----------------|
+ * |  finite object                |  `{ abc: { def: <needle> } }`          |  `abc.def`      |
+ * |  finite array (tuple)         |  `{ abc: [1, <needle>, 3] }`           |  `abc[1]`       |
+ * |  non-finite array             |  `{ abc: <needle>[] }`                 |  `abc[number]`  |
+ * |  non-finite object (record)   |  `{ abc: Record<string, <needle>> }`   |  `abc[string]`  |
+ * |  optional property            |  `{ abc?: { def: <needle> } }`         |  `abc?.def`     |
+ * |  nullable property            |  `{ abc: null \| { def: <needle> } }`  |  `abc?.def`     |
  */
 export const docs = [
   defineMatcher(isNumber, (k) => `[${k}]`),

@@ -3,6 +3,18 @@ import { Option, array, fn, type key, type keys, map, object, string } from "@tr
 import type { Functor, Partial, Required, newtype } from "@traversable/registry"
 import { Invariant, symbol } from "@traversable/registry"
 
+/** @internal */
+const Object_entries = globalThis.Object.entries
+/** @internal */
+const Object_keys 
+  : <T extends object>(object: T) => [keyof T & (string | number)] extends [never] ? string[] : (keyof T & (string | number))[]
+  = globalThis.Object.keys
+/** @internal */
+const isKeyOf = <T extends Record<string, string>>(dictionary: T) => 
+  (k: keyof any | undefined): k is keyof T => 
+    k !== undefined && k in dictionary
+
+
 //////////////////
 ///  USERLAND  ///
 interface Foo { type: "Foo" }
@@ -10,10 +22,10 @@ interface Bar { type: "Bar" }
 interface Baz { type: "Baz" }
 
 const ext = Extension.register({
-  //  ^?
-  Foo: (_: unknown): _ is Foo => true,
-  Bar: (_: unknown): _ is Bar => true,
-  Baz: (_: unknown): _ is Baz => true,
+  //   ^?
+  Foo: (_: unknown): _ is Foo => Math.random() > 1,
+  Bar: (_: unknown): _ is Bar => Math.random() > 1,
+  Baz: (_: unknown): _ is Baz => Math.random() > 1,
 })
 
 declare module "@traversable/core" {
@@ -54,17 +66,6 @@ const defaults = {
   flags,
   typeName: "AnonymousType",
 } satisfies Omit<Config<string>, "handlers">
-
-/** @internal */
-const Object_entries = globalThis.Object.entries
-/** @internal */
-const Object_keys 
-  : <T extends object>(object: T) => [keyof T & (string | number)] extends [never] ? string[] : (keyof T & (string | number))[]
-  = globalThis.Object.keys
-/** @internal */
-const isKeyOf = <T extends Record<string, string>>(dictionary: T) => 
-  (k: keyof any | undefined): k is keyof T => 
-    k !== undefined && k in dictionary
 
 const KnownStringFormats = {
   email: "string.email",

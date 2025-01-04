@@ -8,7 +8,7 @@ import type {
   integer,
   newtype,
 } from "@traversable/registry"
-import { symbol } from "@traversable/registry"
+import { Fix, symbol } from "@traversable/registry"
 import { allOf$, anyOf$, array$, object$, optional$, record$, tuple$ } from "./combinators.js"
 import { is } from "./predicates.js"
 
@@ -41,7 +41,7 @@ type ScalarShortName = keyof AST.ScalarMap
 /** @internal */
 type TerminalArrays_<T extends TerminalSeeds = TerminalSeeds> = never | { [I in keyof T]: `${T[I]}[]` }
 /** @internal */
-type TerminalRecords_<T extends TerminalSeeds = TerminalSeeds> = { [I in keyof T]: `${T[I]}{}` }
+type TerminalRecords_<T extends TerminalSeeds = TerminalSeeds> = never | { [I in keyof T]: `${T[I]}{}` }
 
 export const TerminalSeeds = ["string", "number", "boolean", "symbol", "integer", "any"] as const satisfies ScalarShortName[]
 export type TerminalSeeds = typeof TerminalSeeds
@@ -72,8 +72,7 @@ declare namespace AST {
     any: any_
   }
 
-
-  const Terminal:
+  const TerminalByTag:
     & ScalarMap
     & { [K in keyof ScalarMap as `${K}[]`]: array_<ScalarMap[K]> }
     & { [K in keyof ScalarMap as `${K}{}`]: record_<ScalarMap[K]> }
@@ -105,6 +104,15 @@ declare namespace AST {
     | Composite
     | Const
 
+  type Shortish =
+    | null
+    | readonly ["[]" | "{}", {}]
+    | readonly ["&" | "|", ...{}[]]
+    | (string & {})
+    | readonly {}[]
+    | { [x: string]: {} }
+    ;
+
   type ShortF<T> =
     | null
     | Terminal
@@ -120,7 +128,7 @@ declare namespace AST {
 
   type fromShort<S>
     = S extends null ? null_
-    : S extends Terminal ? typeof Terminal[S]
+    : S extends Terminal ? typeof TerminalByTag[S]
     : S extends readonly ["&", ...infer T extends AST.Short[]] ? allOf_<{ -readonly [Ix in keyof T]: fromShort<T[Ix]> }>
     : S extends readonly ["|", ...infer T extends AST.Short[]] 
       ? { -readonly [Ix in keyof T]: fromShort<T[Ix]> } extends 
@@ -705,7 +713,7 @@ declare namespace tuple_ {
   const shorthand: Short<AST.Short>
   type Short<T> = readonly T[]
 
-  type shorthand<T> = [T] extends [typeof tuple_.shorthand] ? typeof tuple_.shorthand : never
+  type shorthand<T> = [T] extends [Short<AST.Short>] ? Short<AST.Short> : never
   type fromShort<T extends typeof tuple_.shorthand> = never | tuple_<{ -readonly [I in keyof T]: AST.fromShort<T[I]> }>
   ///
   interface def<S extends typeof tuple_.spec> { _tag: typeof Tag.tuple, _def: S }
@@ -822,15 +830,16 @@ const isConstStringLiteral
     )
 
 // TODO: fix type assertion
-const parseConstStringLiteral = (s: AST.Short): never => (isConstStringLiteral(s) ? s.slice(1, -1) : s) as never
+const parseConstStringLiteral = (s: AST.Short) => 
+  (isConstStringLiteral(s) ? s.slice(1, -1) : s) as never
 
 const terminalMap = {
+  any: any_,
+  "any[]": fn.flow(any_, array_),
+  "any{}": fn.flow(any_, record_),
   boolean: boolean_,
   "boolean[]": fn.flow(boolean_, array_),
   "boolean{}": fn.flow(boolean_, record_),
-  symbol: symbol_,
-  "symbol[]": fn.flow(symbol_, array_),
-  "symbol{}": fn.flow(symbol_, record_),
   integer: integer_,
   "integer[]": fn.flow(integer_, array_),
   "integer{}": fn.flow(integer_, record_),
@@ -840,10 +849,10 @@ const terminalMap = {
   string: string_,
   "string[]": fn.flow(string_, array_),
   "string{}": fn.flow(string_, record_),
-  any: any_,
-  "any[]": fn.flow(any_, array_),
-  "any{}": fn.flow(any_, record_),
-} as const satisfies { [K in keyof typeof AST.Terminal]: () => typeof AST.Terminal[K] }
+  symbol: symbol_,
+  "symbol[]": fn.flow(symbol_, array_),
+  "symbol{}": fn.flow(symbol_, record_),
+} as const satisfies { [Tag in keyof typeof AST.TerminalByTag]: () => typeof AST.TerminalByTag[Tag] }
 
 type tail<S> = S extends readonly [any, ...infer T] ? T : never
 function tail<const T extends readonly unknown[]>(xs: T): tail<T>
@@ -891,48 +900,16 @@ export namespace Recursive {
 
 export const fromSeed = foldShort(Recursive.fromSeed)
 
-
-/**
- * @example
- * type Short =
- *   | null
- *   | readonly ["[]", Short]
- *   | readonly ["{}", Short]
- *   | readonly ["|", ...Short[]]
- *   | readonly ["&", ...Short[]]
- *   | Terminal
- *   | Composite
- *   | Const
- */
-
-// const matchShorthand = (s: AST.Short) => {
-//   return (_: any) => {
-//     switch (true) {
-//       case s === null: return null_()
-//       case isTerminal(s): return terminalMap[s]()
-//       case isArrayShorthand(s): return array_(s[1])
-//       case isRecordShorthand(s): return record_(_)
-//       case isTupleShorthand(s): return tuple_(s)
-//       case isObjectShorthand(s): return object_(s)
-//       case isAllOfShorthand(s): return allOf_(_)
-//       case isAnyOfShorthand(s): return anyOf_(_)
-//       case isConstStringLiteral(s): return const_(_)
-//       case typeof s === "number": return const_(_)
-//       case typeof s === "boolean": return const_(_)
-//       default: return (fn.softExhaustiveCheck(s), const_(_))
-//     }
-//   }
-// }
-
 const short: {
   (s: null): null_
   (s: undefined): null_
   <const S extends Terminal>(s: S): typeof AST.Terminal[S]
+  <const S extends string>(s: S): const_<const_.parse<S>>
   <const S extends readonly AST.Short[]>($: "|", ...ss: S): anyOf_.fromShort<S>
   <const S extends readonly AST.Short[]>($: "&", ...ss: S): allOf_.fromShort<S>
   <const S extends AST.Short>($: "[]", s: S): array_.fromShort<S>
   <const S extends AST.Short>($: "{}", s: S): record_.fromShort<S>
   <const S extends object_.shorthand<S>>(s: S): object_.fromShort<S>
   <const S extends tuple_.shorthand<S>>(ss: S): tuple_.fromShort<S>
-  <const S extends const_.validate<S>>(s: S): const_<S>
+  <const S>(s: S): const_<S>
 } = (fromSeed as never)

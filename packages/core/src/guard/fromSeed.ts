@@ -4,6 +4,9 @@ import { URI, symbol } from "@traversable/registry"
 
 import * as t from "./ast.js"
 
+/** @internal */
+const Object_fromEntries = globalThis.Object.fromEntries
+
 export type TagTree_null = [_tag: symbol.null]
 export type TagTree_boolean = [_tag: symbol.boolean]
 export type TagTree_integer = [_tag: symbol.integer]
@@ -143,11 +146,11 @@ export declare namespace TagTree {
     ;
 }
 export namespace TagTree {
+  export function nullary(tag: typeof symbol.constant): () => TagTree_const
   export function nullary<Tag extends keyof Nullary>(tag: Tag): () => Extract<TagTree_Scalar, [Tag]>
-  export function nullary(tag: Nullary[keyof Nullary][0]) { return () => [tag] as never }
+  export function nullary(tag: Nullary[keyof Nullary][0] | "const") { return () => [tag] as never }
   ///
-  export function unary<Tag extends keyof Unary$>(x: Tag): 
-    (x: any) => HKT.apply<Unary$[Tag], TagTree>
+  export function unary<Tag extends keyof Unary$>(x: Tag): (x: any) => HKT.apply<Unary$[Tag], TagTree>
   export function unary<Tag extends TagTree[0]>(tag: Tag) { return <T>(x: T) => [tag, x] }
 
   export type byName<URI extends keyof typeof byName> = typeof byName[URI]
@@ -184,11 +187,8 @@ export namespace TagTree {
     [symbol.record]: byName.record,
     [symbol.tuple]: byName.tuple,
     [symbol.object]: byName.object,
-  } as const // satisfies Record<keyof TagTreeMap, (_: never) => TagTree>
-
+  } as const
 }
-
-const Object_fromEntries = globalThis.Object.fromEntries
 
 export namespace TagTree {
   export const Functor: Functor<TagTree.lambda, TagTree> = {
@@ -216,6 +216,7 @@ export namespace TagTree {
   }
   export function fold<T>(algebra: Functor.Algebra<TagTree.lambda, T>) 
     { return fn.cata(TagTree.Functor)(algebra) }
+
   export function unfold<T>(coalgebra: Functor.Coalgebra<TagTree.lambda, T>) 
     { return fn.ana(TagTree.Functor)(coalgebra) }
 }

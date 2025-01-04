@@ -1,13 +1,19 @@
 import type { newtype } from "any-ts"
 
-export type * from "./types.js"
+export * from "./version.js"
 export type { emoji, gitmoji, jsdoc, math } from "./utf-16.js"
+export { PATTERN } from "./pattern.js"
+export { URI, symbol } from "./symbol.js"
+
+export type * from "./types.js"
+export { Fix } from "./types.js"
+
 export type { integer, number } from "./newtypes.js"
 export type { string } from "./newtypes.js"
+
 export type { Finite } from "./finite.js"
 export { finite } from "./finite.js"
 
-export * from "./version.js"
 export * as Invariant from "./error.js"
 export type {
   NonFinite,
@@ -18,8 +24,6 @@ export type {
   TypeError,
 } from "./error.js"
 
-export { PATTERN } from "./pattern.js"
-export { URI, symbol } from "./symbol.js"
 export type {
   NodeWeight,
   RegisterSymbol,
@@ -35,13 +39,10 @@ export {
   registerWeights,
   WeightMap,
 } from "./registry.js"
-export {
-  WeightByType,
-  // WeightMap,
-} from "./tmp/node-weight-by-type.json.js"
+export { WeightByType } from "./tmp/node-weight-by-type.json.js"
 
 /**
- * ## {@link symbol_new `symbol.new`}
+ * ## {@link Known `registry.Known`}
  *
  * TODO: add usage docs
  */

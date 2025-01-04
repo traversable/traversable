@@ -1,12 +1,12 @@
+import type { key, prop } from "@traversable/data"
 import { fn } from "@traversable/data"
-import type { Functor, newtype } from "@traversable/registry"
+import type { Array, Capitalize, Functor, newtype } from "@traversable/registry"
 
 import type { Config } from "./config.js"
 import * as Traversable from "./traversable.js"
 
 /** @internal */
-type Object_keys<T> = never | 
-  ([keyof T & (string | number)] extends [never] ? string[] : (keyof T & (string | number))[])
+type Object_keys<T, K extends keyof T = prop.and<keyof T>> = never | Array<[K] extends [never] ? string : K>
 /** @internal */
 const Object_keys 
   : <T extends object>(object: T) => Object_keys<T>
@@ -26,7 +26,8 @@ export type Handlers<T> =
   & UserDefinitions<T>
   & BuiltIns<T>
 
-export type Predicates<T> = { [K in keyof T as `is${Capitalize<K & string>}`]: (u: unknown) => u is T[K] }
+export type Predicates<T> = { [K in keyof T as `is${Capitalize<K>}`]: (u: unknown) => u is T[K] }
+
 type ExtractUserDefinitions<F> 
   = [keyof Omit<Extension.Handlers<F>, keyof Traversable.Map<F>>] extends [never] 
   /** 
@@ -37,7 +38,6 @@ type ExtractUserDefinitions<F>
    * CASE: the {@link Extension `Extension`} interface _has_ been augmented in userland
    */
   : Omit<Extension.Handlers<F>, keyof Traversable.Map<F>>
-
 
 /**
  * ### {@link Extension_register `Extension.register`}
@@ -52,9 +52,9 @@ type ExtractUserDefinitions<F>
  * interface Baz { type: "Baz" }
  * 
  * const myExt = Extension.register({
- *   Foo: (_: unknown): _ is Foo => true,
- *   Bar: (_: unknown): _ is Bar => true,
- *   Baz: (_: unknown): _ is Baz => true,
+ *   Foo: (_: unknown): _ is Foo => Math.random() > 1,
+ *   Bar: (_: unknown): _ is Bar => Math.random() > 1,
+ *   Baz: (_: unknown): _ is Baz => Math.random() > 1,
  * })
  * 
  * declare module "@traversable/core" {
@@ -63,20 +63,12 @@ type ExtractUserDefinitions<F>
  */
 export interface Extension_register<T> extends newtype<{ [K in keyof T]: TargetOf<T[K]> }> {}
 
-/**
- * ### {@link Extension_register `Extension.register`}
- */
-export function Extension_register
-  <T extends Record<string, (u: unknown) => u is unknown>>(exts: T): Extension_register<T>
-export function Extension_register
-  <T extends Record<string, (u: unknown) => u is unknown>>(exts: T) {
-    return exts
-  }
-
+export function Extension_register<T extends { [ext: string]: (u: any) => u is any }>(exts: T): Extension_register<T>
+export function Extension_register<T extends { [ext: string]: (u: any) => u is any }>(exts: T) { return exts }
 
 export function Extension_hooks<F>(config: Config<F>, builtins: BuiltIns<F>): [
   ExtractUserDefinitions<F>,
-  { [K in keyof Traversable.Map<F>]: (n: Traversable.Map<F>[K]) => F }
+  { [K in keyof Traversable.Map<F>]: (ext: Traversable.Map<F>[K]) => F }
 ]
 export function Extension_hooks<F>(config: Config<F>, builtins: BuiltIns<F>) {
   const ks = Object_keys(config.handlers)
@@ -93,13 +85,13 @@ export function Extension_hooks<F>(config: Config<F>, builtins: BuiltIns<F>) {
 /** 
  * ## {@link Extension_match `Extension.match`}
  * 
- * Given a configuration object optionally containing arbitrary 
- * user-defined handlers for any sub- or super-set of the core
- * node types, returns an {@link Functor.Algebra `Algebra`}.
+ * Given a configuration object optionally containing user-defined handlers for some subset of the built-in
+ * node types + userland extensions, returns an {@link Functor.Algebra `Algebra`} for the operations on
+ * those nodes.
  * 
  * An algebra is like a set of post-order traversal instructions that can be
  * understood by {@link fn.cata `fn.cata`} / {@link fn.para `fn.para`}
- * to generate recursive, type-safe operations that are capable of folding
+ * to generate recursive, type-safe operations capable of folding
  * arbitrary {@link Traversable `Traversable`} trees.
  * 
  * **Note:** You don't need to know or care about any of this to use {@link Extension_match `Extension.match`}.

@@ -42,9 +42,7 @@ export declare namespace string {
 
 export declare namespace number {
   export {
-    /// namespaces
-    negative,
-    /// types
+    negative, // namespace
     float,
     integer,
     Infinity,
@@ -58,52 +56,52 @@ export declare namespace number {
  * ## {@link ascii `string.ascii`}
  * Ref: [RFC-20](https://datatracker.ietf.org/doc/html/rfc20)
  */
-interface ascii<_ = string> extends newtype<string> {}
+interface ascii<ascii = string> extends newtype<string> {}
 
 /**
  * ## {@link base64 `string.base64`}
  */
-interface base64<_ = string> extends newtype<string> {}
+interface base64<base64 = string> extends newtype<string> {}
 
 /**
  * ## {@link char `string.char`}
  */
-interface char<_ = string> extends newtype<string> {}
+interface char<char = string> extends newtype<string> {}
 
 /**
  * ## {@link cuid `string.cuid`}
  */
-interface cuid<_ = string> extends newtype<string> {}
+interface cuid<cuid = string> extends newtype<string> {}
 
 /**
  * ## {@link cuid2 `string.cuid2`}
  */
-interface cuid2<_ = string> extends newtype<string> {}
+interface cuid2<cuid2 = string> extends newtype<string> {}
 
 /**
  * ## {@link date `string.date`}
  */
-interface date<_ = string> extends newtype<string> {}
+interface date<date = string> extends newtype<string> {}
 
 /**
  * ## {@link datetime `string.datetime`}
  */
-interface datetime<_ = string> extends newtype<string> {}
+interface datetime<datetime = string> extends newtype<string> {}
 
 /**
  * ## {@link dirname `string.dirname`}
  */
-interface dirname<_ = string> extends newtype<string> {}
+interface dirname<dirname = string> extends newtype<string> {}
 
 /**
  * ## {@link duration `string.duration`}
  */
-interface duration<_ = string> extends newtype<string> {}
+interface duration<duration = string> extends newtype<string> {}
 
 /**
  * ## {@link email `string.email`}
  */
-interface email<_ = string> extends newtype<string> {}
+interface email<email = string> extends newtype<string> {}
 
 /**
  * ## {@link empty `string.empty`}
@@ -114,67 +112,67 @@ interface empty<ε = ""> extends newtype<""> {}
 /**
  * ## {@link emoji `string.emoji`}
  */
-interface emoji<_ = string> extends newtype<string> {}
+interface emoji<emoji = string> extends newtype<string> {}
 
 /**
  * ## {@link filename `string.filename`}
  */
-interface filename<_ = string> extends newtype<string> {}
+interface filename<filename = string> extends newtype<string> {}
 
 /**
  * ## {@link ip `string.ip`}
  */
-interface ip<_ = string> extends newtype<string> {}
+interface ip<ip = string> extends newtype<string> {}
 
 /**
  * ## {@link nanoid `string.nanoid`}
  */
-interface nanoid<_ = string> extends newtype<string> {}
+interface nanoid<nanoid = string> extends newtype<string> {}
 
 /**
  * ## {@link pathname `string.pathname`}
  */
-interface pathname<_ = string> extends newtype<string> {}
+interface pathname<pathname = string> extends newtype<string> {}
 
 /**
  * ## {@link regex `string.regex`}
  */
-interface regex<_ = string> extends newtype<string> {}
+interface regex<regex = string> extends newtype<string> {}
 
 /**
  * ## {@link query `string.query`}
  */
-interface query<_ = string> extends newtype<string> {}
+interface query<query = string> extends newtype<string> {}
 
 /**
  * ## {@link time `string.time`}
  */
-interface time<_ = string> extends newtype<string> {}
+interface time<time = string> extends newtype<string> {}
 
 /**
  * ## {@link ulid `string.ulid`}
  */
-interface ulid<_ = string> extends newtype<string> {}
+interface ulid<ulid = string> extends newtype<string> {}
 
 /**
  * ## {@link url `string.url`}
  */
-interface url<_ = string> extends newtype<string> {}
+interface url<url = string> extends newtype<string> {}
 
 /**
- * ## {@link utf8 `string.utf8`}
+ * ## {@link utf8 `string.utf16`}
  */
-interface utf16<_ = string> extends newtype<string> {}
+interface utf16<utf16 = string> extends newtype<string> {}
 
 /**
  * ## {@link utf16 `string.utf16`}
  */
-interface utf8<_ = string> extends newtype<string> {}
+interface utf8<utf8 = string> extends newtype<string> {}
 
 /**
  * ## {@link uuid `string.uuid`}
  */
-interface uuid<_ = string> extends newtype<string> {}
+interface uuid<uuid = string> extends newtype<string> {}
 
 /**
  * {@link natural `number.natural`}
@@ -244,7 +242,7 @@ interface natural<_Max = never> extends newtype<number> {}
  *  const ex_05 = Math.max(ex_01.valueOf(), ex_02.valueOf())
  *  //    ^? const ex_05: number
  */
-export interface integer<_ = number> extends newtype<number> {}
+export interface integer<ℤ = number> extends newtype<number> {}
 
 /**
  * ## {@link float `number.float`}
@@ -264,19 +262,19 @@ export interface integer<_ = number> extends newtype<number> {}
  * - [Reference](https://en.wikipedia.org/wiki/Floating-point_arithmetic)
  * - See also, {@link integer `number.integer`}
  */
-interface float<_ = number> extends newtype<number> {}
+interface float<ℝ = number> extends newtype<number> {}
 
 /**
  * ## {@link NaN `number.NaN`}
  * ### ｛ {@link jsdoc.empty ` ️🕳️‍ `}, {@link jsdoc.preserves_structure ` 🌿‍ ` } ｝
  */
-interface NaN<_ = number> extends newtype<number> {}
+interface NaN<NaN = number> extends newtype<number> {}
 
 /**
  * ## {@link Infinity `number.Infinity`}
  * ### ｛ {@link jsdoc.infinity `+∞`}, {@link jsdoc.preserves_structure ` 🌿‍ ` } ｝
  */
-interface Infinity<_ = number> extends newtype<number> {}
+interface Infinity<_ = typeof Number.POSITIVE_INFINITY> extends newtype<number> {}
 
 /**
  * ## {@link zero `number.zero`}
@@ -289,11 +287,13 @@ declare namespace negative {
    * ## {@link Infinity `number.negative.Infinity`}
    * ### ｛ {@link jsdoc.infinity `-∞`}, {@link jsdoc.preserves_structure ` 🌿‍ ` } ｝
    */
-  interface Infinity<_ = number> extends newtype<number> {}
+  interface Infinity<_ = typeof Number.NEGATIVE_INFINITY> extends newtype<number> {}
 
   /**
    * ## {@link zero `number.negative.zero`}
    * ### ｛ {@link jsdoc.empty ` 🕳️‍ `}, {@link jsdoc.preserves_structure ` 🌿‍ ` } ｝
+   * See also:
+   * - [zero element](https://en.wikipedia.org/wiki/Zero_element)
    */
   interface zero<_ = -0> extends newtype<number> {}
 }
