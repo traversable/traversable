@@ -8,6 +8,13 @@ declare namespace Meta {
     Meta_object as object,
     Meta_number as number,
     Meta_string as string,
+    Meta_integer as integer,
+    Meta_array as array,
+    Meta_allOf as allOf,
+    Meta_anyOf as anyOf,
+    Meta_oneOf as oneOf,
+    Meta_tuple as tuple,
+    Meta_record as record,
   }
 }
 
@@ -18,14 +25,17 @@ declare namespace Meta {
   interface Traversable<_ = unknown> extends Meta.Base {}
   interface JsonSchema<_ = unknown> { originalIndex?: number }
 
-  interface tuple<_ = unknown> extends Meta.Base {}
-  interface record<_ = unknown> extends Meta.Base {}
-  interface array<_ = unknown> extends Meta.Base {}
-  interface allOf<_ = unknown> extends Meta.Base {}
-  interface anyOf<_ = unknown> extends Meta.Base {}
-  interface oneOf<_ = unknown> extends Meta.Base {}
-  interface Meta_object<_ = unknown> extends Meta.Base {}
+  interface Meta_integer<_ = unknown> extends Meta.Base, Meta.Numeric {}
+  interface Meta_number<_ = unknown> extends Meta.Base, Meta.Numeric {}
   interface Meta_string<_ = unknown> extends Meta.Base { format?: string }
+
+  interface Meta_tuple<_ = unknown> extends Meta.Base {}
+  interface Meta_record<_ = unknown> extends Meta.Base {}
+  interface Meta_array<_ = unknown> extends Meta.Base {}
+  interface Meta_allOf<_ = unknown> extends Meta.Base {}
+  interface Meta_anyOf<_ = unknown> extends Meta.Base {}
+  interface Meta_oneOf<_ = unknown> extends Meta.Base {}
+  interface Meta_object<_ = unknown> extends Meta.Base {}
   interface Numeric {
     format?: string
     minimum?: number
@@ -36,17 +46,12 @@ declare namespace Meta {
     maxLength?: number 
   }
 
-  interface integer<_ = unknown> extends Meta.Base, Meta.Numeric {}
-  interface Meta_number<_ = unknown> extends Meta.Base, Meta.Numeric {}
 }
 
+Meta.is = Meta().is
+interface Meta extends t.typeof<ReturnType<typeof Meta>> {}
 function Meta() {
   return t.object({
     originalIndex: t.optional(t.number()),
   })
 }
-
-Meta.is = Meta().is
-
-interface Meta extends t.typeof<ReturnType<typeof Meta>> {}
-

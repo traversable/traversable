@@ -231,7 +231,7 @@ export namespace Recursive {
       case x[0] === symbol.number: return t.number()
       case x[0] === symbol.string: return t.string()
       case x[0] === symbol.any: return t.any()
-      case x[0] === symbol.constant: return t.const(x[1])
+      case x[0] === symbol.constant: return t.const(x[1]!)
       case x[0] === symbol.allOf: return t.allOf(...x[1])
       case x[0] === symbol.anyOf: return t.anyOf(...x[1])
       case x[0] === symbol.optional: return t.optional(x[1])

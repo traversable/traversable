@@ -840,14 +840,14 @@ export const fanin
 export function ana
   <F extends HKT, _F>(Functor: Functor<F, _F>):
   <T>(coalgebra: Functor.Coalgebra<F, T>) 
-    => <S extends _F>(term: S) 
+    => <S extends _F>(expr: S) 
     => HKT.apply<F, T>
 
 /// impl.
 export function ana<F extends HKT>(Functor: Functor<F>) {
   return <T>(coalgebra: Functor.Coalgebra<F, T>) => {
-    return function loop(term: T): HKT.apply<F, T> {
-      return Functor.map(loop)(coalgebra(term))
+    return function loop(expr: T): HKT.apply<F, T> {
+      return Functor.map(loop)(coalgebra(expr))
     }
   }
 }

@@ -22,12 +22,11 @@ export type {
   Traversable_any as any,
   Traversable_lambda as lambda,
   Traversable_Map as Map,
-  Traversable_fromJsonSchema as fromJsonSchema,
+
   Traversable_Scalar as Scalar,
   Traversable_Combinator as Combinator,
   Traversable_Composite as Composite,
   Traversable_Special as Special,
-  Traversable_toType as toType,
   ///
   Traversable_null as null,
   Traversable_boolean as boolean,
@@ -56,10 +55,14 @@ export type {
 
 export {
   Traversable_Functor as Functor,
-  Traversable_fromSchema as fromSchema,
   Traversable_Known as Known,
   Traversable_is as is,
   Traversable_unfold as unfold,
+  /// adjunctions
+  Traversable_fromAST as fromAST,
+  Traversable_fromJsonSchema as fromJsonSchema,
+  type Traversable_toType as toType,
+
 }
 
 /** @internal */
@@ -71,6 +74,8 @@ const Object_assign = globalThis.Object.assign
 const Object_entries = globalThis.Object.entries
 /** @internal */
 const Object_fromEntries = globalThis.Object.fromEntries
+/** @internal */
+const Object_keys = globalThis.Object.keys
 /** @internal */
 
 type Traversables = [
@@ -132,13 +137,13 @@ type Traversable_Map<F> = {
   object: Traversable_objectF<F>
 }
 
-// path: (keyof any)[],
+const key = t.anyOf(t.symbol(), t.number(), t.string())
 
 export interface Meta_Base extends t.typeof<typeof Meta_Base> {}
 export const Meta_Base = t.object({
   nullable: t.optional(t.boolean()),
   optional: t.optional(t.boolean()),
-  path: t.optional(t.array(t.anyOf(t.symbol(), t.number(), t.string()))),
+  path: t.optional(t.array(key)),
 })
 
 const Traversable_Meta = t.object({ meta: Meta_Base })
@@ -324,65 +329,76 @@ const Traversable_enum = t.object({
   type: t.const("enum"), 
   enum: t.array(t.any()),
 })
-const Traversable_isEnum = (u: unknown): u is Traversable_enum => {
-  return Traversable_enum.is(u)
-}
+const Traversable_isEnum 
+  = Traversable_enum.is as
+    (u: unknown) => u is Traversable_enum
 
 const Traversable_anyOf = t.object({
   type: t.const("anyOf"),
   anyOf: t.array(t.any()),
 })
-function Traversable_isAnyOf <T>(u: unknown): u is Traversable_anyOfF<T> 
-  { return Traversable_anyOf.is(u) }
+const Traversable_isAnyOf
+  = Traversable_anyOf.is as 
+    <T>(u: unknown) => u is Traversable_anyOfF<T> 
 
 const Traversable_oneOf = t.object({
   type: t.const("oneOf"),
   oneOf: t.array(t.any()),
 })
-function Traversable_isOneOf<T>(u: unknown): u is Traversable_oneOfF<T> 
-  { return Traversable_oneOf.is(u) }
+const Traversable_isOneOf
+  = Traversable_oneOf.is as
+    <T>(u: unknown) => u is Traversable_oneOfF<T> 
 
 const Traversable_allOf = t.object({
   type: t.const("allOf"),
   allOf: t.array(t.any()),
 })
-function Traversable_isAllOf<T>(u: unknown): u is Traversable_allOfF<T> 
-  { return Traversable_allOf.is(u) }
+const Traversable_isAllOf
+  = Traversable_allOf.is as 
+    <T>(u: unknown) => u is Traversable_allOfF<T> 
 
 const Traversable_array = t.object({
   type: t.const("array"),
   items: t.any(),
 })
-function Traversable_isArray<T>(u: unknown): u is Traversable_arrayF<T> 
-  { return Traversable_array.is(u) }
+const Traversable_isArray
+  = Traversable_array.is as
+    <T>(u: unknown) => u is Traversable_arrayF<T> 
 
 const Traversable_object = t.object({
   type: t.const("object"),
   properties: t.record(t.any()),
 })
-function Traversable_isObject<T>(u: unknown): u is Traversable_objectF<T> 
-  { return Traversable_object.is(u) }
+const Traversable_isObject
+  = Traversable_object.is as
+    <T>(u: unknown) => u is Traversable_objectF<T> 
 
 const Traversable_tuple = t.object({
   type: t.const("tuple"),
   items: t.array(t.any()),
 })
 const Traversable_isTuple 
-  = Traversable_tuple.is as <T>(u: unknown) => u is Traversable_tupleF<T>
+  = Traversable_tuple.is as 
+    <T>(u: unknown) => u is Traversable_tupleF<T>
 
-const Traversable_record = t.object({
-  type: t.const("record"),
-})
-const Traversable_isRecord = Traversable_record.is as <T>(u: unknown) => u is Traversable_recordF<T>
+const Traversable_record = t.object({ type: t.const("record") })
+const Traversable_isRecord 
+  = Traversable_record.is as 
+    <T>(u: unknown) => u is Traversable_recordF<T>
 
 const Traversable_Scalar = JsonSchema.Scalar
-const Traversable_isScalar = JsonSchema.is.scalar as (u: unknown) => u is Traversable_Scalar
+const Traversable_isScalar 
+  = JsonSchema.is.scalar as 
+    (u: unknown) => u is Traversable_Scalar
 
-const Traversable_isCombinator = t.anyOf(
+const Traversable_Combinator = t.anyOf(
   Traversable_allOf,
   Traversable_anyOf,
   Traversable_oneOf,
-).is
+)
+const Traversable_isCombinator 
+  = Traversable_Combinator.is as 
+    <T>(u: unknown) => u is Traversable_Combinator.F<T> 
 
 const Traversable_Composite = t.anyOf(
   Traversable_array,
@@ -390,9 +406,9 @@ const Traversable_Composite = t.anyOf(
   Traversable_tuple,
   Traversable_object,
 )
-
-function Traversable_isComposite<T>(u: unknown): u is Traversable_Composite.F<T> 
-  { return Traversable_Composite.is(u) }
+const Traversable_isComposite
+  = Traversable_Composite.is as
+    <T>(u: unknown) => u is Traversable_Composite.F<T> 
 
 const is_ = {
   null: Traversable_isNull,
@@ -473,6 +489,14 @@ const Traversable_Functor: Functor<Traversable_lambda, Traversable> = {
   }
 }
 
+function Traversable_unfold<T>(coalgebra: Functor.Coalgebra<Traversable_lambda, T>): (expr: T) => Traversable
+function Traversable_unfold<T>(coalgebra: Functor.Coalgebra<Traversable_lambda, T>) /// impl.
+  { return fn.ana(Traversable_Functor)(coalgebra) }
+
+function Traversable_fold<T>(algebra: Functor.Algebra<Traversable_lambda, T>): <S>(term: S) => T
+function Traversable_fold<T>(algebra: Functor.Algebra<Traversable_lambda, T>) 
+  { return fn.cata(Traversable_Functor)(algebra) }
+
 /** @internal */
 const fromJsonSchema = (expr: JsonSchema.any) => {
   const meta = {
@@ -482,7 +506,11 @@ const fromJsonSchema = (expr: JsonSchema.any) => {
   switch (true) {
     default: return fn.softExhaustiveCheck(expr)
     case JsonSchema.is.enum(expr): return { ...expr, type: "enum" }
-    case JsonSchema.is.scalar(expr): return expr
+    case JsonSchema.is.null(expr): return { ...expr, meta, type: expr.type }
+    case JsonSchema.is.boolean(expr): return { ...expr, meta, type: expr.type }
+    case JsonSchema.is.integer(expr): return { ...expr, meta, type: expr.type }
+    case JsonSchema.is.number(expr): return { ...expr, meta, type: expr.type }
+    case JsonSchema.is.string(expr): return { ...expr, meta, type: expr.type }
     case JsonSchema.is.allOf(expr): return { ...expr, type: "allOf", allOf: expr.allOf, }
     case JsonSchema.is.anyOf(expr): return { ...expr, type: "anyOf", anyOf: expr.anyOf }
     case JsonSchema.is.oneOf(expr): return { ...expr, type: "oneOf", oneOf: expr.oneOf }
@@ -491,10 +519,37 @@ const fromJsonSchema = (expr: JsonSchema.any) => {
   }
 }
 
-function Traversable_unfold<T>(coalgebra: Functor.Coalgebra<Traversable_lambda, T>): (term: T) => Traversable
-function Traversable_unfold<T>(coalgebra: Functor.Coalgebra<Traversable_lambda, T>) /// impl.
-  { return fn.ana(Traversable_Functor)(coalgebra) }
+const fromAST
+  : Functor.Algebra<t.AST.lambda, Traversable>
+  = (x) => {
+    switch (true) {
+      default: return fn.exhaustive(x)
+      case x._tag === "any": return fn.throw("Unimplemented")
+      case x._tag === "symbol": return fn.throw("Unimplemented")
+      case x._tag === "null": return { ...Traversable_null, type: x._tag }
+      case x._tag === "boolean": return { ...Traversable_boolean, type: x._tag }
+      case x._tag === "integer": return { ...Traversable_integer, type: x._tag }
+      case x._tag === "number": return { ...Traversable_number, type: x._tag }
+      case x._tag === "string": return { ...Traversable_string, type: x._tag }
+      case x._tag === "const": return { type: "enum", enum: x._def }  // <- TODO: make sure this isn't lossy
+      case x._tag === "optional": return { ...x._def, meta: { ...x._def.meta, optional: true } }
+      case x._tag === "allOf": return { type: x._tag, allOf: x._def }
+      case x._tag === "anyOf": return { type: x._tag, anyOf: x._def }
+      case x._tag === "array": return { type: x._tag, items: x._def }
+      case x._tag === "record": return { type: x._tag, additionalProperties: x._def }
+      case x._tag === "tuple": return { type: x._tag, items: x._def }
+      case x._tag === "object": return { 
+        type: x._tag, 
+        properties: x._def,
+        required: Object.keys(x._def).filter((k) => !x._def[k].meta?.optional),
+      } satisfies Traversable_object
+    }
+  }
 
-const Traversable_fromSchema
+const Traversable_fromJsonSchema
   : <T extends JsonSchema.any | Traversable>(term: T) => Traversable
   = Traversable_unfold(fromJsonSchema as never)
+
+const Traversable_fromAST
+  : <S extends t.AST.Node>(term: S) => Traversable
+  = t.AST.fold(fromAST)

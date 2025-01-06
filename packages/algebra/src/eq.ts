@@ -67,7 +67,7 @@ namespace Algebra {
 }
 
 derive.fold = fn.flow(
-  Traversable.fromSchema, 
+  Traversable.fromJsonSchema, 
   fn.para(Traversable.Functor)(Algebra.equal),
 )
 

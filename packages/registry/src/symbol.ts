@@ -115,6 +115,8 @@ namespace URI {
   export type oneOf = typeof URI.oneOf
   export const tag = `${ns}::tag` as const
   export type tag = typeof URI.tag
+  export const schema = `${ns}::schema` as const
+  export type schema = typeof URI.schema
   /// URIs that __do__ have an associated symbol
   /////////////////////////////////////////////////////
 }
@@ -197,6 +199,8 @@ namespace symbol_ {
   export type oneOf = typeof symbol_.oneOf
   export const tag = Symbol.for(URI.tag)
   export type tag = typeof symbol_.tag
+  export const schema = Symbol.for(URI.schema)
+  export type schema = typeof symbol_.schema
 }
 
 declare namespace symbol_ {

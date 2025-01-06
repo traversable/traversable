@@ -1,4 +1,4 @@
-import { array$, core, fc, is, object$, optional$, record$, show, t, test, tree, tuple$ } from "@traversable/core"
+import { fc, t, test } from "@traversable/core"
 import { configure, type } from "arktype"
 import * as vi from "vitest"
 

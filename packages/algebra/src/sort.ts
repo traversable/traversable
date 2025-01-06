@@ -198,7 +198,7 @@ function deriveSort({
 }: Options = deriveSort.defaults): {} {
   if (compare) return (
     fn.ana(Traversable.Functor)(
-      Coalgebra.sort(order.mapInput(compare, Traversable.fromSchema))
+      Coalgebra.sort(order.mapInput(compare, Traversable.fromJsonSchema))
     )
   )
   else if (weightMap) {
@@ -214,7 +214,7 @@ function deriveSort({
   }
   else return fn.ana(Traversable.Functor)(
     Coalgebra.sort(
-      order.mapInput(defaults.compare, Traversable.fromSchema),
+      order.mapInput(defaults.compare, Traversable.fromJsonSchema),
     )
   )
 }

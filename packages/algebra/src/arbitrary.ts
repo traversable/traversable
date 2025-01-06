@@ -103,7 +103,7 @@ function generateArbitrary_fold({
   stripTypes = defaults.stripTypes,
 }: Options = defaults) { // : (term: Traversable.any) => string {
   return fn.flow(
-    Traversable.fromSchema, 
+    Traversable.fromJsonSchema, 
     fn.cata(Traversable.Functor)(Algebra.jit({ arbitraryName, stripTypes })),
   )
 }
@@ -127,4 +127,4 @@ function deriveArbitrary(_: Options = deriveArbitrary.defaults): {}
 
 function deriveArbitrary_fold(_?: Options): <const T extends Traversable.any>(term: T) => fc.Arbitrary<Traversable.toType<T>>
 function deriveArbitrary_fold(_: Options = defaults): {}
-  { return fn.flow(Traversable.fromSchema, fn.cata(Traversable.Functor)(Algebra.arbitrary)) }
+  { return fn.flow(Traversable.fromJsonSchema, fn.cata(Traversable.Functor)(Algebra.arbitrary)) }

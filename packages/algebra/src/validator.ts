@@ -221,7 +221,7 @@ deriveValidator.fold = ({
 ) =>
   fn.flow(
     Sort.derive({ compare }), 
-    Traversable.fromSchema, 
+    Traversable.fromJsonSchema,
     fn.para(Traversable.Functor)(RAlgebra.validator({ flags: { treatArraysLikeObjects, jitCompile }})), 
     (xf) => xf.go([], 0, true),
   );

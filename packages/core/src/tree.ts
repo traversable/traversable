@@ -452,6 +452,23 @@ export function mutate(
   }
 }
 
+export function modify
+  <KS extends props.any>(...path: [...KS]): 
+  <const T extends has.path<KS>>(tree: T) => {
+    <S extends get<T, KS>>(mod: (prev: S) => S): T
+    <N>(f: (prev: get<T, KS>) => N): T
+  }
+
+export function modify(...path: [...props.any]) {
+  return (tree: {}) =>  (mod: (prev: unknown) => unknown) => {
+    return !path.length ? tree : fn.pipe(
+      get(tree, ...path),
+      mod,
+      set(...path)(tree),
+    )
+  }
+}
+
 type pathToString<KS extends props.any, Out extends string> 
   = KS extends nonempty.props<infer H, infer T> 
   ? pathToString<T, `${Out extends "" ? "" : `${Out}.`}${H}`> 
@@ -482,7 +499,6 @@ export function accessor(...path: prop.any[]) {
     return cursor
   }
 }
-
 
 export declare namespace mutate {
   interface Options {

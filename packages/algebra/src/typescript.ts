@@ -1,7 +1,11 @@
-import { Extension, Traversable, is, t } from "@traversable/core"
+import { Extension,  Traversable, is, show, t, toPaths } from "@traversable/core"
 import { Option, array, fn, type key, type keys, map, object, string } from "@traversable/data"
 import type { Functor, Partial, Required, newtype } from "@traversable/registry"
 import { Invariant, symbol } from "@traversable/registry"
+
+export {
+  deriveType as derive,
+}
 
 /** @internal */
 const Object_entries = globalThis.Object.entries
@@ -70,7 +74,7 @@ const defaults = {
 const KnownStringFormats = {
   email: "string.email",
   date: "string.date",
-  "date-time": "string.datetime",
+  "datetime": "string.datetime",
 } as const satisfies Record<string, string>
 
 const isKnownStringFormat = isKeyOf(KnownStringFormats)
@@ -83,42 +87,6 @@ const PATTERN = {
   Hacky: /\/\/(.+)\/\/\n/g,
   CloseComment: /(\*\/)/g,
 } as const
-
-export const trimPath = (xs: readonly (keyof any)[]) => {
-  const trimmables = [
-    ".options",
-    ".shape",
-    "._def.innerType",
-    ".element",
-    ".options.",
-    ".shape.",
-    "._def.innerType.",
-    ".element.",
-  ]
-  let ys = [...xs]
-  let x = ys.pop()
-  while (trimmables.includes(x as never)) 
-    void (x = ys.pop())
-  return [...ys, x].join("")
-}
-
-const unary = (glyph: string, pos: "prefix" | "infix" | "postfix") => (arg: string) => ({ glyph, pos, arg })
-const nullary = (glyph: string, pos: "prefix" | "infix" | "postfix") => (_?: never) => ({ glyph, pos })
-
-const Op = {
-  [symbol.optional]: unary("?", "postfix"),
-  [symbol.nullable]: unary("?", "postfix"),
-  [symbol.array]: nullary("[number]", "postfix"),
-  [symbol.record]: nullary("[string]", "postfix"),
-} as const
-
-const behead = (path: readonly (keyof any)[]) => {
-  const delimiters: string[] = [`"`, "⊔", "∩", "∪", "∅"]
-  const ix = path.findIndex((k) => typeof k === "string" && string.startsWith(...delimiters)(k))
-  return ix === -1 ? path : path.slice(0, ix)
-}
-
-const truncate = fn.flow(behead, trimPath)
 
 type Context = {
   path: readonly (key.any)[]
@@ -263,13 +231,16 @@ function jsdocSchemaPathReducer(
   // )
 }
 
+const JSON_stringify = (u: unknown) => JSON.stringify(u, null, 2)
+
 const baseHandlers = {
-  enum(n) { return n.enum.map((_) => typeof _ === "string" ? '"' + string.escape(_)  + '"' : _).join(" | ") },
   null(_) { return "null" },
   boolean(_) { return "boolean" },
   integer(_) { return "number" },
   number(_) { return "number" },
   string(_) { return "string" },
+  enum(n) { return n.enum.map(JSON_stringify).join(" | ") 
+},
   allOf(n) { return n.allOf.join(" & ") },
   anyOf(n) { return n.anyOf.join(" | ") },
   oneOf(n) { return n.oneOf.join(" | ") },
@@ -284,7 +255,7 @@ const baseHandlers = {
           + object.parseKey(k) 
           + ((n.required ?? []).includes(k) ? ": " : "?: ") 
           + v
-        ).join(";") 
+        ).join(";\n") 
       + "}"
   },
 } satisfies Extension.BuiltIns<string>
@@ -292,7 +263,7 @@ const baseHandlers = {
 const nominalHandlers = {
   ...baseHandlers,
   integer() { return "number.integer" },
-  string(n) { return isKnownStringFormat(n.meta?.format) ? KnownStringFormats[n.meta.format] : "string" },
+  string(n) { return isKnownStringFormat(n.meta?.format) ? KnownStringFormats[n?.meta.format] : "string" },
 } satisfies Extension.BuiltIns<string>
 
 const extendedHandlers = {
@@ -303,32 +274,54 @@ export namespace Algebra {
   export const types
     : (cfg: Config<string>) => Functor.Algebra<Traversable.lambda, string> 
     = (cfg) => {
-      const base = cfg.flags.nominalTypes ? nominalHandlers : {}
-      const $ = { ...base, ...cfg.handlers }
-      return Extension.match({ handlers: $ }, $)
+      return Extension.match(cfg, cfg.handlers)
     }
+
+  export interface PrettyStream {
+    path: (string | number)[]
+    nextIndex?: string | number
+    keyCount?: number
+    required?: (string | number)[]
+  }
+
+  // export const prettyTypes
+  //   : ($: Config<string>) => Functor.RAlgebra<Traversable.lambda, PrettyStream>
+  //   = ($) => (g) => {
+  //     switch (true) {
+  //       case Traversable.is.null(g): return g
+  //     }
+  //   }
 }
 
-const deriveType_fold = (cfg: Config<string>) => fn.flow(
-  Traversable.fromSchema, 
-  fn.cata(Traversable.Functor)(Algebra.types(cfg)),
+const deriveType_fold = ($: Config<string>) => fn.flow(
+  Traversable.fromJsonSchema, 
+  fn.cata(Traversable.Functor)(Algebra.types($)),
 ) satisfies (term: Traversable.any) => string
 
 function deriveType(schema: Traversable.any, options?: Options): string
-function deriveType(schema: Traversable.any, { flags, handlers, ...opts }: Options = defaults): string {
-  const typeName = opts.typeName ?? defaults.typeName
+function deriveType(
+  schema: Traversable.any, {
+    handlers: _,
+    typeName = defaults.typeName,
+    flags: {
+      nominalTypes = defaults.flags.nominalTypes,
+      preferInterfaces = defaults.flags.preferInterfaces,
+    } = defaults.flags,
+  }: Options = defaults
+): string {
   return fn.pipe(
     schema,
-    deriveType_fold({ 
-      typeName, 
+    deriveType_fold({
+      handlers: {
+        ...baseHandlers,
+        ...nominalTypes && nominalHandlers,
+        ..._,
+      },
+      typeName,
       flags: { 
-        nominalTypes: flags?.nominalTypes ?? true,
-        preferInterfaces: flags?.preferInterfaces ?? true,
-      }, 
-      handlers: { 
-        ...baseHandlers, 
-        ...handlers,
-      } 
+        nominalTypes, 
+        preferInterfaces,
+      },
     }),
     (body) => "type " + typeName + " = " + body,
   )
@@ -442,3 +435,40 @@ function deriveType(schema: Traversable.any, { flags, handlers, ...opts }: Optio
 //     },
 //   null: `null`,
 // })
+
+// export const trimPath = (xs: readonly (keyof any)[]) => {
+//   const trimmables = [
+//     ".options",
+//     ".shape",
+//     "._def.innerType",
+//     ".element",
+//     ".options.",
+//     ".shape.",
+//     "._def.innerType.",
+//     ".element.",
+//   ]
+//   let ys = [...xs]
+//   let x = ys.pop()
+//   while (trimmables.includes(x as never)) 
+//     void (x = ys.pop())
+//   return [...ys, x].join("")
+// }
+
+// const unary = (glyph: string, pos: "prefix" | "infix" | "postfix") => (arg: string) => ({ glyph, pos, arg })
+// const nullary = (glyph: string, pos: "prefix" | "infix" | "postfix") => (_?: never) => ({ glyph, pos })
+
+// const Op = {
+//   [symbol.optional]: unary("?", "postfix"),
+//   [symbol.nullable]: unary("?", "postfix"),
+//   [symbol.array]: nullary("[number]", "postfix"),
+//   [symbol.record]: nullary("[string]", "postfix"),
+// } as const
+
+// const behead = (path: readonly (keyof any)[]) => {
+//   const delimiters: string[] = [`"`, "⊔", "∩", "∪", "∅"]
+//   const ix = path.findIndex((k) => typeof k === "string" && string.startsWith(...delimiters)(k))
+//   return ix === -1 ? path : path.slice(0, ix)
+// }
+
+// const truncate = fn.flow(behead, trimPath)
+

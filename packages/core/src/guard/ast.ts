@@ -4,14 +4,20 @@ import type {
   Functor,
   HKT,
   Intersect,
+  Partial,
+  Primitive,
   TypeError,
   integer,
   newtype,
 } from "@traversable/registry"
-import { Fix, symbol } from "@traversable/registry"
+import { symbol } from "@traversable/registry"
 import { allOf$, anyOf$, array$, object$, optional$, record$, tuple$ } from "./combinators.js"
 import { is } from "./predicates.js"
 
+export type {
+  type,
+  Schema,
+}
 export {
   typeof_ as typeof,
   AST,
@@ -36,12 +42,21 @@ export {
   object_ as object,
 }
 
+type Schema<T> = type<T>
+interface type<T> extends newtype<T & { [symbol.schema]?: symbol.schema }> {}
+
 type ScalarShortName = keyof AST.ScalarMap
+
 
 /** @internal */
 type TerminalArrays_<T extends TerminalSeeds = TerminalSeeds> = never | { [I in keyof T]: `${T[I]}[]` }
 /** @internal */
 type TerminalRecords_<T extends TerminalSeeds = TerminalSeeds> = never | { [I in keyof T]: `${T[I]}{}` }
+
+/** @internal */
+const Object_keys = globalThis.Object.keys
+/** @internal */
+const Array_isArray = globalThis.Array.isArray
 
 export const TerminalSeeds = ["string", "number", "boolean", "symbol", "integer", "any"] as const satisfies ScalarShortName[]
 export type TerminalSeeds = typeof TerminalSeeds
@@ -53,11 +68,13 @@ export const Terminals = [...TerminalSeeds, ...TerminalArrays, ...TerminalRecord
 export type Terminals = typeof Terminals
 export type Terminal = Terminals[number]
 
-declare namespace AST { 
-  export { 
+type AST<T> = symbol_ | boolean_ | number_ | string_ | null_ | array_<T> | object_<T>
+
+declare namespace AST {
+  export {
     typeof_ as typeof,
     Terminal,
-  } 
+  }
 }
 declare namespace AST {
   interface Leaf<T = any> { _tag: string, _def: unknown, is: (u: unknown) => u is T }
@@ -135,8 +152,8 @@ declare namespace AST {
     = S extends null ? null_
     : S extends Terminal ? typeof TerminalByTag[S]
     : S extends readonly ["&", ...infer T extends AST.Short[]] ? allOf_<{ -readonly [Ix in keyof T]: fromShort<T[Ix]> }>
-    : S extends readonly ["|", ...infer T extends AST.Short[]] 
-      ? { -readonly [Ix in keyof T]: fromShort<T[Ix]> } extends 
+    : S extends readonly ["|", ...infer T extends AST.Short[]]
+      ? { -readonly [Ix in keyof T]: fromShort<T[Ix]> } extends
       infer U extends AST.Node[] ? anyOf_<U> & { is: (u: unknown) => u is U[number] }
       : never
     : S extends readonly ["[]", AST.Short] ? array_<AST.fromShort<S[1]>>
@@ -169,14 +186,30 @@ declare namespace AST {
   interface lambda extends HKT { [-1]: F<this[0]> }
 }
 
-
-declare const test: HKT.apply<AST.ShortLambda, AST.Node>
-
 function typeof_<S>(s: S): typeof_<S>
 function typeof_<S>(s: S) { return s }
 
+/**
+ * ## {@link typeof_ `t.typeof`}
+ * 
+ * Infer/extract the TypeScript type that an AST represents. If you've used
+ * zod before, {@link typeof_ `t.typeof`} is analogous to `z.infer`.
+ * 
+ * @example
+ * import * as vi from "vitest"
+ * import { t } from "@traversable/core"
+ * 
+ * const ex_01 = t.object({ a: t.boolean(), b: t.array(t.number()), c: t.record(t.string()) })
+ * const ex_02 = t.short({ a: "boolean", b: "number[]", c: "string{}" })
+ * 
+ * vi.assert.deepEqual(ex_01, ex_02)
+ * 
+ * type Ex_01 = t.typeof<typeof ex_01>
+ * type Ex_02 = t.typeof<typeof ex_02>
+ */
 type typeof_<S>
-  = S extends Nullary ? S["_def"]
+  = S extends type<infer T> ? T
+  : S extends Nullary ? S["_def"]
   : S extends const_<any> ? const_.parse<S["_def"]>
   : S extends optional_<infer T> ? undefined | typeof_<T>
   : S extends array_<infer T> ? typeof_<T>[]
@@ -212,15 +245,6 @@ const Functor: Functor<AST.lambda, AST.Node> = {
     }
   }
 }
-
-/** @internal */
-const Object_keys = globalThis.Object.keys
-/** @internal */
-const Object_values = globalThis.Object.values
-/** @internal */
-const Object_entries = globalThis.Object.entries
-/** @internal */
-const Array_isArray = globalThis.Array.isArray
 
 function fold<T>(algebra: Functor.Algebra<AST.lambda, T>)
   { return fn.cata(Functor)(algebra) }
@@ -268,18 +292,18 @@ const Tag = {
 
 //////////////////
 ///    NULL    ///
-interface null_ { 
+interface null_ {
   _tag: typeof Tag.null
-  _def: typeof null_.spec 
+  _def: typeof null_.spec
   is: (u: unknown) => u is null
 }
 function null_(): null_
-function null_() { 
-  return { 
-    _tag: Tag.null, 
-    _def: symbol.null as never, 
+function null_() {
+  return {
+    _tag: Tag.null,
+    _def: symbol.null as never,
     is: is.null,
-  } 
+  }
 }
 declare namespace null_ {
   const spec: null
@@ -293,7 +317,7 @@ declare namespace null_ {
 
 /////////////////////
 ///    BOOLEAN    ///
-interface boolean_ { 
+interface boolean_ {
   _tag: typeof Tag.boolean
   _def: typeof boolean_.spec
   is: (u: unknown) => u is boolean
@@ -320,7 +344,7 @@ declare namespace boolean_ {
 
 ////////////////////
 ///    SYMBOL    ///
-interface symbol_ { 
+interface symbol_ {
   _tag: typeof Tag.symbol
   _def: typeof symbol_.spec
   is: (u: unknown) => u is symbol
@@ -351,12 +375,12 @@ namespace symbol_ {
 
 /////////////////////
 ///    INTEGER    ///
-interface integer_ { 
+interface integer_ {
   _tag: typeof Tag.integer
   _def: typeof integer_.spec
   is: (u: unknown) => u is integer
 }
-function integer_(): integer_ { 
+function integer_(): integer_ {
   return {
     ...integer_.def,
     is: is.integer as (u: unknown) => u is integer,
@@ -380,17 +404,17 @@ namespace integer_ {
 
 ////////////////////
 ///    NUMBER    ///
-interface number_ { 
+interface number_ {
   _tag: typeof Tag.number
-  _def: typeof number_.spec 
+  _def: typeof number_.spec
   is: (u: unknown) => u is number
 }
-function number_(): number_ { 
-  return { 
-    _tag: Tag.number, 
-    _def: symbol.number as never, 
-    is: is.number 
-  } 
+function number_(): number_ {
+  return {
+    _tag: Tag.number,
+    _def: symbol.number as never,
+    is: is.number
+  }
 }
 
 declare namespace number_ {
@@ -405,7 +429,7 @@ declare namespace number_ {
 
 ////////////////////
 ///    STRING    ///
-interface string_ { 
+interface string_ {
   _tag: typeof Tag.string
   _def: typeof string_.spec
   is: (u: unknown) => u is string
@@ -430,7 +454,7 @@ declare namespace string_ {
 
 /////////////////
 ///    ANY    ///
-interface any_ { 
+interface any_ {
   _tag: typeof Tag.any
   _def: typeof any_.spec
   is: (u: unknown) => u is unknown
@@ -456,20 +480,51 @@ declare namespace any_ {
 
 ///////////////////
 ///    CONST    ///
-interface const_<S> { 
+interface const_<S> {
   _tag: typeof Tag.const
   _def: S
   is: (u: unknown) => u is S
 }
-function const_<const T>(v: T): const_<const_.parse<T>>
-function const_<const T>(v: T) {
+function const_<const T extends [T] extends [Primitive] ? Primitive : never>(v: T): const_<const_.parse<T>>
+function const_<const T extends { [x: number]: unknown }>(v: T, options: const_.Options<T>): const_<T>
+function const_<const T extends { [x: number]: unknown }>(v: T, options?: const_.Options<T>): const_<T>
+function const_<const T>(v: T, options?: const_.Options) {
+  const eq = options?.eq
+  const def = const_.def(v)
+  const is = eq !== undefined 
+    ? (u: unknown): u is never => eq(def._def, u) 
+    : (u: unknown): u is never => u === def._def
   return {
-    ...const_.def(v),
-    is: is.literally(v),
+    ...def,
+    is,
   }
 }
 
 declare namespace const_ {
+  type Options<T = any> = Partial<{
+    /**
+     * ## {@link defaults.eq `Options.eq`}
+     *
+     * The {@link const_ `t.const`} combinator creates a schema that
+     * checks whether its argument matches the argument that was originally used
+     * when the schema was defined.
+     * 
+     * However, if the value given to {@link const_ `t.const`} is an object,
+     * that object (by default) will be compared to the original using 
+     * {@link defaults.eq `defaults.eq`} (which compares both objects using `SameValueZero`
+     * semantics).
+     * 
+     * If you'd like {@link const_ `t.const`} to compare both objects 
+     * differently, use {@link const_.defaults.eq `Options.eq`} to provide
+     * the alternative equivalence test that {@link const_ `t.const`} should use.
+     * 
+     * See also:
+     * - [MDN: equality comparisons and sameness](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Equality_comparisons_and_sameness)
+     * - [TC39 spec: `SameValueZero`](https://tc39.es/ecma262/multipage/abstract-operations.html#sec-samevaluezero)
+     */
+    eq(left: typeof_<T>, right: typeof_<T>): boolean
+  }>
+
   const spec: unknown
   const children: unknown
   type shorthand<T>
@@ -494,8 +549,12 @@ declare namespace const_ {
     ;
 }
 namespace const_ {
-  export function def<T extends typeof const_.spec>(v: T): const_.def<T> { 
-    return { 
+  export const defaults = {
+    eq: globalThis.Object.is,
+  } satisfies Required<Options>
+
+  export function def<T extends typeof const_.spec>(v: T): const_.def<T> {
+    return {
       _tag: Tag.const,
       _def: v,
     }
@@ -507,7 +566,7 @@ namespace const_ {
 
 //////////////////////
 ///    OPTIONAL    ///
-interface optional_<S> { 
+interface optional_<S> {
   _tag: typeof Tag.optional
   _def: S
   is: (u: unknown) => u is undefined | typeof_<S>
@@ -543,18 +602,18 @@ namespace optional_ {
 
 ////////////////////
 ///    ALL OF    ///
-interface allOf_<S> { 
+interface allOf_<S> {
   _tag: typeof Tag.allOf
   _def: S
   // is: (u: unknown) => u is S
 }
 function allOf_<
   S extends typeof allOf_.children,
-  T extends 
+  T extends
   | { [Ix in keyof S]: typeof_<S[Ix]> }
   = { [Ix in keyof S]: typeof_<S[Ix]> }
 >(...ss: S): allOf_<S> & { is: (u: unknown) => u is Intersect<T> }
-function allOf_<S extends typeof allOf_.children>(...ss: S) { 
+function allOf_<S extends typeof allOf_.children>(...ss: S) {
   return {
     ...allOf_.def(ss),
     is: allOf$(...ss.map((s) => s.is)),
@@ -584,14 +643,14 @@ namespace allOf_ {
 
 ////////////////////
 ///    ANY OF    ///
-interface anyOf_<S extends typeof anyOf_.spec> { 
+interface anyOf_<S extends typeof anyOf_.spec> {
   _tag: typeof Tag.anyOf
   _def: S
   // is: (u: unknown) => u is { [Ix in keyof S]: typeof_<S[Ix]> }
 }
 function anyOf_<
-  S extends typeof anyOf_.children, 
-  T extends 
+  S extends typeof anyOf_.children,
+  T extends
   | { [Ix in keyof S]: typeof_<S[Ix]> }
   = { [Ix in keyof S]: typeof_<S[Ix]> }
 >(...ss: S): anyOf_<S> & { is: (u: unknown) => u is T[number] }
@@ -625,13 +684,13 @@ namespace anyOf_ {
 
 ///////////////////
 ///    ARRAY    ///
-interface array_<S> { 
+interface array_<S> {
   _tag: typeof Tag.array
   _def: S
-  is: (u: unknown) => u is typeof_<S>
+  is: (u: unknown) => u is typeof_<S>[]
 }
 function array_<S extends typeof array_.children>(s: S): array_<S>
-function array_<S extends typeof array_.children>(s: S) { 
+function array_<S extends typeof array_.children>(s: S) {
   return {
     ...array_.def(s),
     is: array$(s.is),
@@ -661,13 +720,13 @@ namespace array_ {
 
 ////////////////////
 ///    RECORD    ///
-interface record_<S> { 
+interface record_<S> {
   _tag: typeof Tag.record
   _def: S
   is: (u: unknown) => u is globalThis.Record<string, typeof_<S>>
 }
 function record_<S extends typeof record_.children>(s: S): record_<S>
-function record_<S extends typeof record_.children>(s: S) { 
+function record_<S extends typeof record_.children>(s: S) {
   return {
     ...record_.def(s),
     is: record$(s.is),
@@ -698,13 +757,13 @@ namespace record_ {
 
 ///////////////////
 ///    TUPLE    ///
-interface tuple_<S> { 
+interface tuple_<S> {
   _tag: typeof Tag.tuple
   _def: S
   is: (u: unknown) => u is { [Ix in keyof S]: typeof_<S[Ix]> }
 }
 function tuple_<S extends typeof tuple_.children>(...ss: S): tuple_<S>
-function tuple_<S extends typeof tuple_.children>(...ss: S) { 
+function tuple_<S extends typeof tuple_.children>(...ss: S) {
   return {
     ...tuple_.def(ss),
     is: tuple$(...ss.map((s) => s.is)),
@@ -728,7 +787,7 @@ declare namespace tuple_ {
   interface type<S extends typeof tuple_.children> { _type: tuple_._type<S> }
 }
 namespace tuple_ {
-  export function def<S extends typeof tuple_.spec>(ss: S): tuple_.def<S> 
+  export function def<S extends typeof tuple_.spec>(ss: S): tuple_.def<S>
     { return { _tag: Tag.tuple, _def: ss } }
 }
 ///    TUPLE    ///
@@ -737,7 +796,7 @@ namespace tuple_ {
 
 ////////////////////
 ///    OBJECT    ///
-interface object_<S> { 
+interface object_<S> {
   _tag: typeof Tag.object
   _def: S
   _opt: object_._opt<S>[]
@@ -817,25 +876,38 @@ declare namespace object_ {
 ////////////////////
 
 const isScalarShortName = (s: string): s is Terminal => Terminals.includes(s as never)
-const isShorthand = (_: unknown): _ is AST.Short => true
 const isTerminal = (u: unknown): u is Terminal => typeof u === "string" && isScalarShortName(u)
-const isArrayShorthand = <T>(u: unknown): u is array_.Short<T> => Array_isArray(u) && u[0] === "[]"
+const isArrayShorthand = <T>(u: unknown): u is array_.Short<T> => (u as any)?.[0] === "[]"
 const isRecordShorthand = <T>(u: unknown): u is record_.Short<T> => Array_isArray(u) && u[0] === "{}"
 const isTupleShorthand = <T>(u: unknown): u is tuple_.Short<T> => Array_isArray(u) && u.every(isShorthand)
-const isObjectShorthand = <T>(u: unknown): u is object_.Short<T> => !!u && typeof u === "object" && Object_values(u).every(isShorthand)
+const isObjectShorthand = <T>(u: unknown): u is object_.Short<T> => !!u && typeof u === "object" // && Object_values(u).every(isShorthand)
 const isAllOfShorthand = <T>(u: unknown): u is allOf_.Short<T> => Array_isArray(u) && u[0] === "|"
-const isAnyOfShorthand = <T>(u: unknown): u is anyOf_.Short<T> => Array_isArray(u) && u[0] === "&"
+const isAnyOfShorthand = <T>(u: unknown): u is anyOf_.Short<T> => {
+  return (u as any)?.[0] === "&"
+}
 const isConstStringLiteral
   : (u: unknown) => u is `'${string}'` | `"${string}"` | `\`${string}\``
-  = (u): u is never =>
-    typeof u === "string" && (
-      u.startsWith("'") && u.endsWith("'") ||
-      u.startsWith("`") && u.endsWith("`") ||
-      u.startsWith(`"`) && u.endsWith(`"`)
-    )
+  = (u): u is never => typeof u === "string" && (
+    u.startsWith("'") && u.endsWith("'") ||
+    u.startsWith("`") && u.endsWith("`") ||
+    u.startsWith(`"`) && u.endsWith(`"`) 
+    // || Array.isArray(u) && isConstStringLiteral(u[0])
+  )
+const isShorthand = (_: unknown): _ is AST.Short => {
+  return isTerminal(_) ||
+    isArrayShorthand(_) ||
+    isRecordShorthand(_) || 
+    isTupleShorthand(_) ||
+    isObjectShorthand(_) ||
+    isAllOfShorthand(_) ||
+    isAnyOfShorthand(_) ||
+    isConstStringLiteral(_)
+
+  // true
+}
 
 // TODO: fix type assertion
-const parseConstStringLiteral = (s: AST.Short) => 
+const parseConstStringLiteral = (s: AST.Short) =>
   (isConstStringLiteral(s) ? s.slice(1, -1) : s) as never
 
 const terminalMap = {
@@ -876,20 +948,24 @@ const ShortFunctor: Functor<AST.ShortLambda, AST.Short> = {
       case isAnyOfShorthand(x): return [x[0], f(x[1])]
       case isObjectShorthand(x): return map(x, f)
       case isTupleShorthand(x): return map(x, f)
-      case isConstStringLiteral(x): return f(parseConstStringLiteral(x)) as never
+      case isConstStringLiteral(x): return x
     }
   }
 }
 
-function foldShort<T>(algebra: Functor.Algebra<AST.ShortLambda, T>)
+function foldShorthand<T>(algebra: Functor.Algebra<AST.ShortLambda, T>)
   { return fn.cata(ShortFunctor)(algebra) }
-function unfoldShort<T>(coalgebra: Functor.Coalgebra<AST.ShortLambda, T>)
-  { return fn.ana(ShortFunctor)(coalgebra) }
 
 export namespace Recursive {
+  export const UnrecognizedLiteral 
+    : (_: unknown) => never
+    = (_) => fn.throw(""
+      + `Unrecognized string literal. Expected the name of a type (like \`string\`") `
+      + `or a string wrapped in quotes (like \`'xyx'\`, x), got: `, 
+      _
+    )
   export const fromSeed: Functor.Algebra<AST.ShortLambda, AST.Node> = (x) => {
     switch (true) {
-      default: return (console.info("exhaustive check in ast.Recursive.fromSeed, x:", x), x)
       case x === null: return null_()
       case isTerminal(x): return terminalMap[x]()
       case isArrayShorthand(x): return array_(x[1])
@@ -898,18 +974,19 @@ export namespace Recursive {
       case isAnyOfShorthand(x): return anyOf_(...tail(x))
       case isTupleShorthand(x): return tuple_(...x)
       case isObjectShorthand(x): return object_(x)
-      case isConstStringLiteral(x): return const_(parseConstStringLiteral(x))
+      case isConstStringLiteral(x): return const_(parseConstStringLiteral(x)) 
+      default: return typeof x === "string" ? UnrecognizedLiteral(x) : const_(x) 
     }
   }
 }
 
-export const fromSeed = foldShort(Recursive.fromSeed)
+export const fromSeed = foldShorthand(Recursive.fromSeed)
 
 const short: {
-  (s: null): null_
   (s: undefined): null_
+  (s: null): null_
   <const S extends Terminal>(s: S): typeof AST.TerminalByTag[S]
-  <const S extends string>(s: S): const_<const_.parse<S>>
+  // <const S extends string>(s: S): const_<const_.parse<S>>
   <const S extends readonly AST.Short[]>($: "|", ...ss: S): anyOf_.fromShort<S>
   <const S extends readonly AST.Short[]>($: "&", ...ss: S): allOf_.fromShort<S>
   <const S extends AST.Short>($: "[]", s: S): array_.fromShort<S>
@@ -917,4 +994,36 @@ const short: {
   <const S extends object_.shorthand<S>>(s: S): object_.fromShort<S>
   <const S extends tuple_.shorthand<S>>(ss: S): tuple_.fromShort<S>
   <const S>(s: S): const_<S>
-} = (fromSeed as never)
+} = ((
+  ...args:
+    | [x: undefined]
+    | [x: null]
+    | [x: Terminal]
+    | [x: `'${string}'`]
+    | [x: `"${string}"`]
+    | [x: `\`${string}\``]
+    | [$: "|", ...xs: AST.Short[]]
+    | [$: "&", ...xs: AST.Short[]]
+    | [$: "[]", x: AST.Short]
+    | [$: "{}", x: AST.Short]
+    | [x: object_.Short<AST.Short>]
+    | [xs: tuple_.Short<AST.Short>]
+) => {
+  switch (true) {
+    case args[0] === null: return null_()
+    case isTerminal(args[0]): return terminalMap[args[0]]()
+    case isConstStringLiteral(args[0]): return const_(parseConstStringLiteral(args[0]))
+    case args[0] === "[]": return array_(fromSeed(args[1]))
+    case args[0] === "{}": return record_(fromSeed(args[1]))
+    case args[0] === "&": return allOf_(...tail(args).map(fromSeed))
+    case args[0] === "|": return anyOf_(...tail(args).map(fromSeed))
+    case isObjectShorthand(args[0]): return fn.pipe(
+      Object.entries(args[0]),
+      (xs) => xs.map(([k, v]) => [k, fromSeed(v)] satisfies [string, any]),
+      Object.fromEntries,
+      object_,
+    )
+    case isTupleShorthand(args): return tuple_(...args.filter((x) => x !== undefined).map((x) => fromSeed(x)))
+    default: return typeof args[0] === "string" ? Recursive.UnrecognizedLiteral(args[0]) : const_(args[0] as never)
+  }
+}) as never // TODO: fix type assertion

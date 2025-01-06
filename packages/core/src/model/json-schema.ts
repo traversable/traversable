@@ -47,7 +47,7 @@ interface JsonSchema_lambda extends HKT { [-1]: JsonSchema_F<this[0]> }
 const Object_entries = globalThis.Object.entries
 
 interface JsonSchema_null { type: "null" }
-const JsonSchema_null = t.object({ type: t.const('"null"') })
+const JsonSchema_null = t.object({ type: t.const("null") })
 const JsonSchema_isNull
   : (u: unknown) => u is JsonSchema_null
   = JsonSchema_null.is
