@@ -1,11 +1,13 @@
 import { core, fc, t, tree, zip } from "@traversable/core"
 import { fn, map, object } from "@traversable/data"
 import { http } from "@traversable/http"
-import { PATTERN } from "@traversable/registry"
+import { newtype, PATTERN } from "@traversable/registry"
 
 import * as N from "./normalize.js"
 import { Schema } from "./schema/exports.js"
 import type { $ref } from "./types.js"
+import { createDepthIdentifier } from "fast-check"
+import { SchemaLoop } from "@traversable/openapi/schema/schema"
 
 /** @internal */
 type inline<T> = T
@@ -34,6 +36,7 @@ export function doc({ info, openapi, paths, ...spec }: Partial<doc>): doc {
       ...info,
     },
     paths: paths ?? {},
+    components: { schemas: {} },
     ...spec,
   }
 }
@@ -41,7 +44,7 @@ export function doc({ info, openapi, paths, ...spec }: Partial<doc>): doc {
 export interface doc extends doc.meta {
   openapi: string
   paths: openapi.paths
-  components?: openapi.components
+  components: openapi.components
 }
 export declare namespace doc {
     interface meta {
@@ -53,6 +56,9 @@ export declare namespace doc {
     }
   }
 
+interface 𐠀<T extends {}> extends newtype<T> {}
+interface 𐠀𐠀<T extends {}> extends newtype<T> {}
+interface ꘌ {}
 export declare namespace openapi {
   export { $ref, doc as document }
 }
@@ -133,7 +139,7 @@ export declare namespace openapi {
   }
 
 
-  interface components { schemas?: schemas }
+  interface components { schemas: schemas }
   interface paths extends inline<{ [path: string]: openapi.pathitem }> {}
 
   interface pathitem extends 
@@ -253,7 +259,10 @@ export declare namespace arbitrary {
     maxCount?: number
     minCount?: number
   }
-  interface Schemas extends arbitrary.Countable {}
+  interface Schemas extends arbitrary.Countable {
+    depthIdentifier?: fc.DepthIdentifier
+    bias?: keyof SchemaLoop
+  }
   interface Paths extends arbitrary.Countable {}
   interface PathParams extends arbitrary.Countable {}
   interface PathSegments extends arbitrary.Countable {}
@@ -307,53 +316,52 @@ type AppliedConstraints = { [K in keyof arbitrary.Constraints]-?: Required<arbit
 const applyConstraints 
   : (constraints?: arbitrary.Constraints) => AppliedConstraints
   = (_) => 
-    !_ ? defaults : {
-      include
-      : !_.include ? defaults.include 
+    !_ ? { 
+      ...defaults, 
+      schemas: { 
+        ...defaults.schemas, 
+        depthIdentifier: createDepthIdentifier() 
+      }
+    } 
+    : {
+      schemas: !_.schemas ? { ...defaults.schemas, depthIdentifier: fc.createDepthIdentifier() } 
       : {
+        bias: _.schemas.bias ?? defaults.schemas.bias,
+        depthIdentifier: _.schemas.depthIdentifier ?? createDepthIdentifier(),
+        maxCount: _.schemas.maxCount ?? defaults.schemas.maxCount,
+        minCount: _.schemas.minCount ?? defaults.schemas.minCount,
+      },
+      include: !_.include ? defaults.include: {
         const: _.include.const ?? defaults.include.const,
         description: _.include.description ?? defaults.include.description,
         example: _.include.example ?? defaults.include.example,
         examples: _.include.examples ?? defaults.include.examples,
       },
-      pathParams
-      : !_.pathParams ? defaults.pathParams 
-      : {
+      pathParams: !_.pathParams ? defaults.pathParams : {
         maxCount: _.pathParams.maxCount ?? defaults.pathParams.maxCount,
         minCount: _.pathParams.minCount ?? defaults.pathParams.minCount,
       },
-      paths
-      : !_.paths ? defaults.paths 
-      : {
+      paths: !_.paths ? defaults.paths : {
         maxCount: _.paths.maxCount ?? defaults.paths.maxCount,
         minCount: _.paths.minCount ?? defaults.paths.minCount,
       },
-      pathSegments
-      : !_.pathSegments ? defaults.pathSegments 
-      : {
+      pathSegments: !_.pathSegments ? defaults.pathSegments : {
         maxCount: _.pathSegments.maxCount ?? defaults.pathSegments.maxCount,
         minCount: _.pathSegments.minCount ?? defaults.pathSegments.minCount,
       },
-      responses
-      : !_.responses ? defaults.responses
-      : {
+      responses: !_.responses ? defaults.responses : {
         maxCount: _.responses.maxCount ?? defaults.responses.maxCount,
         minCount: _.responses.minCount ?? defaults.responses.minCount,
         maxContentTypeCount: _.responses.maxContentTypeCount ?? defaults.responses.maxContentTypeCount,
         minContentTypeCount: _.responses.minContentTypeCount ?? defaults.responses.minContentTypeCount,
       },
-      schemas
-      : !_.schemas ? defaults.schemas
-      : {
-        maxCount: _.schemas.maxCount ?? defaults.schemas.maxCount,
-        minCount: _.schemas.minCount ?? defaults.schemas.minCount,
-      },
   }
 
 export const defaults = {
   schemas: {
-    minCount: 1,
-    maxCount: 25,
+    minCount: 0,
+    maxCount: 0,
+    bias: "object",
   },
   include: {
     const: false,
@@ -366,8 +374,8 @@ export const defaults = {
     maxCount: 25,
   },
   pathParams: {
-    minCount: 1,
-    maxCount: 4,
+    minCount: 0,
+    maxCount: 2,
   },
   pathSegments: {
     minCount: 1,
@@ -1171,8 +1179,7 @@ export function pathname(_?: arbitrary.Constraints): fc.Arbitrary<pathname> {
     .map(([segments, params]) => ({
       segments,
       params,
-      path
-      : "/" + zip
+      path: "/" + zip
         .arrays(segments, params)
         .map(([s, p]) => !p ? s : !s ? `{${p}}` : `${s}/{${p}}`)
         .join("/"),
@@ -1211,10 +1218,11 @@ export function paths(_?: arbitrary.Constraints): fc.Arbitrary<openapi.paths> {
 export function components(constraints?: arbitrary.Constraints): fc.Arbitrary<openapi.components>
 export function components(_?: arbitrary.Constraints): fc.Arbitrary<openapi.components> {
   const constraints = applyConstraints(_)
+  const schema = Schema[constraints.schemas.bias]
   return fc.record({ 
     schemas: fc.dictionary(
       fc.alphanumeric(),
-      Schema.any(Schema.Constraints.defaults) as fc.Arbitrary<Schema.any>, {
+      Schema.any(Schema.Constraints.defaults), {
         minKeys: constraints.schemas.minCount,
         maxKeys: constraints.schemas.maxCount,
       },
