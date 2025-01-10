@@ -23,6 +23,8 @@ const URI_any = `${ns}::Any` as const
 type URI_any = typeof URI_any
 const URI_unknown = `${ns}::Unknown` as const
 type URI_unknown = typeof URI_unknown
+
+
 ///
 const symbol_null = Symbol.for(URI_null)
 type symbol_null = typeof symbol_null
@@ -40,11 +42,11 @@ const symbol_string = Symbol.for(URI_string)
 type symbol_string = typeof symbol_string
 const symbol_object = Symbol.for(URI_object)
 type symbol_object = typeof symbol_object
-const symbol_REGISTRY = Symbol.for(URI_REGISTRY)
 const symbol_any = Symbol.for(URI_any)
 type symbol_any = typeof symbol_any
 const symbol_unknown = Symbol.for(URI_unknown)
 type symbol_unknown = typeof symbol_unknown
+const symbol_REGISTRY = Symbol.for(URI_REGISTRY)
 type symbol_REGISTRY = typeof symbol_REGISTRY
 
 namespace URI {
@@ -77,11 +79,15 @@ namespace URI {
   export type nullable = typeof URI.nullable
   export const optional = `${ns}::Optional` as const
   export type optional = typeof URI.optional
+  export const required = `${ns}::Required` as const
+  export type required = typeof URI.required
   export const unit = `${ns}::Unit` as const
   export type unit = typeof URI.unit
-  export const numeric_index = `${ns}::NumericIndex` as const
   export const TypeError = `${ns}TypeError` as const
   export type TypeError = typeof URI.TypeError
+  export const typeclass = `${ns}::Typeclass` as const
+  export type typeclass = typeof typeclass
+  export const numeric_index = `${ns}::NumericIndex` as const
   export type numeric_index = typeof URI.numeric_index
   export const string_index = `${ns}::StringIndex` as const
   export type string_index = typeof URI.string_index
@@ -160,6 +166,8 @@ namespace symbol_ {
   export type nullable = typeof symbol_.nullable
   export const optional = Symbol.for(URI.optional)
   export type optional = typeof symbol_.optional
+  export const required = Symbol.for(URI.required)
+  export type required = typeof symbol_.required
   export const unit = Symbol.for(URI.unit)
   export type unit = typeof symbol_.unit
   export const TypeError = Symbol.for(URI.TypeError)
@@ -201,6 +209,8 @@ namespace symbol_ {
   export type tag = typeof symbol_.tag
   export const schema = Symbol.for(URI.schema)
   export type schema = typeof symbol_.schema
+  export const typeclass = Symbol.for(URI.typeclass)
+  export type typeclass = typeof typeclass
 }
 
 declare namespace symbol_ {

@@ -8,6 +8,8 @@ export { URI, symbol } from "./symbol.js"
 export type * from "./types.js"
 export { Fix } from "./types.js"
 
+export * as KnownFormat from "./format.js"
+
 export type { integer, number } from "./newtypes.js"
 export type { string } from "./newtypes.js"
 
@@ -40,6 +42,8 @@ export {
   WeightMap,
 } from "./registry.js"
 export { WeightByType } from "./tmp/node-weight-by-type.json.js"
+export type { Homomorphism, MapTo, Record } from "./homomorphism.js"
+export { homomorphism } from "./homomorphism.js"
 
 /**
  * ## {@link Known `registry.Known`}

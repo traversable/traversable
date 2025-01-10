@@ -83,7 +83,7 @@ importers:
         version: 1.0.0
       '@prettier/sync':
         specifier: ^0.5.2
-        version: 0.5.2(prettier@3.3.3)
+        version: 0.5.2(prettier@3.4.2)
       '@types/node':
         specifier: ^20.16.10
         version: 20.17.6
@@ -97,6 +97,9 @@ importers:
         specifier: workspace:^
         version: link:../registry/dist
     devDependencies:
+      '@prettier/sync':
+        specifier: ^0.5.2
+        version: 0.5.2(prettier@3.4.2)
       '@traversable/bench':
         specifier: workspace:^
         version: link:../bench/dist
@@ -115,6 +118,15 @@ importers:
       arktype:
         specifier: 2.0.0-rc.30
         version: 2.0.0-rc.30
+      chokidar:
+        specifier: ^4.0.3
+        version: 4.0.3
+      prettier:
+        specifier: ^3.4.2
+        version: 3.4.2
+      zod:
+        specifier: ^3.24.1
+        version: 3.24.1
     publishDirectory: dist
 
   packages/bench:
@@ -1047,6 +1059,10 @@ packages:
     resolution: {integrity: sha512-7VT13fmjotKpGipCW9JEQAusEPE+Ei8nl6/g4FBAmIm0GOOLMua9NDDo/DWp0ZAxCr3cPq5ZpBqmPAQgDda2Pw==}
     engines: {node: '>= 8.10.0'}
 
+  chokidar@4.0.3:
+    resolution: {integrity: sha512-Qgzu8kfBvo+cA4962jnP1KkS6Dop5NS6g7R5LFYJr4b8Ub94PPQXUksCw9PvXoeXPRRddRNC5C1JQUR2SMGtnA==}
+    engines: {node: '>= 14.16.0'}
+
   ci-info@3.9.0:
     resolution: {integrity: sha512-NIxF55hv4nSqQswkAeiOi1r83xy8JldOFDTWiug55KBu9Jnblncd2U6ViHmYgHf01TPZS77NJBhBMKdWj9HQMQ==}
     engines: {node: '>=8'}
@@ -1719,8 +1735,8 @@ packages:
     engines: {node: '>=10.13.0'}
     hasBin: true
 
-  prettier@3.3.3:
-    resolution: {integrity: sha512-i2tDNA0O5IrMO757lfrdQZCc2jPNDVntV0m/+4whiDfWaTKfMNgR7Qz0NAeGz/nRqF4m5/6CLzbP4/liHt12Ew==}
+  prettier@3.4.2:
+    resolution: {integrity: sha512-e9MewbtFo+Fevyuxn/4rrcDAaq0IYxPGLvObpQjiZBMAzB9IGmzlnG9RZy3FFas+eBMu2vA0CszMeduow5dIuQ==}
     engines: {node: '>=14'}
     hasBin: true
 
@@ -1755,6 +1771,10 @@ packages:
   readdirp@3.6.0:
     resolution: {integrity: sha512-hOS089on8RduqdbhvQ5Z37A0ESjsqz6qnRcffsMU3495FuTdqSm+7bhJ29JvIOsBDEEnan5DPu9t3To9VRlMzA==}
     engines: {node: '>=8.10.0'}
+
+  readdirp@4.0.2:
+    resolution: {integrity: sha512-yDMz9g+VaZkqBYS/ozoBJwaBhTbZo3UNYQHNRw1D3UFQB8oHB4uS/tAODO+ZLjGWmUbKnIlOWO+aaIiAxrUWHA==}
+    engines: {node: '>= 14.16.0'}
 
   regenerator-runtime@0.14.1:
     resolution: {integrity: sha512-dYnhHh0nJoMfnkZs6GmmhFknAGRrLznOu5nc9ML+EJxGvrx6H7teuevqVqCuPcPK//3eDrrjQhehXVx9cnkGdw==}
@@ -2125,6 +2145,9 @@ packages:
     resolution: {integrity: sha512-a6ae//JvKDEra2kdi1qzCyrJW/WZCgFi8ydDV+eXExl95t+5R+ijnqHJbz9tmMh8FUjx3iv2fCQ4dclAQlO2UQ==}
     engines: {node: '>= 14'}
     hasBin: true
+
+  zod@3.24.1:
+    resolution: {integrity: sha512-muH7gBL9sI1nciMZV67X5fTKKBLtwpZ5VBp1vsOQzj1MhrBZ4wlVCm3gedKZWLp0Oyel8sIGfeiz54Su+OVT+A==}
 
 snapshots:
 
@@ -2725,10 +2748,10 @@ snapshots:
 
   '@pnpm/deps.graph-sequencer@1.0.0': {}
 
-  '@prettier/sync@0.5.2(prettier@3.3.3)':
+  '@prettier/sync@0.5.2(prettier@3.4.2)':
     dependencies:
       make-synchronized: 0.2.9
-      prettier: 3.3.3
+      prettier: 3.4.2
 
   '@rollup/rollup-android-arm-eabi@4.26.0':
     optional: true
@@ -3027,6 +3050,10 @@ snapshots:
     optionalDependencies:
       fsevents: 2.3.3
     optional: true
+
+  chokidar@4.0.3:
+    dependencies:
+      readdirp: 4.0.2
 
   ci-info@3.9.0: {}
 
@@ -3671,7 +3698,7 @@ snapshots:
 
   prettier@2.8.8: {}
 
-  prettier@3.3.3: {}
+  prettier@3.4.2: {}
 
   pretty-ms@7.0.1:
     dependencies:
@@ -3709,6 +3736,8 @@ snapshots:
     dependencies:
       picomatch: 2.3.1
     optional: true
+
+  readdirp@4.0.2: {}
 
   regenerator-runtime@0.14.1: {}
 
@@ -4034,3 +4063,5 @@ snapshots:
   yallist@3.1.1: {}
 
   yaml@2.6.0: {}
+
+  zod@3.24.1: {}

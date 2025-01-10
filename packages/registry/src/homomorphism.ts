@@ -99,7 +99,7 @@ export function homomorphism<S, T>(f: (s: S) => T) {
  * See also:
  * - {@link homomorphism `homomorphism`}
  */
-interface Homomorphism<In = any, Out = unknown> extends MapTo<Out> {
+export interface Homomorphism<In = any, Out = unknown> extends MapTo<Out> {
   <const T extends Record<T, In>>(x: T): HKT.apply_<this, T>
   <const T extends Partial<readonly In[]>>(x: T): HKT.apply_<this, T>
 }
