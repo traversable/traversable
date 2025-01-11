@@ -4,6 +4,7 @@ export {
   anyOf$,
   and$,
   array$,
+  keyOf$,
   nullable$,
   object$,
   optional$,
@@ -14,26 +15,6 @@ export {
 
 export * as t from "./ast.js"
 
-// export type { Guard } from "./guard.js"
-// export * as t from "./guard.js"
-
-// {
-//   // type infer,
-//   any,
-//   anyOf,
-//   null,
-//   const,
-//   boolean,
-//   integer,
-//   number,
-//   record,
-//   string,
-//   array,
-//   object,
-//   optional,
-//   symbol,
-// } from "./guard.js"
-
 export * as path from "./toPaths.js"
 export { toPaths } from "./toPaths.js"
 export { toJSON } from "./toJSON.js"
@@ -42,7 +23,6 @@ export type { TagTreeMap } from "./fromSeed.js"
 export { fromSeed, TagTree } from "./fromSeed.js"
 
 // import type { AST, Config, Tag } from "./ast.js"
-
 // declare module "@traversable/core" {
 //   const _: typeof import("./ast.js").t
 //   const Tag: typeof import("./ast.js").Tag
@@ -70,7 +50,6 @@ export { fromSeed, TagTree } from "./fromSeed.js"
 //   type optional_toJSON<T extends AST.Node = AST.Node> = import("./ast.js").optional_toJSON<T>
 //   type optional_toString<T extends AST.Node = AST.Node> = import("./ast.js").optional_toString<T>
 // }
-
 // export * as path from "./toPaths.js"
 // const toJSON: typeof import("./ast.js").toJSON
 // const toString: typeof import("./ast.js").toString

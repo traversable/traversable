@@ -5,15 +5,16 @@ import { symbol as Sym } from "@traversable/registry"
 import * as q from "./_internal.js"
 
 export { 
+  allOf$,
+  and$,
+  anyOf$,
+  array$,
+  keyOf$,
+  nullable$,
   object$, 
   optional$,
   or$,
-  and$,
-  anyOf$,
-  allOf$,
-  array$,
   record$,
-  nullable$,
   tuple$,
 }
 
@@ -104,6 +105,7 @@ const or$ = <S, T>(f: (u: unknown) => u is S, g: (u: unknown) => u is T) => (u: 
 const and$ = <S, T>(f: (u: unknown) => u is S, g: (u: unknown) => u is T) => (u: unknown): u is S & T => f(u) && g(u)
 const anyOf$ = <S extends readonly Guard[], T = AnyOf<S>>(...guards: [...S]) => (u: unknown): u is T => guards.some((f) => f(u))
 const allOf$ = <S extends readonly Guard[], T = AllOf<S>>(...guards: [...S]) => (u: unknown): u is T => guards.every((f) => f(u))
+const keyOf$ = <T extends {}>(keyable: T) => (u: unknown): u is keyof T => q.key(u) && hasOwn(keyable, u)
 const array$ = <T>(guard: (u: unknown) => u is T) => (u: unknown): u is readonly T[] => q.array(u) && u.every(guard)
 const record$ = <T>(guard: (u: unknown) => u is T) => (u: unknown): u is Record<string, T> => q.object(u) && Object.values(u).every(guard)
 const nullable$ = <T>(guard: (u: unknown) => u is T) => or$(guard, q.null_)

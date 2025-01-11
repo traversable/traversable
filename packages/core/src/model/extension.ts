@@ -1,8 +1,9 @@
-import type { key, prop } from "@traversable/data"
+import type { prop } from "@traversable/data"
 import { fn } from "@traversable/data"
 import type { Array, Capitalize, Functor, newtype } from "@traversable/registry"
 
-import type { Config } from "./config.js"
+import type { Config, ConfigWithContext } from "./config.js"
+import type { Context } from "./meta.js"
 import * as Traversable from "./traversable.js"
 
 /** @internal */
@@ -14,17 +15,37 @@ const Object_keys
 
 export type TargetOf<S> = S extends (_: any) => _ is infer T ? T : S 
 
-export type UserDefinition<Ext, Out> = {
+export type UserDefinition<Ext, Out, Meta = {}> = {
   predicate(u: unknown): u is Ext, 
+  // handler(n: Ext): Out
+  // handler(n: Ext, m: Meta): Out
   handler(n: Ext): Out
+  handler(n: Ext, m: Meta): Out
 }
 
-export type BuiltIns<T> = { [K in keyof Traversable.Map<T>]: (n: Traversable.Map<T>[K]) => T }
+export type BuiltIns<T> = { [K in keyof Traversable.Map<T>]: (ext: Traversable.Map<T>[K]) => T }
 export type UserDefinitions<T> = { [K in Exclude<keyof Extension, keyof Traversable.Map<T>>]+?: UserDefinition<Extension[K], T> }
+
+export type BuiltInsWithContext<S, Ix = any> = { [K in keyof Traversable.Map<S>]: (ext: Traversable.Map<S>[K], ctx: Context<Ix>) => S }
+export type UserDefinitionsWithContext<S, Ix = any, Meta = {}> = { 
+  [K in Exclude<keyof Extension, keyof Traversable.Map<S>>]+?: 
+  (ext: UserDefinition<Extension[K], S>, ctx: Context<Ix>) => UserDefinition<Extension[K], S>
+}
+
+export type BuiltInsWithMeta<T> = { [K in keyof Traversable.Map<T>]: (ext: Traversable.Map<T>[K]) => T }
+export type UserDefinitionsWithMeta<S, Ix = any, Meta = {}> = { 
+  [K in Exclude<keyof Extension, keyof Traversable.Map<S>>]+?: 
+  (ext: UserDefinition<Extension[K], S, Meta>, ctx: Context.withMeta<Ix, Meta>) => UserDefinition<Extension[K], S, Meta>
+}
+
 
 export type Handlers<T> =
   & UserDefinitions<T>
   & BuiltIns<T>
+
+export type HandlersWithContext<S, Ix = any> =
+  & UserDefinitionsWithContext<S, Ix>
+  & BuiltInsWithContext<S, Ix>
 
 export type Predicates<T> = { [K in keyof T as `is${Capitalize<K>}`]: (u: unknown) => u is T[K] }
 
@@ -82,6 +103,22 @@ export function Extension_hooks<F>(config: Config<F>, builtins: BuiltIns<F>) {
   return [def, map]
 }
 
+export function Extension_hooksWithContext<F, Ix>(config: ConfigWithContext<F, Ix>, builtins: BuiltInsWithContext<F, Ix>): [
+  ExtractUserDefinitions<F>,
+  { [K in keyof Traversable.Map<F>]: (ext: Traversable.Map<F>[K], ctx: Ix) => F }
+]
+export function Extension_hooksWithContext<F, Ix>(config: ConfigWithContext<F, Ix>, builtins: BuiltInsWithContext<F, Ix>) {
+  const ks = Object_keys(config.handlers)
+  let def: Record<string, unknown> = {},
+      map: Record<string, unknown> = {}
+  for (let ix = 0, len = ks.length; ix < len; ix++) {
+    const k = ks[ix]
+    if (Traversable.Known.includes(k)) void (map[k] = config.handlers[k])
+    else void (def[k] = config.handlers[k] ?? builtins[k])
+  }
+  return [def, map]
+}
+
 /** 
  * ## {@link Extension_match `Extension.match`}
  * 
@@ -120,7 +157,7 @@ export function Extension_match<F, T extends Extension.Handlers<F>>(config: Conf
       const k = key[ix]
       //    ^?
       const { predicate, handler } = ext[k]
-      if (predicate(n)) return handler(n)
+      if (predicate(n)) return handler(n,)
     }
 
     switch (true) {
@@ -138,6 +175,42 @@ export function Extension_match<F, T extends Extension.Handlers<F>>(config: Conf
       case Traversable.is.tuple(n): return $.tuple(n)
       case Traversable.is.record(n): return $.record(n)
       case Traversable.is.object(n): return $.object(n)
+    }
+  }
+}
+
+let count = 0
+
+export function Extension_matchWithContext
+  <F, Ix, T extends Extension.HandlersWithContext<F, Ix>>(config: ConfigWithContext<F, Ix>, builtins: T) {
+  return (ctx: Ix, n: Traversable.F<F>): F => {
+    const meta = { count: count++ }
+    const [ext, $] = Extension_hooksWithContext(config, builtins)
+    const key = Object_keys(ext)
+    //    ^?
+    for (let ix = 0, len = key.length; ix < len; ix++) {
+      const k = key[ix]
+      //    ^?
+      const { predicate, handler } = ext[k]
+      if (predicate(n)) 
+        return handler({ ...n, ...meta })
+    }
+
+    switch (true) {
+      default: return fn.softExhaustiveCheck(n)
+      case Traversable.is.enum(n): return $.enum(n, ctx)
+      case Traversable.is.null(n): return $.null(n, ctx)
+      case Traversable.is.boolean(n): return $.boolean(n, ctx)
+      case Traversable.is.integer(n): return $.integer(n, ctx)
+      case Traversable.is.number(n): return $.number(n, ctx)
+      case Traversable.is.string(n): return $.string(n, ctx)
+      case Traversable.is.allOf(n): return $.allOf(n, ctx)
+      case Traversable.is.anyOf(n): return $.anyOf(n, ctx)
+      case Traversable.is.oneOf(n): return $.oneOf(n, ctx)
+      case Traversable.is.array(n): return $.array(n, ctx)
+      case Traversable.is.tuple(n): return $.tuple(n, ctx)
+      case Traversable.is.record(n): return $.record(n, ctx)
+      case Traversable.is.object(n): return $.object(n, ctx)
     }
   }
 }
@@ -171,15 +244,23 @@ export declare namespace Extension {
   export { 
     Extension_hooks as hooks,
     Extension_match as match,
+    Extension_matchWithContext as matchWithContext,
+    Extension_hooksWithContext as hooksWithContext,
     Extension_register as register,
     Handlers,
+    HandlersWithContext,
     BuiltIns,
+    BuiltInsWithContext,
     UserDefinition,
     UserDefinitions,
+    UserDefinitionsWithContext,
+    UserDefinitionsWithMeta,
   }
 }
-export namespace Extension { 
+export namespace Extension {
   Extension.hooks = Extension_hooks
+  Extension.hooksWithContext = Extension_hooksWithContext
   Extension.match = Extension_match
-  Extension.register = Extension_register 
+  Extension.matchWithContext = Extension_matchWithContext
+  Extension.register = Extension_register
 }

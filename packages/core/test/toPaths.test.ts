@@ -11,4 +11,3 @@ vi.describe("〖️⛳️〗‹‹‹ ❲@traversable/core/path❳", () => {
     )
   })
 })
-

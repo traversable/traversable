@@ -18,6 +18,18 @@ declare namespace Meta {
   }
 }
 
+export interface Context<T = any> {
+  path: (keyof any)[]
+  depth: number
+  indent: number
+  typeName: string
+  absolutePath: `/${string}`
+  T?: T
+}
+export declare namespace Context {
+  export interface withMeta<T = any, Meta = {}> extends Context<T> { meta?: Meta }
+}
+
 declare namespace Meta { export { Base } }
 declare namespace Meta { 
   type has<T> = { meta?: T }
@@ -45,7 +57,6 @@ declare namespace Meta {
     minLength?: number
     maxLength?: number 
   }
-
 }
 
 Meta.is = Meta().is

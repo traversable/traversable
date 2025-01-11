@@ -5,6 +5,7 @@ export {
   and$,
   anyOf$,
   array$,
+  keyOf$,
   nullable$,
   object$,
   optional$,

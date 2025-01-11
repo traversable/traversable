@@ -1,9 +1,10 @@
 import * as vi from "vitest"
 
-import { Property, fc, test, tree } from "@traversable/core"
+import { Property, fc, is, test, tree } from "@traversable/core"
 import type { props } from "@traversable/data"
 
 import fromPaths = tree.fromPaths
+import { has } from "@traversable/core/tree"
 import { URI, symbol } from "@traversable/registry"
 const { wrap } = fromPaths
 
@@ -458,15 +459,18 @@ vi.describe("〖⛳️〗‹‹‹ ❲@traversable/core/tree❳", () => {
     vi.assert.equal(actual_00, actual_00)
 
     const ex_01 = {}
-    const actual_01 = tree.modify("a")(ex_01 as never)(() => 1)
+    const actual_01 = tree.modify("a")(() => 1)(ex_01 as never)
     vi.assert.deepEqual(actual_01, { a: 1 })
 
+    const ac = tree.modify("a", "b", "c", has("d", is.number))
+    ac((c) => ({ d: c.d + 1 }))
+
     const ex_02 = { a: { b: { c: { d: 0 } } } }
-    const actual_02 = tree.modify("a", "b", "c")(ex_02)((c) => ({ d: c.d + 1 }))
+    const actual_02 = tree.modify("a", "b", "c", has("d", is.number))((c) => ({ d: c.d + 1 }))(ex_02)
     vi.assert.deepEqual(actual_02, { a: { b: { c: { d: 1 } } } })
 
     const ex_03 = { a: { b: { c: { d: 0, e: 1 }, f: 2 }, g: 3 }, h: 4 }
-    const actual_03 = tree.modify("a", "b", "c")(ex_03)((c) => ({ ...c, d: c.d + 10 }))
+    const actual_03 = tree.modify("a", "b", "c", has("d", is.number))((c) => ({ ...c, d: c.d + 10 }))(ex_03)
     vi.assert.deepEqual(actual_03, { a: { b: { c: { d: 10, e: 1 }, f: 2 }, g: 3 }, h: 4 })
   })
 

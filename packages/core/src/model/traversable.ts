@@ -1,11 +1,11 @@
 import { fn, type nonempty } from "@traversable/data"
-import type { Functor, HKT, Merge, Mutable } from "@traversable/registry"
+import { type Functor, type HKT, type IndexedFunctor, type Merge, type Mutable, symbol } from "@traversable/registry"
 
 import { t } from "../guard/index.js"
 import { is } from "../guard/predicates.js"
 import { has } from "../tree.js"
 import * as JsonSchema from "./json-schema.js"
-import type { Meta } from "./meta.js"
+import type { Context, Meta } from "./meta.js"
 import type { 
   AdditionalProps, 
   Combinator, 
@@ -22,6 +22,7 @@ export type {
   Traversable_any as any,
   Traversable_lambda as lambda,
   Traversable_Map as Map,
+  Context,
 
   Traversable_Scalar as Scalar,
   Traversable_Combinator as Combinator,
@@ -55,8 +56,11 @@ export type {
 
 export {
   Traversable_Functor as Functor,
+  IndexedFunctor,
   Traversable_Known as Known,
   Traversable_is as is,
+  Traversable_fold as fold,
+  Traversable_foldIx as foldIx,
   Traversable_unfold as unfold,
   /// adjunctions
   Traversable_fromAST as fromAST,
@@ -150,7 +154,6 @@ const Traversable_Meta = t.object({ meta: Meta_Base })
 interface Traversable_Meta extends Meta.has<Meta.Base> {}
 
 interface Traversable_lambda extends HKT { [-1]: Traversable_F<this[0]> }
-///
 ///
 interface Traversable_allOf extends
   Combinator<Traversable, "allOf">,
@@ -365,6 +368,12 @@ const Traversable_isArray
   = Traversable_array.is as
     <T>(u: unknown) => u is Traversable_arrayF<T> 
 
+// const Traversable_optional = t.object({
+//   meta:  
+// })
+
+declare const obj: typeof Traversable_object
+
 const Traversable_object = t.object({
   type: t.const("object"),
   properties: t.record(t.any()),
@@ -489,13 +498,61 @@ const Traversable_Functor: Functor<Traversable_lambda, Traversable> = {
   }
 }
 
-function Traversable_unfold<T>(coalgebra: Functor.Coalgebra<Traversable_lambda, T>): (expr: T) => Traversable
-function Traversable_unfold<T>(coalgebra: Functor.Coalgebra<Traversable_lambda, T>) /// impl.
-  { return fn.ana(Traversable_Functor)(coalgebra) }
 
-function Traversable_fold<T>(algebra: Functor.Algebra<Traversable_lambda, T>): <S>(term: S) => T
-function Traversable_fold<T>(algebra: Functor.Algebra<Traversable_lambda, T>) 
-  { return fn.cata(Traversable_Functor)(algebra) }
+const IndexedFunctor: IndexedFunctor<Context, Traversable_lambda, Traversable> = {
+  map: Traversable_Functor.map,
+  mapWithIndex(g) {
+    return ($, xs) => {
+      const depth = $.depth + 1
+      const indent = $.indent + 2
+      const h = (path: (keyof any)[], overrides?: {}) => ({ ...$, depth, indent, path, ...overrides })
+
+      switch (true) {
+        default: return fn.softExhaustiveCheck(xs)
+        case Traversable_is.enum(xs): return xs
+        case Traversable_is.null(xs): return xs
+        case Traversable_is.boolean(xs): return xs
+        case Traversable_is.integer(xs): return xs
+        case Traversable_is.number(xs): return xs
+        case Traversable_is.string(xs): return xs
+        case Traversable_is.array(xs): return { ...xs, items: g(h([...$.path, symbol.array]), xs.items) }
+        case Traversable_is.allOf(xs): return { ...xs, allOf: xs.allOf.map((x, i) => g(h([...$.path, symbol.allOf, i]), x)) }
+        case Traversable_is.anyOf(xs): return { ...xs, anyOf: xs.anyOf.map((x, i) => g(h([...$.path, symbol.anyOf, i]), x)) }
+        case Traversable_is.oneOf(xs): return { ...xs, oneOf: xs.oneOf.map((x, i) => g(h([...$.path, symbol.oneOf, i]), x)) }
+        case Traversable_is.tuple(xs): return { ...xs, items: xs.items.map((x, i) => g(h([...$.path, symbol.tuple, i]), x)) }
+        case Traversable_is.record(xs): return { ...xs, additionalProperties: g(h([...$.path, symbol.record]), xs.additionalProperties) }
+        case Traversable_is.object(xs): {
+          const { additionalProperties: a, properties: p, ...y } = xs
+          const entries = Object_entries(p)
+            .map(([k, v]) => {
+              const isOptional = !xs.required?.includes(k)
+              const path = [ ...$.path, symbol.object, k, ...(isOptional ? [symbol.optional] : [])]
+                return [k, g(h(path), v)]
+            })
+    
+          return {
+            ...y,
+            properties: Object_fromEntries(entries),
+            // TODO: move to `symbol.record` instead?
+            // ...a && { additionalProperties: f({ ...$, depth, path: [symbol.record, ...$.path] }, a) }
+          }
+        }
+      }
+    }
+  }
+}
+
+function Traversable_unfold<T>(g: Functor.Coalgebra<Traversable_lambda, T>): (expr: T) => Traversable
+function Traversable_unfold<T>(g: Functor.Coalgebra<Traversable_lambda, T>)
+  { return fn.ana(Traversable_Functor)(g) }
+
+function Traversable_fold<T>(g: Functor.Algebra<Traversable_lambda, T>): <S>(term: S) => T
+function Traversable_fold<T>(g: Functor.Algebra<Traversable_lambda, T>) 
+  { return fn.cata(Traversable_Functor)(g) }
+
+function Traversable_foldIx<T>(g: Functor.IxAlgebra<Context, Traversable_lambda, T>): <S>(ctx: Context, term: S) => T
+function Traversable_foldIx<T>(g: Functor.IxAlgebra<Context, Traversable_lambda, T>) 
+  { return fn.cataIx(IndexedFunctor)(g) }
 
 /** @internal */
 const fromJsonSchema = (expr: JsonSchema.any) => {
@@ -505,17 +562,17 @@ const fromJsonSchema = (expr: JsonSchema.any) => {
   }
   switch (true) {
     default: return fn.softExhaustiveCheck(expr)
-    case JsonSchema.is.enum(expr): return { ...expr, type: "enum" }
-    case JsonSchema.is.null(expr): return { ...expr, meta, type: expr.type }
-    case JsonSchema.is.boolean(expr): return { ...expr, meta, type: expr.type }
-    case JsonSchema.is.integer(expr): return { ...expr, meta, type: expr.type }
-    case JsonSchema.is.number(expr): return { ...expr, meta, type: expr.type }
-    case JsonSchema.is.string(expr): return { ...expr, meta, type: expr.type }
-    case JsonSchema.is.allOf(expr): return { ...expr, type: "allOf", allOf: expr.allOf, }
-    case JsonSchema.is.anyOf(expr): return { ...expr, type: "anyOf", anyOf: expr.anyOf }
-    case JsonSchema.is.oneOf(expr): return { ...expr, type: "oneOf", oneOf: expr.oneOf }
-    case JsonSchema.is.array(expr): return { ...meta, ...expr, type: is.array(expr.items) ? "tuple" : "array" }
-    case JsonSchema.is.object(expr): return { ...expr, type: expr.properties ? "object" : "record" }
+    case JsonSchema.is.enum(expr): return { meta, ...expr, type: "enum" }
+    case JsonSchema.is.null(expr): return { meta, ...expr, type: expr.type }
+    case JsonSchema.is.boolean(expr): return { meta, ...expr, type: expr.type }
+    case JsonSchema.is.integer(expr): return { meta, ...expr, type: expr.type }
+    case JsonSchema.is.number(expr): return { meta, ...expr, type: expr.type }
+    case JsonSchema.is.string(expr): return { meta, ...expr, type: expr.type }
+    case JsonSchema.is.allOf(expr): return { meta, ...expr, type: "allOf", allOf: expr.allOf, }
+    case JsonSchema.is.anyOf(expr): return { meta, ...expr, type: "anyOf", anyOf: expr.anyOf }
+    case JsonSchema.is.oneOf(expr): return { meta, ...expr, type: "oneOf", oneOf: expr.oneOf }
+    case JsonSchema.is.array(expr): return { meta, ...expr, type: is.array(expr.items) ? "tuple" : "array" }
+    case JsonSchema.is.object(expr): return { meta, ...expr, type: expr.properties ? "object" : "record" }
   }
 }
 
@@ -526,15 +583,15 @@ const fromAST
       default: return fn.exhaustive(x)
       case x._tag === "any": return fn.throw("Unimplemented")
       case x._tag === "symbol": return fn.throw("Unimplemented")
-      case x._tag === "null": return { ...Traversable_null, type: x._tag }
-      case x._tag === "boolean": return { ...Traversable_boolean, type: x._tag }
-      case x._tag === "integer": return { ...Traversable_integer, type: x._tag }
-      case x._tag === "number": return { ...Traversable_number, type: x._tag }
-      case x._tag === "string": return { ...Traversable_string, type: x._tag }
-      case x._tag === "const": return { type: "enum", enum: x._def }  // <- TODO: make sure this isn't lossy
+      case x._tag === "null": return { ...x, ...Traversable_null, type: x._tag }
+      case x._tag === "boolean": return { ...x, ...Traversable_boolean, type: x._tag }
+      case x._tag === "integer": return { ...x, ...Traversable_integer, type: x._tag }
+      case x._tag === "number": return { ...x, ...Traversable_number, type: x._tag }
+      case x._tag === "string": return { ...x, ...Traversable_string, type: x._tag }
+      case x._tag === "const": return { ...x, type: "enum", enum: x._def }  // <- TODO: make sure this isn't lossy
       case x._tag === "optional": return { ...x._def, meta: { ...x._def.meta, optional: true } }
-      case x._tag === "allOf": return { type: x._tag, allOf: x._def }
-      case x._tag === "anyOf": return { type: x._tag, anyOf: x._def }
+      case x._tag === "allOf": return { ...x, type: x._tag, allOf: x._def }
+      case x._tag === "anyOf": return { ...x, type: x._tag, anyOf: x._def }
       case x._tag === "array": return { type: x._tag, items: x._def }
       case x._tag === "record": return { type: x._tag, additionalProperties: x._def }
       case x._tag === "tuple": return { type: x._tag, items: x._def }

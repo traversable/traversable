@@ -1,9 +1,9 @@
 import type { inline, newtype, some } from "any-ts";
 
 import type { any, array, key, nonempty, prop, unicode } from "@traversable/data"
-import { fn, keys, map, object, props } from "@traversable/data"
+import { Option, fn, keys, map, object, props } from "@traversable/data"
 
-import { Invariant, URI, symbol } from "@traversable/registry";
+import { Invariant, URI, _, symbol } from "@traversable/registry";
 import type { Json } from "./json.js"
 
 declare namespace Predicate {
@@ -273,21 +273,21 @@ export function get<
   K0 extends some.keyof<T>,
 >(shape: T, ...keys: [K0]): undefined | T[K0]
 export function get<const T extends {}>(shape: T, ...keys: []): T
-export function get<T>(shape: Inductive.stringIndex<T>, ...keys: [...props.any]): T | undefined
-export function get(t: {}, ...k: [...props.any]) 
+export function get<T>(shape: Inductive.stringIndex<T>, ...keys: [...keys.any]): T | undefined
+export function get(t: {}, ...k: [...keys.any]) 
   /// impl.
   { return get_(t, k) }
 
-export type get<T, KS extends props.any> = get.loop<KS, T>;
+export type get<T, KS extends keys.any> = get.loop<KS, T>;
 export declare namespace get {
-  type loop<KS extends props.any, T, optionals extends "try" = never>
+  type loop<KS extends keys.any, T, optionals extends "try" = never>
     = T extends null | undefined ? [optionals] extends ["try"] ? maybe<KS, T> : T 
     : KS extends readonly [infer K extends keyof T, ...infer Todo extends props.any]
     ? get.loop<Todo, T[K]>
     : KS extends readonly [] ? T
     : unknown
 
-  type maybe<KS extends props.any, T, _ = Exclude<T, undefined>>
+  type maybe<KS extends keys.any, T, _ = Exclude<T, undefined>>
     = KS extends readonly [infer K extends keyof _, ...infer Todo extends props.any]
     ? get.maybe<Todo, _[K]>
     : KS extends readonly [] ? undefined | T
@@ -408,14 +408,14 @@ interface tentatively<T extends {}> extends newtype<T> {}
 export const set = mutate
 
 export function mutate
-  <KS extends props.any>(...path: [...KS]): 
+  <KS extends keys.any>(...path: [...KS]): 
     <const T extends has.path<KS>>(tree: T) => {
       <V extends get<T, KS>>(v: V): unknown
       <V>(v: V): unknown
     }
 
 export function mutate
-  <KS extends props.any>(path: [...KS], options?: mutate.Options): 
+  <KS extends keys.any>(path: [...KS], options?: mutate.Options): 
     <const T extends has.path<KS>>(tree: T) => {
       <V extends get<T, KS>>(v: V): unknown
       <V>(v: V): unknown
@@ -427,7 +427,7 @@ export function mutate(
     | [...path: props.any]
     | [path: [...props.any], options?: mutate.Options]
 ) {
-  const [path, options] = props.is(args) ? [args, set.defaults] : args
+  const [path, options] = keys.is(args) ? [args, set.defaults] : args
   const config = set.configFromOptions(options)
   return (_: {}) => {
     const tree 
@@ -452,22 +452,79 @@ export function mutate(
   }
 }
 
-export function modify
-  <KS extends props.any>(...path: [...KS]): 
-  <const T extends has.path<KS>>(tree: T) => {
-    <S extends get<T, KS>>(mod: (prev: S) => S): T
-    <N>(f: (prev: get<T, KS>) => N): T
-  }
+export function modify<KS extends props.any>(...path: [...KS]):
+  <T extends has.path<KS>, S extends get<T, KS>>(modifyFn: (prev: S) => S) => <U extends T>(tree: U) => U
+export function modify<KS extends props.any, V>(...args: [...KS, (u: unknown) => u is V]):
+  <T extends has.path<KS, V>, S extends get<T, KS>>(modifyFn: (prev: V) => S) => <U extends T>(tree: U) => U
 
-export function modify(...path: [...props.any]) {
-  return (tree: {}) =>  (mod: (prev: unknown) => unknown) => {
+// {
+//   <T extends has.path<KS>, S extends get<T, KS>, V>(
+//     modifyFn: (prev: NoInfer<V>) => S,
+//     guard: (u: unknown) => u is V, 
+//   ): (tree: T) => T
+//   <T extends has.path<KS>, S extends get<T, KS>>(modifyFn: (prev: S) => S): (tree: T) => T
+//   <T extends has.path<KS>, S extends get<T, KS>, V>(
+//     modifyFn: (prev: S) => S,
+//     guard?: (u: unknown) => u is V, 
+//   ): (tree: T) => T
+// }
+
+export function modify(
+  ...args: 
+    | [...keys.any]
+    | [...keys.any, (u: any) => u is unknown]
+) {
+  const [path, guard] = separatePath(args)
+  return (mod: (prev: unknown) => unknown) => (tree: {}) =>  {
     return !path.length ? tree : fn.pipe(
       get(tree, ...path),
-      mod,
-      set(...path)(tree),
+      Option.guard(guard),
+      Option.map(
+        fn.flow(
+          mod,
+          set(...path)(tree),
+        )
+      ),
+      Option.getOrElse(() => tree)
     )
   }
 }
+
+
+//   const [path, guard] = separatePath(args)
+//   console.log("path", get({ a: { b: { c: 123 } } }, "a", "b", "c"))
+//   return (modifyFn: (prev: _) => _) => (tree: {}) => {
+//     // console.log("tree.components", Object.keys(tree.components.schemas).length)
+//     // console.log("get(tree, ...path)", Object.keys(get(tree, ...path)).length)
+
+//     // console.log("get(tree, ...path), path: ", path, "GO:", get(tree, ...path))
+
+//     return path.length === 0 ? tree : fn.pipe(
+//       get(tree, ...path),
+//       modifyFn,
+//       set(...path)(path),
+//       // Option.fromPredicate(guard),
+//       // Option.map(
+//       //   fn.flow(
+//       //     modifyFn, 
+//       //     set(...path)(path)
+//       //   )
+//       // ),
+//       // fn.tap("after"),
+//       // Option.getOrElse(() => tree),
+//     )
+//   }
+// }
+
+// export function modify(...path: [...props.any]) {
+//   return (tree: {}) =>  (mod: (prev: unknown) => unknown) => {
+//     return !path.length ? tree : fn.pipe(
+//       get(tree, ...path),
+//       mod,
+//       set(...path)(tree),
+//     )
+//   }
+// }
 
 type pathToString<KS extends props.any, Out extends string> 
   = KS extends nonempty.props<infer H, infer T> 

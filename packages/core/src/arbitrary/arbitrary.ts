@@ -24,10 +24,22 @@ import type { HKT } from "@traversable/registry"
 const PATTERN = {
   alphanumeric: /^[a-zA-Z][a-zA-Z0-9]+$/,
   identifier: /^[$_a-zA-Z][$_a-zA-Z0-9]*$/,
-  identifier_legacy: /^[a-z$_][a-z$_0-9]*$/,
+  identifier_legacy: /^[a-z$_][a-z$_0-9]*$/g,
   pathnameEZ: /^[_a-zA-Z][_a-zA-Z0-9]+$/,
   pathname: /^[a-zA-Z0-9._-]+$/,
 } as const
+
+type Keyword = keyof typeof KEYWORDS
+const KEYWORDS = {
+  break: "break", case: "case", catch: "catch", class: "class", const: "const", 
+  continue: "continue", debugger: "debugger", default: "default", delete: "delete", 
+  do: "do", else: "else", export: "export", extends: "extends", false: "false", 
+  finally: "finally", for: "for", function: "function", if: "if", import: "import", 
+  in: "in", instanceof: "instanceof", new: "new", null: "null", return: "return", 
+  super: "super", switch: "switch", this: "this", throw: "throw", true: "true", 
+  try: "try", typeof: "typeof", var: "var", void: "void", while: "while", 
+  with: "with", let: "let", static: "static", yield: "yield",
+} as const satisfies Record<string, string>
 
 export { isArbitrary as is }
 const isArbitrary = <T>(u: unknown): u is fc.Arbitrary<T> => 
@@ -796,7 +808,7 @@ export function stringNumeric(constraints?: fc.FloatConstraints) {
 /**
  * ### {@link identifier `fc.identifier`}
  * 
- * Generates a string that matches:
+ * Generates a string that satisfies:
  * 
  * > `/^[$_a-zA-Z][$_a-zA-Z0-9]*$/`
  *
@@ -807,7 +819,7 @@ export function stringNumeric(constraints?: fc.FloatConstraints) {
  */
 export function identifier(constraints?: fc.StringMatchingConstraints): fc.Arbitrary<string>
 export function identifier(constraints?: fc.StringMatchingConstraints) {
-  return fc.stringMatching(PATTERN.identifier_legacy, constraints)
+  return fc.stringMatching(PATTERN.identifier, constraints).filter((ident) => !(ident in KEYWORDS))
 }
 
 /**
