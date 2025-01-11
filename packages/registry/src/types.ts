@@ -19,33 +19,33 @@ export interface Dict<T = unknown, K extends keyof any = string> extends newtype
 export type Consumes<T> = T extends (_: infer I) => unknown ? I : never
 export type Produces<T> = T extends (_: never) => infer O ? O : never
 export type Returns<T> = T extends (..._: any) => infer O ? O : T
-export type Partial<T, Depth extends keyof Partial.depth = never> 
-  = Depth extends 1 ? Partial1<T>
-  : Depth extends 2 ? Partial2<T>
-  : PartialRec<T, [], Partial.depth[Depth]>
-
+export type Partial<T> = never | { [K in keyof T]+?: T[K] }
+// export type Partial<T, Depth extends keyof Partial.depth = never>
+//   = Depth extends 1 ? Partial1<T>
+//   : Depth extends 2 ? Partial2<T>
+//
+//   : PartialRec<T, [], Partial.depth[Depth]>
 /** @internal */
-type PartialRec<T, Depth extends 1[], MaxDepth extends unknown[]>
-  = [Depth["length"]] extends [MaxDepth["length"]] ? T
-  : { [K in keyof T]: PartialRec<T[K], [...Depth, 1], MaxDepth> }
-  ;
-type Partial1<T> = never | { [K in keyof T]+?: T[K] }
-type Partial2<T> = { [K in keyof T]+?: Partial1<T[K]> }
-
-export declare namespace Partial {
-  interface depth {
-    [0]: [],
-    [1]: [1],
-    [2]: [1, 1],
-    [3]: [1, 1, 1],
-    [4]: [1, 1, 1, 1],
-    [5]: [1, 1, 1, 1, 1],
-    [6]: [1, 1, 1, 1, 1, 1],
-    [7]: [1, 1, 1, 1, 1, 1, 1],
-    [8]: [1, 1, 1, 1, 1, 1, 1, 1],
-    [9]: [1, 1, 1, 1, 1, 1, 1, 1, 1],
-  }
-}
+// type PartialRec<T, Depth extends 1[], MaxDepth extends unknown[]>
+//   = [Depth["length"]] extends [MaxDepth["length"]] ? T
+//   : { [K in keyof T]: PartialRec<T[K], [...Depth, 1], MaxDepth> }
+//   ;
+// type Partial1<T> = never | { [K in keyof T]+?: T[K] }
+// type Partial2<T> = { [K in keyof T]+?: Partial1<T[K]> }
+// export declare namespace Partial {
+//   interface depth {
+//     [0]: [],
+//     [1]: [1],
+//     [2]: [1, 1],
+//     [3]: [1, 1, 1],
+//     [4]: [1, 1, 1, 1],
+//     [5]: [1, 1, 1, 1, 1],
+//     [6]: [1, 1, 1, 1, 1, 1],
+//     [7]: [1, 1, 1, 1, 1, 1, 1],
+//     [8]: [1, 1, 1, 1, 1, 1, 1, 1],
+//     [9]: [1, 1, 1, 1, 1, 1, 1, 1, 1],
+//   }
+// }
 
 export type Required<T> = never | { -readonly [K in keyof T]-?: T[K] }
 export type KeepFirst<S, T> = never | KeepLast<T, S>
@@ -203,26 +203,31 @@ export declare namespace HKT {
   export type unapply<F extends HKT> = F extends HKT & infer T ? T : never
   export type product<F extends HKT, T> = Kind<F, [F, T]>
   export type sum<F extends HKT, T> = Kind<F, Either<F, T>>
-  export interface ap<T> extends HKT<HKT> { [-1]: apply_<this[0], T> }
+  export interface ap<T> extends HKT<HKT> {
+    [-1]: apply_<this[0], T>
+  }
 }
 
-/** 
+/**
  * @example
  * // Haskell:
  * newtype Fix f = Fix { unFix :: f (Fix f) }
  */
-interface Fix<F extends HKT = HKT> { unFix: Kind<F, Kind<F>> }
-type Unfix<F extends Fix> = F["unFix"]
+export interface Fix<F extends HKT = HKT> {
+  unFix: Kind<F, Kind<F>>
+}
+export type Unfix<F extends Fix> = F["unFix"]
 
-export interface Typeclass<F extends HKT, _F = any> 
-  { readonly [symbol.typeclass]?: 1 extends _F & 0 ? F : Extract<_F, HKT> }
+export interface Typeclass<F extends HKT, _F = any> {
+  readonly [symbol.typeclass]?: 1 extends _F & 0 ? F : Extract<_F, HKT>
+}
 
 /**
  * ## {@link Functor `Functor`}
  */
-export interface Functor<F extends HKT = HKT, _F = any> extends Typeclass<F, _> { 
-  map<S, T>(f: (s: S) => T): (F: Kind<F, S>) => Kind<F, T> 
-  // map<S, T>(F: Kind<F, S>, f: (s: S) => T): Kind<F, T> 
+export interface Functor<F extends HKT = HKT, _F = any> extends Typeclass<F, _> {
+  map<S, T>(f: (s: S) => T): (F: Kind<F, S>) => Kind<F, T>
+  // map<S, T>(F: Kind<F, S>, f: (s: S) => T): Kind<F, T>
 }
 
 export interface IndexedFunctor<Ix, F extends HKT = HKT, _F = any> extends Functor<F, _F> {
@@ -233,51 +238,51 @@ export interface IndexedFunctor<Ix, F extends HKT = HKT, _F = any> extends Funct
  * ## {@link Attr `Attr`}
  * Annotates a recursive type-level operation by introducing an intermediate
  * structure between recursive calls.
- * 
+ *
  * **Note:** This is more powerful than it might seem at first blush.
- * 
- * By simply "decorating" successive applications of {@link F `F`} with 
- * {@link attribute `attribute`}, we've created a data structure that is 
+ *
+ * By simply "decorating" successive applications of {@link F `F`} with
+ * {@link attribute `attribute`}, we've created a data structure that is
  * __isomorphic__ to the call stack.
- * 
- * In other words, by adding a thin layer of indirection, 
+ *
+ * In other words, by adding a thin layer of indirection,
  * we've created a lightweight, type-level data structure
  * that __automatically preserves the full history of recursion__.
- * 
- * I've often played with idea of putting some scaffolding on top of 
+ *
+ * I've often played with idea of putting some scaffolding on top of
  * {@link Attr `Attr`} to give users a way to debug things when they're
  * creating recursive types, but I'll leave that to someone with a more
- * motivating use case. 
- * 
+ * motivating use case.
+ *
  * If you do, I'd love to see what you come up with! You can reach me at:
- * 
+ *
  * > _ahrjarrett at gmail dot com_
- * 
+ *
  * Prior art:
- * - Patrick Thomson's 
+ * - Patrick Thomson's
  * [excellent series](https://blog.sumtypeofway.com/posts/recursion-schemes-part-4.html)
  * on recursion schemes
- * 
+ *
  * @example
  * import type { Attr } from "@traversable/registry"
- * 
+ *
  * interface Null extends HKT { [-1]: undefined }
  * interface Cons<T> extends HKT { [-1]: [T, this[0]] }
  * type List<T> = Null | Cons<T>
- * 
+ *
  * declare const debug: Attr<List<number>, "my favorite node">
  * //            ^? const debug: Attr<List<number>, "my favorite node">
- * 
+ *
  * debug.hole
  * //     ^? (property) hole: [number, Attr<List<number>, "my favorite node">] | undefined
- * 
+ *
  * debug.attribute
  * //     ^? (property) attribute: [number, Attr<List<number>, string>] | undefined
- * 
+ *
  * debug.hole?.[1].hole?.[1].hole?.[1].hole /// ...
  * // loop through successive applications by repeated access of `hole`
  */
-interface Attr<F extends HKT, T> { 
+interface Attr<F extends HKT, T> {
   attribute: T
   hole: Kind<F, Attr<F, T>>
 }
@@ -290,14 +295,7 @@ type CVAlgebra<F extends HKT, T> = (F: Kind<F, Attr<F, T>>) => T
 type IxAlgebra<Ix, F extends HKT, T> = never | { (ix: Ix, term: Kind<F, T>): T }
 
 export declare namespace Functor {
-  export {
-    Algebra,
-    Coalgebra,
-    RAlgebra,
-    RCoalgebra,
-    CVAlgebra,
-    IxAlgebra,
-  }
+  export { Algebra, Coalgebra, RAlgebra, RCoalgebra, CVAlgebra, IxAlgebra }
   export type infer<T> = T extends Functor<any, infer F> ? Exclude<F, undefined> : never
 }
 export declare namespace Functor {
@@ -308,9 +306,9 @@ export declare namespace Functor {
         <S, T>(f: (s: S) => T): { (F: Kind<F, S>): Kind<F, T> }
       }
 
-  interface Invariant<F extends HKT = HKT> { 
-    imap<A, B>(F: Kind<F, A>, to: (a: A) => B, from: (b: B) => A): Kind<F, B> 
-    imap<A, B>(to: (a: A) => B, from: (b: B) => A): (F: Kind<F, A>) => Kind<F, B>;
+  interface Invariant<F extends HKT = HKT> {
+    imap<A, B>(F: Kind<F, A>, to: (a: A) => B, from: (b: B) => A): Kind<F, B>
+    imap<A, B>(to: (a: A) => B, from: (b: B) => A): (F: Kind<F, A>) => Kind<F, B>
   }
 
   interface Covariant<F extends HKT = HKT> {
@@ -325,15 +323,18 @@ export interface Product<F extends HKT = HKT> {
   productSeq<A>(F: A, xs: Iterable<A>): [A, ...A[]]
 }
 
-export interface Applicative<F extends HKT> extends
-  Typeclass<F>,
-  Functor.Covariant<F>, 
-  Functor.Invariant<F>,
-  Product<F> 
-  { of<A>(a: A): A }
+export interface Applicative<F extends HKT>
+  extends Typeclass<F>,
+    Functor.Covariant<F>,
+    Functor.Invariant<F>,
+    Product<F> {
+  of<A>(a: A): A
+}
 
 export interface Traversable<T extends HKT> extends Typeclass<T> {
-  traverse<F extends HKT>(F: Applicative<F>): {
+  traverse<F extends HKT>(
+    F: Applicative<F>,
+  ): {
     <A, B>(f: (a: A) => Kind<F, B>): (traversable: Kind<T, A>) => Kind<F, Kind<T, B>>
     <A, B>(traversable: Kind<T, A>, f: (a: A) => Kind<F, B>): Kind<F, Kind<T, B>>
   }
@@ -502,7 +503,6 @@ export interface Fold<F extends HKT, T, S> {
   (fixed: Fix<F>): T
 }
 
-
 /**
  * ## {@link Guard `Guard`}
  *
@@ -621,12 +621,11 @@ export type Merge<S, T> = never | Force<Spread<S, T>>
 
 /**
  * ### {@link Part `Part`}
- * 
+ *
  * Dual of {@link Keep `Keep`}
  */
-export type Part<T, K extends keyof T> = Force<
-  & { [P in K]+?: T[P] }
-  & { [P in keyof T as Exclude<P, K>]-?: T[P] }
+export type Part<T, K extends keyof T = keyof T> = Force<
+  { [P in K]+?: T[P] } & { [P in keyof T as Exclude<P, K>]-?: T[P] }
 >
 
 // export type Part<T, K extends keyof T = never> = [K] extends [never]
@@ -639,56 +638,54 @@ export type Require<T, K extends keyof T = never> = [K] extends [never]
 
 /**
  * ### {@link Requiring `Requiring`}
- * 
- * Dual of {@link Part `Part`}. Makes the keys in {@link K `K`} 
+ *
+ * Dual of {@link Part `Part`}. Makes the keys in {@link K `K`}
  * required, and makes all other keys in {@link T `T`} optional.
- * 
+ *
  * Mapping is homomorphic, so this operation is structure-preserving
  * in every other respect.
- * 
+ *
  * @example
  * import type { Requiring } from "@traversable/registry"
- * 
- * declare const ex_01: { 
+ *
+ * declare const ex_01: {
  *   /\** # {@link _.a `_.a`} *\/
- *   a: 1, 
+ *   a: 1,
  *   /\** # {@link _.b `_.b`} *\/
- *   b?: 2, 
+ *   b?: 2,
  *   /\** # {@link _.c `_.c`} *\/
- *   c?: 3 | undefined, 
+ *   c?: 3 | undefined,
  *   /\** # {@link _.d `_.d`} *\/
- *   d: undefined, 
+ *   d: undefined,
  *   /\** # {@link _.e `_.e`} *\/
- *   e: 4 | undefined 
+ *   e: 4 | undefined
  * }
- * 
+ *
  * declare const ex_02: Requiring<typeof ex_01, "a" | "b" | "d" | "e">
- * 
+ *
  * ex_02.b
  * //    ^? hover to see JSDocs for `ex_02.b`
- * 
+ *
  * ex_02.c
  * //    ^? hover to see JSDocs for `ex_02.c`
  */
 export type Requiring<T, K extends keyof T> = Force<
-  & { [P in K]-?: T[P] }
-  & { [P in keyof T as Exclude<P, K>]+?: T[P] }
+  { [P in K]-?: T[P] } & { [P in keyof T as Exclude<P, K>]+?: T[P] }
 >
 
-declare const ex_01: { 
+declare const ex_01: {
   /** # {@link ex_01.a `ex_01.a`} docs for `ex_01.a` */
-  a?: 1, 
+  a?: 1
   /** # {@link ex_01.b `ex_01.b`} docs for `ex_01.b` */
-  b?: 2, 
+  b?: 2
   /** # {@link ex_01.c `ex_01.c`} docs for `ex_01.c` */
-  c?: 3 | undefined, 
+  c?: 3 | undefined
   /** # {@link ex_01.d `ex_01.d`} docs for `ex_01.d` */
-  d: undefined, 
+  d: undefined
   /** # {@link ex_01.e `ex_01.e`} docs for `ex_01.e` */
-  e?: 4 | undefined 
+  e?: 4 | undefined
 }
 declare const ex_02: Requiring<typeof ex_01, "a" | "b" | "d" | "e">
-
 
 export type Optional<T, K extends keyof T = keyof T> = never | { [P in K]+?: T[P] }
 
@@ -908,9 +905,9 @@ export interface Monoid<in out T> extends Semigroup<T> {
 export type Open<
   T extends {},
   Base,
-  _ extends 
-  | Force<T & Required<globalThis.Omit<Base, keyof T>>> 
-  = Force<T & Required<globalThis.Omit<Base, keyof T>>>,
+  _ extends Force<T & Required<globalThis.Omit<Base, keyof T>>> = Force<
+    T & Required<globalThis.Omit<Base, keyof T>>
+  >,
 > = never | OpenRecord<_>
 
 export interface OpenRecord<T extends {}> extends newtype<T> {}
@@ -955,7 +952,9 @@ export declare namespace Open {
     T extends {},
     Base,
     F extends HKT,
-    _ extends Force<T & Required<globalThis.Omit<Base, keyof T>>> = Force<T & Required<globalThis.Omit<Base, keyof T>>>,
+    _ extends Force<T & Required<globalThis.Omit<Base, keyof T>>> = Force<
+      T & Required<globalThis.Omit<Base, keyof T>>
+    >,
   > = Kind<F, _>
   interface Record<T extends {}> extends newtype<T> {}
 }

@@ -108,7 +108,11 @@ vi.describe(`〖⛳️〗‹‹‹ ❲@traversable/core❳`, () => {
 
 
 vi.describe("@traversable/core", () => 
-  test.prop([openapi.Schema.any()], {})(
+  test.prop([openapi.Schema.any()], {
+    examples: [
+      // [{ allOf: [{}] }]
+    ]
+  })(
     "openapi.Schema.any", 
     (schema) => vi.assert.isTrue(openapi.Schema.is(schema))
   )

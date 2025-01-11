@@ -28,6 +28,7 @@ export const defaults = {
   document: openapi.doc<openapi.doc>({
     openapi: "3.1.0",
     paths: {},
+    components: { schemas: {} },
     info: { title: "Untitled", version: "0.0.0" },
   }),
   /**
@@ -64,7 +65,7 @@ namespace RAlgebra {
   export function validator($: Options = defaults): Functor.RAlgebra<Traversable.lambda, Stream> {
     return (n) => {
       switch (true) {
-        case Traversable.is.enum(n): return { go: (path) => "" }
+        case Traversable.is.enum(n): return { go: () => "" }
         case Traversable.is.null(n): return { go: (path) => `if(${path.join("")}!==null)return false;` }
         case Traversable.is.boolean(n): return {
           go: (path, _, req) =>

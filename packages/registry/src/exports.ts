@@ -6,7 +6,6 @@ export { PATTERN } from "./pattern.js"
 export { URI, symbol } from "./symbol.js"
 
 export type * from "./types.js"
-export { Fix } from "./types.js"
 
 export * as KnownFormat from "./format.js"
 

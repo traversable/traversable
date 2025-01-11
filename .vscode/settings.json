@@ -3,6 +3,7 @@
   "typescript.preferences.importModuleSpecifier": "non-relative",
   // "typescript.preferences.autoImportSpecifierExcludeRegexes": [],
   "typescript.enablePromptUseWorkspaceTsdk": true,
+  "typescript.experimental.expandableHover": true,
   "typescript.updateImportsOnFileMove.enabled": "never",
   "typescript.tsserver.log": "off",
   "typescript.suggest.completeFunctionCalls": false,

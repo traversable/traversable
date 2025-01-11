@@ -88,7 +88,8 @@
       "packages/data/**/*",
       "packages/http/**/*",
       "packages/openapi/**/*",
-      "packages/algebra/**/*"
+      "packages/algebra/**/*",
+      "packages/registrt/**/*"
     ],
     "include": ["packages/*/src/**/*.ts"],
     "formatWithErrors": false,

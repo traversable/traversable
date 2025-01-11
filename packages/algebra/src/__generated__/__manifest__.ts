@@ -55,6 +55,8 @@ export default {
     "@traversable/http": "workspace:^",
     "@traversable/openapi": "workspace:^",
     "@traversable/registry": "workspace:^",
-    "arktype": "2.0.0-rc.30"
+    "arktype": "2.0.0-rc.30",
+    "chokidar": "^4.0.3",
+    "zod": "^3.24.1"
   }
 } as const

@@ -1,6 +1,6 @@
 import { core, fc, tree } from "@traversable/core"
-import { type record as Record, fn, type keys, object } from "@traversable/data"
-import type { Partial } from "@traversable/registry"
+import { type record as Record, type keys, object } from "@traversable/data"
+import type { Intersect } from "@traversable/registry"
 import { type Schema, type arbitrary, format } from "../types.js"
 
 import type * as t from "../types.js"
@@ -40,34 +40,6 @@ export {
   Schema_kinds as kinds,
 } from "../types.js"
 
-
-// export function is(u: unknown): u is Schema { return t.Schema_is(u) }
-
-/// scalars
-// is.null = t.Schema_isNull
-// is.boolean = t.Schema_isBoolean
-// is.integer = t.Schema_isInteger
-// is.number = t.Schema_isNumber
-// is.string = t.Schema_isString
-// is.scalar = t.Schema_isScalar
-// /// composites
-// is.array = t.Schema_isArray
-// is.tuple = t.Schema_isTuple
-// is.record = t.Schema_isRecord
-// is.object = t.Schema_isObject
-// /// combinators
-// is.anyOf = t.Schema_isAnyOf
-// is.allOf = t.Schema_isAllOf
-// is.oneOf = t.Schema_isOneOf
-// is.combinator = t.Schema_isCombinator
-// /// special cases
-// is.$ref = t.Schema_isRef
-
-
-/** @internal */
-const Object_fromEntries = globalThis.Object.fromEntries
-/** @internal */
-const NEGATIVE_INFINITY = globalThis.Number.NEGATIVE_INFINITY
 /** @internal */
 const Number_NaN = globalThis.Number.NaN
 /** @internal */
@@ -78,16 +50,22 @@ const Math_min = globalThis.Math.min
 const Math_max = globalThis.Math.max
 /** @internal */
 const Math_abs = globalThis.Math.abs
+/** @internal */
+const Object_keys = globalThis.Object.keys
+/** @internal */
+const Object_fromEntries = globalThis.Object.fromEntries
 
 /** @internal */
-function typed<T extends string>(type: T): { type: fc.Arbitrary<T> }
-function typed<T extends string, S extends Record.of<fc.Arbitrary.any>>(type: T, shape?: S): S & { type: fc.Arbitrary<T> }
+function typed<T extends string>(type: T): 
+  { type: fc.Arbitrary<T> }
+function typed<T extends string, S extends Record.of<fc.Arbitrary.any>>
+  (type: T, shape?: S): S & { type: fc.Arbitrary<T> }
 function typed(type: string, shape = {}) /// impl.
   { return { ...shape, /* ...base, */ type: fc.constant(type) } }
 
 // TODO: move
-export function keysMeet(lks: keys.any, rks: keys.any) {
-  return lks.some((lk) => rks.includes(lk)) || rks.some((rk) => lks.includes(rk))
+export function keyMeet(lhk: keys.any, rhk: keys.any) {
+  return lhk.some((l) => rhk.includes(l)) || rhk.some((r) => lhk.includes(r))
 }
 
 /** 
@@ -126,7 +104,7 @@ export function keysMeet(lks: keys.any, rks: keys.any) {
 function optionally<const T extends readonly unknown[]>(maybeArray?: T | boolean): T | []
 function optionally<const T extends { [x: string]: unknown }>(maybeObject?: T | boolean): { [K in keyof T]+?: T[K] } 
 function optionally<const T extends { [x: string]: unknown }>(_?: T) {
-  return !_ ? [] : !_[globalThis.Object.keys(_)[0]] ? [] : _
+  return !_ ? [] : !_[Object_keys(_)[0]] ? [] : _
 }
 
 namespace Bounded {
@@ -149,61 +127,77 @@ namespace Bounded {
       : Number_NaN
 }
 
-export { null_ as null }
-type null_ = t.Schema_null
-null_.defaults = {} satisfies null_.Constraints
-null_.requiredKeys = ["type"] as const satisfies string[]
-declare namespace null_ {
-  interface Constraints<T = unknown> extends Partial<Constraints.Base> {
+
+//////////////////
+///    NULL    ///
+export { Schema_null as null }
+type Schema_null = t.Schema_null
+Schema_null.defaults = {} satisfies Schema_null.Constraints
+Schema_null.requiredKeys = ["type"] as const satisfies string[]
+declare namespace Schema_null {
+  interface Constraints<T = unknown> extends globalThis.Partial<Constraints.Base> {
     requiredKeys?: (keyof T)[]
   }
 }
-
+///
 /** 
- * ## {@link null_ `schema.null`}
+ * ## {@link Schema_null `openapi.Schema.null`}
+ * 
+ * An opinionated, pseudo-random JSON Schema / OpenAPI generator for "null" nodes.
  */
-function null_(_constraints?: Constraints): fc.Arbitrary<null_> {
+function Schema_null(_constraints?: Constraints): fc.Arbitrary<Schema_null> {
   return fc.record(
     typed(
       DataType.null, { 
         enum: fc.constant([null]),
         nullable: fc.constant(true),
-        // nululable: 
       }
     ), 
-    { requiredKeys: null_.requiredKeys }
+    { requiredKeys: Schema_null.requiredKeys }
   )
 }
+///    NULL    ///
+//////////////////
 
-export { boolean_ as boolean }
-type boolean_ = t.Schema_boolean
-boolean_.defaults = {} satisfies boolean_.Constraints
-boolean_.requiredKeys = ["type"] as const satisfies string[]
-boolean_.static = {}
 
+/////////////////////
+///    BOOLEAN    ///
+export { Schema_boolean as boolean }
+type Schema_boolean = t.Schema_boolean
+Schema_boolean.defaults = {} satisfies Schema_boolean.Constraints
+Schema_boolean.requiredKeys = ["type"] as const satisfies string[]
+Schema_boolean.static = {}
+///
 /** 
- * ## {@link boolean_ `Schema.boolean`}
+ * ## {@link Schema_boolean `openapi.Schema.boolean`}
+ * 
+ * An opinionated, pseudo-random JSON Schema / OpenAPI generator for boolean nodes.
  */
-function boolean_(_constraints?: Constraints): fc.Arbitrary<t.Schema_boolean> {
+function Schema_boolean(_constraints?: Constraints): fc.Arbitrary<t.Schema_boolean> {
   return fc.record(
     typed(
       DataType.boolean, 
-      boolean_.static,
+      Schema_boolean.static,
     ),
-    { requiredKeys: boolean_.requiredKeys },
+    { requiredKeys: Schema_boolean.requiredKeys },
   )
 }
-
-declare namespace boolean_ {
-  interface Constraints<T = unknown> extends Partial<Constraints.Base> {
+///
+declare namespace Schema_boolean {
+  interface Constraints<T = unknown> extends globalThis.Partial<Constraints.Base> {
     requiredKeys?: (keyof T)[]
   }
 }
+///    BOOLEAN    ///
+/////////////////////
 
-export { integer }
-type integer = t.Schema_integer
-integer.defaults = {} satisfies integer.Constraints
-integer.static = {
+
+/////////////////////
+///    INTEGER    ///
+export { Schema_integer as integer }
+type Schema_integer = t.Schema_integer
+Schema_integer.defaults = {} satisfies Schema_integer.Constraints
+Schema_integer.static = {
   format: fc.oneof(format.integer, format.any),
   minimum: fc.integer(),
   maximum: fc.integer(),
@@ -211,18 +205,21 @@ integer.static = {
   exclusiveMaximum: fc.boolean(),
   multipleOf: fc.nat(),
 }
-integer.requiredKeys = ["type"] as const satisfies string[]
-
+Schema_integer.requiredKeys = ["type"] as const satisfies string[]
+///
 /** 
- * ## {@link integer `Schema.integer`}
+ * ## {@link Schema_integer `openapi.Schema.integer`}
+ * 
+ * An opinionated, pseudo-random JSON Schema / OpenAPI generator for "integer"
+ * (non-floating point, numeric) nodes.
  */
-function integer(_constraints?: Constraints): fc.Arbitrary<t.Schema_integer> {
+function Schema_integer(_constraints?: Constraints): fc.Arbitrary<t.Schema_integer> {
   return fc.record(
     typed(
       DataType.integer, 
-      integer.static,
+      Schema_integer.static,
     ), 
-    { requiredKeys: integer.requiredKeys },
+    { requiredKeys: Schema_integer.requiredKeys },
   ).map(({ type, format, minimum, maximum, multipleOf, exclusiveMinimum, exclusiveMaximum, ...node }) => ({
     type,
     format,
@@ -234,59 +231,115 @@ function integer(_constraints?: Constraints): fc.Arbitrary<t.Schema_integer> {
     ...node,
   }))
 }
-
-declare namespace integer {
-  interface Constraints<T = unknown> extends Partial<Constraints.Base> {
+///
+declare namespace Schema_integer {
+  interface Constraints<T = unknown> extends globalThis.Partial<Constraints.Base> {
     requiredKeys?: (keyof T)[]
   }
 }
-
-export { number_ as number}
-interface number_ extends t.Schema_number {}
-number_.defaults = {}
-number_.static = {}
-number_.requiredKeys = ["type"] as const satisfies string[]
+///    INTEGER    ///
+/////////////////////
 
 
+////////////////////
+///    NUMBER    ///
+export { Schema_number as number}
+interface Schema_number extends t.Schema_number {}
+Schema_number.defaults = {}
+Schema_number.static = {}
+Schema_number.requiredKeys = ["type"] as const satisfies string[]
+///
 /** 
- * ## {@link number_ `schema.number`}
+ * ## {@link Schema_number `openapi.Schema.number`}
+ * 
+ * An opinionated, pseudo-random JSON Schema / OpenAPI generator for "number"
+ * (inclusive of all numerical) nodes.
  */
-function number_(_constraints?: Constraints): fc.Arbitrary<t.Schema_number> { 
+function Schema_number(_constraints?: Constraints): fc.Arbitrary<t.Schema_number> { 
   return fc.record(
     typed(
       DataType.number,
-      number_.static,
+      Schema_number.static,
     ), 
-    { requiredKeys: number_.requiredKeys },
+    { requiredKeys: Schema_number.requiredKeys },
   )
 }
-
-export declare namespace number_ {
-  export interface Constraints<T = unknown> extends Partial<Constraints.Base> {
+///
+export declare namespace Schema_number {
+  export interface Constraints<T = unknown> extends globalThis.Partial<Constraints.Base> {
     requiredKeys?: (keyof T)[]
   }
 }
+///    NUMBER    ///
+////////////////////
 
 
-export function email(constraints: Constraints = Constraints.defaults) {
+////////////////////
+///    STRING    ///
+export { Schema_string as string }
+interface Schema_string extends t.Schema_string {}
+Schema_string.defaults = {} satisfies Schema_string.Constraints
+Schema_string.format = (constraints: Constraints = Constraints.defaults) => fc.oneof(
+  fc.record(date(constraints), { requiredKeys: [] }),
+  fc.record(datetime(constraints), { requiredKeys: [] }),
+  fc.record(email(constraints), { requiredKeys: [] }),
+  fc.record(ulid(constraints), { requiredKeys: [] }),
+  fc.record(uuid(constraints), { requiredKeys: [] }),
+  fc.record(uri(constraints), { requiredKeys: [] }),
+)
+Schema_string.static = {
+  minLength: fc.nat(),
+  maxLength: fc.nat(),
+  pattern: fc.string(),
+}
+Schema_string.requiredKeys = ["type"] as const satisfies string[]
+declare namespace Schema_string {
+  interface Constraints<T = unknown> extends globalThis.Partial<Constraints.Base> {
+    requiredKeys?: (keyof T)[]
+  }
+}
+///
+/** 
+ * ## {@link Schema_string `openapi.Schema.string`}
+ * 
+ * An opinionated, pseudo-random JSON Schema / OpenAPI generator for "record"
+ * (non-finite, object) nodes.
+ */
+function Schema_string(constraints?: Constraints): fc.Arbitrary<t.Schema_string> {
+  return fc
+    .tuple(
+      Schema_string.format(constraints),
+      fc.record({
+        type: fc.constant(DataType.string),
+        ...Schema_string.static,
+        ...constraints?.base.include.example && { example: fc.lorem() },
+        ...constraints?.base.include.description && { description: fc.lorem() },
+      },
+      { requiredKeys: ["type"] }),
+    )
+    .map(([format, { example, ...body }]) => ({
+      ...format,
+      ...body,
+      ...optionally({ example: format.example ?? example }),
+    })
+  )
+}
+/** @internal */
+const RFC_3339 = fc.date({ noInvalidDate: true }).map((d) => d.toISOString())
+///
+export function datetime(constraints: Constraints = Constraints.defaults) {
   return {
-    format: fc.constant("string"),
-    ...(constraints.base.include?.example && { example: fc.emailAddress() }),
-  } satisfies Record<string, fc.Arbitrary<unknown>>
+    format: fc.constant("date-time"),
+    ...(constraints.base.include?.example && {
+      example: RFC_3339,
+    }),
+  }
 }
 export function date(constraints: Constraints = Constraints.defaults) {
   return {
     format: fc.constant("date"),
     ...(constraints.base.include?.example && {
-      example: fc.date({ noInvalidDate: true }).map((d) => d.toISOString().substring(0, 10)),
-    }),
-  }
-}
-export function datetime(constraints: Constraints = Constraints.defaults) {
-  return {
-    format: fc.constant("datetime"),
-    ...(constraints.base.include?.example && {
-      example: fc.date({ noInvalidDate: true }).map((d) => d.toISOString()),
+      example: RFC_3339.map((ds) => ds.substring(0, 10)),
     }),
   }
 }
@@ -299,7 +352,7 @@ export function uuid(constraints: Constraints = Constraints.defaults) {
 export function ulid(constraints: Constraints = Constraints.defaults) {
   return {
     format: fc.constant("ulid"),
-    ...(constraints.base.include?.example && { example: fc.uuid({ version: 7 }) }),
+    ...(constraints.base.include?.example && { example: fc.ulid() }),
   }
 }
 export function uri(constraints: Constraints = Constraints.defaults) {
@@ -310,258 +363,215 @@ export function uri(constraints: Constraints = Constraints.defaults) {
     }),
   }
 }
-
-export { string_ as string }
-interface string_ extends t.Schema_string {}
-string_.defaults = {} satisfies string_.Constraints
-string_.format = (constraints: Constraints = Constraints.defaults) => fc.oneof(
-  fc.record(date(constraints), { requiredKeys: [] }),
-  fc.record(datetime(constraints), { requiredKeys: [] }),
-  fc.record(email(constraints), { requiredKeys: [] }),
-  fc.record(ulid(constraints), { requiredKeys: [] }),
-  fc.record(uuid(constraints), { requiredKeys: [] }),
-  fc.record(uri(constraints), { requiredKeys: [] }),
-)
-string_.static = {
-  minLength: fc.nat(),
-  maxLength: fc.nat(),
-  pattern: fc.string(),
+export function email(constraints: Constraints = Constraints.defaults) {
+  return {
+    format: fc.constant("string"),
+    ...(constraints.base.include?.example && { example: fc.emailAddress() }),
+  } satisfies Record<string, fc.Arbitrary<unknown>>
 }
-string_.requiredKeys = ["type"] as const satisfies string[]
-declare namespace string_ {
-  interface Constraints<T = unknown> extends Partial<Constraints.Base> {
-    requiredKeys?: (keyof T)[]
-  }
-}
+///    STRING    ///
+////////////////////
 
+
+////////////////////
+///    RECORD    ///
+export { Schema_record as record }
+interface Schema_record<T = unknown> extends t.Schema_record<T> {}
 /** 
- * ## {@link string_ `schema.string`}
+ * ## {@link Schema_record `openapi.Schema.record`}
+ * 
+ * An opinionated, pseudo-random JSON Schema / OpenAPI generator for "record"
+ * (non-finite, object) nodes.
  */
-function string_(constraints?: Constraints): fc.Arbitrary<t.Schema_string> {
-  return fc
-    .tuple(
-      string_.format(constraints),
-      fc.record(
-        {
-          type: fc.constant(DataType.string),
-          ...string_.static,
-          ...constraints?.base.include.example && { example: fc.lorem() },
-          ...constraints?.base.include.description && { description: fc.lorem() },
-          // ...base
-        },
-        { requiredKeys: ["type"] },
-      ),
-    )
-    .map(([format, { example, ...body }]) => ({
-      ...format,
-      ...body,
-      ...optionally({ example: format.example ?? example }),
-    })
-  )
-}
-
-/** 
- * ## {@link record `schema.record`}
- */
-export interface record<T = unknown> extends t.Schema_record<T> {}
-export function record<T>(
-  model: fc.Arbitrary<T>, 
+function Schema_record<T>(
+  LOOP: fc.Arbitrary<T>, 
   _constraints: Constraints
 ) {
   return fc.record({
     type: fc.constant(DataType.object),
-    additionalProperties: model,
+    additionalProperties: LOOP,
   })
 }
-
-  /*
-  if (model.properties) {
-    return fc.tuple(
-      fc.entries(model.properties, { keys: { excludeSymbols: true } }),
-      model.additionalProperties,
-    ).map(([props, additionalProperties]) => {
-      const properties = Object_fromEntries(props)
-      const required = fc.peek(fc.keysof(properties))
-      return {
-        ...record.static,
-        ...required.length > 0 && { required },
-        additionalProperties,
-        properties,
-      }
-    })
-  }
-  else {
-    return fc.record({
-      type: fc.constant(DataType.object),
-      additionalProperties: model.additionalProperties,
-    })
-  }
-  */
-
-record.defaults = {} satisfies record.Constraints
-record.static = {
-  type: DataType.object,
-}
-export declare namespace record {
-  interface Constraints<T = unknown> extends Partial<Constraints.Base> 
+Schema_record.defaults = {} satisfies Schema_record.Constraints
+declare namespace Schema_record {
+  interface Constraints<T = unknown> extends globalThis.Partial<Constraints.Base> 
     { requiredKeys?: (keyof T)[] }
   interface Model<S, T> { 
     additionalProperties: fc.Arbitrary<T>
     properties?: fc.Arbitrary<S>, 
   }
 }
+///    RECORD    ///
+////////////////////
 
-export { allOf }
-interface allOf<T = unknown> extends t.Schema_allOf<T> {}
 
+////////////////////
+///    ALL OF    ///
+export { Schema_allOf as allOf }
+interface Schema_allOf<T = unknown> extends t.Schema_allOf<T> {}
 /** 
- * ## {@link allOf `schema.allOf`}
+ * ## {@link Schema_allOf `openapi.Schema.allOf`}
+ * 
+ * An opinionated, pseudo-random JSON Schema / OpenAPI generator for the "allOf" combinator.
  */
-function allOf<T>(model: fc.Arbitrary<T>, constraints?: Constraints): fc.Arbitrary<{ allOf: T[] }>
-function allOf<T>(
-  model: fc.Arbitrary<T>, 
+function Schema_allOf<T>(LOOP: fc.Arbitrary<T>, constraints?: Constraints): fc.Arbitrary<{ allOf: readonly T[] }>
+function Schema_allOf<T>(
+  LOOP: fc.Arbitrary<T>, 
   _: Constraints = Constraints.defaults
 ) {
   const $ = Constraints.configure(_).allOf
-  return fc.record({ allOf: allOf.base(model, $.constraints) }, { requiredKeys: ["allOf"] })
+  return fc.record({ allOf: Schema_allOf.base(LOOP, $.constraints) }, { requiredKeys: ["allOf"] })
 }
-
-allOf.defaults = {
+///
+Schema_allOf.defaults = {
   minLength: 1, 
   maxLength: 3,
-  selector: globalThis.Object.keys,
-  comparator: keysMeet,
-} satisfies allOf.Constraints
-allOf.base = <T>(model: fc.Arbitrary<T>, $: allOf.Constraints = allOf.defaults): fc.Arbitrary<T[]> =>
-  fc.uniqueArray(model, { ...allOf.defaults, ...$ })
-allOf.default = <T>(...args: Parameters<typeof allOf.base<T>>): fc.Arbitrary<T[]> => allOf.base(...args)
-declare namespace allOf {
+  selector: Object_keys,
+  comparator: keyMeet,
+} satisfies Schema_allOf.Constraints
+///
+Schema_allOf.base = <T>(LOOP: fc.Arbitrary<T>, $: Schema_allOf.Constraints = Schema_allOf.defaults): fc.Arbitrary<readonly T[]> =>
+  fc.uniqueArray(LOOP, { ...Schema_allOf.defaults, ...$ })
+///
+// TODO: decide how you want to handle intersections -- for now just treating them like arrays of records
+// of the model, to make them easier to reason about
+// Schema_allOf.base = <T>(model: fc.Arbitrary<T>, $: Schema_allOf.Constraints = Schema_allOf.defaults): fc.Arbitrary<T[]> =>
+//   fc.uniqueArray(model, { ...Schema_allOf.defaults, ...$ }).map((xs) => xs.reduce((acc, x) => Object_assign(acc, x), Object_create(null)))
+///
+Schema_allOf.default = <T>(...args: Parameters<typeof Schema_allOf.base<T>>): fc.Arbitrary<readonly T[]> => Schema_allOf.base(...args)
+declare namespace Schema_allOf {
   type Constraints<S = any, T = any> = fc.UniqueArrayConstraintsCustomCompareSelect<S, T>
 }
+///    ALL OF    ///
+////////////////////
 
-export { anyOf }
-interface anyOf<T = unknown> extends t.Schema_anyOf<T> {}
 
+////////////////////
+///    ANY OF    ///
+export { Schema_anyOf as anyOf }
+interface Schema_anyOf<T = unknown> extends t.Schema_anyOf<T> {}
 /** 
- * ## {@link allOf `schema.allOf`}
+ * ## {@link Schema_anyOf `openapi.Schema.anyOf`}
+ * 
+ * An opinionated, pseudo-random JSON Schema / OpenAPI generator for the "anyOf" combinator.
  */
-function anyOf<T>(model: fc.Arbitrary<T>, constraints: Constraints): fc.Arbitrary<{ anyOf: T[] }>
-function anyOf<T>(LOOP: fc.Arbitrary<T>, _: Constraints) {
+function Schema_anyOf<T>(LOOP: fc.Arbitrary<T>, constraints: Constraints): fc.Arbitrary<{ anyOf: T[] }>
+function Schema_anyOf<T>(LOOP: fc.Arbitrary<T>, _: Constraints) {
   const $ = Constraints.configure(_).anyOf
   return fc.record(
-    { anyOf: anyOf.base(LOOP, $.constraints) }, 
+    { anyOf: Schema_anyOf.base(LOOP, $.constraints) }, 
     { requiredKeys: ["anyOf"] }
   )
 }
-anyOf.base = <T>(model: fc.Arbitrary<T>, $: anyOf.Constraints = anyOf.defaults): fc.Arbitrary<T[]> => 
-  fc.uniqueArray(model, { minLength: 1, maxLength: 3, ...$ })
-
-anyOf.defaults = {
+Schema_anyOf.base = <T>(LOOP: fc.Arbitrary<T>, $: Schema_anyOf.Constraints = Schema_anyOf.defaults): fc.Arbitrary<T[]> => 
+  fc.uniqueArray(LOOP, { minLength: 1, maxLength: 3, ...$ })
+///
+Schema_anyOf.defaults = {
   minLength: 1, 
   maxLength: 3,
-} satisfies anyOf.Constraints
-declare namespace anyOf {
+} satisfies Schema_anyOf.Constraints
+declare namespace Schema_anyOf {
   type Constraints<T = unknown, U = unknown> = fc.UniqueArrayConstraints<T, U>
 }
+///    ANY OF    ///
+////////////////////
 
-export { oneOf }
-interface oneOf<T = unknown> extends t.Schema_oneOf<T> {}
 
+////////////////////
+///    ONE OF    ///
+export { Schema_oneOf as oneOf }
+interface Schema_oneOf<T = unknown> extends t.Schema_oneOf<T> {}
+///
 /** 
- * ## {@link oneOf `schema.oneOf`}
+ * ## {@link Schema_oneOf `openapi.Schema.oneOf`}
+ * 
+ * An opinionated, pseudo-random JSON Schema / OpenAPI generator for the "oneOf" combinator.
  */
-function oneOf<T>(arbitrary: fc.Arbitrary<T>, constraints?: Constraints): fc.Arbitrary<{ oneOf: T[] }>
-function oneOf<T>(LOOP: fc.Arbitrary<T>, $: Constraints = Constraints.defaults) {
+function Schema_oneOf<T>(LOOP: fc.Arbitrary<T>, constraints?: Constraints): fc.Arbitrary<{ oneOf: T[] }>
+function Schema_oneOf<T>(LOOP: fc.Arbitrary<T>, $: Constraints = Constraints.defaults) {
   return fc.record({
-    oneOf: oneOf.base(LOOP, Constraints.configure($).oneOf.constraints) 
+    oneOf: Schema_oneOf.base(LOOP, Constraints.configure($).oneOf.constraints) 
   })
 }
-
-oneOf.base = <T>(LOOP: fc.Arbitrary<T>, $: oneOf.Constraints = oneOf.defaults) => 
+///
+Schema_oneOf.base = <T>(LOOP: fc.Arbitrary<T>, $: Schema_oneOf.Constraints = Schema_oneOf.defaults) => 
   fc.uniqueArray(LOOP, { minLength: 1, maxLength: 3, ...$ })
-oneOf.defaults = {
+Schema_oneOf.defaults = {
   minLength: 1, 
   maxLength: 3,
-} satisfies oneOf.Constraints
-declare namespace oneOf {
+} satisfies Schema_oneOf.Constraints
+declare namespace Schema_oneOf {
   type Constraints<T = unknown, U = unknown> = fc.UniqueArrayConstraints<T, U>
 }
+///    ONE OF    ///
+////////////////////
 
-export { array }
-interface array<T = unknown> extends t.Schema_array<T> {}
 
+///////////////////
+///    ARRAY    ///
+export { Schema_array as array }
+interface Schema_array<T = unknown> extends t.Schema_array<T> {}
+///
 /** 
- * ## {@link oneOf `schema.oneOf`}
+ * ## {@link Schema_array `openapi.Schema.array`}
+ * 
+ * An opinionated, pseudo-random JSON Schema / OpenAPI object node generator.
  */
-function array<T>(model: fc.Arbitrary<T>, constraints?: Constraints): fc.Arbitrary<{ type: DataType.array, items: T }>
-function array<T>(LOOP: fc.Arbitrary<T>, _: Constraints = Constraints.defaults) {
+function Schema_array<T>(model: fc.Arbitrary<T>, constraints?: Constraints): fc.Arbitrary<{ type: DataType.array, items: T }>
+function Schema_array<T>(LOOP: fc.Arbitrary<T>, _: Constraints = Constraints.defaults) {
   return fc.record(
     typed(
       DataType.array, 
       { items: LOOP }
     ),
-    { requiredKeys: array.requiredKeys }
+    { requiredKeys: Schema_array.requiredKeys }
   )
 }
-
-array.defaults = {
+///
+Schema_array.defaults = {
   maxItems: fc.nat(),
   minItems: fc.nat(), // default: 0
   uniqueItems: fc.boolean(), // default: false
-} satisfies array.Constraints
-array.requiredKeys = ["type", "items"] as const satisfies string[]
-declare namespace array {
+} satisfies Schema_array.Constraints
+Schema_array.requiredKeys = ["type", "items"] as const satisfies string[]
+declare namespace Schema_array {
   interface Constraints extends 
-    Partial<Constraints.Items>,
-    Partial<Constraints.Base>, 
+    globalThis.Partial<Constraints.Items>,
+    globalThis.Partial<Constraints.Base>, 
     fc.ArrayConstraints {}
 }
-
-  /*
-  if (model.properties) {
-    return fc.tuple(
-      fc.entries(model.properties, { keys: { excludeSymbols: true } }),
-      model.additionalProperties,
-    ).map(([props, additionalProperties]) => {
-      const properties = Object_fromEntries(props)
-      const required = fc.peek(fc.keysof(properties))
-      return {
-        ...record.static,
-        ...required.length > 0 && { required },
-        additionalProperties,
-        properties,
-      }
-    })
-  }
-  else {
-    return fc.record({
-      type: fc.constant(DataType.object),
-      additionalProperties: model.additionalProperties,
-    })
-  }
-  */
-
-export { object_ as object }
-interface object_<T = Schema> extends t.Schema_object<T> {}
+///    ARRAY    ///
+///////////////////
 
 
-function object_<T extends Schema>(
-  model: {
+
+////////////////////
+///    OBJECT    ///
+export { Schema_object as object }
+interface Schema_object<T = Schema> extends t.Schema_object<T> {}
+///
+/** 
+ * ## {@link Schema_object `openapi.Schema.object`}
+ * 
+ * An opinionated, pseudo-random JSON Schema / OpenAPI object node generator.
+ */
+function Schema_object<T extends Schema>(
+  LOOP: {
     properties: fc.Arbitrary<T>, 
     additionalProperties: fc.Arbitrary<T>, 
   },
   constraints?: Constraints
 ): fc.Arbitrary<t.Schema_object<T>> 
-
-function object_<T>(
-  model: {
+///
+function Schema_object<T>(
+  LOOP: {
     properties: fc.Arbitrary<unknown>, 
     additionalProperties: fc.Arbitrary<{}>, 
   },
   constraints?: Constraints
 ): fc.Arbitrary<t.Schema_object<T>> 
-
-function object_(
+///
+function Schema_object(
   LOOP: {
     properties: fc.Arbitrary<unknown>, 
     additionalProperties: fc.Arbitrary<{}>, 
@@ -569,10 +579,13 @@ function object_(
   _?: Constraints
 ): fc.Arbitrary<t.Schema_object> {
   return fc.tuple(
-    fc.entries(LOOP.properties, { keys: { excludeSymbols: true} }),
+    // fc.uniqueArray(fc.tuple(fc.lorem({ maxCount: 1, mode: "words" }), LOOP.properties), { selector: ([k]) => k }),
+    // fc.uniqueArray(fc.tuple(fc.lorem({ maxCount: 1, mode: "words" }), LOOP.properties), { selector: ([k]) => k }),
+    // fc.entries(LOOP.properties, { keys: { excludeSymbols: true} }),
+    fc.uniqueArray(fc.tuple(fc.identifier({ size: "xsmall" }).map((_) => _.toUpperCase()), LOOP.properties), { selector: ([k]) => k }),
     fc.option(LOOP.additionalProperties, { freq: 2 }),
   ).map(([ENTRIES, ADDT]) => {
-    const properties = globalThis.Object.fromEntries(ENTRIES)
+    const properties = Object_fromEntries(ENTRIES)
     const required = fc.peek(fc.keysof(properties)).map(globalThis.String)
     return {
       type: DataType.object,
@@ -582,39 +595,37 @@ function object_(
       properties,
     }
   })
-
-  // if (model.additionalProperties)
-
 }
-
-  // return fc.entries(LOOP, { keys: { excludeSymbols: true} }).map((entries) => {
-  //   const properties = globalThis.Object.fromEntries(entries)
-  //   const required = fc.peek(fc.keysof(properties)).map(globalThis.String)
-  //   return {
-  //     type: DataType.object,
-  //     // ...base,
-  //     ...required.length > 0 && { required },
-  //     properties,
-  //   }
-  // })
-
-
-object_.defaults = {} satisfies object_.Constraints
-declare namespace object_ {
-  interface Constraints<T = unknown> extends Partial<Constraints.Base> {
+///
+Schema_object.defaults = {} satisfies Schema_object.Constraints
+declare namespace Schema_object {
+  interface Constraints<T = unknown> extends globalThis.Partial<Constraints.Base> {
     requiredKeys?: (keyof T)[]
   }
 }
+///    OBJECT    ///
+////////////////////
 
-export { tuple }
-interface tuple<T = Schema> extends t.Schema_tuple<T> {}
 
-function tuple<T extends Schema>(arbitrary: fc.Arbitrary<T>, constraints?: Constraints): fc.Arbitrary<tuple<T>> 
-function tuple<T>(arbitrary: fc.Arbitrary<T>, constraints?: Constraints): fc.Arbitrary<tuple<T>> 
-function tuple<T extends Schema>(
+///////////////////
+///    TUPLE    ///
+export { Schema_tuple as tuple }
+interface Schema_tuple<T = Schema> extends t.Schema_tuple<T> {}
+/** 
+ * ## {@link Schema_tuple `openapi.Schema.tuple`}
+ * 
+ * An opinionated, extensible, pseudo-random generator for JSON Schema / OpenAPI 3.1 "tuple" nodes 
+ * 
+ * - a.k.a, "finite array"
+ * - bridges semantics between a JSON Schema array whose 'items' property is itself an array, 
+ *   and a corresponding OpenAPI 3.1+ array node whose 'prefixItems' property is a non-empty array.
+ */
+function Schema_tuple<T extends Schema>(arbitrary: fc.Arbitrary<T>, constraints?: Constraints): fc.Arbitrary<Schema_tuple<T>> 
+function Schema_tuple<T>(arbitrary: fc.Arbitrary<T>, constraints?: Constraints): fc.Arbitrary<Schema_tuple<T>> 
+function Schema_tuple<T extends Schema>(
   LOOP: fc.Arbitrary<T>, 
   constraints: Constraints = Constraints.defaults
-): fc.Arbitrary<tuple<T>> {
+): fc.Arbitrary<Schema_tuple<T>> {
   const $ = constraints.tuple
   return fc.record( 
     typed(
@@ -627,22 +638,35 @@ function tuple<T extends Schema>(
         "type",
       ] 
     }
-  ) 
+  )
 }
-
-tuple.defaults = {
+///
+Schema_tuple.defaults = {
   minLength: 1,
-} satisfies tuple.Constraints
-
-declare namespace tuple {
+} satisfies Schema_tuple.Constraints
+///
+declare namespace Schema_tuple {
   type Constraints = fc.ArrayConstraints
 }
+///    TUPLE    ///
+///////////////////
 
-export { any_ as any }
-type any_ = Schema
-function any_(_?: Constraints): fc.Arbitrary<Schema> 
-function any_(_: Constraints = Constraints.defaults) 
+
+/////////////////
+///    ANY    ///
+export { Schema_any as any }
+type Schema_any = Schema
+/** 
+ * ## {@link Schema_any `openapi.Schema.any`}
+ * 
+ * An opinionated, extensible, pseudo-random generator for "any" arbitrary
+ * JSON Schema / OpenAPI 3.1 "tuple" node.
+ */
+function Schema_any(_?: Constraints): fc.Arbitrary<Schema> 
+function Schema_any(_: Constraints = Constraints.defaults) 
   { return loop(_).any }
+///    ANY    ///
+/////////////////
 
 /**
  * If you need complete control over which generators are 
@@ -651,7 +675,7 @@ function any_(_: Constraints = Constraints.defaults)
  */
 export declare namespace Constraints {
   interface Config extends Required<Constraints> {}
-  interface Items extends Partial<{ [K in keyof t.Schema_Items]: fc.Arbitrary<t.Schema_Items[K]> }> {}
+  interface Items extends globalThis.Partial<{ [K in keyof t.Schema_Items]: fc.Arbitrary<t.Schema_Items[K]> }> {}
   interface Base<T = unknown> {
     nullable: boolean
     description: string
@@ -664,52 +688,52 @@ export declare namespace Constraints {
 export interface Constraints<T = unknown, U = unknown> {
   base: Constraints.Base
   null: {
-    // generator: typeof null_.default
-    constraints: typeof null_.defaults
+    // generator: typeof Schema_null.default
+    constraints: typeof Schema_null.defaults
   }
   boolean: {
-    // generator: typeof boolean.default,
-    constraints: typeof boolean_.defaults
+    // generator: typeof Schema_boolean.default,
+    constraints: typeof Schema_boolean.defaults
   }
   integer: {
-    // generator: typeof integer.default
-    constraints: typeof integer.defaults
+    // generator: typeof Schema_integer.default
+    constraints: typeof Schema_integer.defaults
   }
   number: {
-    // generator: typeof number.default
-    constraints: typeof number_.defaults
+    // generator: typeof Schema_number.default
+    constraints: typeof Schema_number.defaults
   }
   string: {
-    // generator: typeof string.default
-    constraints: typeof string_.defaults
+    // generator: typeof Schema_string.default
+    constraints: typeof Schema_string.defaults
   }
   array: {
-    // generator: typeof array.default
-    constraints: typeof array.defaults
+    // generator: typeof Schema_array.default
+    constraints: typeof Schema_array.defaults
   }
   record: {
-    // generator: typeof record.default
-    constraints: typeof record.defaults
+    // generator: typeof Schema_record.default
+    constraints: typeof Schema_record.defaults
   }
   tuple: {
-    // generator: typeof tuple.default
-    constraints: typeof tuple.defaults
+    // generator: typeof Schema_tuple.default
+    constraints: typeof Schema_tuple.defaults
   }
   object: {
-    // generator: typeof object_.default
-    constraints: typeof object_.defaults
+    // generator: typeof Schema_object.default
+    constraints: typeof Schema_object.defaults
   }
   allOf: {
-    // generator: typeof allOf.default
-    constraints: typeof allOf.defaults
+    // generator: typeof Schema_allOf.default
+    constraints: typeof Schema_allOf.defaults
   }
   anyOf: {
-    // generator: typeof anyOf.default
-    constraints: typeof anyOf.defaults
+    // generator: typeof Schema_anyOf.default
+    constraints: typeof Schema_anyOf.defaults
   }
   oneOf: {
-    // generator: typeof oneOf.default
-    constraints: typeof oneOf.defaults
+    // generator: typeof Schema_oneOf.default
+    constraints: typeof Schema_oneOf.defaults
   }
 }
 
@@ -729,52 +753,52 @@ export namespace Constraints {
       example: void 0,
     },
     allOf: {
-      constraints: allOf.defaults,
-      // generator: allOf.default,
+      constraints: Schema_allOf.defaults,
+      // generator: Schema_allOf.default,
     },
     anyOf: {
-      constraints: anyOf.defaults,
-      // generator: anyOf.default,
+      constraints: Schema_anyOf.defaults,
+      // generator: Schema_anyOf.default,
     },
     array:  {
-      constraints: array.defaults,
-      // generator: array.default,
+      constraints: Schema_array.defaults,
+      // generator: Schema_array.default,
     },
     boolean:  {
-      constraints: boolean_.defaults,
-      // generator: boolean.default,
+      constraints: Schema_boolean.defaults,
+      // generator: Schema_boolean.default,
     },
     integer:  {
-      constraints: integer.defaults,
-      // generator: integer.default,
+      constraints: Schema_integer.defaults,
+      // generator: Schema_integer.default,
     },
     null:  {
-      constraints: null_.defaults,
-      // generator: null_.default,
+      constraints: Schema_null.defaults,
+      // generator: Schema_null.default,
     },
     number: {
-      constraints: number_.defaults,
-      // generator: number.default,
+      constraints: Schema_number.defaults,
+      // generator: Schema_number.default,
     },
     object: {
-      constraints: object_.defaults,
-      // generator: object_.default,
+      constraints: Schema_object.defaults,
+      // generator: Schema_object.default,
     },
     oneOf: {
-      constraints: oneOf.defaults,
-      // generator: oneOf.default,
+      constraints: Schema_oneOf.defaults,
+      // generator: Schema_oneOf.default,
     },
     record: {
-      constraints: record.defaults,
-      // generator: record.default,
+      constraints: Schema_record.defaults,
+      // generator: Schema_record.default,
     },
     string: {
-      constraints: string_.defaults,
-      // generator: string.default,
+      constraints: Schema_string.defaults,
+      // generator: Schema_string.default,
     },
     tuple: {
-      constraints: tuple.defaults,
-      // generator: tuple.default,
+      constraints: Schema_tuple.defaults,
+      // generator: Schema_tuple.default,
     },
   } satisfies Required<Constraints>
 
@@ -799,54 +823,66 @@ export namespace Constraints {
 
 const depthIdentifier = fc.createDepthIdentifier();
 
-interface Stream {
-  object: t.Schema_object<Schema>
-  array: t.Schema_array<Schema>
-  record: t.Schema_record<Schema>
-  tuple: t.Schema_tuple<Schema>
-  allOf: t.Schema_allOf<Schema>
-  anyOf: t.Schema_anyOf<Schema>
-  oneOf: t.Schema_oneOf<Schema>
-  scalar: t.Schema_scalar
+export interface SchemaLoop<Meta extends {} = {}> {
+  null: t.Schema_null<Schema, Meta>
+  boolean: t.Schema_boolean<Schema, Meta>
+  integer: t.Schema_integer<Schema, Meta>
+  number: t.Schema_number<Schema, Meta>
+  string: t.Schema_string<Schema, Meta>
+  object: t.Schema_object<Schema, Meta>
+  array: t.Schema_array<Schema, Meta>
+  record: t.Schema_record<Schema, Meta>
+  tuple: t.Schema_tuple<Schema, Meta>
+  allOf: t.Schema_allOf<Schema, Meta>
+  anyOf: t.Schema_anyOf<Schema, Meta>
+  oneOf: t.Schema_oneOf<Schema, Meta>
   any: t.Schema
 }
 
-export function loop(constraints: Constraints = Constraints.defaults) {
-  return fc.letrec<Stream>((LOOP: fc.LetrecTypedTie<Stream>) => ({
-    object: object_({ 
+export function loop(constraints: Constraints = Constraints.defaults): fc.LetrecValue<SchemaLoop> {
+  return fc.letrec((LOOP: fc.LetrecTypedTie<SchemaLoop>) => ({
+    object: Schema_object({ 
       properties: LOOP("any"), 
       additionalProperties: LOOP("any") 
     }, constraints),
-    array: array(LOOP("any"), constraints),
-    record: record(LOOP("any"), constraints),
-    tuple: tuple(LOOP("any"), constraints),
-    allOf: allOf(LOOP("any"), constraints),
-    anyOf: anyOf(LOOP("any"), constraints),
-    oneOf: oneOf(LOOP("any"), constraints),
-    scalar: fc.oneof(
-      { depthIdentifier },
-      string_(constraints),
-      number_(constraints),
-      integer(constraints),
-      boolean_(constraints),
-      null_(constraints),
-    ),
+    array: Schema_array(LOOP("any"), constraints),
+    record: Schema_record(LOOP("any"), constraints),
+    tuple: Schema_tuple(LOOP("any"), constraints),
+    allOf: Schema_allOf(LOOP("any"), constraints),
+    anyOf: Schema_anyOf(LOOP("any"), constraints),
+    oneOf: Schema_oneOf(LOOP("any"), constraints),
+    string: Schema_string(constraints),
+    null: Schema_null(constraints),
+    boolean: Schema_boolean(constraints),
+    integer: Schema_integer(constraints),
+    number: Schema_number(constraints),
+    // scalar: fc.oneof(
+    //   { depthIdentifier },
+    //   Schema_string(constraints),
+    //   Schema_number(constraints),
+    //   Schema_integer(constraints),
+    //   Schema_boolean(constraints),
+    //   Schema_null(constraints),
+    // ),
     any: fc.oneof(
       { depthIdentifier },
-      LOOP("scalar"),
+      // LOOP("scalar"),
+      LOOP("null"),
+      LOOP("boolean"),
+      LOOP("integer"),
+      LOOP("number"),
       LOOP("object"),
-      LOOP("tuple"),
-      LOOP("array"),
-      LOOP("record"),
-      LOOP("allOf"),
-      LOOP("anyOf"),
-      LOOP("oneOf"),
+      // LOOP("array"),
+      // LOOP("record"),
+      // LOOP("tuple"),
+      // LOOP("allOf"),
+      // LOOP("anyOf"),
+      // LOOP("oneOf"),
     )
   }))
 }
 
 const hasConst = <T extends {}>(guard: (u: unknown) => u is T) => tree.has("const", guard)
-
 export declare namespace has {
   export { hasConst as const }
 }
@@ -872,3 +908,27 @@ function simulateOptional<K extends keyof any, V>(key: K, value: V) {
     ...Math.random() > 0 && { [key]: value } 
   }
 }
+
+/*
+if (model.properties) {
+  return fc.tuple(
+    fc.entries(model.properties, { keys: { excludeSymbols: true } }),
+    model.additionalProperties,
+  ).map(([props, additionalProperties]) => {
+    const properties = Object_fromEntries(props)
+    const required = fc.peek(fc.keysof(properties))
+    return {
+      ...Schema_record.static,
+      ...required.length > 0 && { required },
+      additionalProperties,
+      properties,
+    }
+  })
+}
+else {
+  return fc.record({
+    type: fc.constant(DataType.object),
+    additionalProperties: model.additionalProperties,
+  })
+}
+*/

@@ -1,13 +1,13 @@
 import { core, fc, t, tree, zip } from "@traversable/core"
 import { fn, map, object } from "@traversable/data"
 import { http } from "@traversable/http"
-import { newtype, PATTERN } from "@traversable/registry"
+import { PATTERN, type newtype } from "@traversable/registry"
 
+import type { SchemaLoop } from "@traversable/openapi/schema/schema"
+import { createDepthIdentifier } from "fast-check"
 import * as N from "./normalize.js"
 import { Schema } from "./schema/exports.js"
 import type { $ref } from "./types.js"
-import { createDepthIdentifier } from "fast-check"
-import { SchemaLoop } from "@traversable/openapi/schema/schema"
 
 /** @internal */
 type inline<T> = T

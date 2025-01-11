@@ -31,8 +31,8 @@ export const URI = object.pick(
 
 export type Untag<T> 
   = T extends Scalar ? T 
-  : T extends Schema.scalar ? Omit<T, symbol.tag>
-  : Omit<{ [x in keyof T]: Untag<T[x]> }, symbol.tag>
+  : T extends Schema.scalar ? globalThis.Omit<T, symbol.tag>
+  : globalThis.Omit<{ [x in keyof T]: Untag<T[x]> }, symbol.tag>
   ;
 export type TagWith<S, Tag extends symbol = symbol> = S & { [symbol.tag]: Tag }
 export type Tag =
@@ -109,8 +109,8 @@ export declare namespace Tag {
     ;
   type rm<T> 
     = T extends Scalar ? T 
-    : T extends Schema_scalar ? Omit<T, symbol.tag>
-    : Omit<{ [x in keyof T]: Tag.rm<T[x]> }, symbol.tag>
+    : T extends Schema_scalar ? globalThis.Omit<T, symbol.tag>
+    : globalThis.Omit<{ [x in keyof T]: Tag.rm<T[x]> }, symbol.tag>
     ;
   interface of<T> extends newtype<Extract<T, Schema.any>> {}
   function of<const T extends Schema.any>(x: T): Tag.of<T>

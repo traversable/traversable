@@ -1,11 +1,10 @@
-import { KnownFormat } from "@traversable/registry"
-import { Extension, Traversable, is, path, t } from "@traversable/core"
+import { path, Extension, Traversable, is } from "@traversable/core"
 import type { Context } from "@traversable/core"
-import { Option, array, fn, type key, type keys, map, object, string } from "@traversable/data"
-import type { Functor, Partial, Required, newtype } from "@traversable/registry"
-import { Invariant, symbol } from "@traversable/registry"
-import { buildPathname, typescript as ts } from "./shared.js"
-import { Handlers, HandlersWithContext } from "@traversable/core/model/extension"
+import { fn, object } from "@traversable/data"
+import type { Functor } from "@traversable/registry"
+import { KnownFormat, symbol } from "@traversable/registry"
+
+import { createMask, createZodIdent, typescript as ts } from "./shared.js"
 
 export { generate }
 
@@ -105,12 +104,12 @@ const pathHandlers = {
         .map(([k, v]) => {
           const isOptional = !(_.required ?? []).includes(k)
           const keys = [...isOptional ? [symbol.optional, k] : [k]]
-          const symbolicName = buildPathname(...path.docs)(_, $)(...isOptional ? [symbol.optional, k] : [k])
+          // const symbolicName = createZodIdent($)(...path.docs)(_, $)(...isOptional ? [symbol.optional, k] : [k])
           // console.log("symbolicName", symbolicName)
           //path.interpreter(path.docs, [$.typeName, ...$.path, k, { leaf: _ } ]).join("")
           return ""
             + "/**\n" 
-            + " * ## {@link " + symbolicName.join("") + "}" 
+            // + " * ## {@link " + symbolicName.join("") + "}" 
             + "\n */\n"
             // + "/** " + path.interpreter(path.docs, [...ix, ...isOptional ? [k, "?"] : [k], { leaf: _ } ]).join("") + " */\n"
             + object.parseKey(k)
@@ -138,9 +137,7 @@ const zodHandlers = {
   integer(_) { return "z.number().int()" },
   number(_) { return "z.number()" },
   string(_) { return "z.string()" },
-  enum(_) { 
-    return _.enum.map(JSON_stringify).join(" | ") 
-  },
+  enum(_) { return _.enum.map(JSON_stringify).join(" | ") },
   allOf(_) { return _.allOf.join(" & ") },
   anyOf(_) { return _.anyOf.length > 1 ? "\n" + _.anyOf.join("\n | ") : _.anyOf.join(" | ") },
   oneOf(_) { return _.oneOf.join(" | ") },
@@ -153,15 +150,22 @@ const zodHandlers = {
       + Object_entries(_.properties)
         .map(([k, v]) => {
           const isOptional = !(_.required ?? []).includes(k)
-          const keys = [...isOptional ? [symbol.optional, k] : [k]]
-          const symbolicName = buildPathname(...path.docs)(_, $)(...isOptional ? [symbol.optional, k] : [k])
-          // console.log("symbolicName", symbolicName)
-          //path.interpreter(path.docs, [$.typeName, ...$.path, k, { leaf: _ } ]).join("")
+
+          const IDENT = createZodIdent($)([
+            ...$.path, 
+            "shape", 
+            k
+          ]).join("")
+  
+          const MASK = createMask($)([
+            ...$.path, 
+            k
+          ]).join("")
+
           return ""
-            + "/**\n" 
-            + " * ## {@link " + symbolicName.join("") + "}" 
-            + "\n */\n"
-            // + "/** " + path.interpreter(path.docs, [...ix, ...isOptional ? [k, "?"] : [k], { leaf: _ } ]).join("") + " */\n"
+            + "/**"
+            + " * ## {@link " + IDENT + `\`${MASK}\`}`
+            + " */"
             + object.parseKey(k)
             + (isOptional ? ": " : "?: ")
             + v
@@ -223,6 +227,7 @@ function generate<Meta>(schema: Traversable.any, options: ts.Options | ts.Option
     foldIx({ 
       absolutePath: options.absolutePath,
       typeName,
+      indent: 0,
       depth: ts.rootContext.depth,
       path: ts.rootContext.path,
     }, {

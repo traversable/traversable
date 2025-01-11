@@ -97,9 +97,6 @@ importers:
         specifier: workspace:^
         version: link:../registry/dist
     devDependencies:
-      '@prettier/sync':
-        specifier: ^0.5.2
-        version: 0.5.2(prettier@3.4.2)
       '@traversable/bench':
         specifier: workspace:^
         version: link:../bench/dist
@@ -121,9 +118,6 @@ importers:
       chokidar:
         specifier: ^4.0.3
         version: 4.0.3
-      prettier:
-        specifier: ^3.4.2
-        version: 3.4.2
       zod:
         specifier: ^3.24.1
         version: 3.24.1

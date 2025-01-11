@@ -1,18 +1,7 @@
-import type { Context, Extension, Traversable } from "@traversable/core"
-import { path, t } from "@traversable/core"
-
-import type { newtype, Omit, Part, Partial, Require, Requiring } from "@traversable/registry"
-
-/** @internal */
-const Object_keys
-  : <T>(x: T) => (keyof T)[]
-  = globalThis.Object.keys
-/** @internal */
-const Object_fromEntries = globalThis.Object.fromEntries
-/** @internal */
-const Array_isArray = globalThis.Array.isArray
-/** @internal */
-const Object_create = globalThis.Object.create
+import type { Context, Extension } from "@traversable/core"
+import { keyOf$, t } from "@traversable/core"
+import type { Partial, Requiring, newtype } from "@traversable/registry"
+import { symbol } from "@traversable/registry"
 
 export type Flags = t.typeof<typeof Flags>
 const Flags = t.object({
@@ -20,21 +9,71 @@ const Flags = t.object({
   preferInterfaces: t.boolean(),
 })
 
-export const buildPathname 
-  : (...matchers: path.Matcher[]) 
-    => <S extends Traversable.F<string>>(_: S, $: Context) 
-    => (...keys: (keyof any | null)[]) 
-    => readonly (string | number | symbol)[]
+export type BuildPathInterpreter = 
+  <T extends Record<keyof any, keyof any | null>>(lookup: T) 
+    => (context: Context) 
+    => (xs: readonly (keyof any | null)[]) 
+    => (keyof any | null)[]
 
-  = (...matchers: path.Matcher[]) => (_, $) => (...keys) => 
-    path.interpreter(
-      matchers, [
-        $.typeName, 
-        ...$.path, 
-        ...keys.filter((k) => k !== null), 
-        { leaf: _ } 
-      ]
-    )
+export type PathInterpreter = (context: Context) 
+  => (xs: readonly (keyof any | null)[]) 
+  => (keyof any | null)[]
+
+const ZOD_IDENT_MAP = {
+  [symbol.optional]: "._def.innerType",
+  [symbol.object]: ".shape",
+  [symbol.required]: null,
+  [symbol.array]: ".element"
+} as const
+///
+const MASK_MAP = {
+  [symbol.object]: "",
+  [symbol.optional]: "?",
+  [symbol.required]: ".",
+  [symbol.array]: "[number]",
+} as const
+///
+
+/** @internal */
+const buildIdentInterpreter: BuildPathInterpreter = (lookup) => ({ typeName }) => (xs) => {
+  let out: (keyof any | null)[] = [typeName]
+  let ks = [...xs]
+  let k: keyof any | null | undefined
+  while ((k = ks.shift()) !== undefined) {
+    switch (true) {
+      case keyOf$(lookup)(k): { lookup[k] != null && out.push(lookup[k]); continue }
+      case typeof k === "number": { return (out.push(`[${k}]`), out) }
+      case typeof k === "string": { out.push(`.${k}`); continue }
+      default: { continue }
+    }
+  }
+  return out
+}
+
+/** @internal */
+const buildMaskInterpreter: BuildPathInterpreter = (lookup) => ({ typeName }) => (xs) => {
+  let out: (keyof any | null)[] = [typeName]
+  let ks = [...xs]
+  let k: keyof any | null | undefined
+  while ((k = ks.shift()) !== undefined) {
+    const last = out[out.length - 1] ?? null
+    switch (true) {
+      case typeof k === "number": { out.push(`[${k}]`); continue }
+      case typeof k === "string": { out.push(`.${k}`); continue }
+      case keyOf$(lookup)(k): { 
+        const v = lookup[k]
+        const js = last === lookup[symbol.optional] && String(v).length ? [".", v] : [v]
+        v != null && out.push(...js); continue 
+      }
+      default: { continue }
+    }
+  }
+  return out
+}
+
+
+export const createMask: PathInterpreter = buildMaskInterpreter(MASK_MAP)
+export const createZodIdent: PathInterpreter = buildIdentInterpreter(ZOD_IDENT_MAP)
 
 export declare namespace typescript {
   export type { handlers as Handlers }
@@ -46,8 +85,6 @@ export declare namespace typescript {
     & Extension.BuiltInsWithContext<S, Ix>
     & globalThis.Partial<Extension.UserDefinitionsWithContext<S, Ix>>
   >
-    ;
-
 
   /** @internal */
   interface Handlers<T extends {}> extends newtype<T> {}
@@ -69,8 +106,6 @@ function configFromOptions<T>($: typescript.Options | typescript.Options): types
     },
   }
 }
-
-
 
 export namespace typescript {
   export type Options<T = unknown, Ix = {}, Meta = {}> = Requiring<Config<T, Ix, Meta>, "absolutePath">

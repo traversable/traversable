@@ -24,7 +24,6 @@ type URI_any = typeof URI_any
 const URI_unknown = `${ns}::Unknown` as const
 type URI_unknown = typeof URI_unknown
 
-
 ///
 const symbol_null = Symbol.for(URI_null)
 type symbol_null = typeof symbol_null

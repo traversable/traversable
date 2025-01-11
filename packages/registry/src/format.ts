@@ -1,10 +1,6 @@
-export { 
-  integer_ as integer,
-  number_ as number,
-  string_ as string,
-}
+export { integer_ as integer, number_ as number, string_ as string }
 
-type integer_ = { -readonly [K in keyof typeof integer_]: typeof integer_[K]  }
+type integer_ = { -readonly [K in keyof typeof integer_]: (typeof integer_)[K] }
 namespace integer_ {
   /**
    * ## {@link int32 `KnownFormat.integer_.int32`}
@@ -21,7 +17,7 @@ namespace integer_ {
   export type int64 = typeof integer_.int64
 }
 
-type number_ = { -readonly [K in keyof typeof number_]: typeof number_[K] }
+type number_ = { -readonly [K in keyof typeof number_]: (typeof number_)[K] }
 namespace number_ {
   /**
    * ### {@link number_.float `KnownFormat.number.float`}
@@ -38,10 +34,10 @@ namespace number_ {
   export type double = typeof number_.double
 }
 
-type string_ = { -readonly [K in keyof typeof string_]: typeof string_[K]  }
+type string_ = { -readonly [K in keyof typeof string_]: (typeof string_)[K] }
 namespace string_ {
   /**
-   * ### {@link date `KnownFormat.string.date`} 
+   * ### {@link date `KnownFormat.string.date`}
    * As specified by ISO-8601 in
    * [RFC-3339 section 5.6](https://datatracker.ietf.org/doc/html/rfc3339#section-5.6)
    * @example
@@ -50,8 +46,8 @@ namespace string_ {
   export const date = "date" as const
   export type date = typeof string_.date
   /////
-  /** 
-   * ### {@link datetime `KnownFormat.string.datetime`} 
+  /**
+   * ### {@link datetime `KnownFormat.string.datetime`}
    * As specified by ISO-8601 in
    * [RFC-3339 section 5.6](https://datatracker.ietf.org/doc/html/rfc3339#section-5.6)
    * @example
@@ -61,7 +57,7 @@ namespace string_ {
   export type datetime = typeof string_.datetime
   /////
   /**
-   * ### {@link duration `KnownFormat.string.duration`} 
+   * ### {@link duration `KnownFormat.string.duration`}
    * Semantics should satisfy the ABNR grammar specified in
    * [RFC-3339, appendix A](https://datatracker.ietf.org/doc/html/rfc3339#appendix-A)
    * @example
@@ -72,7 +68,7 @@ namespace string_ {
   /////
   /**
    * ### {@link email `KnownFormat.string.email`}
-   * As specified by 
+   * As specified by
    * [RFC-5321, section 4.1.2](https://datatracker.ietf.org/doc/html/rfc5321#section-4.1.2)
    */
   export const email = "email" as const
@@ -86,7 +82,7 @@ namespace string_ {
   /////
   /**
    * ### {@link hostname `KnownFormat.string.hostname`}
-   * As specified by 
+   * As specified by
    * [RFC-1123, section 2.1](https://datatracker.ietf.org/doc/html/rfc1123#section-2.1)
    */
   export const hostname = "hostname" as const
@@ -94,7 +90,7 @@ namespace string_ {
   /////
   /**
    * ### {@link idn_hostname `KnownFormat.string.idn_hostname`}
-   * As specified by 
+   * As specified by
    * [RFC-5890 section 2.3.2.3](https://datatracker.ietf.org/doc/html/rfc5890#section-2.3.2.3)
    */
   export const idn_hostname = "idn-hostname" as const
@@ -102,42 +98,42 @@ namespace string_ {
   /////
   /**
    * ### {@link idn_email `KnownFormat.string.idn_email`}
-   * Internationalized form of an email address, as specified by 
+   * Internationalized form of an email address, as specified by
    * [RFC-6531](https://datatracker.ietf.org/doc/html/rfc6531)
    */
   export const idn_email = "idn-email" as const
   export type idn_email = typeof string_.idn_email
   /////
-  /** 
-   * ### {@link ipv4 `KnownFormat.string.ipv4`} 
+  /**
+   * ### {@link ipv4 `KnownFormat.string.ipv4`}
    * Specified by [RFC-2373 section 3.2](https://datatracker.ietf.org/doc/html/rfc2373#section-3.2)
    */
   export const ipv4 = "ipv4" as const
   export type ipv4 = typeof string_.ipv4
   /////
-  /** 
-   * ### {@link ipv6 `KnownFormat.string.ipv6`} 
+  /**
+   * ### {@link ipv6 `KnownFormat.string.ipv6`}
    * Specified by [RFC-2373 section 2.2](https://datatracker.ietf.org/doc/html/rfc2373#section-2.2)
    */
   export const ipv6 = "ipv6" as const
   export type ipv6 = typeof string_.ipv6
   /////
-  /** 
-   * ### {@link iri `KnownFormat.string.iri`} 
+  /**
+   * ### {@link iri `KnownFormat.string.iri`}
    * Specified by [RFC-3987](https://datatracker.ietf.org/doc/html/rfc3987)
    */
   export const iri = "iri" as const
   export type iri = typeof string_.iri
   /////
-  /** 
-   * ### {@link iri_reference `KnownFormat.string.iri_reference`} 
+  /**
+   * ### {@link iri_reference `KnownFormat.string.iri_reference`}
    * Specified by [RFC-3987](https://datatracker.ietf.org/doc/html/rfc3987)
    */
   export const iri_reference = "iri-reference" as const
   export type iri_reference = typeof string_.iri_reference
   /////
   /**
-   * ### {@link json_pointer `KnownFormat.string.json_pointer`} 
+   * ### {@link json_pointer `KnownFormat.string.json_pointer`}
    * As specified by [RFC-6901](https://datatracker.ietf.org/doc/html/rfc6901)
    */
   export const json_pointer = "json-pointer" as const
@@ -158,15 +154,15 @@ namespace string_ {
   export type regex = typeof string_.regex
   /////
   /**
-   * ### {@link relative_json_pointer `KnownFormat.string.relative_json_pointer`} 
-   * As specified by the 
+   * ### {@link relative_json_pointer `KnownFormat.string.relative_json_pointer`}
+   * As specified by the
    * [RFC (draft form)](https://datatracker.ietf.org/doc/html/draft-handrews-relative-json-pointer-01)
    */
   export const relative_json_pointer = "relative-json-pointer" as const
   export type relative_json_pointer = typeof string_.relative_json_pointer
   /////
   /**
-   * ### {@link time `KnownFormat.string.time`} 
+   * ### {@link time `KnownFormat.string.time`}
    * As specified by ISO-8601 in
    * [RFC-3339, appendix A](https://datatracker.ietf.org/doc/html/rfc3339#appendix-A)
    * @example
@@ -176,7 +172,7 @@ namespace string_ {
   export type time = typeof string_.time
   /////
   /**
-   * ### {@link ulid `KnownFormat.string.ulid`} 
+   * ### {@link ulid `KnownFormat.string.ulid`}
    * An elegant, univerally unique identifier optimized for sortability and readability.
    * Implementations must satisfy the [spec](https://github.com/ulid/spec)
    */
@@ -184,21 +180,21 @@ namespace string_ {
   export type ulid = typeof string_.ulid
   /////
   /**
-   * ### {@link uri `KnownFormat.string.uri`} 
+   * ### {@link uri `KnownFormat.string.uri`}
    * As specified by [RFC-3986](https://datatracker.ietf.org/doc/html/rfc3986)
    */
   export const uri = "uri" as const
   export type uri = typeof string_.uri
   /////
   /**
-   * ### {@link uri_reference `KnownFormat.string.uri_reference`} 
+   * ### {@link uri_reference `KnownFormat.string.uri_reference`}
    * As specified by [RFC-3986 section 4.1](https://datatracker.ietf.org/doc/html/rfc3986#section-4.1)
    */
   export const uri_reference = "uri-reference" as const
   export type uri_reference = typeof string_.uri_reference
   /////
   /**
-   * ### {@link uri_template `KnownFormat.string.uri_template`} 
+   * ### {@link uri_template `KnownFormat.string.uri_template`}
    * As specified by [RFC-6570](https://datatracker.ietf.org/doc/html/rfc6570)
    */
   export const uri_template = "uri-template" as const
@@ -211,6 +207,3 @@ namespace string_ {
   export const uuid = "uuid" as const
   export type uuid = typeof string_.uuid
 }
-
-
-

@@ -62,7 +62,6 @@ export const compare
       case Traversable.is.oneOf(l) && Traversable.is.oneOf(r): return compareMany($)(l.oneOf, r.oneOf)
       case Traversable.is.tuple(l) && Traversable.is.tuple(r): return compareMany($)(l.items, r.items)
       case Traversable.is.array(l) && Traversable.is.array(r): {
-        l
         const shallow = $(l.items, r.items)
         if (shallow !== 0) return shallow
         else return compare($)(l.items, r.items)
@@ -111,7 +110,7 @@ export namespace Coalgebra {
         case Traversable.is.tuple(n): return {
           ...n,
           items: n.items
-            .map((x, ix) => [ix, x] satisfies [number, Traversable])
+            .map((x, ix) => [ix, x] satisfies [number, any])
             .sort(order.mapInput(compare($), ([, v]) => v))
             .map(([ix, x]) => (((x as never as { originalIndex: number }).originalIndex = ix), x)),
         }

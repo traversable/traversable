@@ -21,11 +21,21 @@ function show(header: string): <T>(...v: T[]) => string {
 
 function Error<Msg extends string>(
   msg: Msg,
-  filepath?: string
+  filepath?: string,
 ): <ID extends string, T>(identifier: ID, ...values: T[]) => never {
-  return (id, ...v) => throw_(globalThis.Error("\n\n[🚫 Source: " + SCOPE + "/" + id + "]" 
-    + (filepath !== undefined ? "\n at: " + filepath + "\n" : "")
-  + msg + show(", got: ")(...v)))
+  return (id, ...v) =>
+    throw_(
+      globalThis.Error(
+        "\n\n[🚫 Source: " +
+          SCOPE +
+          "/" +
+          id +
+          "]" +
+          (filepath !== undefined ? "\n at: " + filepath + "\n" : "") +
+          msg +
+          show(", got: ")(...v),
+      ),
+    )
 }
 
 Error.withTrace = <
@@ -80,8 +90,12 @@ export const FailedToRegisterSymbol = (uri: string) =>
 export const ParseError = (input: string) =>
   Error("Received an input that it was unable to parse, got: " + input)
 
-export const PrettyPrintError = (input: string, filepath?: string) => 
-  Error([
-    filepath === undefined ? null : "\n\n[📂 in: " + filepath + "]",
-    "\nEncountered an unexpected error while attempting to pretty print input: " + "\n\n" + input
-  ].filter((x) => x !== null).join("\n"))
+export const PrettyPrintError = (input: string, filepath?: string) =>
+  Error(
+    [
+      filepath === undefined ? null : "\n\n[📂 in: " + filepath + "]",
+      "\nEncountered an unexpected error while attempting to pretty print input: " + "\n\n" + input,
+    ]
+      .filter((x) => x !== null)
+      .join("\n"),
+  )
