@@ -48,7 +48,7 @@ export type finite<T> = string extends T ? never : [T] extends [string] ? string
  *  onlyNonLiteralsAllowed(encodeURIComponent("?q=hi")) // ✅
  *  onlyNonLiteralsAllowed("hi how are you?")           // 🚫
  */
-export type nonfinite<T> = string extends T ? string : never
+export type nonfinite<T> = [finite<T>] extends [never] ? string : never
 
 export type replace<
   T extends string,
