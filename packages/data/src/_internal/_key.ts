@@ -37,6 +37,13 @@ const isProp = (u: unknown): u is string | number => typeof u === "string" || ty
 const SIGNED_INFINITY = globalThis.Number.NEGATIVE_INFINITY
 /** @internal */
 const isSignedZero = (n: number): n is -0 => n === 0 && 1 / n === SIGNED_INFINITY
+/** @internal */
+const Object_keys
+  : <T>(x: T) => (keyof T)[]
+  = globalThis.Object.keys
+const Object_hasOwn = 
+ <K extends keyof any>(u: unknown, k: K): u is { [P in K]: unknown } => 
+  !!(u) && typeof u === "object" && globalThis.Object.hasOwn(u, k)
 
 namespace char {
   export const Alphabet = [
@@ -754,4 +761,27 @@ export declare namespace keys {
 
 export namespace keys {
   export const is = (u: unknown): u is keys.any => globalThis.Array.isArray(u) && u.every(key.is)
+
+  /** 
+   * ## {@link keys.intersect `keys.intersect`}
+   * 
+   * Given a running array of objects called {@link objects `objects`},
+   * {@link keys.intersect `keys.intersect`} reduces them to an array of 
+   * _only_ the keys that are present in _all_ objects.
+   */
+  export function intersect<const T extends {}[]>(...objects: [...T]): (keyof T[number])[] {
+    const [x, ...xs] = objects
+    let out = Object_keys(x)
+    let $: T[number] | undefined = x
+    while (($ = xs.shift()) !== undefined)
+      out = out.filter((k) => Object_hasOwn($, k))
+    return out
+  }
+
+  export function union<T extends {}>(...objects: [...T[]]): (T extends T ? (keyof T) : never)[]
+  export function union<T extends {}>(...objects: [...T[]]) {
+    let out = new globalThis.Set()
+    for (const x of objects) for (const k of Object_keys(x)) void out.add(k)
+    return [...out]
+  }
 }
