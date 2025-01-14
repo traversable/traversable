@@ -4,6 +4,7 @@ import { fn, object } from "@traversable/data"
 import type { Functor } from "@traversable/registry"
 import { KnownFormat, symbol } from "@traversable/registry"
 
+import { openapi } from "@traversable/openapi"
 import { createMask, createZodIdent, typescript as ts } from "../shared.js"
 
 export { generate }
@@ -226,18 +227,21 @@ function generate<Meta>(schema: Traversable.any, options: ts.Options | ts.Option
 //   schema: Traversable.any, options: ts.Options.withHandlers<string, Context> = ts.defaults as never
 // ): string {
   const typeName = options?.typeName ?? ts.defaults.typeName.concat("TypeScriptType")
+  const document = openapi.doc({})
   return fn.pipe(
     schema,
     foldIx({ 
       absolutePath: options.absolutePath,
       typeName,
       indent: 0,
+      siblingCount: 0,
+      document,
       depth: ts.rootContext.depth,
-      // document: options
       path: ts.rootContext.path,
     }, {
       absolutePath: options.absolutePath,
       typeName,
+      document,
       handlers: {
         ...pathHandlers,
         ...(options as { handlers: {} })["handlers"],

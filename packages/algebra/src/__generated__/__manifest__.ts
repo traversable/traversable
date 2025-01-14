@@ -49,6 +49,7 @@ export default {
     "@traversable/registry": "workspace:^"
   },
   "devDependencies": {
+    "@faker-js/faker": "^9.3.0",
     "@traversable/bench": "workspace:^",
     "@traversable/core": "workspace:^",
     "@traversable/data": "workspace:^",

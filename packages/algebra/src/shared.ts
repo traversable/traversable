@@ -2,6 +2,7 @@ import { z } from "zod"
 
 import type { Context, Extension } from "@traversable/core"
 import { is, keyOf$, t, tree } from "@traversable/core"
+import type { openapi } from "@traversable/openapi"
 import type { Partial, Requiring, inline, newtype } from "@traversable/registry"
 import { symbol } from "@traversable/registry"
 
@@ -198,6 +199,7 @@ export namespace typescript {
     typeName: string
     flags: Flags
     rootMeta: Metadata.Root<Meta>
+    document: openapi.doc
   }
 
   export declare namespace Config{
