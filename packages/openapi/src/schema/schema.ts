@@ -875,7 +875,7 @@ export function loop(constraints: Constraints = Constraints.defaults): fc.Letrec
       // LOOP("array"),
       // LOOP("record"),
       // LOOP("tuple"),
-      // LOOP("allOf"),
+      LOOP("allOf"),
       // LOOP("anyOf"),
       // LOOP("oneOf"),
     )

@@ -14,7 +14,7 @@ function zip_arrays<T extends readonly unknown[]>(xs: T, ys: T): zip_arrays<T> {
     out[ix] = [xs[ix], ys[ix]]
   return out
 }
-export type zip_keys<T> = (keyof T)[]
+export type zip_keys<T> = never | (keyof T)[]
 export function zip_keys<T extends { [x: string]: unknown }>(xs: T, ys: T): zip_keys<T> {
   const xsKeys = globalThis.Object.keys(xs)
   const ysKeys = globalThis.Object.keys(ys)
@@ -24,8 +24,8 @@ export function zip_keys<T extends { [x: string]: unknown }>(xs: T, ys: T): zip_
   return globalThis.Array.from(index)
 }
 
-type zip_objects<T> = (readonly [key: keyof T, value: readonly [T[keyof T], T[keyof T]]])[]
-function zip_objects<T extends { [x: string]: unknown }>(xs: T, ys: T): zip_objects<T> {
+type zip_objects<T> = never | (readonly [key: keyof T, value: readonly [T[keyof T], T[keyof T]]])[]
+function zip_objects<const T extends { [x: string]: unknown }>(xs: T, ys: T): zip_objects<T> {
   const allKeys = zip_keys(xs, ys)
   let out: zip_objects<T> = []
   for (let ix = 0, len = allKeys.length; ix < len; ix++) 
@@ -33,7 +33,7 @@ function zip_objects<T extends { [x: string]: unknown }>(xs: T, ys: T): zip_obje
   return out
 }
 
-type zip_records<T> = (readonly [T[keyof T], T[keyof T]])[]
+type zip_records<T> = never | (readonly [T[keyof T], T[keyof T]])[]
 function zip_records<T extends { [x: string]: unknown }>(xs: T, ys: T): zip_records<T> {
   const allKeys = zip_keys(xs, ys)
   let out: zip_records<T> = []

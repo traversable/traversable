@@ -65,29 +65,22 @@ import type { NonFiniteBoolean, NonFiniteIndex, NonFiniteNumber, NonFiniteString
  *   8900000000000000000000000000000000000000000000000000000000000000000000000000000000000000000.e-89,
  * ])
  */
-export type Finite<S> = [S] extends [boolean]
-  ? [boolean] extends [S]
-    ? NonFiniteBoolean
-    : boolean
-  : [S] extends [number]
-    ? [number] extends [S]
-      ? NonFiniteNumber
-      : number
-    : [S] extends [string]
-      ? [string] extends [S]
-        ? NonFiniteString
-        : string
-      : [S] extends [{ [x: number]: any }]
-        ? [string] extends [keyof S]
-          ? NonFiniteIndex<S>
-          : { [K in keyof S]: Finite<S[K]> }
-        : unknown
+export type Finite<S> 
+  = [S] extends [boolean] ? [boolean] extends [S] ? NonFiniteBoolean : boolean
+  : [S] extends  [number] ?  [number] extends [S] ? NonFiniteNumber  : number 
+  : [S] extends  [string] ?  [string] extends [S] ? NonFiniteString  : string
+  : [S] extends [{ [x: number]: any }] ? [string] extends [keyof S] ? NonFiniteIndex<S> 
+  : { -readonly [K in keyof S]: Finite<S[K]> }
+  : void
+  ;
 
 /**
  * ## {@link finite `finite`}
  *
- * An **inductive constraint** that recursively checks to make sure its argument
- * is entirely finite.
+ * An **inductive constraint** that recursively unfolds a type from a seed
+ * an makes sure its argument is entirely finite.
+ * 
+ * {@link finite `finite`} behaves like an identity function at runtime.
  *
  * For additional docs/usage examples, see {@link Finite `Finite`}.
  */

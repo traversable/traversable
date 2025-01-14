@@ -1,3 +1,5 @@
+export type { symbol } from "@traversable/registry"
+
 export { 
   is,
   allOf$,
@@ -14,6 +16,24 @@ export {
 } from "./predicates.js"
 
 export * as t from "./ast.js"
+import * as t from "./ast.js"
+/** 
+ * # {@link t `core.t`} 
+ * 
+ * @example
+ * import { t } from "@traversable/core"
+ * 
+ * const MyObject = t.object({ abc: t.optional(t.number()) })
+ * //    ^? const MySchema: t.object<{ abc: t.optional<t.number> }>
+ *
+ * type MyObject = t.typeof<typeof MySchema>
+ * //   ^? type MyObject = { abc?: number | undefined }
+ * 
+ * const MyArray = t.array(t.anyOf(t.string(), t.boolean()))
+ * type MyArray = t.typeof<typeof MySchema>
+ * //   ^? type MyArray = (string | boolean)[]
+*/
+declare module "./ast.js" {}
 
 export * as path from "./toPaths.js"
 export { toPaths } from "./toPaths.js"

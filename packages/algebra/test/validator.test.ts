@@ -156,8 +156,8 @@ vi.describe("〖️⛳️〗‹‹‹ ❲@traversable/algebra/validator❳", () 
 })
 
 vi.describe("〖️⛳️〗‹‹‹ ❲@traversable/algebra/validator❳", () => {
-  //////////////////////////////
-  ///    Intersection (&)    ///
+  //////////////////////////
+  ///    Intersection    ///
   const IntersectionSchema = {
     allOf: [
       { type: "object", properties: { abc: { type: "boolean" } }, required: ["abc"] },
@@ -170,25 +170,10 @@ vi.describe("〖️⛳️〗‹‹‹ ❲@traversable/algebra/validator❳", () 
     lax: () => Validator.derive(IntersectionSchema, lax),
     arbitrary: () => Arbitrary.derive.fold()(IntersectionSchema),
     oracle: type(
-      {
-        type: "'object'", 
-        required: ["'abc'"],
-        properties: { 
-          abc: { 
-            type: "'boolean'" 
-          }
-        }
-      }, 
+      { abc: "boolean" }, 
       "&",
-      {
-        type: "'object'", 
-        properties: { 
-          abc: { 
-            type: "'boolean'" 
-          }
-        }
-      },
-    )
+      { "def?": "boolean" },
+    ),
   } as const
 
   vi.it("〖️⛳️〗› ❲validator.derive❳: Intersection (examples)", () => {
@@ -220,7 +205,7 @@ vi.describe("〖️⛳️〗‹‹‹ ❲@traversable/algebra/validator❳", () 
   })
 
   test.prop([Intersection.arbitrary()], { 
-    numRuns: 3,
+    // numRuns: 100_000,
     examples: [] 
   })(
     "〖️⛳️〗› ❲validator.derive❳: Intersection (property-based)", 
@@ -232,7 +217,6 @@ vi.describe("〖️⛳️〗‹‹‹ ❲@traversable/algebra/validator❳", () 
 
   test.prop([fc.json()], { 
     // numRuns: 100_000,
-    numRuns: 3_000,
     examples: [
       [ null ],
       [ [ ] ],
@@ -241,26 +225,135 @@ vi.describe("〖️⛳️〗‹‹‹ ❲@traversable/algebra/validator❳", () 
       [ [ { "": "" } ] ],
       [ { "": void 0 } ],
       [ globalThis.Object.create(null) ],
+      [ { abc: true } ],
+      [ { abc: false, def: true } ],
+      [ { def: true } ],
+      [ { def: 1 } ],
+      [ { abc: 0 } ],
+      [ { abc: 1, def: false } ],
+      [ { abc: true, def: 0 } ],
     ],
   })(
-    "〖️⛳️〗› ❲validator.derive❳: Dict<string> (oracle)", 
+    "〖️⛳️〗› ❲validator.derive❳: Intersection (oracle)", 
     fn.flow(
       fn.tee(
         (_) => eval(Intersection.lax())(_) === true,
-        (_) => ! (Intersection.oracle(_) instanceof type.errors),
+        (_) => !(Intersection.oracle(_) instanceof type.errors),
       ),
       ([p, q]) => p === q,
       vi.assert.isTrue,
     )
   )
+  ///    Intersection    ///
+  //////////////////////////
 
-  ///    Intersection (&)    ///
-  //////////////////////////////
+
+  ///////////////////
+  ///    Union    ///
+  const UnionSchema = {
+    anyOf: [
+      { type: "object", properties: { abc: { type: "boolean" } }, required: ["abc"] },
+      { type: "object", properties: { def: { type: "boolean" } } },
+    ]
+  } as const
+
+  const Union = {
+    strict: () => Validator.derive(UnionSchema, strict),
+    lax: () => Validator.derive(UnionSchema, lax),
+    arbitrary: () => Arbitrary.derive.fold()(UnionSchema),
+    oracle: type(
+      { abc: "boolean" }, 
+      "|",
+      { "def?": "boolean" },
+    ),
+  } as const
+
+  test.prop([fc.json()], { 
+    // numRuns: 100_000,
+    examples: [
+      [ null ],
+      [ [ ] ],
+      [ [ "" ] ],
+      [ { "": "" } ],
+      [ [ { "": "" } ] ],
+      [ { "": void 0 } ],
+      [ globalThis.Object.create(null) ],
+      [ { abc: true } ],
+      [ { abc: false, def: true } ],
+      [ { def: true } ],
+      [ { def: 1 } ],
+      [ { abc: 1, def: false } ],
+      [ { abc: true, def: 0 } ],
+    ],
+  })(
+    "〖️⛳️〗› ❲validator.derive❳: Union (oracle)", 
+    fn.flow(
+      fn.tee(
+        (_) => eval(Union.lax())(_) === true,
+        (_) => !(Union.oracle(_) instanceof type.errors),
+      ),
+      ([p, q]) => p === q,
+      vi.assert.isTrue,
+    )
+  )
+  ///    Union    ///
+  ///////////////////
+
+
+  ////////////////////////////
+  ///    Disjoint Union    ///
+  const DisjointUnionSchema = {
+    oneOf: UnionSchema.anyOf,
+  } as const
+
+  const DisjointUnion = {
+    strict: () => Validator.derive(DisjointUnionSchema, strict),
+    lax: () => Validator.derive(DisjointUnionSchema, lax),
+    arbitrary: () => Arbitrary.derive.fold()(DisjointUnionSchema),
+    oracle: Union.oracle,
+  } as const
+
+  vi.it(
+    "〖️⛳️〗› ❲validator.derive❳: Disjoint Union (makes sure )",
+    () => {
+    vi.assert.isFalse(eval(DisjointUnion.lax())({ abc: true, def: true }))
+  })
+  
+  test.prop([fc.json()], { 
+    // numRuns: 100_000,
+    examples: [
+      [ null ],
+      [ [ ] ],
+      [ [ "" ] ],
+      [ { "": "" } ],
+      [ [ { "": "" } ] ],
+      [ { "": void 0 } ],
+      [ globalThis.Object.create(null) ],
+      [ { abc: true } ],
+      [ { abc: false, def: true } ],
+      [ { def: true } ],
+      [ { def: 1 } ],
+      [ { abc: 1, def: false } ],
+      [ { abc: true, def: 0 } ],
+    ],
+  })(
+    "〖️⛳️〗› ❲validator.derive❳: Union (oracle)", 
+    fn.flow(
+      fn.tee(
+        (_) => eval(Union.lax())(_) === true,
+        (_) => !(Union.oracle(_) instanceof type.errors),
+      ),
+      ([p, q]) => p === q,
+      vi.assert.isTrue,
+    )
+  )
+  ///    Disjoint Union    ///
+  ////////////////////////////
 
 
   //////////////////////////
   ///    Dict<string>    ///
-  const DictSchema = { 
+  const DictSchema = {
     type: "record", 
     additionalProperties: { 
       type: "string" 
@@ -274,7 +367,7 @@ vi.describe("〖️⛳️〗‹‹‹ ❲@traversable/algebra/validator❳", () 
     oracle: type("Record<string, string>"),
   }
 
-  vi.it("〖️⛳️〗› ❲validator.derive❳: Dict<string> (examples)", () => {
+vi.it("〖️⛳️〗› ❲validator.derive❳: Dict<string> (examples)", () => {
     vi.expect(Dict.strict()).toEqual(
       [
         '(function($0$){if(!$0$||typeof $0$!=="object"||Array.isArray($0$))return false;',
@@ -303,7 +396,6 @@ vi.describe("〖️⛳️〗‹‹‹ ❲@traversable/algebra/validator❳", () 
 
   test.prop([fc.json()], { 
     // numRuns: 100_000,
-    numRuns: 3_000,
     examples: [
       [ null ],
       [ { } ],
@@ -346,7 +438,6 @@ vi.describe("〖️⛳️〗‹‹‹ ❲@traversable/algebra/validator❳", () 
     lax: () => Validator.derive(DictOfStringsSchema, lax),
     arbitrary: () => Arbitrary.derive.fold()(DictOfStringsSchema),
     oracle: type(`Record<string, string[]>`)
-    // record$(array$(is.string))
   }
 
   vi.it("〖️⛳️〗› ❲validator.derive❳: Dict<string[]> (examples)", () => {
@@ -389,7 +480,6 @@ vi.describe("〖️⛳️〗‹‹‹ ❲@traversable/algebra/validator❳", () 
 
   test.prop([fc.json()], { 
     // numRuns: 100_000,
-    numRuns: 3_000,
     examples: [
       [ null ],
       [ { } ],
@@ -476,7 +566,6 @@ vi.describe("〖️⛳️〗‹‹‹ ❲@traversable/algebra/validator❳", () 
 
   test.prop([fc.json()], { 
     // numRuns: 100_000,
-    numRuns: 3_000,
     examples: [
       [ null ],
       [ { } ],
@@ -553,7 +642,6 @@ vi.describe("〖️⛳️〗‹‹‹ ❲@traversable/algebra/validator❳", () 
 
   test.prop([fc.json()], { 
     // numRuns: 100_000,
-    numRuns: 3_000,
     examples: [
       [ null ],
       [ { } ],
@@ -752,7 +840,6 @@ vi.describe("〖️⛳️〗‹‹‹ ❲@traversable/algebra/validator❳", () 
 
   test.prop([fc.json()], { 
     // numRuns: 100_000,
-    numRuns: 3_000,
     examples: [
       [ { "a": void 0 } ],
       [ null ],
@@ -823,7 +910,6 @@ vi.describe("〖️⛳️〗‹‹‹ ❲@traversable/algebra/validator❳", () 
 
   test.prop([fuzz], { 
     // numRuns: 100_000,
-    numRuns: 3_000,
     examples: [
       [ null ],
       [ { } ],

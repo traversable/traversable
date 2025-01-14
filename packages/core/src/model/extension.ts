@@ -230,9 +230,9 @@ export function Extension_matchWithContext
  * interface Baz { type: "Baz" }
  * 
  * const myExt = Extension.register({
- *   Foo: (_: unknown): _ is Foo => true,
- *   Bar: (_: unknown): _ is Bar => true,
- *   Baz: (_: unknown): _ is Baz => true,
+ *   Foo: (u: unknown): u is Foo => !!u && typeof u === "object" && "type" in u && u.type === "Foo",
+ *   Bar: (u: unknown): u is Bar => !!u && typeof u === "object" && "type" in u && u.type === "Bar",
+ *   Baz: (u: unknown): u is Baz => !!u && typeof u === "object" && "type" in u && u.type === "Baz",
  * })
  * 
  * declare module "@traversable/core" {

@@ -1,8 +1,8 @@
 import * as vi from "vitest"
 
-import { show, test } from "@traversable/core"
+import { test } from "@traversable/core"
 import { Schema, tag, untag, } from "@traversable/openapi"
-import { type Force, symbol } from "@traversable/registry"
+import { symbol } from "@traversable/registry"
 
 vi.describe("〖⛳️〗‹‹‹ ❲@traversable/openapi/tag❳", () => {
   vi.it("〖⛳️〗‹ ❲openapi.tag❳: examples", () => {

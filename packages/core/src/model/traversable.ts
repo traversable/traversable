@@ -336,6 +336,7 @@ const Traversable_isEnum
   = Traversable_enum.is as
     (u: unknown) => u is Traversable_enum
 
+
 const Traversable_anyOf = t.object({
   type: t.const("anyOf"),
   anyOf: t.array(t.any()),
@@ -498,6 +499,22 @@ const Traversable_Functor: Functor<Traversable_lambda, Traversable> = {
   }
 }
 
+const PathPrefixMap = {
+  boolean: null,
+  integer: null,
+  null: null,
+  number: null,
+  string: null,
+  ///
+  enum: "enum",
+  allOf: "allOf",
+  anyOf: "anyOf",
+  array: "items",
+  object: "properties",
+  oneOf: "oneOf",
+  record: "additionalProperties",
+  tuple: "items",
+} as const satisfies Record<Traversable["type"], string | null>
 
 const IndexedFunctor: IndexedFunctor<Context, Traversable_lambda, Traversable> = {
   map: Traversable_Functor.map,
@@ -505,7 +522,16 @@ const IndexedFunctor: IndexedFunctor<Context, Traversable_lambda, Traversable> =
     return ($, xs) => {
       const depth = $.depth + 1
       const indent = $.indent + 2
-      const h = (path: (keyof any)[], overrides?: {}) => ({ ...$, depth, indent, path, ...overrides })
+      const h = (next?: keyof any) => (path: (keyof any)[], overrides?: {}) => ({ 
+        ...$, 
+        depth, 
+        absolutePath: [...$.absolutePath, PathPrefixMap[xs.type], String(next)].filter((_) => _ !== null),
+        indent, 
+        // `next` is already applied to the path, bc sometimes `next` 
+        // isn't actually last (as is the case with `symbol.optional`)
+        path,  
+        ...overrides,
+      } satisfies Context)
 
       switch (true) {
         default: return fn.softExhaustiveCheck(xs)
@@ -515,19 +541,19 @@ const IndexedFunctor: IndexedFunctor<Context, Traversable_lambda, Traversable> =
         case Traversable_is.integer(xs): return xs
         case Traversable_is.number(xs): return xs
         case Traversable_is.string(xs): return xs
-        case Traversable_is.array(xs): return { ...xs, items: g(h([...$.path, symbol.array]), xs.items) }
-        case Traversable_is.allOf(xs): return { ...xs, allOf: xs.allOf.map((x, i) => g(h([...$.path, symbol.allOf, i]), x)) }
-        case Traversable_is.anyOf(xs): return { ...xs, anyOf: xs.anyOf.map((x, i) => g(h([...$.path, symbol.anyOf, i]), x)) }
-        case Traversable_is.oneOf(xs): return { ...xs, oneOf: xs.oneOf.map((x, i) => g(h([...$.path, symbol.oneOf, i]), x)) }
-        case Traversable_is.tuple(xs): return { ...xs, items: xs.items.map((x, i) => g(h([...$.path, symbol.tuple, i]), x)) }
-        case Traversable_is.record(xs): return { ...xs, additionalProperties: g(h([...$.path, symbol.record]), xs.additionalProperties) }
+        case Traversable_is.array(xs): return { ...xs, items: g(h()([...$.path, symbol.array]), xs.items) }
+        case Traversable_is.allOf(xs): return { ...xs, allOf: xs.allOf.map((x, i) => g(h(i)([...$.path, symbol.allOf, i]), x)) }
+        case Traversable_is.anyOf(xs): return { ...xs, anyOf: xs.anyOf.map((x, i) => g(h(i)([...$.path, symbol.anyOf, i]), x)) }
+        case Traversable_is.oneOf(xs): return { ...xs, oneOf: xs.oneOf.map((x, i) => g(h(i)([...$.path, symbol.oneOf, i]), x)) }
+        case Traversable_is.tuple(xs): return { ...xs, items: xs.items.map((x, i) => g(h(i)([...$.path, symbol.tuple, i]), x)) }
+        case Traversable_is.record(xs): return { ...xs, additionalProperties: g(h()([...$.path, symbol.record]), xs.additionalProperties) }
         case Traversable_is.object(xs): {
           const { additionalProperties: a, properties: p, ...y } = xs
           const entries = Object_entries(p)
             .map(([k, v]) => {
               const isOptional = !xs.required?.includes(k)
               const path = [ ...$.path, symbol.object, k, ...(isOptional ? [symbol.optional] : [])]
-                return [k, g(h(path), v)]
+              return [k, g(h(k)(path), v)]
             })
     
           return {

@@ -23,7 +23,9 @@ export interface Context<T = any> {
   depth: number
   indent: number
   typeName: string
-  absolutePath: `/${string}`
+  absolutePath: string[]
+  siblingCount: number
+  document: { paths: { [x: string]: {} } }
   T?: T
 }
 export declare namespace Context {

@@ -18,7 +18,9 @@ import Country = std.Country
 import Currency = std.Currency
 import Digit = std.Digit
 import State = std.UnitedStateOfAmerica
-import type { HKT } from "@traversable/registry"
+import type { Force, HKT } from "@traversable/registry"
+import { symbol } from "@traversable/registry"
+export { symbol } from "@traversable/registry"
 
 /** @internal */
 const PATTERN = {
@@ -28,6 +30,9 @@ const PATTERN = {
   pathnameEZ: /^[_a-zA-Z][_a-zA-Z0-9]+$/,
   pathname: /^[a-zA-Z0-9._-]+$/,
 } as const
+
+/** @internal */
+const Object_keys = globalThis.Object.keys
 
 type Keyword = keyof typeof KEYWORDS
 const KEYWORDS = {
@@ -206,8 +211,19 @@ declare namespace boolean_ { interface Constraints { falseBias?: boolean } }
  *  console.log(fc.peek(ex_01)) // => Symbol("")
  *  console.log(fc.peek(ex_01)) // => Symbol("-1e+21")
  */
-export function symbol(constraints?: fc.StringMatchingConstraints): fc.Arbitrary<symbol> {
+function fc_symbol(constraints?: fc.StringMatchingConstraints): fc.Arbitrary<symbol> {
   return identifier(constraints).map(Symbol.for)
+}
+export { fc_symbol as symbol_ }
+
+/** ### {@link primitive `fc.primitive`} */
+export function primitive() {
+  return fc.oneof(fc_null(), fc_symbol(), fc.boolean(), fc.integer(), fc.float(), fc.string())
+}
+
+/** ### {@link literal `fc.literal`} */
+export function literal() {
+  return fc.oneof(fc_null(), fc.boolean(), fc.integer(), fc.float({ noNaN: true }), fc.string())
 }
 
 /**
@@ -250,7 +266,7 @@ export function key(constraints: key.Constraints = {}): fc.Arbitrary<keyof never
     : fc.oneof(
       ...(constraints.excludeStrings ? [] : [identifier()]),
       ...(constraints.excludeNumbers ? [] : [fc.nat()]),
-      ...(constraints.excludeSymbols ? [] : [symbol()]),
+      ...(constraints.excludeSymbols ? [] : [fc_symbol()]),
     )
 }
 
@@ -363,6 +379,34 @@ declare namespace record {
     & Part<T, globalThis.Exclude<keyof T, K>>
   >
 }
+
+/*
+: fc.Arbitrary<
+  & { [K in Req]: fc.Arbitrary<unknown> }
+  & { [K in Opt]: fc.Arbitrary<unknown> }
+> */
+
+export function part<
+  Required extends { [x: number]: unknown }, 
+  Optional extends { [x: number]: unknown }
+>(
+  req: { [K in keyof Required]: fc.Arbitrary<Required[K]> }, 
+  opt: { [K in keyof Optional]: fc.Arbitrary<Optional[K]> }
+): fc.Arbitrary<Force<
+  & Required 
+  & Partial<Optional>
+>>
+
+export function part<Req extends keyof any, Opt extends keyof any>(
+  req: { [K in Req]: fc.Arbitrary<unknown> }, 
+  opt: { [K in Opt]: fc.Arbitrary<unknown> }
+) {
+  const requiredKeys = Object_keys(req)
+  const xyz: { [x: string]: fc.Arbitrary<unknown> } = { ...req, ...opt }
+  const constraints = { requiredKeys }
+  return fc.record(xyz, constraints)
+}
+
 
 export function record<T>(model: { [K in keyof T]: fc.Arbitrary<T[K]> }): fc.Arbitrary<T>
 export function record<T, K extends keyof T>(
@@ -850,9 +894,11 @@ export function pathnameEZ(constraints?: fc.StringMatchingConstraints) {
  * @example
  * console.log(fc.sample(fc.optional(fc.nat()), 5)) // => [89, null, 4, 1190, null]
  */
-export function optional<T>(arbitrary: fc.Arbitrary<T>, constraints?: fc.OneOfConstraints): fc.Arbitrary<T | undefined>
-export function optional<T>(arbitrary: fc.Arbitrary<T>, constraints: fc.OneOfConstraints = {}) {
-  return fc.oneof(constraints, arbitrary, fc.constant(undefined))
+export function optional<T>(arbitrary: fc.Arbitrary<T>, constraints?: fc.OneOfConstraints): fc.Arbitrary<T | undefined> & { readonly [symbol.optional]: true }
+export function optional<T>(arbitrary: fc.Arbitrary<T>, constraints: fc.OneOfConstraints = {}): fc.Arbitrary<T | undefined> {
+  const model = fc.oneof(constraints, arbitrary, fc.constant(undefined));
+  (model as any)[symbol.optional] = true;
+  return model
 }
 
 /**

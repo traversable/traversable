@@ -9,8 +9,14 @@ import * as Type from "./type.js"
 export { deriveValidator as derive }
 
 export type Options = Partial<typeof defaults>
+export type ContinuationContext = {
+  path: (string | number)[], 
+  depth: number, 
+  isRequired: boolean
+}
+
 export interface Stream {
-  go(path: (string | number)[], depth: number, isRequired: boolean): string
+  GO(ctx: ContinuationContext): string
   nextIndex?: string | number
   keyCount?: number
   required?: (string | number)[]
@@ -55,160 +61,218 @@ export const defaults = {
 /** @internal */
 const Object_entries = globalThis.Object.entries
 /** @internal */
-const pairwise = (depth: number, pathname?: string) => "$" + (depth + "") + "$" + (pathname ?? "")
+const ident = (depth: number, pathname?: string) => "$" + (depth + "") + "$" + (pathname ?? "")
+/** @internal */
+const nextValidIdent = (...args: [depth: number, pathname?: string]) => "V" + ident(...args)
 
 namespace RAlgebra {
-  const handleOptional = (isRequired: boolean, path: (string | number)[]) =>
-    isRequired ? "" : path.join("") + "!==undefined&&"
+  const inlineOptionalityCheck = ($: ContinuationContext) =>
+    $.isRequired ? "" : $.path.join("") + "!==undefined&&"
 
+  /**
+   * - [ ] TODO:
+   * Possible optimization: use # of required keys to
+   * short-circuit if target doesn't have at least that many keys
+   */
   export function validator(options?: Options): Functor.RAlgebra<Traversable.lambda, Stream> 
-  export function validator($: Options = defaults): Functor.RAlgebra<Traversable.lambda, Stream> {
+  export function validator($$: Options = defaults): Functor.RAlgebra<Traversable.lambda, Stream> {
     return (n) => {
       switch (true) {
-        case Traversable.is.enum(n): return { go: () => "" }
-        case Traversable.is.null(n): return { go: (path) => `if(${path.join("")}!==null)return false;` }
-        case Traversable.is.boolean(n): return {
-          go: (path, _, req) =>
-            "if(" + handleOptional(req, path) + `typeof ${path.join("")}!=="boolean")return false;`,
-        }
-        case Traversable.is.integer(n): return {
-          go: (path, _, req) => 
-            "if(" + handleOptional(req, path) + `!Number.isInteger(${path.join("")}))return false;`,
+        default: return fn.exhaustive(n)
+        case Traversable.is.enum(n): return { GO: () => "" }
+
+        case Traversable.is.null(n): return { 
+          GO: ($) => {
+            return ""
+              + "if(" 
+              + $.path.join("") 
+              + "!==null){return false;}"
+            //
+          }
+        } 
+        case Traversable.is.boolean(n): return { 
+          GO: ($) => ""
+            + "if("
+            + inlineOptionalityCheck($)
+            + "typeof "
+            + $.path.join("")
+            + '!=="boolean"'
+            + ")return false;"
+          //
+        } 
+        case Traversable.is.integer(n): return { 
+          GO: ($) => ""
+            + "if(" 
+            + inlineOptionalityCheck($) 
+            + "!Number.isInteger(" 
+            + $.path.join("") 
+            + "))return false;"
+          //
         }
         case Traversable.is.number(n): return {
-          go: (path, _, req) =>
-            "if(" + handleOptional(req, path) + `typeof ${path.join("")}!=="number")return false;`,
-          }
+          GO: ($) => ""
+            + "if(" 
+            + inlineOptionalityCheck($) 
+            + `typeof ${$.path.join("")}!=="number")return false;`
+          //
+        }
         case Traversable.is.string(n): return {
-          go: (path, _, req) =>
-            "if(" + handleOptional(req, path) + `typeof ${path.join("")}!=="string")return false;`,
+          GO: ($) => "" 
+            + "if(" 
+            + inlineOptionalityCheck($) 
+            +  "typeof " + $.path.join("") + '!=="string"'
+            + ")return false;"
+          //
         }
-        case Traversable.is.object(n): {
-          return {
-            go: (path, depth, req) => {
-              const $path = [pairwise(depth), ...path.slice(1)]
-              const $prev = $path.join("")
-              const $reqOpen = req ? "" : "if(" + path.join("") + "!==undefined){"
-              const $reqClose = req ? "" : "}"
-              const arrayCheck = $.flags?.treatArraysLikeObjects ? "" : `||Array.isArray(${$prev})`
-              const $check = `if(${!req ? `${$prev}===null||` : `!${$prev}||`}typeof ${$prev}!=="object"` + arrayCheck + `)return false;`
 
-              return (
-                "" +
-                $reqOpen +
-                $check +
-                Object_entries(n.properties)
-                  .map(([k, [x, ctx]]) => {
-                    /**
-                     * - [ ] TODO:
-                     * Possible optimization: use # of required keys to
-                     * short-circuit if target doesn't have at least that many keys
-                     */
-                    const isRequired = (n.required ?? []).includes(k)
-                    const $next = [...$path, k]
-                    const $varname = $next.join("")
-                    const $var = `let ${$varname}=${$prev}["${k}"];`
-                    const $rest = ctx.go($next, depth, isRequired)
+        case Traversable.is.allOf(n): return { 
+          GO($) { return n.allOf.map(([, ctx]) => ctx.GO($)).join("") } 
+        }
 
-                    return "" + $var + $rest
-                  })
-                  .join("") +
-                $reqClose
-              )
-            },
+        case Traversable.is.anyOf(n): return { 
+          GO($) { 
+            const path = [ident($.depth), ...$.path.slice(1)]
+            const $valid = `v${path.join("")}`
+            return "let " + $valid + "=" + "[" 
+              + n.anyOf.map(([, xf]) => {
+                const CHILD = xf.GO({ path, depth: $.depth, isRequired: true })
+                return "(() => {" + CHILD + "return true;})()"
+              })
+              .join(",")
+              + "].some((_) => _ === true);" 
+              + "if(" + $valid + "!==true)return false;"
           }
         }
-        case Traversable.is.tuple(n):
-          return {
-            go: (path, depth, req) => {
-              const $path = [pairwise(depth), ...path.slice(1)]
-              const $prev = $path.join("")
-              const $reqOpen = req ? "" : "if(" + path.join("") + "!==undefined){"
-              const $reqClose = req ? "" : "}"
-              const $check = `if(!Array.isArray(${$prev}))return false;`
 
-              return (
-                "" +
-                $reqOpen +
-                $check +
-                n.items
-                  .map(([x, ctx], ix) => {
-                    const $ix = tree.has("originalIndex", core.is.number)(x) ? x.originalIndex : ix
-                    const $next = [...$path, $ix]
-                    // const $path = [$prev, $ix]
-                    const $var = $next.join("")
-                    const $binding = `let ${$var}=${$prev}[${$ix}];`
-                    return $binding + ctx.go($next, depth, true)
-                  })
-                  .join("") +
-                $reqClose
-              )
-            },
+        case Traversable.is.oneOf(n): return {
+          GO($) { 
+            const path = [ident($.depth), ...$.path.slice(1)]
+            const $valid = `v${path.join("")}`
+            return "let " + $valid + "=" + "[" 
+              + n.oneOf.map(([, xf]) => {
+                const CHILD = xf.GO({ path, depth: $.depth, isRequired: true })
+                return "(() => {" + CHILD + "return true;})()"
+              })
+              .join(",")
+              + "].filter((_) => _ === true);" 
+              + "if(" + $valid + ".length !==1)return false;"
           }
+        }
+
+        case Traversable.is.object(n): return {
+          GO($) {
+            const $$_path = [ident($.depth), ...$.path.slice(1)]
+            const $$_varname = $$_path.join("")
+            const CHILDREN = Object_entries(n.properties)
+              .map(([k, [, xf]]) => {
+                const isRequired = (n.required ?? []).includes(k)
+                const path = [...$$_path, k]
+                const $_varname = path.join("")
+                const var_ = `let ${$_varname}=${$$_varname}["${k}"];`
+                const CHILD = xf.GO({ ...$, path, isRequired })
+                return var_ + CHILD
+              })
+            //
+
+            const $$_check
+              = "if(" 
+              + (! $.isRequired ? $$_varname + "===null" : "!" + $$_varname)
+              + "||"
+              + "typeof " + $$_varname + '!=="object"' 
+              + ($$.flags?.treatArraysLikeObjects ? "" : "||Array.isArray(" + $$_varname + ")")
+              + ")"
+              + "return false;"
+            //
+
+            const $$_reqOpen  = $.isRequired ? ( "" ) : ( "if(" + $.path.join("") + "!==undefined){" )
+            const $$_reqClose = $.isRequired ? ( "" ) : ( "}" )
+            //
+            return "" 
+              + $$_reqOpen
+              + $$_check
+              + CHILDREN.join("")
+              + $$_reqClose
+            //
+          },
+        }
+
+        case Traversable.is.tuple(n): return {
+          GO($) {
+            const $$_path = [ident($.depth), ...$.path.slice(1)]
+            const $$_varname = $$_path.join("")
+            const $reqOpen = $.isRequired ? "" : "if(" + $$_varname + "!==undefined){"
+            const $reqClose = $.isRequired ? "" : "}"
+            const $check = `if(!Array.isArray(${$$_varname}))return false;`
+            return "" 
+              + $reqOpen 
+              + $check 
+              + n.items
+                .map(([x, ctx], ix) => {
+                  const ix_ = tree.has("originalIndex", core.is.number)(x) ? x.originalIndex : ix
+                  const path = [...$$_path, ix_]
+                  const varname_ = path.join("")
+                  const var_ = `let ${varname_}=${$$_varname}[${ix_}];`
+                  return var_ + ctx.GO({ path, depth: $.depth, isRequired: true })
+                }).join("") 
+              + $reqClose
+            //
+          },
+        }
+
         case Traversable.is.array(n): {
           return {
-            go: (path, depth, req) => {
-              const $prev = [pairwise(depth), ...path.slice(1)].join("")
-              const $reqOpen = req ? "" : "if(" + path.join("") + "!==undefined){"
-              const $reqClose = req ? "" : "}"
+            GO($) {
+              const $prev = [ident($.depth), ...$.path.slice(1)].join("")
+              const $reqOpen = $.isRequired ? "" : "if(" + $.path.join("") + "!==undefined){"
+              const $reqClose = $.isRequired ? "" : "}"
               const $check = `if(!Array.isArray(${$prev}))return false;`
-              const $path = path.length === 0 ? [pairwise(depth + 1)] : [pairwise(depth + 1), ...path.slice(1)]
-              const $var = $path.join("")
               const $loop = [`for(let i=0;i<${$prev}.length;i++){`, "}"]
+              const path = $.path.length === 0 ? [ident($.depth + 1)] : [ident($.depth + 1), ...$.path.slice(1)]
+              const $var = path.join("")
               const $binding = `let ${$var}=${$prev}[i];`
-              return (
-                "" +
-                $reqOpen +
-                $check +
-                $loop[0] +
-                $binding +
-                [n.items].map(([, ctx]) => ctx.go($path, depth + 1, true))[0] +
-                $loop[1] +
-                $reqClose
-              )
+              return ""
+                + $reqOpen
+                + $check
+                + $loop[0]
+                + $binding
+                + [n.items].map(([, ctx]) => ctx.GO({ path, depth: $.depth + 1, isRequired: true }))[0]
+                + $loop[1]
+                + $reqClose
+              //
             },
           }
         }
+
         case Traversable.is.record(n): {
           return {
-            go: (path, depth, req) => {
-              const $prev = [pairwise(depth), ...path.slice(1)].join("")
-              const arrayCheck = $.flags?.treatArraysLikeObjects ? "" : `||Array.isArray(${$prev})`
-              const $reqOpen = req ? "" : "if(" + path.join("") + "!==undefined){"
-              const $reqClose = req ? "" : "}"
-              const $path = path.length === 0 ? [pairwise(depth + 1)] : [pairwise(depth + 1), ...path.slice(1)]
+            GO($) {
+              const $prev = [ident($.depth), ...$.path.slice(1)].join("")
+              const arrayCheck = $$.flags?.treatArraysLikeObjects ? "" : `||Array.isArray(${$prev})`
+              const $reqOpen = $.isRequired ? "" : "if(" + $.path.join("") + "!==undefined){"
+              const $reqClose = $.isRequired ? "" : "}"
               const $check =
                 "" + `if(!${$prev}||typeof ${$prev}!=="object"` + arrayCheck + ")return false;"
-              const $keys = `let $k${depth}=Object.keys(${$prev});`
-              const $inner = pairwise(depth + 1, path.slice(1).join(""))
-              const $binding = `let ${$inner}=${$prev}[$k${depth}[i]];`
-              const $loop = [`for(let i=0;i<$k${depth}.length;i++){`, "}"]
-
-              return (
-                "" +
-                $reqOpen +
-                $check +
-                $keys +
-                $loop[0] +
-                $binding +
-                [n.additionalProperties].map(([, ctx]) => ctx.go($path, depth + 1, true))[0] +
-                $loop[1] +
-                $reqClose
-              )
-            },
+              const $keys = `let $k${$.depth}=Object.keys(${$prev});`
+              const $inner = ident($.depth + 1, $.path.slice(1).join(""))
+              const $binding = `let ${$inner}=${$prev}[$k${$.depth}[i]];`
+              const $loop = [`for(let i=0;i<$k${$.depth}.length;i++){`, "}"]
+              const path = $.path.length === 0 ? [ident($.depth + 1)] : [ident($.depth + 1), ...$.path.slice(1)]
+              //
+              return ""
+                + $reqOpen
+                + $check
+                + $keys
+                + $loop[0]
+                + $binding
+                + [n.additionalProperties].map(([, ctx]) => ctx.GO({ path, depth: $.depth + 1, isRequired: true }))[0]
+                + $loop[1]
+                + $reqClose
+            }
           }
         }
-        case Traversable.is.allOf(n):
-          return { go: (path, depth) => n.allOf.map(([, ctx]) => ctx.go(path, depth, true)).join("") }
-        default:
-          return fn.exhaustive(n)
-        ///
-        case Traversable.is.anyOf(n): return fn.throw("UNIMPLEMENETED")
-        case Traversable.is.oneOf(n): return fn.throw("UNIMPLEMENETED")
       }
     }
   }
-
 }
 
 deriveValidator.defaults = defaults
@@ -224,7 +288,7 @@ deriveValidator.fold = ({
     Sort.derive({ compare }), 
     Traversable.fromJsonSchema,
     fn.para(Traversable.Functor)(RAlgebra.validator({ flags: { treatArraysLikeObjects, jitCompile }})), 
-    (xf) => xf.go([], 0, true),
+    (xf) => xf.GO({ path: [], depth: 0, isRequired: true }),
   );
 
 /**
@@ -260,143 +324,3 @@ function deriveValidator(
       (flags.jitCompile ? ")" : ""),
   )
 }
-
-// export const validator: Functor.RAlgebra<Schema.lambda, Stream> = (n) => {
-//   switch (true) {
-//     case Schema.is.enum(n): return { go: (path) => "" }
-//     case Schema.is.null(n): return { go: (path) => `if(${path.join("")}!=null)return false;` }
-//     case Schema.is.boolean(n): return {
-//       go: (path, _, req) =>
-//         "if(" + handleOptional(req, path) + `typeof ${path.join("")}!=="boolean")return false;`,
-//     }
-//     case Schema.is.integer(n): return {
-//       go: (path, _, req) => 
-//         "if(" + handleOptional(req, path) + `!Number.isInteger(${path.join("")}))return false;`,
-//     }
-//     case Schema.is.number(n): return {
-//       go: (path, _, req) =>
-//         "if(" + handleOptional(req, path) + `typeof ${path.join("")}!=="number")return false;`,
-//       }
-//     case Schema.is.string(n): return {
-//       go: (path, _, req) =>
-//         "if(" + handleOptional(req, path) + `typeof ${path.join("")}!=="string")return false;`,
-//     }
-//     case Schema.is.object(n):
-//       return {
-//         go: (path, depth, req) => {
-//           const $path = [pairwise(depth), ...path.slice(1)]
-//           const $prev = $path.join("")
-//           const $reqOpen = req ? "" : "if(" + path.join("") + "!==undefined){"
-//           const $reqClose = req ? "" : "}"
-//           const $check = `if(${!req ? "" : `!${$prev}||`}typeof ${$prev}!=="object"||Array.isArray(${$prev}))return false;`
-//           return (
-//             "" +
-//             $reqOpen +
-//             $check +
-//             Object_entries(n.properties)
-//               .map(([k, [x, ctx]]) => {
-//                 /**
-//                  * - [ ] TODO:
-//                  * Possible optimization: use # of required keys to
-//                  * short-circuit if target doesn't have at least that many keys
-//                  */
-//                 const isRequired = n.required.includes(k)
-//                 const $next = [...$path, k]
-//                 const $varname = $next.join("")
-//                 const $var = `let ${$varname}=${$prev}["${k}"];`
-//                 const $rest = ctx.go($next, depth, isRequired)
-//                 return "" + $var + $rest
-//               })
-//               .join("") +
-//             $reqClose
-//           )
-//         },
-//       }
-//     case Schema.is.tuple(n):
-//       return {
-//         go: (path, depth, req) => {
-//           const $path = [pairwise(depth), ...path.slice(1)]
-//           const $prev = $path.join("")
-//           const $reqOpen = req ? "" : "if(" + path.join("") + "!==undefined){"
-//           const $reqClose = req ? "" : "}"
-//           const $check = `if(!Array.isArray(${$prev}))return false;`
-//           return (
-//             "" +
-//             $reqOpen +
-//             $check +
-//             n.items
-//               .map(([x, ctx], ix) => {
-//                 const $ix = tree.has("originalIndex", is.number)(x) ? x.originalIndex : ix
-//                 const $next = [...$path, $ix]
-//                 // const $path = [$prev, $ix]
-//                 const $var = $next.join("")
-//                 const $binding = `let ${$var}=${$prev}[${$ix}];`
-//                 return $binding + ctx.go($next, depth, true)
-//               })
-//               .join("") +
-//             $reqClose
-//           )
-//         },
-//       }
-//     case Schema.is.array(n): {
-//       return {
-//         go: (path, depth, req) => {
-//           const $prev = [pairwise(depth), ...path.slice(1)].join("")
-//           const $reqOpen = req ? "" : "if(" + path.join("") + "!==undefined){"
-//           const $reqClose = req ? "" : "}"
-//           const $check = `if(!Array.isArray(${$prev}))return false;`
-//           const $path = path.length === 0 ? [pairwise(depth + 1)] : [pairwise(depth + 1), ...path.slice(1)]
-//           const $var = $path.join("")
-//           const $loop = [`for(let i=0;i<${$prev}.length;i++){`, "}"]
-//           const $binding = `let ${$var}=${$prev}[i];`
-//           return (
-//             "" +
-//             $reqOpen +
-//             $check +
-//             $loop[0] +
-//             $binding +
-//             [n.items].map(([, ctx]) => ctx.go($path, depth + 1, true))[0] +
-//             $loop[1] +
-//             $reqClose
-//           )
-//         },
-//       }
-//     }
-//     case Schema.is.record(n): {
-//       return {
-//         go: (path, depth, req) => {
-//           const $prev = [pairwise(depth), ...path.slice(1)].join("")
-//           const $reqOpen = req ? "" : "if(" + path.join("") + "!==undefined){"
-//           const $reqClose = req ? "" : "}"
-//           const $path = path.length === 0 ? [pairwise(depth + 1)] : [pairwise(depth + 1), ...path.slice(1)]
-//           const $check =
-//             "" + `if(!${$prev}||typeof ${$prev}!=="object"||Array.isArray(${$prev})` + ")return false;"
-//           const $keys = `let $k${depth}=Object.keys(${$prev});`
-//           const $inner = pairwise(depth + 1, path.slice(1).join(""))
-//           const $binding = `let ${$inner}=${$prev}[$k${depth}[i]];`
-//           const $loop = [`for(let i=0;i<$k${depth}.length;i++){`, "}"]
-//           return (
-//             "" +
-//             $reqOpen +
-//             $check +
-//             $keys +
-//             $loop[0] +
-//             $binding +
-//             [n.additionalProperties].map(([, ctx]) => ctx.go($path, depth + 1, true))[0] +
-//             $loop[1] +
-//             $reqClose
-//           )
-//         },
-//       }
-//     }
-//     case Schema.is.allOf(n):
-//       return { go: (path, depth) => n.allOf.map(([, ctx]) => ctx.go(path, depth, true)).join("") }
-//     default:
-//       return fn.exhaustive(n)
-//     ///
-//     case Schema.is.anyOf(n):
-//       return fn.throw("UNIMPLEMENETED")
-//     case Schema.is.oneOf(n):
-//       return fn.throw("UNIMPLEMENETED")
-//   }
-// }

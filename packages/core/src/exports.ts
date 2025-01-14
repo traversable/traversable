@@ -10,7 +10,8 @@ export { fc, Property } from "./arbitrary/index.js"
 export { JsonPointer } from "./json-pointer.js"
 export { Json } from "./json.js"
 
-export type { Config, ConfigWithContext, Context, Extension_register, Meta } from "./model/index.js"
+export type * from "./model/index.js"
 export { JsonSchema, Traversable, Extension } from "./model/index.js"
+
 export type JsonSchema = import("./model/json-schema.js").any
 export type Traversable = import("./model/traversable.js").Traversable

@@ -3,7 +3,7 @@ import type { inline, newtype, some } from "any-ts";
 import type { any, array, key, nonempty, prop, unicode } from "@traversable/data"
 import { Option, fn, keys, map, object, props } from "@traversable/data"
 
-import { Invariant, URI, _, symbol } from "@traversable/registry";
+import { Invariant, URI, _, symbol,   } from "@traversable/registry";
 import type { Json } from "./json.js"
 
 declare namespace Predicate {
@@ -615,7 +615,7 @@ export type fromPath<KS extends keys.any, T = {}>
   = KS extends nonempty.propsLeft<infer Todo, infer K>
   ? fromPath<Todo, { [P in K]: T }> : T
 
-export type fromPaths<T extends fromPaths.Path> = fromPaths.loop<T>
+export type fromPaths<T extends fromPaths.Path> = fromPaths.loop<[...T]>
 export declare namespace fromPaths {
   interface Leaf<V = unknown> { readonly [symbol.leaf]: URI.leaf, value: V }
   type Path<V = unknown> = readonly [props.any, V]
@@ -628,8 +628,8 @@ export declare namespace fromPaths {
   type nextFrom<
     T extends fromPaths.Path, 
     U extends T 
-    | T extends readonly [nonempty.mut.props<any, infer V>, infer W] ? readonly [V, W] : never
-    = T extends readonly [nonempty.mut.props<any, infer V>, infer W] ? readonly [V, W] : never
+    | T extends readonly [nonempty.props<any, infer V>, infer W] ? readonly [V, W] : never
+    = T extends readonly [nonempty.props<any, infer V>, infer W] ? readonly [V, W] : never
   > = U
   type loop<T extends fromPaths.Path> = never
     | [T] extends [readonly [readonly [], any]] ? T[1]
@@ -649,11 +649,11 @@ export declare namespace fromPaths {
  * - {@link fromPath `tree.fromPath`}
  */
 
-export function fromPaths<const T extends [path: props.any, leaf: unknown]>
+export function fromPaths<const T extends readonly [path: props.any, leaf: unknown]>
   (paths: readonly T[]): fromPaths<T> 
-export function fromPaths<const T extends [path: props.any, leaf: unknown]>
+export function fromPaths<const T extends readonly [path: props.any, leaf: unknown]>
   (paths: readonly T[], opts: fromPaths.Options<{ roundtrip: true }>): fromPaths.roundtrip<T> 
-export function fromPaths<const T extends [path: props.any, leaf: unknown]>
+export function fromPaths<const T extends readonly [path: props.any, leaf: unknown]>
   (paths: readonly T[], opts?: fromPaths.Options): fromPaths<T> 
 /// impl.
 export function fromPaths<const T extends [path: props.any, leaf: unknown]>

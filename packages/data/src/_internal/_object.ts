@@ -710,7 +710,7 @@ export function object_omit<
   J extends globalThis.Exclude<keyof T, A | B | C | D | E | F | G | H | I>,
   K extends globalThis.Exclude<keyof T, A | B | C | D | E | F | G | H | I | J>
 >(object: T, ...keys: [A, B, C, D, E, F, G, H, I, J, K]): object_omit<T, A | B | C | D | E | F | G | H | I | J | K>;
-export function object_omit<const T extends object.any>(object: T, ...key: key.any[]): globalThis.Partial<object.any>
+export function object_omit<const T extends object.any>(object: T, ...key: key.any[]): globalThis.Partial<T>
 /// impl.
 export function object_omit(object: object.any, ...key: key.any[]) {
   /** 

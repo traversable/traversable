@@ -803,6 +803,9 @@ interface object_<S> {
   is: (u: unknown) => u is { [K in keyof S]: typeof_<S[K]> }
 }
 
+/** 
+ * ## {@link object_ `t.object`}
+ */
 function object_<S extends typeof object_.children>(xs: S): object_<S>
 function object_<S extends typeof object_.children>(xs: S) {
   return {

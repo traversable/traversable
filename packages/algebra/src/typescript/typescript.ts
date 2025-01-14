@@ -1,12 +1,14 @@
-import { path, Extension, Traversable, is } from "@traversable/core"
+import { core, path, Extension, Traversable, is } from "@traversable/core"
 import type { Context } from "@traversable/core"
 import { fn, object } from "@traversable/data"
 import type { Functor } from "@traversable/registry"
 import { KnownFormat, symbol } from "@traversable/registry"
 
-import { createMask, createZodIdent, typescript as ts } from "./shared.js"
+import { createMask, createZodIdent, typescript as ts } from "../shared.js"
 
 export { generate }
+
+core.t
 
 /** @internal */
 const JSON_stringify = (u: unknown) => JSON.stringify(u, null, 2)
@@ -19,20 +21,22 @@ const isKeyOf = <T extends Record<string, string>>(dictionary: T) =>
 
 //////////////////
 ///  USERLAND  ///
-interface Foo { type: "Foo" }
-interface Bar { type: "Bar" }
-interface Baz { type: "Baz" }
-///
-const ext = Extension.register({
-  //   ^?
-  Foo: (_: unknown): _ is Foo => Math.random() > 1,
-  Bar: (_: unknown): _ is Bar => Math.random() > 1,
-  Baz: (_: unknown): _ is Baz => Math.random() > 1,
-})
-///
-declare module "@traversable/core" {
-  interface Extension extends Extension.register<typeof ext> {}
-}
+
+// interface Foo { type: "Foo" }
+// interface Bar { type: "Bar" }
+// interface Baz { type: "Baz" }
+// ///
+// const ext = Extension.register({
+//   //   ^?
+//   Foo: (_: unknown): _ is Foo => Math.random() > 1,
+//   Bar: (_: unknown): _ is Bar => Math.random() > 1,
+//   Baz: (_: unknown): _ is Baz => Math.random() > 1,
+// })
+// ///
+// declare module "@traversable/core" {
+//   interface Extension extends Extension.register<typeof ext> {}
+// }
+
 ///  USERLAND  ///
 //////////////////
 
@@ -229,6 +233,7 @@ function generate<Meta>(schema: Traversable.any, options: ts.Options | ts.Option
       typeName,
       indent: 0,
       depth: ts.rootContext.depth,
+      // document: options
       path: ts.rootContext.path,
     }, {
       absolutePath: options.absolutePath,
