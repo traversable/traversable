@@ -1,15 +1,15 @@
 import type { 
-  _,
   Functor as Functor_, 
   HKT, 
   Kind, 
-  newtype, 
   Primitive, 
+  _,
+  newtype, 
 } from "@traversable/registry"
 import { PATTERN, symbol } from "@traversable/registry"
 
 import { fc } from "@traversable/core"
-import { map, fn, object } from "@traversable/data"
+import { fn, map, object } from "@traversable/data"
 
 import { z } from "zod"
 

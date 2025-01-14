@@ -3,10 +3,10 @@ import * as path from "node:path"
 import * as vi from "vitest"
 import { z } from "zod"
 
+import prettier from "@prettier/sync"
 import { Traversable, fc, test, tree } from "@traversable/core"
 import { fn, map } from "@traversable/data"
 import { arbitrary } from "@traversable/openapi"
-import prettier from "@prettier/sync"
 
 import { zod } from "@traversable/algebra"
 import { _ } from "@traversable/registry"

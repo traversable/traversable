@@ -5,10 +5,10 @@ import { fn, object } from "@traversable/data"
 import type { Functor, _ } from "@traversable/registry"
 import { KnownFormat } from "@traversable/registry"
 
+import { openapi } from "@traversable/openapi"
 import type { Flags } from "../shared.js"
 import { createMask, createZodIdent, typescript as ts } from "../shared.js"
 import { vendor } from "../vendor.js"
-import { openapi } from "@traversable/openapi"
 
 export {
   Algebra,

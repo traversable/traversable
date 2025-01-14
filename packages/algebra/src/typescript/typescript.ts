@@ -1,4 +1,4 @@
-import { core, path, Extension, Traversable, is } from "@traversable/core"
+import { path, Extension, Traversable, core, is } from "@traversable/core"
 import type { Context } from "@traversable/core"
 import { fn, object } from "@traversable/data"
 import type { Functor } from "@traversable/registry"
