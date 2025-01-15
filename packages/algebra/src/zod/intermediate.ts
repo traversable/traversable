@@ -132,49 +132,47 @@ namespace Extract {
 }
 type AnyTag = keyof typeof Apply | ToTag<keyof typeof Apply>
 
-  ///    hkt    ///
-  type Bind<
-    Tag extends AnyTag, 
-    Target, 
-    Meta extends Meta.Base = Meta.Base,
-  > = Kind<lambda<Meta, Tag>, Target> 
-  // type Apply<
-  //   Tag extends AnyTag, 
-  //   Target, 
-  //   Meta extends Meta.Base = Meta.Base, 
-  //   _F extends typeof Apply[IR.FromTag<Tag>] = typeof Apply[IR.FromTag<Tag>]
-  // > = Kind<IR.lambda<Meta, IR.ToTag<Tag>>, Kind<_F, Target>>
-
-  type Apply<Tag extends AnyTag, Target, _F extends typeof Apply[FromTag<Tag>] = typeof Apply[FromTag<Tag>]> = Kind<_F, Target>
-  type Call<Tag extends AnyTag, _F extends typeof Apply[FromTag<Tag>] = typeof Apply[FromTag<Tag>]> = Kind<_F, _F[0]>
-
-  declare const Apply: {
-    null: Const$<null>
-    boolean: Const$<boolean>
-    number: Const$<number>
-    string: Const$<string>
-    literal: Identity$
-    optional: Union$<undefined>
-    array: Array$
-    record: Record$
-    tuple: NonEmptyArray$
-    object: Record$
-    union: Identity$
-    intersection: Identity$
-  }
-
-  interface Union$<T = unknown> extends HKT { [-1]: T | this[0] }
-  interface Intersection$ extends HKT<readonly [_, _]> { [-1]: this[0][0] & this[0][1] }
-  interface Array$<T = unknown> extends HKT<T> { [-1]: readonly this[0][] }
-  interface Record$<T = unknown> extends HKT<T> { [-1]: globalThis.Record<string, this[0]> }
-  interface NonEmptyArray$<T = unknown> extends HKT<T> { [-1]: readonly [this[0], ...this[0][]] }
-  interface Identity$<T = unknown> extends HKT<T> { [-1]: this[0] }
-  interface Const$<T = unknown> extends HKT<T> { [-1]: T }
-  interface Pair$<T = unknown> extends HKT<T> { [-1]: [this[0], this[0]] }
-
-  interface lambda<M extends Meta.Base = never, _Tag = never> extends HKT { 
-    [-1]: [_Tag] extends [never] ? F<this[0], M>: globalThis.Extract<F<this[0], M>, { tag: _Tag }> 
-  }
+/////////////////
+///    hkt    ///
+type Bind<
+  Tag extends AnyTag, 
+  Target, 
+  Meta extends Meta.Base = Meta.Base,
+> = Kind<lambda<Meta, Tag>, Target> 
+type Apply<Tag extends AnyTag, Target, _F extends typeof Apply[FromTag<Tag>] = typeof Apply[FromTag<Tag>]> = Kind<_F, Target>
+type Call<Tag extends AnyTag, _F extends typeof Apply[FromTag<Tag>] = typeof Apply[FromTag<Tag>]> = Kind<_F, _F[0]>
+declare const Apply: {
+  null: Const$<null>
+  boolean: Const$<boolean>
+  number: Const$<number>
+  string: Const$<string>
+  literal: Identity$
+  optional: Union$<undefined>
+  array: Array$
+  record: Record$
+  tuple: NonEmptyArray$
+  object: Record$
+  union: Identity$
+  intersection: Identity$
+}
+interface Union$<T = unknown> extends HKT { [-1]: T | this[0] }
+interface Intersection$ extends HKT<readonly [_, _]> { [-1]: this[0][0] & this[0][1] }
+interface Array$<T = unknown> extends HKT<T> { [-1]: readonly this[0][] }
+interface Record$<T = unknown> extends HKT<T> { [-1]: globalThis.Record<string, this[0]> }
+interface NonEmptyArray$<T = unknown> extends HKT<T> { [-1]: readonly [this[0], ...this[0][]] }
+interface Identity$<T = unknown> extends HKT<T> { [-1]: this[0] }
+interface Const$<T = unknown> extends HKT<T> { [-1]: T }
+interface Pair$<T = unknown> extends HKT<T> { [-1]: [this[0], this[0]] }
+interface lambda<M extends Meta.Base = never, _Tag = never> extends HKT 
+  { [-1]: [_Tag] extends [never] ? F<this[0], M>: globalThis.Extract<F<this[0], M>, { tag: _Tag }> }
+///    hkt    ///
+/////////////////
+// type Apply<
+//   Tag extends AnyTag, 
+//   Target, 
+//   Meta extends Meta.Base = Meta.Base, 
+//   _F extends typeof Apply[IR.FromTag<Tag>] = typeof Apply[IR.FromTag<Tag>]
+// > = Kind<IR.lambda<Meta, IR.ToTag<Tag>>, Kind<_F, Target>>
 
 const defaultMeta = {} satisfies Meta.Base
 
@@ -444,7 +442,7 @@ const Arbitrary_handlers = {
   array: (gen) => fc.tuple(Arbitrary_meta, gen()).map(([m, x]) => make.array(x, m)),
   record: (gen) => fc.tuple(Arbitrary_meta, gen()).map(([m, x]) => make.record(x, m)), 
   object: (gen) => fc.tuple(Arbitrary_meta, fc.entries(gen())).map(([m, xs]) => make.object(Object.fromEntries(xs), m)),
-  intersection: (gen) => fc.tuple(Arbitrary_meta, gen(), gen()) .map(([m, l, r]) => make.intersection([l, r], m)), 
+  intersection: (gen) => fc.tuple(Arbitrary_meta, gen(), gen()).map(([m, l, r]) => make.intersection([l, r], m)), 
   tuple: (gen) => 
     fc.tuple(Arbitrary_meta, gen(), fc.array(gen(), { minLength: 1, maxLength: 8 }))
       .map(([m, hd, tl]) => make.tuple([hd, ...tl] as const, m)),
@@ -482,7 +480,6 @@ export function Arbitrary(options?: Arbitrary.Options): fc.LetrecValue<Arbitrary
   }
 
 Arbitrary.any = Arbitrary().tree
-
 Arbitrary.handlers = Arbitrary_handlers
 
 
@@ -534,16 +531,3 @@ IR.fold = fold
 IR.unfold = unfold
 IR.is = is
 IR.make = make
-
-/* 
- [
-      [Object: null prototype] {
-        '0': 'r',
-        '1': false,
-        '2': false,
-        '3': true,
-        '4': false
-      },
-      [ true, null ]
-    ]
-*/

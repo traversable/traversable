@@ -1,5 +1,5 @@
 import { core, fc, tree } from "@traversable/core"
-import { type record as Record, type keys, object } from "@traversable/data"
+import { type record as Record, fn, type keys, map, object } from "@traversable/data"
 import type { Intersect } from "@traversable/registry"
 import { type Schema, type arbitrary, format } from "../types.js"
 
@@ -132,10 +132,11 @@ namespace Bounded {
 ///    NULL    ///
 export { Schema_null as null }
 type Schema_null = t.Schema_null
-Schema_null.defaults = {} satisfies Schema_null.Constraints
+Schema_null.defaults = { exclude: false as boolean } satisfies Schema_null.Constraints
 Schema_null.requiredKeys = ["type"] as const satisfies string[]
 declare namespace Schema_null {
   interface Constraints<T = unknown> extends globalThis.Partial<Constraints.Base> {
+    exclude?: boolean
     requiredKeys?: (keyof T)[]
   }
 }
@@ -164,7 +165,7 @@ function Schema_null(_constraints?: Constraints): fc.Arbitrary<Schema_null> {
 ///    BOOLEAN    ///
 export { Schema_boolean as boolean }
 type Schema_boolean = t.Schema_boolean
-Schema_boolean.defaults = {} satisfies Schema_boolean.Constraints
+Schema_boolean.defaults = { exclude: false as boolean } satisfies Schema_boolean.Constraints
 Schema_boolean.requiredKeys = ["type"] as const satisfies string[]
 Schema_boolean.static = {}
 ///
@@ -196,7 +197,7 @@ declare namespace Schema_boolean {
 ///    INTEGER    ///
 export { Schema_integer as integer }
 type Schema_integer = t.Schema_integer
-Schema_integer.defaults = {} satisfies Schema_integer.Constraints
+Schema_integer.defaults = { exclude: false as boolean } satisfies Schema_integer.Constraints
 Schema_integer.static = {
   format: fc.oneof(format.integer, format.any),
   minimum: fc.integer(),
@@ -245,7 +246,7 @@ declare namespace Schema_integer {
 ///    NUMBER    ///
 export { Schema_number as number}
 interface Schema_number extends t.Schema_number {}
-Schema_number.defaults = {}
+Schema_number.defaults = { exclude: false as boolean }
 Schema_number.static = {}
 Schema_number.requiredKeys = ["type"] as const satisfies string[]
 ///
@@ -278,7 +279,7 @@ export declare namespace Schema_number {
 ///    STRING    ///
 export { Schema_string as string }
 interface Schema_string extends t.Schema_string {}
-Schema_string.defaults = {} satisfies Schema_string.Constraints
+Schema_string.defaults = { exclude: false as boolean } satisfies Schema_string.Constraints
 Schema_string.format = (constraints: Constraints = Constraints.defaults) => fc.oneof(
   fc.record(date(constraints), { requiredKeys: [] }),
   fc.record(datetime(constraints), { requiredKeys: [] }),
@@ -392,7 +393,7 @@ function Schema_record<T>(
     additionalProperties: LOOP,
   })
 }
-Schema_record.defaults = {} satisfies Schema_record.Constraints
+Schema_record.defaults = { exclude: false as boolean } satisfies Schema_record.Constraints
 declare namespace Schema_record {
   interface Constraints<T = unknown> extends globalThis.Partial<Constraints.Base> 
     { requiredKeys?: (keyof T)[] }
@@ -424,6 +425,7 @@ function Schema_allOf<T>(
 }
 ///
 Schema_allOf.defaults = {
+  exclude: true as boolean,
   minLength: 1, 
   maxLength: 3,
   selector: Object_keys,
@@ -440,7 +442,7 @@ Schema_allOf.base = <T>(LOOP: fc.Arbitrary<T>, $: Schema_allOf.Constraints = Sch
 ///
 Schema_allOf.default = <T>(...args: Parameters<typeof Schema_allOf.base<T>>): fc.Arbitrary<readonly T[]> => Schema_allOf.base(...args)
 declare namespace Schema_allOf {
-  type Constraints<S = any, T = any> = fc.UniqueArrayConstraintsCustomCompareSelect<S, T>
+  interface Constraints<S = any, T = any> extends fc.UniqueArrayConstraintsCustomCompareSelect<S, T> { exclude?: boolean }
 }
 ///    ALL OF    ///
 ////////////////////
@@ -467,11 +469,12 @@ Schema_anyOf.base = <T>(LOOP: fc.Arbitrary<T>, $: Schema_anyOf.Constraints = Sch
   fc.uniqueArray(LOOP, { minLength: 1, maxLength: 3, ...$ })
 ///
 Schema_anyOf.defaults = {
+  exclude: false as boolean,
   minLength: 1, 
   maxLength: 3,
 } satisfies Schema_anyOf.Constraints
 declare namespace Schema_anyOf {
-  type Constraints<T = unknown, U = unknown> = fc.UniqueArrayConstraints<T, U>
+  type Constraints<T = unknown, U = unknown> = fc.UniqueArrayConstraints<T, U> & { exclude?: boolean }
 }
 ///    ANY OF    ///
 ////////////////////
@@ -497,11 +500,12 @@ function Schema_oneOf<T>(LOOP: fc.Arbitrary<T>, $: Constraints = Constraints.def
 Schema_oneOf.base = <T>(LOOP: fc.Arbitrary<T>, $: Schema_oneOf.Constraints = Schema_oneOf.defaults) => 
   fc.uniqueArray(LOOP, { minLength: 1, maxLength: 3, ...$ })
 Schema_oneOf.defaults = {
+  exclude: false as boolean,
   minLength: 1, 
   maxLength: 3,
 } satisfies Schema_oneOf.Constraints
 declare namespace Schema_oneOf {
-  type Constraints<T = unknown, U = unknown> = fc.UniqueArrayConstraints<T, U>
+  type Constraints<T = unknown, U = unknown> = fc.UniqueArrayConstraints<T, U> & { exclude?: boolean }
 }
 ///    ONE OF    ///
 ////////////////////
@@ -529,6 +533,7 @@ function Schema_array<T>(LOOP: fc.Arbitrary<T>, _: Constraints = Constraints.def
 }
 ///
 Schema_array.defaults = {
+  exclude: false as boolean,
   maxItems: fc.nat(),
   minItems: fc.nat(), // default: 0
   uniqueItems: fc.boolean(), // default: false
@@ -597,7 +602,7 @@ function Schema_object(
   })
 }
 ///
-Schema_object.defaults = {} satisfies Schema_object.Constraints
+Schema_object.defaults = { exclude: false } satisfies Schema_object.Constraints
 declare namespace Schema_object {
   interface Constraints<T = unknown> extends globalThis.Partial<Constraints.Base> {
     requiredKeys?: (keyof T)[]
@@ -642,11 +647,12 @@ function Schema_tuple<T extends Schema>(
 }
 ///
 Schema_tuple.defaults = {
+  exclude: false as boolean,
   minLength: 1,
 } satisfies Schema_tuple.Constraints
 ///
 declare namespace Schema_tuple {
-  type Constraints = fc.ArrayConstraints
+  type Constraints = fc.ArrayConstraints & { exclude?: boolean }
 }
 ///    TUPLE    ///
 ///////////////////
@@ -677,6 +683,7 @@ export declare namespace Constraints {
   interface Config extends Required<Constraints> {}
   interface Items extends globalThis.Partial<{ [K in keyof t.Schema_Items]: fc.Arbitrary<t.Schema_Items[K]> }> {}
   interface Base<T = unknown> {
+    exclude: boolean
     nullable: boolean
     description: string
     const: T
@@ -746,6 +753,7 @@ export namespace Constraints {
   } satisfies arbitrary.Include
   export const defaults = {
     base: {
+      exclude: false,
       include: Constraints.include,
       nullable: false,
       const: void 0,
@@ -754,51 +762,39 @@ export namespace Constraints {
     },
     allOf: {
       constraints: Schema_allOf.defaults,
-      // generator: Schema_allOf.default,
     },
     anyOf: {
       constraints: Schema_anyOf.defaults,
-      // generator: Schema_anyOf.default,
     },
     array:  {
       constraints: Schema_array.defaults,
-      // generator: Schema_array.default,
     },
     boolean:  {
       constraints: Schema_boolean.defaults,
-      // generator: Schema_boolean.default,
     },
     integer:  {
       constraints: Schema_integer.defaults,
-      // generator: Schema_integer.default,
     },
     null:  {
       constraints: Schema_null.defaults,
-      // generator: Schema_null.default,
     },
     number: {
       constraints: Schema_number.defaults,
-      // generator: Schema_number.default,
     },
     object: {
       constraints: Schema_object.defaults,
-      // generator: Schema_object.default,
     },
     oneOf: {
       constraints: Schema_oneOf.defaults,
-      // generator: Schema_oneOf.default,
     },
     record: {
       constraints: Schema_record.defaults,
-      // generator: Schema_record.default,
     },
     string: {
       constraints: Schema_string.defaults,
-      // generator: Schema_string.default,
     },
     tuple: {
       constraints: Schema_tuple.defaults,
-      // generator: Schema_tuple.default,
     },
   } satisfies Required<Constraints>
 
@@ -839,47 +835,45 @@ export interface SchemaLoop<Meta extends {} = {}> {
   any: t.Schema
 }
 
-export function loop(constraints: Constraints = Constraints.defaults): fc.LetrecValue<SchemaLoop> {
-  return fc.letrec((LOOP: fc.LetrecTypedTie<SchemaLoop>) => ({
-    object: Schema_object({ 
-      properties: LOOP("any"), 
-      additionalProperties: LOOP("any") 
-    }, constraints),
-    array: Schema_array(LOOP("any"), constraints),
-    record: Schema_record(LOOP("any"), constraints),
-    tuple: Schema_tuple(LOOP("any"), constraints),
-    allOf: Schema_allOf(LOOP("any"), constraints),
-    anyOf: Schema_anyOf(LOOP("any"), constraints),
-    oneOf: Schema_oneOf(LOOP("any"), constraints),
-    string: Schema_string(constraints),
-    null: Schema_null(constraints),
-    boolean: Schema_boolean(constraints),
-    integer: Schema_integer(constraints),
-    number: Schema_number(constraints),
-    // scalar: fc.oneof(
-    //   { depthIdentifier },
-    //   Schema_string(constraints),
-    //   Schema_number(constraints),
-    //   Schema_integer(constraints),
-    //   Schema_boolean(constraints),
-    //   Schema_null(constraints),
-    // ),
-    any: fc.oneof(
-      { depthIdentifier },
-      // LOOP("scalar"),
-      LOOP("null"),
-      LOOP("boolean"),
-      LOOP("integer"),
-      LOOP("number"),
-      LOOP("object"),
-      // LOOP("array"),
-      // LOOP("record"),
-      // LOOP("tuple"),
-      LOOP("allOf"),
-      // LOOP("anyOf"),
-      // LOOP("oneOf"),
-    )
-  }))
+export function loop(constraints: Constraints = Constraints.defaults) {
+  return fc.letrec((LOOP: fc.LetrecTypedTie<{ [K in keyof SchemaLoop]+?: SchemaLoop[K] }>) => {
+    return {
+      null: Schema_null(constraints),
+      boolean: Schema_boolean(constraints),
+      integer: Schema_integer(constraints),
+      number: Schema_number(constraints),
+      string: Schema_string(constraints),
+      array: Schema_array(LOOP("any"), constraints),
+      record: Schema_record(LOOP("any"), constraints),
+      allOf: Schema_allOf(LOOP("any"), constraints),
+      anyOf: Schema_anyOf(LOOP("any"), constraints),
+      oneOf: Schema_oneOf(LOOP("any"), constraints),
+      tuple: Schema_tuple(LOOP("any"), constraints),
+      object: Schema_object({ 
+        properties: LOOP("any"), 
+        additionalProperties: LOOP("any") as fc.Arbitrary<Schema> 
+      }, constraints),
+      any: fc.oneof(
+        { depthIdentifier },
+        ...[
+          constraints.null.constraints.exclude ? null : LOOP("null"),
+          constraints.boolean.constraints.exclude ? null : LOOP("boolean"),
+          constraints.integer.constraints.exclude ? null : LOOP("integer"),
+          constraints.number.constraints.exclude ? null : LOOP("number"),
+          constraints.object.constraints.exclude ? null : LOOP("object"),
+          constraints.allOf.constraints.exclude ? null : LOOP("allOf"),
+        ].filter((_) => _ != null),
+      ) as 
+      fc.Arbitrary<
+        | t.Schema_number<Schema, {}> 
+        | t.Schema_boolean<Schema, {}> 
+        | t.Schema_object<Schema, {}> 
+        | t.Schema_null<Schema, {}> 
+        | t.Schema_integer<Schema, {}> 
+        | t.Schema_allOf<Schema, {}>
+      >
+    }
+  })
 }
 
 const hasConst = <T extends {}>(guard: (u: unknown) => u is T) => tree.has("const", guard)

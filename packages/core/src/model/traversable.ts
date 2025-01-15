@@ -1,4 +1,4 @@
-import { fn, type nonempty } from "@traversable/data"
+import { fn, map, type nonempty } from "@traversable/data"
 import { type Functor, type HKT, type IndexedFunctor, type Merge, type Mutable, symbol } from "@traversable/registry"
 
 import { t } from "../guard/index.js"

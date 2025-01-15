@@ -2097,3 +2097,84 @@ object_forEach.defer = (
     /// impl.
     { return (object: object.any) => object_forEach(object, effect) }
 )
+
+declare namespace datafirst {
+  /**
+   * ## {@link datafirst.pick `datafirst.pick`}
+   * 
+   * This encoding is homomorphic.
+   * 
+   * TODO: investigate replacing {@link pick `pick`} with {@link datafirst.pick `datafirst.pick`}
+   */
+  function pick<const T extends Record<keyof any, any>, Ix extends keyof T>(object: { [K in keyof T]: T[K] }): datafirst.pick<T, Ix>
+  interface pick<T extends Record<keyof any, any>, Ix extends keyof T> {
+    <
+      K1 extends Ix, 
+      K2 extends Exclude<Ix, K1>, 
+      K3 extends Exclude<Ix, K1 | K2>,
+      K4 extends Exclude<Ix, K1 | K2 | K3>,
+      K5 extends Exclude<Ix, K1 | K2 | K3 | K4>,
+      K6 extends Exclude<Ix, K1 | K2 | K3 | K4 | K5>,
+      K7 extends Exclude<Ix, K1 | K2 | K3 | K4 | K5 | K6>,
+      K8 extends Exclude<Ix, K1 | K2 | K3 | K4 | K5 | K6 | K7>,
+      K9 extends Exclude<Ix, K1 | K2 | K3 | K4 | K5 | K6 | K7 | K8>,
+      K extends keyof T = K1 | K2 | K3 | K4 | K5 | K6 | K7 | K8 | K9
+    >(k1: K1, k2: K2, k3: K3, k4: K4, k5: K5, k6: K6, k7: K7, k8: K8, k9: K9): { [P in K]: T[P] }
+    <
+      K1 extends Ix, 
+      K2 extends Exclude<Ix, K1>, 
+      K3 extends Exclude<Ix, K1 | K2>,
+      K4 extends Exclude<Ix, K1 | K2 | K3>,
+      K5 extends Exclude<Ix, K1 | K2 | K3 | K4>,
+      K6 extends Exclude<Ix, K1 | K2 | K3 | K4 | K5>,
+      K7 extends Exclude<Ix, K1 | K2 | K3 | K4 | K5 | K6>,
+      K8 extends Exclude<Ix, K1 | K2 | K3 | K4 | K5 | K6 | K7>,
+      K extends keyof T = K1 | K2 | K3 | K4 | K5 | K6 | K7 | K8
+    >(k1: K1, k2: K2, k3: K3, k4: K4, k5: K5, k6: K6, k7: K7, k8: K8): { [P in K]: T[P] }
+    <
+      K1 extends Ix, 
+      K2 extends Exclude<Ix, K1>, 
+      K3 extends Exclude<Ix, K1 | K2>,
+      K4 extends Exclude<Ix, K1 | K2 | K3>,
+      K5 extends Exclude<Ix, K1 | K2 | K3 | K4>,
+      K6 extends Exclude<Ix, K1 | K2 | K3 | K4 | K5>,
+      K7 extends Exclude<Ix, K1 | K2 | K3 | K4 | K5 | K6>,
+      K extends keyof T = K1 | K2 | K3 | K4 | K5 | K6 | K7
+    >(k1: K1, k2: K2, k3: K3, k4: K4, k5: K5, k6: K6, k7: K7): { [P in K]: T[P] }
+    <
+      K1 extends Ix, 
+      K2 extends Exclude<Ix, K1>, 
+      K3 extends Exclude<Ix, K1 | K2>,
+      K4 extends Exclude<Ix, K1 | K2 | K3>,
+      K5 extends Exclude<Ix, K1 | K2 | K3 | K4>,
+      K6 extends Exclude<Ix, K1 | K2 | K3 | K4 | K5>,
+      K extends keyof T = K1 | K2 | K3 | K4 | K5 | K6
+    >(k1: K1, k2: K2, k3: K3, k4: K4, k5: K5, k6: K6): { [P in K]: T[P] }
+    <
+      K1 extends Ix, 
+      K2 extends Exclude<Ix, K1>, 
+      K3 extends Exclude<Ix, K1 | K2>,
+      K4 extends Exclude<Ix, K1 | K2 | K3>,
+      K5 extends Exclude<Ix, K1 | K2 | K3 | K4>,
+      K extends keyof T = K1 | K2 | K3 | K4 | K5
+    >(k1: K1, k2: K2, k3: K3, k4: K4, k5: K5): { [P in K]: T[P] }
+    <
+      K1 extends Ix, 
+      K2 extends Exclude<Ix, K1>, 
+      K3 extends Exclude<Ix, K1 | K2>,
+      K4 extends Exclude<Ix, K1 | K2 | K3>,
+      K extends keyof T = K1 | K2 | K3 | K4
+    >(k1: K1, k2: K2, k3: K3, k4: K4): { [P in K]: T[P] }
+    <
+      K1 extends Ix, 
+      K2 extends Exclude<Ix, K1>, 
+      K3 extends Exclude<Ix, K1 | K2>,
+      K extends keyof T = K1 | K2 | K3
+    >(k1: K1, k2: K2, k3: K3): { [P in K]: T[P] }
+    <
+      K1 extends Ix, 
+      K2 extends Exclude<Ix, K1>
+    >(k1: K1, k2: K2): { [P in K1 | K2]: T[P] }
+    <K extends Ix>(k: K): { [P in K]: T[P] }
+  }
+}

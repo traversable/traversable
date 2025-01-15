@@ -1,13 +1,15 @@
+import * as path from "node:path"
+
 import type { Context } from "@traversable/core"
 import { Extension, Traversable, core } from "@traversable/core"
 import type { Handlers, HandlersWithContext } from "@traversable/core/model/extension"
 import { fn, object } from "@traversable/data"
 import type { Functor, _ } from "@traversable/registry"
 import { KnownFormat } from "@traversable/registry"
-
 import { openapi } from "@traversable/openapi"
-import type { Flags } from "../shared.js"
-import { createMask, createZodIdent, typescript as ts } from "../shared.js"
+
+import type { Flags, FutureFlags } from "../shared.js"
+import { createMask, createOpenApiNodePath, createZodIdent, typescript as ts } from "../shared.js"
 import { vendor } from "../vendor.js"
 
 export {
@@ -25,6 +27,7 @@ export declare namespace Options {
   interface Base {
     absolutePath: Context["absolutePath"]
     flags: Flags
+    futureFlags: FutureFlags
     typeName: string
     document: openapi.doc
   }
@@ -57,14 +60,21 @@ const Object_fromEntries = globalThis.Object.fromEntries
 /** @internal */
 const JSON_stringify = (u: unknown) => JSON.stringify(u, null, 2)
 /** @internal */
+const Promise_resolve = globalThis.Promise.resolve
+/** @internal */
 const flags: Flags = {
   nominalTypes: true,
   preferInterfaces: true,
 }
+/** @internal */
+const futureFlags: FutureFlags = {
+  includeLinkToOpenApiNode: path.resolve(),
+  includeJsdocLinks: true,
+}
 
 async function defineOptions<T = {}>($?: Options<T> & { z?: LibOption }): Promise<Omit<Options.Config<T>, "handlers">> {
   const z: vendor.zod["z"] = await(
-    $?.z && typeof $?.z === "object" ? Promise.resolve($.z)
+    $?.z && typeof $?.z === "object" ? Promise_resolve($.z)
     : typeof $?.z === "string" ? import($.z)
     : import("zod").then((_) => _.z)
   )
@@ -76,6 +86,9 @@ async function defineOptions<T = {}>($?: Options<T> & { z?: LibOption }): Promis
     flags: !$?.flags ? flags : {
       nominalTypes: $.flags.nominalTypes ?? flags.nominalTypes,
       preferInterfaces: $.flags.preferInterfaces ?? flags.preferInterfaces,
+    },
+    futureFlags: !$?.futureFlags ? {} : {
+      ...$?.futureFlags?.includeLinkToOpenApiNode !== undefined && { includeLinkToOpenApiNode: $.futureFlags.includeLinkToOpenApiNode },
     },
   }
 }
@@ -165,8 +178,8 @@ const generated = {
     switch (true) {
       case s0 === undefined: return "z.unknown()"
       case ss.length === 0: return printArray($)("z.intersection(", [s0, s1], ")")
-      default: return printArray($)(
-        "", [[s1, ...ss].reduce((acc, x) => acc === "" ? x : `${acc}.and(${x})`, s0)], "")
+      default: return printArray($)
+        ("", [[s1, ...ss].reduce((acc, x) => acc === "" ? x : `${acc}.and(${x})`, s0)], "")
     }
   },
   array({ items: s }, $) 
@@ -234,16 +247,51 @@ const derived = z.then((z) => ({
   }
 } as const satisfies Extension.BuiltInsWithContext<ZodTypeAny>))
 
+const withLinkToOpenApiNode 
+  : HandlersWithContext<string>["object"]
+  = ({ properties, required = [] }, $) => {
+    console.log("includeLinkToOpenApiNode", $.absolutePath)
+    return "z.object({"
+    + Object_entries(properties)
+      .map(([k, v]) => {
+        const IDENT = createZodIdent($)([...$.path, "shape", k]).join("")
+        const MASK = createMask($)([...$.path, k]).join("")
+        const OPENAPI_LINK = createOpenApiNodePath($)([...$.path, k]).join("").concat(".properties." + k)
+
+        return [
+          "",
+          "/**",
+          " * ## {@link " + IDENT + ` \`${MASK}\`}`,
+          ` * #### {@link $doc.${OPENAPI_LINK} \`Link to OpenAPI node\`}`,
+          " */",
+          object.parseKey(k) + ": "
+          + (
+            !required.includes(k)
+            ? v.includes("\n") 
+              ? "z.optional(" + newline($, 1) + v + ")"
+              : "z.optional(" + v + ")"
+            : v
+          )
+        ].join(newline($))
+      })
+      .join(",")
+    + "\n" + " ".repeat($.indent) + "})"
+  }
+
 async function generate<T extends Traversable.any>(schema: T, options: Options<string>): Promise<string>
 async function generate(
   schema: Traversable.any, options: Options<string>
 ) {
   const $ = await defineOptions(options)
+  console.log("$", $)
+  const handlers: HandlersWithContext<string> 
+    = $.futureFlags.includeLinkToOpenApiNode === undefined ? generated
+    : { ...generated, object: withLinkToOpenApiNode } 
   return fn.pipe(
     schema,
     fold(
       { ...$, ...ts.rootContext, indent: 0, siblingCount: 0 }, 
-      { ...$, handlers: generated },
+      { ...$, handlers },
     ),
     (body) => [
       "export type " + $.typeName + " = z.infer<typeof " + $.typeName + ">",

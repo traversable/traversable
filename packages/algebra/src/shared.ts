@@ -1,15 +1,19 @@
-import { z } from "zod"
-
 import type { Context, Extension } from "@traversable/core"
 import { is, keyOf$, t, tree } from "@traversable/core"
 import type { openapi } from "@traversable/openapi"
-import type { Partial, Requiring, inline, newtype } from "@traversable/registry"
+import type { Partial, Requiring, newtype } from "@traversable/registry"
 import { symbol } from "@traversable/registry"
 
 export interface Flags extends t.typeof<typeof Flags> {}
-const Flags = t.object({
+export const Flags = t.object({
   nominalTypes: t.boolean(),
   preferInterfaces: t.boolean(),
+})
+
+export interface FutureFlags extends t.typeof<typeof FutureFlags> {}
+export const FutureFlags = t.object({
+  includeJsdocLinks: t.optional(t.boolean()),
+  includeLinkToOpenApiNode: t.optional(t.string()),
 })
 
 export type PathInterpreter 
@@ -36,6 +40,12 @@ const MASK_MAP = {
 } as const
 ///
 
+const OPENAPI_PATH_MAP = {
+  [symbol.object]: "properties",
+  [symbol.optional]: null,
+  [symbol.required]: null,
+  [symbol.array]: "items",
+} as const
 
 function deref<T>(path: string[], guard: (u: unknown) => u is T): (document: { paths: { [x: string]: {} } }) => T | undefined
 function deref(path: string[]): (document: { paths: { [x: string]: {} } }) => {} | undefined
@@ -49,19 +59,18 @@ function deref(path: string[], guard: (u: unknown) => u is unknown = (_: any): _
   }
 }
 
-/*
-        if (isIntersection) {
-          const siblings = deref($.absolutePath.slice(0, -1), core.is.array)($.document)
-          console.log("siblings:", siblings)
-          if (siblings) {
-            IDENT = createZodIdent($)([
-              ...$.path, 
-              "shape", 
-              k
-            ], (siblings ?? []).length).join("")
-          }
-        }
- */
+interface Invertible { [x: keyof any]: keyof any }
+const sub
+  : <const D extends Invertible>(dict: D) => (text: string) => string
+  = (dict) => (text) => {
+    let ks = [...text], out = "", k
+    while ((k = ks.shift()) !== undefined) out += k in dict ? String(dict[k]) : k
+    return out
+  }
+
+const ESC_MAP = { "/": "𛰎", "{": "𛰧", "}": "𛰨", "~": "𛰃" } as const
+const escapePathSegment = sub(ESC_MAP)
+
 
 /** @internal */
 const buildIdentInterpreter: BuildPathInterpreter = (lookup) => ($) => (xs) => {
@@ -73,61 +82,19 @@ const buildIdentInterpreter: BuildPathInterpreter = (lookup) => ($) => (xs) => {
       case k === symbol.allOf: {
         const siblings = deref($.absolutePath.slice(0, -1), is.array)($.document)
         if (!siblings) continue 
-
         const siblingCount = siblings.length
         const j = ks.shift()
         if (typeof j !== "number") continue
-        // const next = j === 0 ?
-        console.log("j", j);
-
-        // if (siblingCount && j === 0) {
-
         if (j === 0) {
-          console.log("J === 0")
           const next = "._def.left".repeat(Math.max((siblingCount ?? 0) - 1, 0))
-          console.log("next", next)
-          ;out.push(next)
-
+          out.push(next)
         }
         else {
-          console.log("!siblingCount || J !== 0")
           const next = "._def.left".repeat(Math.abs((siblingCount ?? 0) - j) - 1) + "._def.right"
-          console.log("next in J !== 0: ", next)
-
-          ;out.push(next)
+          out.push(next)
         }
-
-        // ["._def.left".repeat(j), ...[ js[1], ...js.slice(2)].map((_, ix, xs) => "._def.left".repeat(Math.abs(xs.length - ix) - 1) + "._def.right")]
-
-        // let j: keyof any | null | undefined
-        // let js: (keyof any | null)[] = []
-        // console.log("ks", ks)
-        // while ((j = ks.shift(), typeof j === "number")) {
-        //   js.push(j)
-        // }
-        // // js.map()
-        // console.log("js", js)
-        // console.log("buildIdentInterpreter", ["._def.left".repeat(js.length + 0), ...[ js[1], ...js.slice(2)].map((_, ix, xs) => "._def.left".repeat(Math.abs(xs.length - ix) - 1) + "._def.right")])
-
         continue
       }
-      // }
-      // ; const test = ["._def.left".repeat(ss.length + 1), ...[ s1, ...ss].map((_, ix, xs) => "._def.left".repeat(Math.abs(xs.length - ix) - 1) + "._def.right")];
-      // case k === symbol.allOf: {
-      //   let js: (keyof any | null)[] = []
-      //   let j: keyof any | null | undefined
-      //   const BitToBinaryTreeMap = {
-      //     ["0"]: ".left",
-      //     ["1"]: ".right",
-      //   } as const
-
-      //   while ((j = ks.shift(), typeof j === "number")) js.push(j)
-      //   const b = js.map().toString(2)
-      //   const bt = [...]
-
-      //   return 
-      // }
-
       case keyOf$(lookup)(k): lookup[k] != null && out.push(lookup[k]); continue 
       case typeof k === "number": return (out.push(`[${k}]`), out) 
       case typeof k === "string": out.push(`.${k}`); continue 
@@ -158,8 +125,26 @@ const buildMaskInterpreter: BuildPathInterpreter = (lookup) => ({ typeName }) =>
   return out
 }
 
+/** @internal */
+const buildOpenApiNodePathInterpreter: BuildPathInterpreter = (lookup)  => ($) => (xs) => {
+  const schemaPath = $.absolutePath.map(escapePathSegment).join(".")
+  let out: (keyof any | null)[] = [schemaPath]
+  let ks = [...xs]
+  let k: keyof any | null | undefined
+  while ((k = ks.shift()) !== undefined) {
+    switch (true) {
+      // case typeof k === "number": { out.push(`[${k}]`); continue }
+      // case typeof k === "string": { out.push("."); continue }
+      // case keyOf$(lookup)(k): lookup[k] != null && out.push(lookup[k]); continue 
+      default: continue
+    }
+  }
+  return out
+}
+
 export const createMask: PathInterpreter = buildMaskInterpreter(MASK_MAP)
 export const createZodIdent: PathInterpreter = buildIdentInterpreter(ZOD_IDENT_MAP)
+export const createOpenApiNodePath: PathInterpreter = buildOpenApiNodePathInterpreter(OPENAPI_PATH_MAP)
 
 export declare namespace typescript {
   export type { handlers as Handlers }

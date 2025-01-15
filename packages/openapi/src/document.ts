@@ -3,9 +3,9 @@ import { fn, map, object } from "@traversable/data"
 import { http } from "@traversable/http"
 import { PATTERN, type newtype } from "@traversable/registry"
 
-import type { SchemaLoop } from "@traversable/openapi/schema/schema"
 import { createDepthIdentifier } from "fast-check"
 import * as N from "./normalize.js"
+import type { SchemaLoop } from "./schema/schema.js"
 import { Schema } from "./schema/exports.js"
 import type { $ref } from "./types.js"
 
@@ -277,8 +277,24 @@ export declare namespace arbitrary {
     description?: boolean
     const?: boolean
   }
+  interface Node { exclude?: boolean }
+  interface Nodes {
+    null?: arbitrary.Node
+    boolean?: arbitrary.Node
+    integer?: arbitrary.Node
+    number?: arbitrary.Node
+    string?: arbitrary.Node
+    array?: arbitrary.Node
+    record?: arbitrary.Node
+    object?: arbitrary.Node
+    tuple?: arbitrary.Node
+    allOf?: arbitrary.Node
+    anyOf?: arbitrary.Node
+    oneOf?: arbitrary.Node
+  }
   interface Constraints {
     include?: arbitrary.Include
+    nodes?: arbitrary.Nodes
     schemas?: arbitrary.Schemas
     paths?: arbitrary.Paths
     pathParams?: arbitrary.PathParams
@@ -318,6 +334,9 @@ const applyConstraints
   = (_) => 
     !_ ? { 
       ...defaults, 
+      nodes: {
+        ...defaults.nodes,
+      },
       schemas: { 
         ...defaults.schemas, 
         depthIdentifier: createDepthIdentifier() 
@@ -330,6 +349,20 @@ const applyConstraints
         depthIdentifier: _.schemas.depthIdentifier ?? createDepthIdentifier(),
         maxCount: _.schemas.maxCount ?? defaults.schemas.maxCount,
         minCount: _.schemas.minCount ?? defaults.schemas.minCount,
+      },
+      nodes: !_.nodes ? defaults.nodes : {
+        allOf: { ..._.nodes.allOf ?? defaults.nodes.allOf },
+        anyOf: { ..._.nodes.anyOf ?? defaults.nodes.anyOf },
+        oneOf: { ..._.nodes.oneOf ?? defaults.nodes.oneOf },
+        array: { ..._.nodes.array ?? defaults.nodes.array },
+        boolean: { ..._.nodes.boolean ?? defaults.nodes.boolean },
+        integer: { ..._.nodes.integer ?? defaults.nodes.integer },
+        null: { ..._.nodes.null ?? defaults.nodes.null },
+        number: { ..._.nodes.number ?? defaults.nodes.number },
+        object: { ..._.nodes.object ?? defaults.nodes.object },
+        record: { ..._.nodes.record ?? defaults.nodes.record },
+        string: { ..._.nodes.string ?? defaults.nodes.string },
+        tuple: { ..._.nodes.tuple ?? defaults.nodes.tuple },
       },
       include: !_.include ? defaults.include: {
         const: _.include.const ?? defaults.include.const,
@@ -362,6 +395,20 @@ export const defaults = {
     minCount: 0,
     maxCount: 0,
     bias: "object",
+  },
+  nodes: {
+    null: { exclude: false },
+    boolean: { exclude: false },
+    integer: { exclude: false },
+    number: { exclude: false },
+    string: { exclude: false },
+    array: { exclude: false },
+    record: { exclude: false },
+    tuple: { exclude: false },
+    object: { exclude: false },
+    allOf: { exclude: true },
+    anyOf: { exclude: false },
+    oneOf: { exclude: false },
   },
   include: {
     const: false,

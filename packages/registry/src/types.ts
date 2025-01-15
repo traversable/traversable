@@ -319,8 +319,8 @@ export declare namespace Functor {
 
 export interface Product<F extends HKT = HKT> {
   product<A, B>(left: Kind<F, A>, right: Kind<F, B>): Kind<F, [A, B]>
-  productAll<A>(xs: Iterable<Kind<F, A>>): Kind<F, A[]>
-  productSeq<A>(F: A, xs: Iterable<A>): [A, ...A[]]
+  sequence<A>(xs: Iterable<Kind<F, A>>): Kind<F, A[]>
+  pair<A>(F: A, xs: Iterable<A>): [A, ...A[]]
 }
 
 export interface Applicative<F extends HKT>

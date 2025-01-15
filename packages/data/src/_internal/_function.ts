@@ -181,6 +181,27 @@ const call
   : <T>(fn: () => T) => T 
   = (fn) => fn()
 
+/** 
+ * ## {@link run `fn.run`}
+ * 
+ * Inline (and run) an immediately invoked function expression,
+ * without the footguns or clumsy syntax.
+ * 
+ * @example
+ * import { fn } from "@traversable/data"
+ * 
+ * /////////////////////
+ * ///    Before:    ///
+ * ;(async () => await import("./some/side-effect.css"))();
+ * 
+ * /////////////////////
+ * ///     After:    ///
+ * fn.run(async () => await import("./some/side-effect.css"))
+ */
+const run 
+  : <T>(f: () => T) => T
+  = (f) => f()
+
 /**
  * {@link loop `fn.loop`} puts a recursive function in tail-position. 
  * 

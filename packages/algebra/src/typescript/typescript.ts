@@ -6,10 +6,9 @@ import { KnownFormat, symbol } from "@traversable/registry"
 
 import { openapi } from "@traversable/openapi"
 import { createMask, createZodIdent, typescript as ts } from "../shared.js"
+import * as zod from "../zod/exports.js"
 
 export { generate }
-
-core.t
 
 /** @internal */
 const JSON_stringify = (u: unknown) => JSON.stringify(u, null, 2)
