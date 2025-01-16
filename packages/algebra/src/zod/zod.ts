@@ -3,8 +3,8 @@ import * as path from "node:path"
 import type { Context } from "@traversable/core"
 import { Extension, Traversable, core } from "@traversable/core"
 import type { Handlers, HandlersWithContext } from "@traversable/core/model/extension"
-import { fn, object } from "@traversable/data"
-import type { Functor, _ } from "@traversable/registry"
+import { fn, object, string } from "@traversable/data"
+import type { Functor, _, newtype } from "@traversable/registry"
 import { KnownFormat } from "@traversable/registry"
 import { openapi } from "@traversable/openapi"
 
@@ -22,6 +22,7 @@ export type Options<T = {}> = Partial<
   & Options.Base
   & { handlers: Handlers<string>, lib?: LibOption }
 >
+export type Matchers<T> = Extension.BuiltInsWithContext<T, Options.Base>
 
 export declare namespace Options {
   interface Base {
@@ -70,6 +71,7 @@ const flags: Flags = {
 const futureFlags: FutureFlags = {
   includeLinkToOpenApiNode: path.resolve(),
   includeJsdocLinks: true,
+  includeExamples: true,
 }
 
 async function defineOptions<T = {}>($?: Options<T> & { z?: LibOption }): Promise<Omit<Options.Config<T>, "handlers">> {
@@ -90,27 +92,37 @@ async function defineOptions<T = {}>($?: Options<T> & { z?: LibOption }): Promis
     futureFlags: !$?.futureFlags ? {} : {
       ...$?.futureFlags?.includeLinkToOpenApiNode !== undefined && { includeLinkToOpenApiNode: $.futureFlags.includeLinkToOpenApiNode },
     },
+    // futureFlags: {
+    //   includeExamples: $?.futureFlags?.includeExamples ?? futureFlags.includeExamples,
+    //   includeJsdocLinks: $?.futureFlags?.includeJsdocLinks ?? futureFlags.includeJsdocLinks,
+    //   ...$?.futureFlags?.includeLinkToOpenApiNode !== undefined && 
+    //     { includeLinkToOpenApiNode: $.futureFlags.includeLinkToOpenApiNode },
+    // },
+    // path: [],
+    // indent: 0,
+    // siblingCount: 0,
+    // depth: 0,
   }
 }
 
 namespace Algebra {
   export const generate
-    : (cfg: Options.Config<string> & { handlers: Handlers<string> }) => Functor.Algebra<Traversable.lambda, string>
-    = ($) => Extension.match($, $.handlers)
-  ///
+    : (cfg: Options.Config<string, { handlers: Handlers<string> }>) => Functor.Algebra<Traversable.lambda, string>
+    = Extension.match
   export const derive
     : <T>($: Options.Config.withContext<T, Context>) => Functor.IxAlgebra<Context, Traversable.lambda, T>
-    = ($) => Extension.matchWithContext($, $.handlers)
-  ///
+    = Extension.matchWithContext
 }
 
-const fold
-  : <T>(rootContext: Context, $: Options.Config.withContext<T, Context>) => <S extends Traversable.any>(term: S) => T
-  = (rootContext, $) => fn.flow(
+function fold<T>($: Options.Config.withContext<T, Context>): <S extends Traversable.any>(term: S) => T
+function fold<T>($: Options.Config.withContext<T, Context>) {
+  return fn.flow(
     Traversable.fromJsonSchema,
-    (_) => Traversable.foldIx(Algebra.derive($))(rootContext, _),
+    (_) => Traversable.foldIx(Algebra.derive($))($, _),
   )
+}
 
+type StringFormat = typeof StringFormat
 const StringFormat = {
   [KnownFormat.string.datetime]: "z.string().datetime({ offset: true })",
   [KnownFormat.string.date]: "z.string().date()",
@@ -141,19 +153,29 @@ const StringSchema = z.then((z) => ({
 const $pad = ($: Context) => " ".repeat($.indent)
 const $tab = ($: Context) => " ".repeat($.indent + 2)
 const newline = ($: Context, count = 0) => "\n" + " ".repeat($.indent + (2 * (count + 1)))
-const printArray = ($: Context) => (left: string, body: readonly string[], right: string) => {
-  return left.trim() + $pad($) + [
-    $pad($) + body.map((_) => newline($) + _.trim()).join("," + $tab($))
-  ].join("," + newline($))
-  + newline($, -1) + right.trim()
+
+function printArray($: Context): 
+  <L extends string, const Body extends string[], R extends string>(left: L, ...body: [...Body, R]) 
+    => `${L}${string}${R}`
+
+function printArray($: Context) {
+  return (...args: [string, ...string[], string]) => {
+    const [left, body, right] = [args[0], args.slice(1, -1), args[args.length - 1]]
+    return ""
+    + left.trim() 
+    + $pad($) 
+    + [$pad($) + body.map((_) => newline($) + _.trim()).join("," + $tab($))].join("," + newline($))
+    + newline($, -1) 
+    + right.trim()
+  }
 }
 
 const generated = {
-  null() { return "z.null()" },
-  boolean() { return "z.boolean()" },
-  integer() { return "z.number().int()" },
-  number() { return "z.number()" },
-  string({ meta }) { return StringFormat[(meta?.format ?? "") as never] ?? "z.string()" },
+  null() { return "z.null()" as const },
+  boolean() { return "z.boolean()" as const },
+  integer() { return "z.number().int()" as const },
+  number() { return "z.number()" as const },
+  string({ meta }) { return StringFormat[(meta?.format ?? "") as keyof StringFormat] ?? "z.string()" },
   enum({ enum: s }, $) {
     const ss = s.filter(core.is.primitive)
       .map((v) => {
@@ -166,33 +188,27 @@ const generated = {
     )
     switch (true) {
       case ss.length === 0: return "z.never()"
-      case ss.length === 1: return ss[0]
-      default: return printArray($)("z.union([", ss, "])")
+      case ss.length === 1: return ss[0] as `z.${string}`
+      default: return printArray($)("z.union([", ...ss, "])")
     }
   },
   anyOf({ anyOf: [s0 = "z.never()", s1 = "z.never()", ...ss] }, $) 
-    { return printArray($)("z.union([", [s0, s1, ...ss], "])") },
+    { return printArray($)("z.union([", s0, s1, ...ss, "])") },
   oneOf({ oneOf: [s0 = "z.never()", s1 = "z.never()", ...ss] }, $) 
-    { return printArray($)("z.union([", [s0, s1, ...ss], "])") },
+    { return printArray($)("z.union([", s0, s1, ...ss, "])") },
   allOf({ allOf: [s0, s1 = "z.unknown()", ...ss] }, $) { 
     switch (true) {
       case s0 === undefined: return "z.unknown()"
-      case ss.length === 0: return printArray($)("z.intersection(", [s0, s1], ")")
+      case ss.length === 0: return printArray($)("z.intersection(", s0, s1, ")")
       default: return printArray($)
-        ("", [[s1, ...ss].reduce((acc, x) => acc === "" ? x : `${acc}.and(${x})`, s0)], "")
+        ("", [s1, ...ss].reduce((acc, x) => acc === "" ? x : `${acc}.and(${x})`, s0), "")
     }
   },
   array({ items: s }, $) 
-    { return printArray($)("z.array(", [s], ")") },
+    { return printArray($)("z.array(", s, ")") },
   record({ additionalProperties: s }, $) 
-    { return printArray($)("z.record(", [s], ")") },
-  tuple({ items: ss }, $) { 
-    switch (true) {
-      case ss.length === 0:  return "z.tuple([])"
-      case ss.length === 1:  return "z.tuple([" + ss[0] + "])"
-      default: return printArray($)("z.tuple([", ss, "])")
-    }
-  },
+    { return printArray($)("z.record(", s, ")") },
+  tuple({ items: ss }, $) { return printArray($)("z.tuple([", ...ss, "])") },
   object({ properties, required = [] }, $) {
     return "z.object({"
     + Object_entries(properties)
@@ -217,7 +233,14 @@ const generated = {
       .join(",")
     + "\n" + " ".repeat($.indent) + "})"
   }
-} as const satisfies Extension.BuiltInsWithContext<string>
+} as const satisfies Matchers<string>
+
+    // switch (true) {
+    //   case ss.length === 0:  return "z.tuple([])"
+    //   case ss.length === 1:  return "z.tuple([" + ss[0] + "])"
+    //   default: return printArray($)("z.tuple([", ss, "])")
+    // }
+  // },
 
 const derived = z.then((z) => ({
   null() { return z.null() },
@@ -245,7 +268,7 @@ const derived = z.then((z) => ({
     })
     return catchall === undefined ? obj : obj.catchall(catchall)
   }
-} as const satisfies Extension.BuiltInsWithContext<ZodTypeAny>))
+}) as const satisfies Matchers<ZodTypeAny>)
 
 const withLinkToOpenApiNode 
   : HandlersWithContext<string>["object"]
@@ -315,7 +338,7 @@ async function derive(schema: Traversable.any, options: Options<ZodTypeAny>): Pr
 }
 
 /** 
- * TODO: implement generate zod schemas with `declare const`, that way
+ * TODO: implement generation of zod schemas with `declare const`, that way
  * users can get the JSDoc linking without any risk of adding to their bundle
  */
 // async function generateSchemaTypes<T extends Traversable.any>(schema: T, options: Options<string>): Promise<string>

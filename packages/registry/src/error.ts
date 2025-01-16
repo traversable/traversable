@@ -99,3 +99,5 @@ export const PrettyPrintError = (input: string, filepath?: string) =>
       .filter((x) => x !== null)
       .join("\n"),
   )
+
+export const CircularReferenceError = () => Error("\nUnexpected circular reference:\n")

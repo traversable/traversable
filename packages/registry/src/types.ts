@@ -191,6 +191,36 @@ export declare namespace Position {
 export interface HKT<I = unknown, O = unknown> extends newtype<{ [0]: I; [-1]: O }> {}
 export type Kind<F extends HKT, T extends F[0] = F[0]> = never | (F & { [0]: T })[-1]
 
+/** 
+ * ## {@link define `define`}
+ * 
+ * Given a "kind template", {@link define `define`} returns a function that accepts
+ * a function as input, and returns a function that applies the template to its argument.
+ * 
+ * @example
+ * import { define } from "@traversable/registry"
+ * 
+ * interface Duplicate { [0]: unknown, [-1]: [this[0], this[0]] }
+ * const dup1 = define<Duplicate>()((x) => [x, x])
+ * 
+ * const good_01 = dup1(1)
+ * //    ^? const good_01: [1, 1]
+ * 
+ * declare const Duplicate: Duplicate
+ * const dup2 = define(Duplicate)((x) => [x, x])
+ * 
+ * const good_02 = dup2(1)
+ * //    ^? const good_02: [1, 1]
+ * 
+ * // The implementation is type-checked, so it won't drift if `Duplicate` changes:
+ * const typeError = define(Duplicate)((x) => [x])
+ * //                                          ^ 🚫 Type '[unknown]' is not assignable to type '[unknown, unknown]'
+ */
+export const define
+  : <F extends { [0]: unknown, [-1]: unknown }>(F?: F) => (fn: (i: F[0]) => F[-1]) => <const I extends F[0]>(i: I) => Kind<F, I>
+  = () => (fn) => fn
+
+
 export declare function apply$<F>(F: F): <T>(t: T) => HKT.apply$<F, T>
 export type bind<F extends HKT, T = unknown> = F & { [0]: T }
 /** @deprecated use {@link Kind `Kind`} instead */
@@ -206,6 +236,8 @@ export declare namespace HKT {
   export interface ap<T> extends HKT<HKT> {
     [-1]: apply_<this[0], T>
   }
+  export interface Function<F extends { [0]: unknown, [-1]: unknown }> extends HKT<F[0], F[-1]> 
+    { <T extends this[0]>(x: T): Kind<F, T>; [-1]: Kind<F, this[0]> }
 }
 
 /**

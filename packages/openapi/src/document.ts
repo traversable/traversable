@@ -259,10 +259,26 @@ export declare namespace arbitrary {
     maxCount?: number
     minCount?: number
   }
+
   interface Schemas extends arbitrary.Countable {
+    /// cross-cutting configuration
     depthIdentifier?: fc.DepthIdentifier
     bias?: keyof SchemaLoop
+    /// node-specific options
+    null?: Schema.null.Constraints
+    boolean?: Schema.boolean.Constraints
+    integer?: Schema.integer.Constraints
+    number?: Schema.number.Constraints
+    string?: Schema.string.Constraints
+    array?: Schema.array.Constraints
+    record?: Schema.record.Constraints
+    object?: Schema.object.Constraints
+    tuple?: Schema.tuple.Constraints
+    allOf?: Schema.allOf.Constraints
+    anyOf?: Schema.anyOf.Constraints
+    oneOf?: Schema.oneOf.Constraints
   }
+
   interface Paths extends arbitrary.Countable {}
   interface PathParams extends arbitrary.Countable {}
   interface PathSegments extends arbitrary.Countable {}
@@ -279,22 +295,9 @@ export declare namespace arbitrary {
   }
   interface Node { exclude?: boolean }
   interface Nodes {
-    null?: arbitrary.Node
-    boolean?: arbitrary.Node
-    integer?: arbitrary.Node
-    number?: arbitrary.Node
-    string?: arbitrary.Node
-    array?: arbitrary.Node
-    record?: arbitrary.Node
-    object?: arbitrary.Node
-    tuple?: arbitrary.Node
-    allOf?: arbitrary.Node
-    anyOf?: arbitrary.Node
-    oneOf?: arbitrary.Node
   }
   interface Constraints {
     include?: arbitrary.Include
-    nodes?: arbitrary.Nodes
     schemas?: arbitrary.Schemas
     paths?: arbitrary.Paths
     pathParams?: arbitrary.PathParams
@@ -334,35 +337,32 @@ const applyConstraints
   = (_) => 
     !_ ? { 
       ...defaults, 
-      nodes: {
-        ...defaults.nodes,
-      },
       schemas: { 
         ...defaults.schemas, 
-        depthIdentifier: createDepthIdentifier() 
+        depthIdentifier: createDepthIdentifier(),
       }
     } 
     : {
       schemas: !_.schemas ? { ...defaults.schemas, depthIdentifier: fc.createDepthIdentifier() } 
       : {
+        /// cross-cutting schema configuration
         bias: _.schemas.bias ?? defaults.schemas.bias,
         depthIdentifier: _.schemas.depthIdentifier ?? createDepthIdentifier(),
+        /// node-specific options
         maxCount: _.schemas.maxCount ?? defaults.schemas.maxCount,
         minCount: _.schemas.minCount ?? defaults.schemas.minCount,
-      },
-      nodes: !_.nodes ? defaults.nodes : {
-        allOf: { ..._.nodes.allOf ?? defaults.nodes.allOf },
-        anyOf: { ..._.nodes.anyOf ?? defaults.nodes.anyOf },
-        oneOf: { ..._.nodes.oneOf ?? defaults.nodes.oneOf },
-        array: { ..._.nodes.array ?? defaults.nodes.array },
-        boolean: { ..._.nodes.boolean ?? defaults.nodes.boolean },
-        integer: { ..._.nodes.integer ?? defaults.nodes.integer },
-        null: { ..._.nodes.null ?? defaults.nodes.null },
-        number: { ..._.nodes.number ?? defaults.nodes.number },
-        object: { ..._.nodes.object ?? defaults.nodes.object },
-        record: { ..._.nodes.record ?? defaults.nodes.record },
-        string: { ..._.nodes.string ?? defaults.nodes.string },
-        tuple: { ..._.nodes.tuple ?? defaults.nodes.tuple },
+        allOf: { ..._.schemas.allOf, ...defaults.schemas.allOf },
+        anyOf: { ..._.schemas.anyOf, ...defaults.schemas.anyOf },
+        array: { ..._.schemas.array, ...defaults.schemas.array },
+        boolean: { ..._.schemas.boolean, ...defaults.schemas.boolean },
+        integer: { ..._.schemas.integer, ...defaults.schemas.integer },
+        null: { ..._.schemas.null, ...defaults.schemas.null },
+        number: { ..._.schemas.number, ...defaults.schemas.number },
+        object: { ..._.schemas.object, ...defaults.schemas.object },
+        oneOf: { ..._.schemas.oneOf, ...defaults.schemas.oneOf },
+        record: { ..._.schemas.record, ...defaults.schemas.record },
+        string: { ..._.schemas.string, ...defaults.schemas.string },
+        tuple: { ..._.schemas.tuple, ...defaults.schemas.tuple },
       },
       include: !_.include ? defaults.include: {
         const: _.include.const ?? defaults.include.const,
@@ -392,23 +392,21 @@ const applyConstraints
 
 export const defaults = {
   schemas: {
-    minCount: 0,
-    maxCount: 0,
+    minCount: 1,
+    maxCount: 3,
     bias: "object",
-  },
-  nodes: {
-    null: { exclude: false },
-    boolean: { exclude: false },
-    integer: { exclude: false },
-    number: { exclude: false },
-    string: { exclude: false },
-    array: { exclude: false },
-    record: { exclude: false },
-    tuple: { exclude: false },
-    object: { exclude: false },
-    allOf: { exclude: true },
-    anyOf: { exclude: false },
-    oneOf: { exclude: false },
+    allOf: Schema.allOf.defaults,
+    anyOf: Schema.anyOf.defaults,
+    array: Schema.array.defaults,
+    boolean: Schema.boolean.defaults,
+    integer: Schema.integer.defaults,
+    null: Schema.null.defaults,
+    number: Schema.number.defaults,
+    object: Schema.object.defaults,
+    oneOf: Schema.oneOf.defaults,
+    record: Schema.record.defaults,
+    string: Schema.string.defaults,
+    tuple: Schema.tuple.defaults,
   },
   include: {
     const: false,
@@ -713,7 +711,9 @@ export namespace Link {
     requestBody: {}
     server: Server
   }
-  /** ### {@link Link.shape `openapi.Link.shape`} */
+  /** 
+   * ## {@link Link.shape `openapi.Link.shape`} 
+   */
   export const shape = {
     parameters: fc.dictionary(fc.string(), fc.object()),
     requestBody: fc.object(),
@@ -745,7 +745,7 @@ export interface Encoding extends fc.Arbitrary.infer<typeof Encoding> {}
 export const Encoding = fc.record(
   {
     contentType: fc.string(),
-    // TODO: CIRCULAR IF YOU UNCOMMENT `Header`
+    // TODO: CIRCULAR IF YOU UNCOMMENT `Encoding.headers`
     // headers: fc.dictionary(fc.string(), fc.oneof(Ref.typedef /* , Header */ )),
     style: fc.constantFrom("form", "spaceDelimited", "pipeDelimited", "deepObject"),
     explode: fc.boolean(),
@@ -754,9 +754,14 @@ export const Encoding = fc.record(
   { requiredKeys: [] },
 )
 
-/** ### {@link mediatype `openapi.mediatype`} */
 export interface mediatype extends fc.Arbitrary.infer<ReturnType<typeof mediatype>> {}
-/** ### {@link mediatype `openapi.mediatype`} */
+
+/**
+ * ## {@link mediatype `openapi.mediatype`} 
+ * 
+ * See also:
+ * - [OpenAPI docs](https://swagger.io/docs/specification/v3_0/media-types/)
+ */
 export function mediatype(constraints?: mediatype.Constraints): fc.Arbitrary<openapi.mediatype>
 export function mediatype(_: mediatype.Constraints = mediatype.defaults) {
   const constraints = {
@@ -796,6 +801,12 @@ export namespace mediatype {
 
 export interface mediatypes extends Partial<{ [K in http.MediaType]: mediatype }> {}
 
+/** 
+ * ## {@link mediatypes `openapi.mediatypes`}
+ * 
+ * See also:
+ * - [OpenAPI docs](https://swagger.io/docs/specification/v3_0/media-types/)
+ */
 export function mediatypes(constraints?: mediatypes.Constraints): fc.Arbitrary<mediatypes>
 export function mediatypes(_: mediatypes.Constraints = {}): fc.Arbitrary<mediatypes> {
   const constraints = applyConstraints(_)
@@ -1248,7 +1259,12 @@ export function pathnames(_?: arbitrary.Constraints): fc.Arbitrary<readonly path
   )
 }
 
-/** ### {@link paths `openapi.paths`} */
+/** 
+ * ## {@link paths `openapi.paths`} 
+ * 
+ * See also:
+ * - [OpenAPI docs](https://swagger.io/docs/specification/v3_0/paths-and-operations/#paths)
+ */
 export function paths(constraints?: arbitrary.Constraints): fc.Arbitrary<openapi.paths> 
 export function paths(_?: arbitrary.Constraints): fc.Arbitrary<openapi.paths> {
   const constraints = applyConstraints(_)
@@ -1261,11 +1277,16 @@ export function paths(_?: arbitrary.Constraints): fc.Arbitrary<openapi.paths> {
   )
 }
 
-/** ### {@link components `openapi.components`} */
+/** 
+ * ## {@link components `openapi.components`} 
+ * 
+ * See also:
+ * - [OpenAPI docs](https://swagger.io/docs/specification/v3_0/components/)
+ */
 export function components(constraints?: arbitrary.Constraints): fc.Arbitrary<openapi.components>
 export function components(_?: arbitrary.Constraints): fc.Arbitrary<openapi.components> {
   const constraints = applyConstraints(_)
-  const schema = Schema[constraints.schemas.bias]
+  const bias = Schema[constraints.schemas.bias]
   return fc.record({ 
     schemas: fc.dictionary(
       fc.alphanumeric(),

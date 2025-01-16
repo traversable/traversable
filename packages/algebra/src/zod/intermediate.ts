@@ -40,8 +40,8 @@ const pre = (x: string) => x.startsWith("<??>") ? x.slice("<??>".length) : x
  * TODO: move this to `@traversable/core/arbitrary`
  */
 interface fc_optional<T> extends fc.Arbitrary<T | undefined> { readonly [symbol.optional]: true }
-function optional<T>(arbitrary: fc.Arbitrary<T>, constraints?: fc.OneOfConstraints): fc_optional<T>
-function optional<T>(arbitrary: fc.Arbitrary<T>, constraints: fc.OneOfConstraints = {}): fc.Arbitrary<T | undefined> {
+function fc_optional<T>(arbitrary: fc.Arbitrary<T>, constraints?: fc.OneOfConstraints): fc_optional<T>
+function fc_optional<T>(arbitrary: fc.Arbitrary<T>, constraints: fc.OneOfConstraints = {}): fc.Arbitrary<T | undefined> {
   const model = fc.oneof(constraints, arbitrary, fc.constant(undefined));
   (model as typeof model & { [symbol.optional]: boolean })[symbol.optional] = true;
   return model
@@ -341,7 +341,7 @@ namespace Algebra {
     number: () => fc.oneof(fc.integer(), fc.float({ noNaN: true })),
     string: () => fc.string(),
     literal: (x) => fc.constant(x.meta.literal),
-    optional: (x) => optional(x.def),
+    optional: (x) => fc_optional(x.def),
     array: (x) => fc.array(x.def),
     record: (x) => fc.dictionary(x.def),
     tuple: (x) => fc.tuple(...x.def),

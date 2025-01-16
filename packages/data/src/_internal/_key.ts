@@ -1,9 +1,10 @@
 import type { newtype } from "any-ts"
 
-import { PATTERN } from "@traversable/registry"
+import { HKT, Kind, PATTERN } from "@traversable/registry"
 import * as fn from "./_function.js"
 import { prop } from "./_prop.js"
 import { escape as escapeString, isQuoted } from "./_string.js"
+import { map } from "@traversable/data"
 
 /** @internal */
 type matchUppercaseAlpha<T extends string> = key.uppercase<T> extends T ? key.lowercase<T> extends T ? never : T : never
@@ -44,6 +45,25 @@ const Object_keys
 const Object_hasOwn = 
  <K extends keyof any>(u: unknown, k: K): u is { [P in K]: unknown } => 
   !!(u) && typeof u === "object" && globalThis.Object.hasOwn(u, k)
+
+/** @internal */
+type Any = 
+  | null 
+  | undefined 
+  | boolean 
+  | number 
+  | string 
+  | readonly Any[] 
+  | { [x: string]: Any }
+
+/** @internal */
+const isArray
+  : (u: Any) => u is readonly Any[]
+  = globalThis.Array.isArray
+/** @internal */
+const isObject
+  : (u: Any) => u is Record<string, Any>
+  = (u): u is Record<string, Any> => !!u && typeof u === "object"
 
 namespace char {
   export const Alphabet = [
@@ -749,7 +769,7 @@ void (key.finite = finite)
 void (key.nonfinite = nonfinite)
 
 export declare namespace keys {
-  export { keys_any as any }
+  export { keys_any as any, keys_map as map }
   export type keys_any<T extends readonly key.any[] = readonly key.any[]> = T
   export type and<T> = T & keys.any
   export type from<T extends readonly unknown[]> 
@@ -759,7 +779,44 @@ export declare namespace keys {
     ;
 }
 
+
+function keys_map<F extends HKT.Function<HKT<keyof any, keyof any>>>(F: F): 
+  <const T extends Record<F[0], unknown>>(object: T) => { [K in keyof T as Kind<F, K>]: T[K] }
+function keys_map<F extends HKT<keyof any, keyof any>>(F: F): 
+  <const T extends Record<F[0], unknown>>(object: T) => { [K in keyof T as Kind<F, K>]: T[K] }
+function keys_map<KI extends keyof any, KO extends keyof any>(f: (k: KI) => KO): 
+  <const T extends Record<KI, unknown>>(object: T) => { [K in keyof T as KO]: T[K] }
+function keys_map(f: (k: keyof any) => keyof any) {
+  return (x: Record<keyof any, unknown>) => {
+    let out: Record<keyof any, unknown> = {}
+    for (const k in x) out[f(k)] = x[k]
+    return out
+  }
+}
+///
+namespace keys_map {
+  export function deep(f: (s: string) => string): (x: Any) => Any {
+    return (x) => {
+      switch (true) {
+        default: return fn.exhaustive(x)
+        case x === null:
+        case x === undefined:
+        case typeof x === "boolean":
+        case typeof x === "number":
+        case typeof x === "string": return x
+        case isArray(x): return map(x, keys_map.deep(f))
+        case isObject(x): {
+          let out: Record<keyof any, Any> = {}
+          for (const k in x) out[f(k)] = keys_map.deep(f)(x[k])
+          return out
+        }
+      }
+    }
+  }
+}
+
 export namespace keys {
+  keys.map = keys_map
   export const is = (u: unknown): u is keys.any => globalThis.Array.isArray(u) && u.every(key.is)
 
   /** 
@@ -784,4 +841,5 @@ export namespace keys {
     for (const x of objects) for (const k of Object_keys(x)) void out.add(k)
     return [...out]
   }
+  
 }

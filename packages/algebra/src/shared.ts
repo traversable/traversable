@@ -1,6 +1,7 @@
 import type { Context, Extension } from "@traversable/core"
 import { is, keyOf$, t, tree } from "@traversable/core"
 import type { openapi } from "@traversable/openapi"
+import { deref } from "@traversable/openapi"
 import type { Partial, Requiring, newtype } from "@traversable/registry"
 import { symbol } from "@traversable/registry"
 
@@ -14,6 +15,7 @@ export interface FutureFlags extends t.typeof<typeof FutureFlags> {}
 export const FutureFlags = t.object({
   includeJsdocLinks: t.optional(t.boolean()),
   includeLinkToOpenApiNode: t.optional(t.string()),
+  includeExamples: t.optional(t.boolean()),
 })
 
 export type PathInterpreter 
@@ -47,18 +49,6 @@ const OPENAPI_PATH_MAP = {
   [symbol.array]: "items",
 } as const
 
-function deref<T>(path: string[], guard: (u: unknown) => u is T): (document: { paths: { [x: string]: {} } }) => T | undefined
-function deref(path: string[]): (document: { paths: { [x: string]: {} } }) => {} | undefined
-function deref(path: string[], guard: (u: unknown) => u is unknown = (_: any): _ is any => true) {
-  return (document: { paths: { [x: string]: {} } }) => {
-    let cursor = tree.get(document, ...path)
-    while (tree.has("$ref", is.string)(cursor)) {
-      cursor = deref(cursor["$ref"].split("/"))(document)
-    }
-  return guard(cursor) ? cursor : void 0
-  }
-}
-
 interface Invertible { [x: keyof any]: keyof any }
 const sub
   : <const D extends Invertible>(dict: D) => (text: string) => string
@@ -80,7 +70,7 @@ const buildIdentInterpreter: BuildPathInterpreter = (lookup) => ($) => (xs) => {
   while ((k = ks.shift()) !== undefined) {
     switch (true) {
       case k === symbol.allOf: {
-        const siblings = deref($.absolutePath.slice(0, -1), is.array)($.document)
+        const siblings = deref($.absolutePath.slice(0, -1).join("/"), is.array)($.document)
         if (!siblings) continue 
         const siblingCount = siblings.length
         const j = ks.shift()

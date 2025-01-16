@@ -266,8 +266,8 @@ function Schema_number(_constraints?: Constraints): fc.Arbitrary<t.Schema_number
   )
 }
 ///
-export declare namespace Schema_number {
-  export interface Constraints<T = unknown> extends globalThis.Partial<Constraints.Base> {
+declare namespace Schema_number {
+  interface Constraints<T = unknown> extends globalThis.Partial<Constraints.Base> {
     requiredKeys?: (keyof T)[]
   }
 }
