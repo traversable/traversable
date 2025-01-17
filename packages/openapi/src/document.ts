@@ -1,7 +1,7 @@
 import { core, fc, t, tree, zip } from "@traversable/core"
 import { fn, map, object } from "@traversable/data"
 import { http } from "@traversable/http"
-import { PATTERN, type newtype } from "@traversable/registry"
+import { PATTERN, Required, RequireN, type newtype } from "@traversable/registry"
 
 import { createDepthIdentifier } from "fast-check"
 import * as N from "./normalize.js"
@@ -19,7 +19,7 @@ const predicate = tree.has("schemas", tree.has("type", core.is.string))
 /** @internal */
 const normalize = N.normalize(predicate)
 
-export function openapi() {} 
+export function openapi() {}
 
 openapi.is = {
   request: (u: openapi.requestBody): u is openapi.request => !("$ref" in u),
@@ -68,12 +68,12 @@ export declare namespace openapi {
     components: {
       schemas: openapi.schemas
     }
-    paths: 
-      /** 
-       * __Path__ syntax specified by [RFC-3986](https://datatracker.ietf.org/doc/html/rfc3986#section-3) 
-       */ 
-      & { ["/api/v2/example/{id}"]?: openapi.pathitem } 
-      & { 
+    paths:
+      /**
+       * __Path__ syntax specified by [RFC-3986](https://datatracker.ietf.org/doc/html/rfc3986#section-3)
+       */
+      & { ["/api/v2/example/{id}"]?: openapi.pathitem }
+      & {
       [path: string]: {
         // TODO: add TRACE, HEAD, etc.
         [http.Verb.enum.get]?: openapi.operation
@@ -82,17 +82,17 @@ export declare namespace openapi {
         [http.Verb.enum.delete]?: openapi.operation
         [http.Verb.enum.patch]?: {
           parameters?: readonly openapi.parameter[]
-          responses?: { 
+          responses?: {
             [200]?: openapi.response
-            [500]?: openapi.response 
+            [500]?: openapi.response
           } & {
-            /** 
+            /**
              * __Status__ specified by [RFC-7231](https://datatracker.ietf.org/doc/html/rfc7231#section-6)
              */
             [status: number]: {
-              content?: { 
-                /** 
-                 * __Media type__ specified by [RFC-6838](https://datatracker.ietf.org/doc/html/rfc6838) 
+              content?: {
+                /**
+                 * __Media type__ specified by [RFC-6838](https://datatracker.ietf.org/doc/html/rfc6838)
                  */
                 [http.MediaType.enum.applicationJSON]?: openapi.mediatype
                 [http.MediaType.enum.applicationFormURLEncoded]?: openapi.mediatype
@@ -142,8 +142,8 @@ export declare namespace openapi {
   interface components { schemas: schemas }
   interface paths extends inline<{ [path: string]: openapi.pathitem }> {}
 
-  interface pathitem extends 
-    pathitem.meta, 
+  interface pathitem extends
+    pathitem.meta,
     pathitem.verbs {}
 
   namespace pathitem {
@@ -204,14 +204,14 @@ export declare namespace openapi {
     content?: openapi.content
     headers?: openapi.headers
   }
-  interface responses extends 
+  interface responses extends
     inline<{ [x: `1${number}`]: openapi.response }>,
     inline<{ [x: `2${number}`]: openapi.response }>,
     inline<{ [x: `3${number}`]: openapi.response }>,
     inline<{ [x: `4${number}`]: openapi.response }>,
     inline<{ [x: `5${number}`]: openapi.response }> {}
 
-  interface content { 
+  interface content {
     [http.MediaType.enum.applicationJSON]?: openapi.mediatype
     [http.MediaType.enum.applicationFormURLEncoded]?: openapi.mediatype
     [http.MediaType.enum.applicationOctetStream]?: openapi.mediatype
@@ -236,7 +236,7 @@ export declare namespace openapi {
     export { header_any as any }
     export interface header_any {}
   }
-    
+
   interface mediatype<T = unknown> {
     schema?: Schema.any // | openapi.$ref
     examples?: openapi.meta.examples
@@ -259,6 +259,7 @@ export declare namespace arbitrary {
     maxCount?: number
     minCount?: number
   }
+
 
   interface Schemas extends arbitrary.Countable {
     /// cross-cutting configuration
@@ -330,27 +331,27 @@ export function arbitrary(_: arbitrary.Constraints = defaults): fc.Arbitrary<{}>
   }, { requiredKeys: [ "components", "paths", "openapi" ] }).map(normalize)
 }
 
-type AppliedConstraints = { [K in keyof arbitrary.Constraints]-?: Required<arbitrary.Constraints[K]> }
+type AppliedConstraints = RequireN<arbitrary.Constraints, [1, 1]>
 
-const applyConstraints 
+const applyConstraints
   : (constraints?: arbitrary.Constraints) => AppliedConstraints
-  = (_) => 
-    !_ ? { 
-      ...defaults, 
-      schemas: { 
-        ...defaults.schemas, 
+  = (_) =>
+    !_ ? {
+      ...defaults,
+      schemas: {
+        ...defaults.schemas,
         depthIdentifier: createDepthIdentifier(),
       }
-    } 
+    }
     : {
-      schemas: !_.schemas ? { ...defaults.schemas, depthIdentifier: fc.createDepthIdentifier() } 
+      schemas: !_.schemas ? { ...defaults.schemas, depthIdentifier: fc.createDepthIdentifier() }
       : {
         /// cross-cutting schema configuration
         bias: _.schemas.bias ?? defaults.schemas.bias,
         depthIdentifier: _.schemas.depthIdentifier ?? createDepthIdentifier(),
-        /// node-specific options
         maxCount: _.schemas.maxCount ?? defaults.schemas.maxCount,
         minCount: _.schemas.minCount ?? defaults.schemas.minCount,
+        /// node-specific options
         allOf: { ..._.schemas.allOf, ...defaults.schemas.allOf },
         anyOf: { ..._.schemas.anyOf, ...defaults.schemas.anyOf },
         array: { ..._.schemas.array, ...defaults.schemas.array },
@@ -429,7 +430,7 @@ export const defaults = {
   responses: {
     maxContentTypeCount: 5,
     minContentTypeCount: 2,
-    
+
     minCount: 1,
     maxCount: 5,
   },
@@ -505,9 +506,9 @@ namespace Auth {
       refreshUrl: fc.string(), // format: "uri-reference"
       scopes: fc.dictionary(fc.string(), fc.string()),
     },
-    { 
+    {
       requiredKeys: [
-        "authorizationUrl", 
+        "authorizationUrl",
         "scopes",
       ],
     },
@@ -684,7 +685,7 @@ export interface Tag {
 }
 
 /** ### {@link tag `openapi.tag`} */
-export function tag(constraints?: arbitrary.Constraints): fc.Arbitrary<Tag> 
+export function tag(constraints?: arbitrary.Constraints): fc.Arbitrary<Tag>
 export function tag(constraints: arbitrary.Constraints = defaults) {
   return fc.record({
     name: fc.string(),
@@ -711,8 +712,8 @@ export namespace Link {
     requestBody: {}
     server: Server
   }
-  /** 
-   * ## {@link Link.shape `openapi.Link.shape`} 
+  /**
+   * ## {@link Link.shape `openapi.Link.shape`}
    */
   export const shape = {
     parameters: fc.dictionary(fc.string(), fc.object()),
@@ -757,8 +758,8 @@ export const Encoding = fc.record(
 export interface mediatype extends fc.Arbitrary.infer<ReturnType<typeof mediatype>> {}
 
 /**
- * ## {@link mediatype `openapi.mediatype`} 
- * 
+ * ## {@link mediatype `openapi.mediatype`}
+ *
  * See also:
  * - [OpenAPI docs](https://swagger.io/docs/specification/v3_0/media-types/)
  */
@@ -801,9 +802,9 @@ export namespace mediatype {
 
 export interface mediatypes extends Partial<{ [K in http.MediaType]: mediatype }> {}
 
-/** 
+/**
  * ## {@link mediatypes `openapi.mediatypes`}
- * 
+ *
  * See also:
  * - [OpenAPI docs](https://swagger.io/docs/specification/v3_0/media-types/)
  */
@@ -905,7 +906,7 @@ export function requestBody(_?: arbitrary.Constraints): fc.Arbitrary<openapi.req
   return fc.oneof(
     request(constraints),
     // Ref(constraints),
-  ) 
+  )
 }
 
 // /** @internal */
@@ -916,9 +917,9 @@ export function requestBody(_?: arbitrary.Constraints): fc.Arbitrary<openapi.req
 //   : core.has("name", core.is.string)(p) ? p.name
 //   : globalThis.String(p) // fn.throw(p)
 
-interface path_parameter extends inline<{ 
+interface path_parameter extends inline<{
   in: autocomplete<"path">
-  name: string 
+  name: string
   schema: Schema.any
   required: boolean
   style?: parameter.style.path
@@ -955,7 +956,7 @@ interface cookie_parameter extends inline<{
   deprecated?: boolean
 }> {}
 
-type parameter_any = 
+type parameter_any =
   | path_parameter
   | cookie_parameter
   | header_parameter
@@ -963,22 +964,22 @@ type parameter_any =
   ;
 
 export type parameter = parameter.any
-export declare namespace parameter { 
-  export { 
+export declare namespace parameter {
+  export {
     parameter_any as any,
     cookie_parameter as cookie,
     header_parameter as header,
     path_parameter as path,
     query_parameter as query,
-  } 
+  }
 }
 
 /** ### {@link parameter `openapi.parameter`} */
 export namespace parameter {
   export function any(constraints?: arbitrary.Constraints) {
     return fc.oneof(
-      parameter.query(constraints), 
-      parameter.cookie(constraints), 
+      parameter.query(constraints),
+      parameter.cookie(constraints),
       parameter.header(constraints),
     )
   }
@@ -988,13 +989,13 @@ export namespace parameter {
     header: ["simple"] as const satisfies string[],
     path: [
       "simple",
-      "matrix", 
-      "label", 
+      "matrix",
+      "label",
     ] as const satisfies string[],
     query: [
-      "form", 
-      "spaceDelimited", 
-      "pipeDelimited", 
+      "form",
+      "spaceDelimited",
+      "pipeDelimited",
       "deepObject"
     ] as const satisfies string[],
   } as const
@@ -1008,9 +1009,9 @@ export namespace parameter {
 
   export function pathSchema(constraints: Schema.Constraints = Schema.Constraints.defaults) {
     return fc.oneof(
-      Schema.number(constraints), 
-      Schema.string(constraints), 
-      Schema.integer(constraints), 
+      Schema.number(constraints),
+      Schema.string(constraints),
+      Schema.integer(constraints),
       Schema.boolean(constraints),
     )
   }
@@ -1025,17 +1026,17 @@ export namespace parameter {
       schema: pathSchema(),
       style: fc.constantFrom(...style.path),
       explode: fc.boolean(),
-    }, { 
+    }, {
       requiredKeys: [
-        "required", 
-        "in", 
+        "required",
+        "in",
         "schema",
-      ] 
+      ]
     })
   }
 
   /** ### {@link parameter.query `openapi.parameter.query`} */
-  export function query(constraints?: arbitrary.Constraints): fc.Arbitrary<openapi.parameter.query> 
+  export function query(constraints?: arbitrary.Constraints): fc.Arbitrary<openapi.parameter.query>
   export function query(_?: arbitrary.Constraints): fc.Arbitrary<openapi.parameter.query> {
     const constraints = applyConstraints(_)
     return fc.record({
@@ -1046,10 +1047,10 @@ export namespace parameter {
       style: fc.constantFrom(...style.query),
       explode: fc.boolean(),
       deprecated: fc.boolean(),
-    }, { 
+    }, {
       requiredKeys: [
-        "in", 
-        "name", 
+        "in",
+        "name",
         "schema",
       ]
     })
@@ -1066,12 +1067,12 @@ export namespace parameter {
       required: fc.boolean(),
       schema: Schema.string({ ...constraints, ...Schema.Constraints.defaults }),
       deprecated: fc.boolean(),
-    }, { 
+    }, {
       requiredKeys: [
-        "in", 
-        "name", 
+        "in",
+        "name",
         "schema",
-      ] 
+      ]
     })
   }
 
@@ -1154,15 +1155,15 @@ export function parameters(constraints: parameters.Constraints): fc.Arbitrary<re
     ]
   )
 }
-export declare namespace parameters { 
-  export interface Constraints extends operation.Constraints {} 
+export declare namespace parameters {
+  export interface Constraints extends operation.Constraints {}
 }
 
 /** ### {@link operation `openapi.operation`} */
 export function operation(constraints: operation.Constraints): fc.Arbitrary<openapi.operation>
 export function operation(_: operation.Constraints) {
-  const constraints = { 
-    ...applyConstraints(_),  
+  const constraints = {
+    ...applyConstraints(_),
     params: _.params,
     method: _.method,
   }
@@ -1172,14 +1173,14 @@ export function operation(_: operation.Constraints) {
     responses: responses(constraints),
     parameters: parameters(constraints),
     ...!
-      ["get", "delete", "head"].includes(constraints.method.toLowerCase()) 
+      ["get", "delete", "head"].includes(constraints.method.toLowerCase())
       && { requestBody: requestBody(constraints) },
     ...constraints.include.description && { description: fc.lorem() },
-  }, { 
+  }, {
     requiredKeys: [
       "responses",
       "parameters",
-    ] 
+    ]
   }) satisfies fc.Arbitrary<openapi.operation>
 }
 
@@ -1193,9 +1194,9 @@ export declare namespace operation {
 /** ### {@link pathitem `openapi.pathitem`} */
 export function pathitem(constraints: pathitem.Constraints): fc.Arbitrary<openapi.pathitem>
 export function pathitem(_: pathitem.Constraints): fc.Arbitrary<{}> {
-  const constraints = { 
-    ...applyConstraints(_), 
-    params: _.params 
+  const constraints = {
+    ...applyConstraints(_),
+    params: _.params
   }
   return fc.record({
     get: operation({ ...constraints, method: "get" }),
@@ -1221,7 +1222,7 @@ export interface pathname extends inline<{
 }> {}
 
 /** ### {@link pathname `openapi.pathname`} */
-export function pathname(constraints?: arbitrary.Constraints): fc.Arbitrary<pathname> 
+export function pathname(constraints?: arbitrary.Constraints): fc.Arbitrary<pathname>
 export function pathname(_?: arbitrary.Constraints): fc.Arbitrary<pathname> {
   const constraints = applyConstraints(_)
   const segments = fc.uniqueArray(fc.alphanumeric(), {
@@ -1259,13 +1260,13 @@ export function pathnames(_?: arbitrary.Constraints): fc.Arbitrary<readonly path
   )
 }
 
-/** 
- * ## {@link paths `openapi.paths`} 
- * 
+/**
+ * ## {@link paths `openapi.paths`}
+ *
  * See also:
  * - [OpenAPI docs](https://swagger.io/docs/specification/v3_0/paths-and-operations/#paths)
  */
-export function paths(constraints?: arbitrary.Constraints): fc.Arbitrary<openapi.paths> 
+export function paths(constraints?: arbitrary.Constraints): fc.Arbitrary<openapi.paths>
 export function paths(_?: arbitrary.Constraints): fc.Arbitrary<openapi.paths> {
   const constraints = applyConstraints(_)
   return pathnames(constraints).chain( // TODO: remove this chain, it breaks shrinking
@@ -1277,28 +1278,31 @@ export function paths(_?: arbitrary.Constraints): fc.Arbitrary<openapi.paths> {
   )
 }
 
-/** 
- * ## {@link components `openapi.components`} 
- * 
+/**
+ * ## {@link components `openapi.components`}
+ *
  * See also:
  * - [OpenAPI docs](https://swagger.io/docs/specification/v3_0/components/)
  */
 export function components(constraints?: arbitrary.Constraints): fc.Arbitrary<openapi.components>
 export function components(_?: arbitrary.Constraints): fc.Arbitrary<openapi.components> {
-  const constraints = applyConstraints(_)
-  const bias = Schema[constraints.schemas.bias]
-  return fc.record({ 
+  const $ = applyConstraints(_)
+  map($.schemas, (x) => x)
+  $.schemas.null
+  const bias = Schema[$.schemas.bias]
+  return fc.record({
     schemas: fc.dictionary(
       fc.alphanumeric(),
-      Schema.any(Schema.Constraints.defaults), {
-        minKeys: constraints.schemas.minCount,
-        maxKeys: constraints.schemas.maxCount,
+      Schema.any({ ...Schema.Constraints.defaults, anyOf: { ...Schema.Constraints.defaults.allOf, exclude: false, }}), {
+        minKeys: $.schemas.minCount,
+        maxKeys: $.schemas.maxCount,
       },
     ),
-    ...constraints.include.examples && { examples },
+    ...$.include.examples && { examples },
   }, { requiredKeys: ["schemas"] })
 }
-  
+
+const getExcludeConfig = <K extends keyof typeof Schema.Constraints.defaults>(key: K) => tree.get.defer("Constraints", "defaults", key, "constraints", "exclude")
 
 
 

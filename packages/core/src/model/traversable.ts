@@ -4,7 +4,6 @@ import type {
   Functor,
   HKT,
   IndexedFunctor,
-  IxFunctor,
   Kind,
   Merge,
   Mutable
@@ -488,7 +487,7 @@ const PathPrefixMap = {
   tuple: "items",
 } as const satisfies Record<Traversable["type"], string | null>
 
-const IxFunctor: IxFunctor<Traversable_lambda, Traversable_any> = {
+const IxFunctor: IndexedFunctor<Context, Traversable_lambda, Traversable_any> = {
   map: Traversable_Functor.map,
   mapWithIndex(g) {
     return ($, xs) => {
@@ -545,9 +544,9 @@ function Traversable_fold<T>(g: Functor.Algebra<Traversable_lambda, T>): <S>(ter
 function Traversable_fold<T>(g: Functor.Algebra<Traversable_lambda, T>)
   { return fn.cata(Traversable_Functor)(g) }
 
-function Traversable_foldIx<T, Ix>(algebra: Functor.IxAlgebra<Ix, Traversable_lambda, T>): <S>(ix: Ix, term: S) => T
-function Traversable_foldIx<T, Ix>(algebra: Functor.IxAlgebra<Ix, Traversable_lambda, T>)
-  { return fn.cataIx<Ix, Traversable_lambda, Traversable_any>(IxFunctor)(algebra) }
+function Traversable_foldIx<Ix, T>(algebra: Functor.IxAlgebra<Ix, Traversable_lambda, T>): <S>(ix: Ix, term: S) => T
+function Traversable_foldIx<T>(algebra: Functor.IxAlgebra<Context, Traversable_lambda, T>)
+  { return fn.cataIx<Context, Traversable_lambda, Traversable_any>(IxFunctor)(algebra) }
 
 /** @internal */
 const fromJsonSchema = (expr: JsonSchema.any) => {
@@ -557,8 +556,8 @@ const fromJsonSchema = (expr: JsonSchema.any) => {
   }
   switch (true) {
     default: return fn.softExhaustiveCheck(expr)
-    case JsonSchema.is.enum(expr): return { meta, ...expr, type: "enum" }
     case JsonSchema.is.null(expr): return { meta, ...expr, type: expr.type }
+    case JsonSchema.is.enum(expr): return { meta, ...expr, type: "enum" }
     case JsonSchema.is.boolean(expr): return { meta, ...expr, type: expr.type }
     case JsonSchema.is.integer(expr): return { meta, ...expr, type: expr.type }
     case JsonSchema.is.number(expr): return { meta, ...expr, type: expr.type }

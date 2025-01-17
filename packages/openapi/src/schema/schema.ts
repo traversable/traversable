@@ -420,7 +420,7 @@ function Schema_allOf<T>(
   _: Constraints = Constraints.defaults
 ) {
   const $ = Constraints.configure(_).allOf
-  return fc.record({ allOf: Schema_allOf.base(LOOP, $.constraints) }, { requiredKeys: ["allOf"] })
+  return fc.record({ allOf: Schema_allOf.base(LOOP, $) }, { requiredKeys: ["allOf"] })
 }
 ///
 Schema_allOf.defaults = {
@@ -460,7 +460,7 @@ function Schema_anyOf<T>(LOOP: fc.Arbitrary<T>, constraints: Constraints): fc.Ar
 function Schema_anyOf<T>(LOOP: fc.Arbitrary<T>, _: Constraints) {
   const $ = Constraints.configure(_).anyOf
   return fc.record(
-    { anyOf: Schema_anyOf.base(LOOP, $.constraints) }, 
+    { anyOf: Schema_anyOf.base(LOOP, $) }, 
     { requiredKeys: ["anyOf"] }
   )
 }
@@ -492,7 +492,7 @@ interface Schema_oneOf<T = unknown> extends t.Schema_oneOf<T> {}
 function Schema_oneOf<T>(LOOP: fc.Arbitrary<T>, constraints?: Constraints): fc.Arbitrary<{ oneOf: T[] }>
 function Schema_oneOf<T>(LOOP: fc.Arbitrary<T>, $: Constraints = Constraints.defaults) {
   return fc.record({
-    oneOf: Schema_oneOf.base(LOOP, Constraints.configure($).oneOf.constraints) 
+    oneOf: Schema_oneOf.base(LOOP, Constraints.configure($).oneOf) 
   })
 }
 ///
@@ -673,11 +673,6 @@ function Schema_any(_: Constraints = Constraints.defaults)
 ///    ANY    ///
 /////////////////
 
-/**
- * If you need complete control over which generators are 
- * used, you can provide them via the {@link Generators `Generators`}
- * option. This library will consult this object first.
- */
 export declare namespace Constraints {
   interface Config extends Required<Constraints> {}
   interface Items extends globalThis.Partial<{ [K in keyof t.Schema_Items]: fc.Arbitrary<t.Schema_Items[K]> }> {}
@@ -693,54 +688,18 @@ export declare namespace Constraints {
 
 export interface Constraints<T = unknown, U = unknown> {
   base: Constraints.Base
-  null: {
-    // generator: typeof Schema_null.default
-    constraints: typeof Schema_null.defaults
-  }
-  boolean: {
-    // generator: typeof Schema_boolean.default,
-    constraints: typeof Schema_boolean.defaults
-  }
-  integer: {
-    // generator: typeof Schema_integer.default
-    constraints: typeof Schema_integer.defaults
-  }
-  number: {
-    // generator: typeof Schema_number.default
-    constraints: typeof Schema_number.defaults
-  }
-  string: {
-    // generator: typeof Schema_string.default
-    constraints: typeof Schema_string.defaults
-  }
-  array: {
-    // generator: typeof Schema_array.default
-    constraints: typeof Schema_array.defaults
-  }
-  record: {
-    // generator: typeof Schema_record.default
-    constraints: typeof Schema_record.defaults
-  }
-  tuple: {
-    // generator: typeof Schema_tuple.default
-    constraints: typeof Schema_tuple.defaults
-  }
-  object: {
-    // generator: typeof Schema_object.default
-    constraints: typeof Schema_object.defaults
-  }
-  allOf: {
-    // generator: typeof Schema_allOf.default
-    constraints: typeof Schema_allOf.defaults
-  }
-  anyOf: {
-    // generator: typeof Schema_anyOf.default
-    constraints: typeof Schema_anyOf.defaults
-  }
-  oneOf: {
-    // generator: typeof Schema_oneOf.default
-    constraints: typeof Schema_oneOf.defaults
-  }
+  null: typeof Schema_null.defaults
+  boolean: typeof Schema_boolean.defaults
+  integer: typeof Schema_integer.defaults
+  number: typeof Schema_number.defaults
+  string: typeof Schema_string.defaults
+  array: typeof Schema_array.defaults
+  record: typeof Schema_record.defaults
+  tuple: typeof Schema_tuple.defaults
+  object: typeof Schema_object.defaults
+  allOf: typeof Schema_allOf.defaults
+  anyOf: typeof Schema_anyOf.defaults
+  oneOf: typeof Schema_oneOf.defaults
 }
 
 export namespace Constraints {
@@ -759,42 +718,18 @@ export namespace Constraints {
       description: "",
       example: void 0,
     },
-    allOf: {
-      constraints: Schema_allOf.defaults,
-    },
-    anyOf: {
-      constraints: Schema_anyOf.defaults,
-    },
-    array:  {
-      constraints: Schema_array.defaults,
-    },
-    boolean:  {
-      constraints: Schema_boolean.defaults,
-    },
-    integer:  {
-      constraints: Schema_integer.defaults,
-    },
-    null:  {
-      constraints: Schema_null.defaults,
-    },
-    number: {
-      constraints: Schema_number.defaults,
-    },
-    object: {
-      constraints: Schema_object.defaults,
-    },
-    oneOf: {
-      constraints: Schema_oneOf.defaults,
-    },
-    record: {
-      constraints: Schema_record.defaults,
-    },
-    string: {
-      constraints: Schema_string.defaults,
-    },
-    tuple: {
-      constraints: Schema_tuple.defaults,
-    },
+    allOf: Schema_allOf.defaults,
+    anyOf: Schema_anyOf.defaults,
+    array: Schema_array.defaults,
+    boolean: Schema_boolean.defaults,
+    integer: Schema_integer.defaults,
+    null: Schema_null.defaults,
+    number: Schema_number.defaults,
+    object: Schema_object.defaults,
+    oneOf: Schema_oneOf.defaults,
+    record: Schema_record.defaults,
+    string: Schema_string.defaults,
+    tuple: Schema_tuple.defaults,
   } satisfies Required<Constraints>
 
   export function configure(_?: Constraints): Constraints.Config {
@@ -855,12 +790,13 @@ export function loop(constraints: Constraints = Constraints.defaults) {
       any: fc.oneof(
         { depthIdentifier },
         ...[
-          constraints.null.constraints.exclude ? null : LOOP("null"),
-          constraints.boolean.constraints.exclude ? null : LOOP("boolean"),
-          constraints.integer.constraints.exclude ? null : LOOP("integer"),
-          constraints.number.constraints.exclude ? null : LOOP("number"),
-          constraints.object.constraints.exclude ? null : LOOP("object"),
-          constraints.allOf.constraints.exclude ? null : LOOP("allOf"),
+          constraints.null.exclude ? null : LOOP("null"),
+          constraints.boolean.exclude ? null : LOOP("boolean"),
+          constraints.integer.exclude ? null : LOOP("integer"),
+          constraints.number.exclude ? null : LOOP("number"),
+          constraints.object.exclude ? null : LOOP("object"),
+          constraints.allOf.exclude ? null : LOOP("allOf"),
+          constraints.anyOf.exclude ? null : LOOP("anyOf"),
         ].filter((_) => _ != null),
       ) as 
       fc.Arbitrary<

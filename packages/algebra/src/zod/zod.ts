@@ -4,13 +4,12 @@ import type { Context, Meta } from "@traversable/core"
 import { Extension, Traversable, core, keyOf$ } from "@traversable/core"
 import { fn, object } from "@traversable/data"
 import { openapi } from "@traversable/openapi"
-import type { Functor, _ } from "@traversable/registry"
+import type { _ } from "@traversable/registry"
 import { KnownFormat } from "@traversable/registry"
 import { z } from "zod"
 
 import type { Options as Options_ } from "../shared.js"
 import { createMask, createOpenApiNodePath, createZodIdent, typescript as ts } from "../shared.js"
-import type { vendor } from "../vendor.js"
 
 export {
   type Matchers,
@@ -200,13 +199,17 @@ const generateConstraint = {
 } as const
 
 const generateEntry
-  : (ss: core.Traversable.objectF<string>, $: Index) => (entry: [string, string]) => string
-  = ({ required = [] }, $) => ([k, v]) => {
+  : (
+    ss: core.Traversable.objectF<string>, 
+    $: Index, 
+    optionalTemplate: readonly [before: string, after: string]
+  ) => (entry: [string, string]) => string
+  = ({ required = [] }, $, [beforeOpt, afterOpt]) => ([k, v]) => {
     const IDENT = createZodIdent($)([...$.path, "shape", k]).join("")
     const MASK = createMask($)([...$.path, k]).join("")
     const JSDOC_IDENTIFIER = !$.flags.includeJsdocLinks ? null : " * ## {@link " + IDENT + ` \`${MASK}\`}`
     const OPENAPI_LINK = $.flags.includeLinkToOpenApiNode === undefined ? null : fn.pipe(
-      createOpenApiNodePath($)([...$.path, k]).join("").concat(".properties." + k),
+      createOpenApiNodePath($)([ "properties", k]).join(""),
       (_) => ` * #### {@link $doc.${_} \`Link to OpenAPI node\`}`
     )
     return ([
@@ -219,8 +222,8 @@ const generateEntry
       + (
         !required.includes(k)
         ? v.includes("\n") 
-          ? "z.optional(" + Print.newline($, 1) + v + ")"
-          : "z.optional(" + v + ")"
+          ? beforeOpt + Print.newline($, 1) + v + afterOpt
+          : beforeOpt + v + afterOpt
         : 
         v
       )
@@ -228,6 +231,7 @@ const generateEntry
     .filter((_) => _ !== null)
     .join(Print.newline($))
   }
+
 
 const generated = {
   null() { return "z.null()" as const },
@@ -258,7 +262,7 @@ const generated = {
   object(ss, $) {
     return ""
     + "z.object({"
-    + Object_entries(ss.properties).map(generateEntry(ss, $)).join(",")
+    + Object_entries(ss.properties).map(generateEntry(ss, $, ["z.optional(", ")"])).join(",")
     + "\n" + " ".repeat($.indent) + "})"
   }
 } as const satisfies Matchers<string>
@@ -291,36 +295,6 @@ const derived = {
   }
 } as const satisfies Matchers<z.ZodTypeAny>
 
-const generateTypelevelEntry
-  : (ss: core.Traversable.objectF<string>, $: Index) => (entry: [string, string]) => string
-  = ({ required = [] }, $) => ([k, v]) => {
-    const IDENT = createZodIdent($)([...$.path, "shape", k]).join("")
-    const MASK = createMask($)([...$.path, k]).join("")
-    const JSDOC_IDENTIFIER = !$.flags.includeJsdocLinks ? null : " * ## {@link " + IDENT + ` \`${MASK}\`}`
-    const OPENAPI_LINK = $.flags.includeLinkToOpenApiNode === undefined ? null : fn.pipe(
-      createOpenApiNodePath($)([...$.path, k]).join("").concat(".properties." + k),
-      (_) => ` * #### {@link $doc.${_} \`Link to OpenAPI node\`}`
-    )
-    return ([
-      "",
-      "/**",
-      JSDOC_IDENTIFIER,
-      OPENAPI_LINK,
-      " */",
-      object.parseKey(k) + ": "
-      + (
-        !required.includes(k)
-        ? v.includes("\n") 
-          ? "z.ZodOptional<" + Print.newline($, 1) + v + ">"
-          : "z.ZodOptional<" + v + ">"
-        : 
-        v
-      )
-    ])
-    .filter((_) => _ !== null)
-    .join(Print.newline($))
-  }
-
 const typesOnly = {
   null() { return "z.ZodNull" },
   boolean() { return "z.ZodBoolean" },
@@ -345,7 +319,7 @@ const typesOnly = {
   object(ss, $) {
     return ""
     + "z.ZodObject<{"
-    + Object_entries(ss.properties).map(generateTypelevelEntry(ss, $)).join(",")
+    + Object_entries(ss.properties).map(generateEntry(ss, $, ["z.ZodOptional<", ">"])).join(",")
     + "\n" + " ".repeat($.indent) + "}>"
   }
 } as const satisfies Matchers<string>

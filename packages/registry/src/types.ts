@@ -266,22 +266,11 @@ export interface Typeclass<F extends HKT, _F = any> {
  */
 export interface Functor<F extends HKT = HKT, _F = any> extends Typeclass<F, _> {
   map<S, T>(f: (s: S) => T): (F: Kind<F, S>) => Kind<F, T>
-  // map<S, T>(F: Kind<F, S>, f: (s: S) => T): Kind<F, T>
 }
 
-// export interface MapWithIndex_<Ix = unknown, F extends HKT = HKT, _F = any> extends Functor<F, _F> {
-//   mapWithIndex<S, T>(f: (ix: Ix, s: S) => T): (ix: Ix, F: Kind<F, S>) => Kind<F, T>
-// }
-
-export interface MapWithIndex<F extends HKT = HKT, _F = any, Ix = unknown> extends Functor<F, _F> {
+export interface IndexedFunctor<Ix, F extends HKT = HKT, _F = any> extends Functor<F, _F> {
   mapWithIndex<S, T>(f: (ix: Ix, s: S) => T): (ix: Ix, F: Kind<F, S>) => Kind<F, T>
 }
-
-export interface IxFunctor<F extends HKT = HKT, _F = any> extends MapWithIndex<F, _F> {}
-
-// export interface IndexedFunctor<Ix, F extends HKT = HKT, _F = any> extends Functor<F, _F> {
-//   mapWithIndex<S, T>(f: (ix: Ix, s: S) => T): (ix: Ix, F: Kind<F, S>) => Kind<F, T>
-// }
 
 /**
  * ## {@link Attr `Attr`}
@@ -711,6 +700,13 @@ export type Part<T, K extends keyof T = keyof T> = Force<
 export type Require<T, K extends keyof T = never> = [K] extends [never]
   ? never | Required<T>
   : KeepLast<T, { -readonly [P in K]-?: T[P] }>
+
+export type RequireN<T, Depth extends 1[] = [1, 1]> = never | RequireN.loop<[], T, Depth["length"]>
+export declare namespace RequireN {
+  type loop<Depth extends 1[] , T, Max extends number>
+    = Depth["length"] extends Max ? T : { [K in keyof T]-?: RequireN.loop<[...Depth, 1], T[K], Max> }
+
+}
 
 /**
  * ### {@link Requiring `Requiring`}

@@ -5,6 +5,7 @@ import { is, keyOf$, t, tree } from "@traversable/core"
 import { deref, openapi } from "@traversable/openapi"
 import type { Partial, Requiring, newtype } from "@traversable/registry"
 import { symbol } from "@traversable/registry"
+import { array, fn } from "@traversable/data"
 
 export interface Flags extends t.typeof<typeof Flags> {}
 export const Flags = t.object({
@@ -24,12 +25,22 @@ export type BuildPathInterpreter
   = <T extends Record<keyof any, keyof any | null>>(lookup: T) 
   => PathInterpreter
 
+/** @internal */
+const Object_values 
+  : <T extends Record<keyof any, unknown>>(xs: T) => (T[keyof T])[]
+  = (xs) => globalThis.Object.getOwnPropertySymbols(xs).map((sym) => xs[sym]) as never
+
+/** @internal */
+const Math_max = globalThis.Math.max
+  
+
 const ZOD_IDENT_MAP = {
   [symbol.optional]: "._def.innerType",
   [symbol.object]: ".shape",
   [symbol.required]: null,
   [symbol.array]: ".element"
 } as const
+const ZOD_IDENTS = Object_values(ZOD_IDENT_MAP)
 ///
 const MASK_MAP = {
   [symbol.object]: "",
@@ -82,13 +93,28 @@ const buildIdentInterpreter: BuildPathInterpreter = (lookup) => ($) => (xs) => {
         continue
       }
       case keyOf$(lookup)(k): lookup[k] != null && out.push(lookup[k]); continue 
-      case typeof k === "number": return (out.push(`[${k}]`), out) 
+      /** 
+       * If `k` is a number, we can't go any deeper without breaking the JSDoc link. 
+       * 
+       * To avoid "click-to-follow" actions from linking users to the zod docs, 
+       * only keep up to the last object property we saw:
+       */
+      case typeof k === "number": return trimPath(out)
       case typeof k === "string": out.push(`.${k}`); continue 
       default: continue 
     }
   }
   return out
 }
+
+/** @internal */
+const trimPath = (xs: (keyof any | null)[]) => fn.pipe(
+  xs,
+  array.lastIndexOf((_) => is.string(_) && !ZOD_IDENTS.includes(_ as never)),
+  (x) => x = 1,
+  (x) => Math.max(x, 1),
+  (x) => xs.slice(0, x),
+)
 
 /** @internal */
 const buildMaskInterpreter: BuildPathInterpreter = (lookup) => ({ typeName }) => (xs) => {
@@ -113,19 +139,21 @@ const buildMaskInterpreter: BuildPathInterpreter = (lookup) => ({ typeName }) =>
 
 /** @internal */
 const buildOpenApiNodePathInterpreter: BuildPathInterpreter = (lookup)  => ($) => (xs) => {
-  const schemaPath = $.absolutePath.map(escapePathSegment).join(".")
-  let out: (keyof any | null)[] = [schemaPath]
-  let ks = [...xs]
-  let k: keyof any | null | undefined
-  while ((k = ks.shift()) !== undefined) {
-    switch (true) {
-      // case typeof k === "number": { out.push(`[${k}]`); continue }
-      // case typeof k === "string": { out.push("."); continue }
-      // case keyOf$(lookup)(k): lookup[k] != null && out.push(lookup[k]); continue 
-      default: continue
+  const path = $.absolutePath.map(escapePathSegment)
+  switch (true) {
+    case path.includes("anyOf"): {
+      const ix = path.indexOf("anyOf")
+      return [path[0], ...path.slice(1, ix).map((_) => "." + _)]
+    }
+    case path.includes("allOf"): {
+      const ix = path.indexOf("allOf")
+      return [path[0], ...path.slice(1, ix).map((_) => "." + _)]
+    }
+    default: {
+      const tail = [...path.slice(1), ...xs].map((_) => "." + String(_))
+      return [path[0], ...tail]
     }
   }
-  return out
 }
 
 export const createMask: PathInterpreter = buildMaskInterpreter(MASK_MAP)

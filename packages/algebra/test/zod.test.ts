@@ -30,7 +30,7 @@ const generateSpec = () => fn.pipe(
   arbitrary({ include: { examples: true, description: true } }),
   fc.peek,
   tree.modify("components", "schemas")(map(Traversable.fromJsonSchema)),
-  JSON.stringify,
+  (_) => JSON.stringify(_, null, 2),
 )
 
 const Array_isArray 
@@ -47,15 +47,26 @@ const sub
     return out
   }
 
+const refsDeep = (leaveUnescaped: string) => (x: {} | null | undefined): {} | null | undefined => {
+  switch (true) {
+    default: return fn.exhaustive(x)
+    case x == null: return x
+    case Array_isArray(x): return x.map(refsDeep(leaveUnescaped))
+    case tree.has("$ref", is.string)(x): {
+      if (x.$ref.startsWith(leaveUnescaped)) return { $ref: leaveUnescaped + escapePathSegment(x.$ref.substring(leaveUnescaped.length)) }
+      else return { $ref: escapePathSegment(x.$ref) }
+    }
+    case !!x && typeof x === "object": return map(x, refsDeep(leaveUnescaped))
+    case is.nonnullable(x): return x
+  }
+}
+
 const pathify = fn.flow(
   keys.map.deep(escapePathSegment),
+  refsDeep("#/components/schemas"),
   (_) => JSON.stringify(_, null, 2),
   (_) => "export default " + _.trimEnd() + " as const;"
 )
-
-// const randomIdent = () => 
-//   (Math.random().toString(32).split(".")[1] ?? "A")
-//   .replace(/\d/, (_) => String.fromCharCode(_.charCodeAt(0) + 0x11))
 
 const capitalize = (s: string) => s.charAt(0).toUpperCase().concat(s.slice(1))
 const typeNameFromPath = (k: string) => k.startsWith("/paths/") 
@@ -238,59 +249,59 @@ vi.describe("〖️⛳️〗‹‹‹ ❲@traversable/algebra/zod❳", () => {
     vi.assert.isFalse(IR.is.union(examples.null))
   })
 
-  // /** 
-  //  * Order of operations:
-  //  * 
-  //  * 1. Use {@link IR.arbitrary `IR.arbitrary`} to generate a pseudo-random
-  //  *    intermediate representation of a Zod schema (arbitrary #1)
-  //  * 2. From the IR, derive the corresponding Zod schema
-  //  * 3. From the schema, derive a _separate_ arbitrary (arbitrary #2); this arbitrary will
-  //  *    be responsible for generating data that schema should be able to parse
-  //  * 4. Generate data from the arbitrary #2
-  //  * 5. Parse the generated data using the generated schema 
-  //  *
-  //  * If this test is able to produce a counter-example, that indicates that _something_
-  //  * in the chain isn't working properly.
-  //  * 
-  //  * This test is the moral equivalent of an integration test: we're trading granularity
-  //  * for confidence that our programs can be composed together, and that their composition
-  //  * has not caused any loss of fidelity.
-  //  * 
-  //  * TODO: depending on how coarse this tests proves to be, it might be worth decomposing
-  //  * this test, so we have our cake and eat it too.
-  //  */
-  // test.prop(
-  //   [IR.arbitrary({ 
-  //     exclude: [
-  //       /** 
-  //        * TODO: __turn on property tests for intersections__
-  //        * 
-  //        * These are currently off because I haven't figured out how to 
-  //        * programmatically generate tests intersections without quickly
-  //        * running into schemas that are impossible to satisfy.
-  //        * 
-  //        * There's probably a clever way to do it, but I'm walking away from
-  //        * this problem for now.
-  //        */
-  //       "intersection",
-  //     ] 
-  // }).tree], {
-  //   numRuns: 10_000,
-  // })(
-  //   "〖️⛳️〗› ❲zod.IntermediateRepresentation❳", (ir) => {
-  //     const schema = IR.toSchema(ir)
-  //     const arbitrary = IR.toArbitrary(ir)
-  //     const mock = fc.peek(arbitrary)
-  //     const parsed = schema.safeParse(mock)
-  //     if (!parsed.success) {
-  //       console.group("failure:")
-  //       console.dir(["mock", mock], { depth: 10 })
-  //       console.dir(["error", parsed.error], { depth: 10, getters: true })
-  //       console.log(IR.toString(ir))
-  //       console.groupEnd()
-  //     }
-  //     vi.assert.isTrue(parsed.success)
-  //   }
-  // )
+  /** 
+   * Order of operations:
+   * 
+   * 1. Use {@link IR.arbitrary `IR.arbitrary`} to generate a pseudo-random
+   *    intermediate representation of a Zod schema (arbitrary #1)
+   * 2. From the IR, derive the corresponding Zod schema
+   * 3. From the schema, derive a _separate_ arbitrary (arbitrary #2); this arbitrary will
+   *    be responsible for generating data that schema should be able to parse
+   * 4. Generate data from the arbitrary #2
+   * 5. Parse the generated data using the generated schema 
+   *
+   * If this test is able to produce a counter-example, that indicates that _something_
+   * in the chain isn't working properly.
+   * 
+   * This test is the moral equivalent of an integration test: we're trading granularity
+   * for confidence that our programs can be composed together, and that their composition
+   * has not caused any loss of fidelity.
+   * 
+   * TODO: depending on how coarse this tests proves to be, it might be worth decomposing
+   * this test, so we have our cake and eat it too.
+   */
+  test.prop(
+    [IR.arbitrary({ 
+      exclude: [
+        /** 
+         * TODO: __turn on property tests for intersections__
+         * 
+         * These are currently off because I haven't figured out how to 
+         * programmatically generate tests intersections without quickly
+         * running into schemas that are impossible to satisfy.
+         * 
+         * There's probably a clever way to do it, but I'm walking away from
+         * this problem for now.
+         */
+        "intersection",
+      ] 
+  }).tree], {
+    numRuns: 10_000,
+  })(
+    "〖️⛳️〗› ❲zod.IntermediateRepresentation❳", (ir) => {
+      const schema = IR.toSchema(ir)
+      const arbitrary = IR.toArbitrary(ir)
+      const mock = fc.peek(arbitrary)
+      const parsed = schema.safeParse(mock)
+      if (!parsed.success) {
+        console.group("failure:")
+        console.dir(["mock", mock], { depth: 10 })
+        console.dir(["error", parsed.error], { depth: 10, getters: true })
+        console.log(IR.toString(ir))
+        console.groupEnd()
+      }
+      vi.assert.isTrue(parsed.success)
+    }
+  )
 
 })

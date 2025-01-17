@@ -1,4 +1,5 @@
-import { type Either, type Functor, type HKT, type IndexedFunctor, Invariant, type IxFunctor, type Kind, URI } from "@traversable/registry"
+import type { Either, Functor, HKT, IndexedFunctor, Kind } from "@traversable/registry"
+import { Invariant, URI } from "@traversable/registry"
 
 import type { any, mut } from "any-ts"
 import type { array_shift } from "./_array.js"
@@ -478,7 +479,7 @@ function distribute<T extends { [x: string]: fn.any }>(fns: T) {
       return out
     }
   }
-} 
+}
 
 function distributes<const T extends { [x: string]: fn.any }>(fns: T): 
   (...params: fn.params<T[keyof T]>) => { -readonly [K in keyof T]: fn.return<T[K]> }
@@ -862,12 +863,12 @@ export function ana
   <F extends HKT, _F>(Functor: Functor<F, _F>):
   <T>(coalgebra: Functor.Coalgebra<F, T>) 
     => <S extends _F>(expr: S) 
-    => HKT.apply<F, T>
+    => Kind<F, T>
 
 /// impl.
 export function ana<F extends HKT>(Functor: Functor<F>) {
   return <T>(coalgebra: Functor.Coalgebra<F, T>) => {
-    return function loop(expr: T): HKT.apply<F, T> {
+    return function loop(expr: T): Kind<F, T> {
       return Functor.map(loop)(coalgebra(expr))
     }
   }
@@ -893,19 +894,19 @@ export function cata
 
 export function cata<F extends HKT>(F: Functor<F>) {
   return <T>(algebra: Functor.Algebra<F, T>) => {
-    return function loop(term: HKT.apply<F, T>): T {
+    return function loop(term: Kind<F, T>): T {
       return algebra(F.map(loop)(term))
     }
   }
 }
 
 export function cataIx
-  <Ix, F extends HKT, _F>(F: IxFunctor<F, _F>): 
+  <Ix, F extends HKT, _F>(F: IndexedFunctor<Ix, F, _F>): 
   <T>(algebra: Functor.IxAlgebra<Ix, F, T>) 
     => <S extends _F>(ix: Ix, term: S) 
     => T
     
-export function cataIx<Ix, F extends HKT>(F: IndexedFunctor<Ix, F>) {
+export function cataIx<Ix, F extends HKT, _F>(F: IndexedFunctor<Ix, F, _F>) {
   return <T>(g: Functor.IxAlgebra<Ix, F, T>) => {
     return function loop(ix: Ix, term: Kind<F, T>): T {
       return g(ix, F.mapWithIndex(loop)(ix, term))
@@ -933,7 +934,7 @@ export function para
     
 export function para<F extends HKT>(F: Functor<F>) {
   return <T>(ralgebra: Functor.RAlgebra<F, T>) => {
-    function fanout(term: T): HKT.apply<F, [F, T]>
+    function fanout(term: T): Kind<F, [F, T]>
       { return [term, para(F)(ralgebra)(term)] }
     return flow(
       F.map(fanout),
@@ -950,7 +951,7 @@ export function paraIx
     
 export function paraIx<Ix, F extends HKT>(F: IndexedFunctor<Ix, F>) {
   return <T>(ralgebra: Functor.RAlgebra<F, T>) => {
-    function fanout(ix: Ix, term: T): HKT.apply<F, [F, T]>
+    function fanout(ix: Ix, term: T): Kind<F, [F, T]>
       { return [term, paraIx(F)(ralgebra)(ix, term)] }
     return flow(
       F.mapWithIndex(fanout),
@@ -958,18 +959,6 @@ export function paraIx<Ix, F extends HKT>(F: IndexedFunctor<Ix, F>) {
     )
   }
 }
-
-// export function para<F extends HKT, _>(F: Functor<F, _>):
-//   <T>(algebra: (term: HKT.apply<F, [F, T]>) => T) 
-//     => (term: HKT.apply<F, [_, T]>) 
-//     => HKT.apply<F, [F, T]>
-// export function para<F extends HKT>(F: Functor<F>) {
-//   return <T>(algebra: (term: HKT.apply<F, [F, T]>) => T) => {
-//     return function loop(term: HKT.apply<F, [F, T]>): HKT.apply<F, [F, T]> {
-//       return [term, algebra(F.map(loop)(term))]
-//     }
-//   }
-// }
 
 /** 
  * ## {@link apo `fn.apo`}
@@ -986,11 +975,11 @@ export function apo
   <F extends HKT>(F: Functor<F>): 
   <T>(coalgebra: Functor.RCoalgebra<F, T>) 
     => (expr: T)
-    => HKT.apply<F, T> 
+    => Kind<F, T> 
 
 export function apo<F extends HKT>(F: Functor<F>) {
   return <T>(coalgebra: Functor.RCoalgebra<F, T>) => 
-    (expr: T): HKT.apply<F, T> => pipe(
+    (expr: T): Kind<F, T> => pipe(
       coalgebra(expr),
       F.map(
         (e) => e._tag === URI.Right 
