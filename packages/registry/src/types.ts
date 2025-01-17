@@ -190,36 +190,39 @@ export declare namespace Position {
  */
 export interface HKT<I = unknown, O = unknown> extends newtype<{ [0]: I; [-1]: O }> {}
 export type Kind<F extends HKT, T extends F[0] = F[0]> = never | (F & { [0]: T })[-1]
+export declare namespace Kind {
+  export { bind as new }
+  export type of<F extends HKT> = [F] extends [infer T extends F] ? T : never
+}
 
-/** 
+/**
  * ## {@link define `define`}
- * 
+ *
  * Given a "kind template", {@link define `define`} returns a function that accepts
  * a function as input, and returns a function that applies the template to its argument.
- * 
+ *
  * @example
  * import { define } from "@traversable/registry"
- * 
+ *
  * interface Duplicate { [0]: unknown, [-1]: [this[0], this[0]] }
  * const dup1 = define<Duplicate>()((x) => [x, x])
- * 
+ *
  * const good_01 = dup1(1)
  * //    ^? const good_01: [1, 1]
- * 
+ *
  * declare const Duplicate: Duplicate
  * const dup2 = define(Duplicate)((x) => [x, x])
- * 
+ *
  * const good_02 = dup2(1)
  * //    ^? const good_02: [1, 1]
- * 
+ *
  * // The implementation is type-checked, so it won't drift if `Duplicate` changes:
  * const typeError = define(Duplicate)((x) => [x])
  * //                                          ^ 🚫 Type '[unknown]' is not assignable to type '[unknown, unknown]'
  */
-export const define
-  : <F extends { [0]: unknown, [-1]: unknown }>(F?: F) => (fn: (i: F[0]) => F[-1]) => <const I extends F[0]>(i: I) => Kind<F, I>
-  = () => (fn) => fn
-
+export const define: <F extends { [0]: unknown; [-1]: unknown }>(
+  F?: F,
+) => (fn: (i: F[0]) => F[-1]) => <const I extends F[0]>(i: I) => Kind<F, I> = () => (fn) => fn
 
 export declare function apply$<F>(F: F): <T>(t: T) => HKT.apply$<F, T>
 export type bind<F extends HKT, T = unknown> = F & { [0]: T }
@@ -230,14 +233,18 @@ export type apply_<F extends HKT, T> = never | (F & { [0]: T })[-1]
 // export type forall<F extends HKT> = Kind<F, unknown>
 export declare namespace HKT {
   export { apply, apply$, apply_ }
-  export type unapply<F extends HKT> = F extends HKT & infer T ? T : never
+
+  export type unapply<F extends HKT> = [F] extends [infer T extends F] ? T : never
+
   export type product<F extends HKT, T> = Kind<F, [F, T]>
   export type sum<F extends HKT, T> = Kind<F, Either<F, T>>
   export interface ap<T> extends HKT<HKT> {
     [-1]: apply_<this[0], T>
   }
-  export interface Function<F extends { [0]: unknown, [-1]: unknown }> extends HKT<F[0], F[-1]> 
-    { <T extends this[0]>(x: T): Kind<F, T>; [-1]: Kind<F, this[0]> }
+  export interface Function<F extends { [0]: unknown; [-1]: unknown }> extends HKT<F[0], F[-1]> {
+    <T extends this[0]>(x: T): Kind<F, T>
+    [-1]: Kind<F, this[0]>
+  }
 }
 
 /**
@@ -245,10 +252,10 @@ export declare namespace HKT {
  * // Haskell:
  * newtype Fix f = Fix { unFix :: f (Fix f) }
  */
-export interface Fix<F extends HKT = HKT> {
-  unFix: Kind<F, Kind<F>>
-}
-export type Unfix<F extends Fix> = F["unFix"]
+// export interface Fix<F extends HKT = HKT> {
+//   unFix: Kind<F, Kind<F>>
+// }
+// export type Unfix<F extends Fix> = F["unFix"]
 
 export interface Typeclass<F extends HKT, _F = any> {
   readonly [symbol.typeclass]?: 1 extends _F & 0 ? F : Extract<_F, HKT>
@@ -262,9 +269,19 @@ export interface Functor<F extends HKT = HKT, _F = any> extends Typeclass<F, _> 
   // map<S, T>(F: Kind<F, S>, f: (s: S) => T): Kind<F, T>
 }
 
-export interface IndexedFunctor<Ix, F extends HKT = HKT, _F = any> extends Functor<F, _F> {
+// export interface MapWithIndex_<Ix = unknown, F extends HKT = HKT, _F = any> extends Functor<F, _F> {
+//   mapWithIndex<S, T>(f: (ix: Ix, s: S) => T): (ix: Ix, F: Kind<F, S>) => Kind<F, T>
+// }
+
+export interface MapWithIndex<F extends HKT = HKT, _F = any, Ix = unknown> extends Functor<F, _F> {
   mapWithIndex<S, T>(f: (ix: Ix, s: S) => T): (ix: Ix, F: Kind<F, S>) => Kind<F, T>
 }
+
+export interface IxFunctor<F extends HKT = HKT, _F = any> extends MapWithIndex<F, _F> {}
+
+// export interface IndexedFunctor<Ix, F extends HKT = HKT, _F = any> extends Functor<F, _F> {
+//   mapWithIndex<S, T>(f: (ix: Ix, s: S) => T): (ix: Ix, F: Kind<F, S>) => Kind<F, T>
+// }
 
 /**
  * ## {@link Attr `Attr`}
@@ -391,6 +408,8 @@ export declare namespace Traversable {
 export interface Countable<T = unknown> {
   [x: number]: T
 }
+
+export interface Invertible<K extends keyof any = keyof any> extends newtype<{ [P in K]: P }> {}
 
 /**
  * ## {@link Indexable `Indexable`}
@@ -527,6 +546,19 @@ export interface Enumerable<T = unknown> extends Spreadable<T> {
  *   pretty helpful, but YMMV
  */
 
+interface Fix<F extends HKT> {
+  fix(): Fix<F>
+}
+class Fix<F extends HKT> {
+  constructor(public readonly unfix: Kind.new<F, Fix<F>>) {}
+  static in<F extends HKT>(ff: Kind.new<F, Fix<F>>): Fix<F> {
+    return new Fix(ff)
+  }
+  static out<F extends HKT>(f: Fix<F>): Kind<F, Fix<F>> {
+    return f.unfix
+  }
+}
+
 export interface Pointed<F extends HKT> {
   of<T>(t: T): Kind<F, T>
 }
@@ -608,6 +640,18 @@ export declare namespace Compare {
  * (structure-preserving)
  */
 export type Pick<T, K extends keyof T> = never | { -readonly [P in K]: T[P] }
+
+/**
+ * ## {@link Filter `Filter`}
+ *
+ * Similar to {@link Pick `Pick`}, but filters entries by value rather than by key.
+ * Like {@link Pick `Pick`}, {@link Filter `Filter`}'s implementation is homomorphic
+ * (structure-preserving).
+ */
+export type Filter<T, Q, _ extends keyof T = keyof T> = Pick<
+  T,
+  _ extends _ ? ([T[_] & {}] extends [Q] ? _ : never) : never
+>
 
 /**
  * ## {@link Omit `Omit`}

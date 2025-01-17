@@ -1,23 +1,13 @@
-import { path, Extension, Traversable, core, is } from "@traversable/core"
+import * as path from "node:path"
+
+import { Extension, Traversable, is } from "@traversable/core"
 import type { Context } from "@traversable/core"
 import { fn, object } from "@traversable/data"
-import type { Functor } from "@traversable/registry"
 import { KnownFormat, symbol } from "@traversable/registry"
 
 import { openapi } from "@traversable/openapi"
-import { createMask, createZodIdent, typescript as ts } from "../shared.js"
+import { type Options as Options_, createMask, createZodIdent, typescript as ts } from "../shared.js"
 import * as zod from "../zod/exports.js"
-
-export { generate }
-
-/** @internal */
-const JSON_stringify = (u: unknown) => JSON.stringify(u, null, 2)
-/** @internal */
-const Object_entries = globalThis.Object.entries
-/** @internal */
-const isKeyOf = <T extends Record<string, string>>(dictionary: T) =>
-  (k: keyof any | undefined): k is keyof T =>
-    k !== undefined && k in dictionary
 
 //////////////////
 ///  USERLAND  ///
@@ -39,6 +29,84 @@ const isKeyOf = <T extends Record<string, string>>(dictionary: T) =>
 
 ///  USERLAND  ///
 //////////////////
+
+export { 
+  type Options,
+  generate 
+}
+
+type Index = Options_.Base & Context
+type Options<S> = Options_<Index, S>
+declare namespace Options {
+  interface Config<S> extends Options_.Config<S, Index> {}
+}
+
+type Matchers<S> = Extension.BuiltIns<S, Options_.Base & Context>
+
+/** @internal */
+const JSON_stringify = (u: unknown) => JSON.stringify(u, null, 2)
+/** @internal */
+const Object_entries = globalThis.Object.entries
+/** @internal */
+const isKeyOf = <T extends Record<string, string>>(dictionary: T) =>
+  (k: keyof any | undefined): k is keyof T =>
+    k !== undefined && k in dictionary
+
+///////////////////////////////////
+///    CANDIDATES FOR SHARED    ///
+function fold<T>($: Options.Config<T>) { 
+  return Traversable.foldIx(Extension.match($)) 
+}
+
+const createTarget 
+  : <T>(matchers: Matchers<T>) => (schema: Traversable.any, options: Options<T>) => [target: T, config: Options.Config<T>]
+  = (matchers) => (schema, options) => {
+    const $ = defineOptions(matchers)(options)
+    return fn.pipe(
+      fold($),
+      fn.applyN($, schema),
+      (target) => [target, $] satisfies [any, any],
+    )
+  }
+
+const defaults = {
+  typeName: "AnonymousTypeScriptType",
+  absolutePath: ["components", "schemas"],
+  document: openapi.doc({}),
+  flags: {
+    nominalTypes: true,
+    preferInterfaces: true,
+    includeJsdocLinks: true,
+    includeExamples: true,
+    includeLinkToOpenApiNode: path.resolve(),
+  },
+  indent: 0,
+  path: [],
+  depth: 0,
+  siblingCount: 0,
+} satisfies Omit<Options.Config<unknown>, "handlers">
+
+function defineOptions<S>(handlers: Extension.Handlers<S, Index>): (options?: Options<S>) => Options.Config<S> {
+  return ($?: Omit<Options<S>, "handlers">) => ({
+    handlers,
+    typeName: $?.typeName ?? defaults.typeName,
+    document: $?.document ?? defaults.document,
+    flags: !$?.flags ? defaults.flags : {
+      nominalTypes: $.flags.nominalTypes ?? defaults.flags.nominalTypes,
+      preferInterfaces: $.flags.preferInterfaces ?? defaults.flags.preferInterfaces,
+      includeExamples: $.flags.includeExamples ?? defaults.flags.includeExamples,
+      includeJsdocLinks: $.flags.includeJsdocLinks ?? defaults.flags.includeJsdocLinks,
+      includeLinkToOpenApiNode: $.flags.includeLinkToOpenApiNode ?? defaults.flags.includeLinkToOpenApiNode,
+    },
+    absolutePath: $?.absolutePath ?? defaults.absolutePath,
+    indent: defaults.indent,
+    path: defaults.path,
+    depth: defaults.depth,
+    siblingCount: defaults.siblingCount,
+  })
+}
+///    CANDIDATES FOR SHARED    ///
+///////////////////////////////////
 
 
 const KnownStringFormats = {
@@ -73,20 +141,7 @@ const baseHandlers = {
         ).join(";\n")
       + "}"
   },
-} satisfies Extension.BuiltIns<string>
-
-// function traversable<KS extends (keyof any)[]>(...path: [...KS]): [trav: KS[number][], non: KS[number][]]
-// function traversable<KS extends (keyof any)[]>(...path: [...KS]) {
-//   let trav: (keyof any)[] = [],
-//       head: keyof any | undefined
-//   while((head = path.shift()) !== undefined) {
-//     if (typeof head === "number") return [trav, [head, ...path]]
-//     else if ()
-//   }
-//     // out.push(typeof head)
-//     // out += char in TO ? TO[char as never] : char
-//   return [trav, []]
-// }
+} satisfies Matchers<string>
 
 const pathHandlers = {
   null(_) { return "null" },
@@ -112,8 +167,8 @@ const pathHandlers = {
           // console.log("symbolicName", symbolicName)
           //path.interpreter(path.docs, [$.typeName, ...$.path, k, { leaf: _ } ]).join("")
           return ""
-            + "/**\n" 
-            // + " * ## {@link " + symbolicName.join("") + "}" 
+            + "/**\n"
+            // + " * ## {@link " + symbolicName.join("") + "}"
             + "\n */\n"
             // + "/** " + path.interpreter(path.docs, [...ix, ...isOptional ? [k, "?"] : [k], { leaf: _ } ]).join("") + " */\n"
             + object.parseKey(k)
@@ -124,143 +179,79 @@ const pathHandlers = {
       + "}"
     )
   }
-} satisfies Extension.BuiltInsWithContext<string>
-
-// const entries = _.items.map((x, ix) => [`_${ix}`, x] satisfies [_, _])
-// Object.fromEntries()
-// return ""
-//   + "{" 
-//   + "}"
-// // .join(", ") + "}" 
-// },
-
-
-const zodHandlers = {
-  null(_) { return "z.null()" },
-  boolean(_) { return "z.boolean()" },
-  integer(_) { return "z.number().int()" },
-  number(_) { return "z.number()" },
-  string(_) { return "z.string()" },
-  enum(_) { return _.enum.map(JSON_stringify).join(" | ") },
-  allOf(_) { return _.allOf.join(" & ") },
-  anyOf(_) { return _.anyOf.length > 1 ? "\n" + _.anyOf.join("\n | ") : _.anyOf.join(" | ") },
-  oneOf(_) { return _.oneOf.join(" | ") },
-  array(_) { return "Array<" + _.items + ">" },
-  tuple(_) { return "[" + _.items.join(", ") + "]" },
-  record(_) { return "Record<string, " + _.additionalProperties + ">" },
-  object(_, $) {
-    return (
-      "{"
-      + Object_entries(_.properties)
-        .map(([k, v]) => {
-          const isOptional = !(_.required ?? []).includes(k)
-
-          const IDENT = createZodIdent($)([
-            ...$.path, 
-            "shape", 
-            k
-          ]).join("")
-  
-          const MASK = createMask($)([
-            ...$.path, 
-            k
-          ]).join("")
-
-          return ""
-            + "/**"
-            + " * ## {@link " + IDENT + `\`${MASK}\`}`
-            + " */"
-            + object.parseKey(k)
-            + (isOptional ? ": " : "?: ")
-            + v
-            }
-        ).join(";\n")
-      + "}"
-    )
-  }
-} satisfies Extension.BuiltInsWithContext<string>
+} satisfies Matchers<string>
 
 const nominalHandlers = {
   ...baseHandlers,
   integer() { return "number.integer" },
   string(n) { return isKnownStringFormat(n.meta?.format) ? KnownStringFormats[n?.meta.format] : "string" },
-} satisfies Extension.BuiltIns<string>
+} satisfies Matchers<string>
 
 const nominalPathHandlers = {
   ...pathHandlers,
   integer() { return "number.integer" },
   string(_) { return isKnownStringFormat(_.meta?.format) ? KnownStringFormats[_?.meta.format] : "string" },
-} satisfies Extension.BuiltInsWithContext<string>
+} satisfies Matchers<string>
 
 const extendedHandlers = {
   ...baseHandlers,
-} satisfies Extension.BuiltIns<string>
+} satisfies Matchers<string>
 
-export namespace Algebra {
-  export const types
-    : <Ctx extends Context>($: ts.Config.withHandlers<string, Ctx>) => Functor.IxAlgebra<Ctx, Traversable.lambda, string>
-    = ($) => Extension.matchWithContext($, $.handlers)
-    ;
-  export const withContext
-    : <Ctx extends Context>($: ts.Config.withHandlers<string, Ctx>) => Functor.IxAlgebra<Ctx, Traversable.lambda, string>
-    = ($) => Extension.matchWithContext($, $.handlers)
-    ;
-}
-
-// const foldTypes = <Ctx extends Context>($: ts.Config.withHandlers<string, Ctx>) => fn.flow(
-//   Traversable.fromJsonSchema,
-//   fn.cataIx(Traversable.IndexedFunctor)(Algebra.types($)),
-// ) satisfies (term: Traversable.any) => string
-
-const foldIx
-  : (rootContext: Context, $: ts.Config.withHandlers<string, Context>) => <T extends Traversable.any>(term: T) => string
-  = (rootContext, $) => fn.flow(
-  // Traversable.fromJsonSchema,
-  (x) => Traversable.foldIx(Algebra.withContext($))(rootContext, x),
-)
-
-function generate<Meta>(schema: Traversable.any, options: ts.Options<string, Context, Meta>): string
-function generate<Meta>(schema: Traversable.any, options: ts.Options.withHandlers<string, Context, Meta>): string
-function generate<Meta>(schema: Traversable.any, options: ts.Options | ts.Options.withHandlers): string {
-// function generate(
-//   schema: Traversable.any, options: ts.Options.withHandlers<string, Context> = ts.defaults as never
-// ): string {
-  const typeName = options?.typeName ?? ts.defaults.typeName.concat("TypeScriptType")
-  const document = openapi.doc({})
-  return fn.pipe(
-    schema,
-    foldIx({ 
-      absolutePath: options.absolutePath,
-      typeName,
-      indent: 0,
-      siblingCount: 0,
-      document,
-      depth: ts.rootContext.depth,
-      path: ts.rootContext.path,
-    }, {
-      absolutePath: options.absolutePath,
-      typeName,
-      document,
-      handlers: {
-        ...pathHandlers,
-        ...(options as { handlers: {} })["handlers"],
-      },
-      flags: {
-        nominalTypes: options?.flags?.nominalTypes ?? ts.defaults.flags.nominalTypes,
-        preferInterfaces: options?.flags?.preferInterfaces ?? ts.defaults.flags.preferInterfaces,
-      },
-      rootMeta: {
-        data: options?.rootMeta?.data,
-        serializer: options?.rootMeta?.serializer,
-      },
-    },
-  ),
-    (body) => [
-      "export type " + typeName + " = typeof " + typeName,
-      "export declare const " + typeName + ": " + body
-    ].filter(is.notnull).join("\n")
+const generate
+  : (schema: Traversable.any, options: Options<string>) => string
+  = fn.flow(
+    createTarget(pathHandlers),
+    ([target, $]) => [
+      "export type " + $.typeName + " = typeof " + $.typeName,
+      "export declare const " + $.typeName + ": " + target,
+    ].join("\n")
   )
-}
+
+// function generate<Meta>(schema: Traversable.any, options: ts.Options<string, Context, Meta>): string
+// function generate<Meta>(schema: Traversable.any, options: ts.Options.withHandlers<string, Context, Meta>): string
+// function generate<Meta>(schema: Traversable.any, options: ts.Options | ts.Options.withHandlers): string {
+// // function generate(
+// //   schema: Traversable.any, options: ts.Options.withHandlers<string, Context> = ts.defaults as never
+// // ): string {
+//   const typeName = options?.typeName ?? ts.defaults.typeName.concat("TypeScriptType")
+//   const document = openapi.doc({})
+//   const handlers = {
+//     ...pathHandlers,
+//     ...(options as { handlers: {} })["handlers"],
+//   }
+
+
+//   return fn.pipe(
+//     schema,
+//     foldIx(  zod.defineOptions(handlers, options)
+//     // ({
+//     //   absolutePath: options.absolutePath,
+//     //   typeName,
+//     //   indent: 0,
+//     //   siblingCount: 0,
+//     //   document,
+//     //   depth: ts.rootContext.depth,
+//     //   path: ts.rootContext.path,
+//     // }, {
+//     //   absolutePath: options.absolutePath,
+//     //   typeName,
+//     //   document,
+//     //   flags: {
+//     //     nominalTypes: options?.flags?.nominalTypes ?? ts.defaults.flags.nominalTypes,
+//     //     preferInterfaces: options?.flags?.preferInterfaces ?? ts.defaults.flags.preferInterfaces,
+//     //   },
+//     //   rootMeta: {
+//     //     data: options?.rootMeta?.data,
+//     //     serializer: options?.rootMeta?.serializer,
+//     //   },
+//     // },
+//   ),
+//     (body) => [
+//       "export type " + typeName + " = typeof " + typeName,
+//       "export declare const " + typeName + ": " + body
+//     ].filter(is.notnull).join("\n")
+//   )
+// }
 
 // function deriveType(schema: Traversable.any, options?: Options): string
 // function deriveType(
@@ -561,4 +552,59 @@ function generate<Meta>(schema: Traversable.any, options: ts.Options | ts.Option
 //     (indented) => options?.wrap ? string.between("/**\n * ", "\n */")(indented) : indented,
 //     (comment) => comment.replace(PATTERN.CloseComment, "")
 //   )
+// }
+
+// const zodHandlers = {
+//   null(_) { return "z.null()" },
+//   boolean(_) { return "z.boolean()" },
+//   integer(_) { return "z.number().int()" },
+//   number(_) { return "z.number()" },
+//   string(_) { return "z.string()" },
+//   enum(_) { return _.enum.map(JSON_stringify).join(" | ") },
+//   allOf(_) { return _.allOf.join(" & ") },
+//   anyOf(_) { return _.anyOf.length > 1 ? "\n" + _.anyOf.join("\n | ") : _.anyOf.join(" | ") },
+//   oneOf(_) { return _.oneOf.join(" | ") },
+//   array(_) { return "Array<" + _.items + ">" },
+//   tuple(_) { return "[" + _.items.join(", ") + "]" },
+//   record(_) { return "Record<string, " + _.additionalProperties + ">" },
+//   object(_, $) {
+//     return (
+//       "{"
+//       + Object_entries(_.properties)
+//         .map(([k, v]) => {
+//           const isOptional = !(_.required ?? []).includes(k)
+//           const IDENT = createZodIdent($)([
+//             ...$.path,
+//             "shape",
+//             k
+//           ]).join("")
+//           const MASK = createMask($)([
+//             ...$.path,
+//             k
+//           ]).join("")
+//           return ""
+//             + "/**"
+//             + " * ## {@link " + IDENT + `\`${MASK}\`}`
+//             + " */"
+//             + object.parseKey(k)
+//             + (isOptional ? ": " : "?: ")
+//             + v
+//             }
+//         ).join(";\n")
+//       + "}"
+//     )
+//   }
+// } satisfies Extension.BuiltIns<string, Index>
+
+// function traversable<KS extends (keyof any)[]>(...path: [...KS]): [trav: KS[number][], non: KS[number][]]
+// function traversable<KS extends (keyof any)[]>(...path: [...KS]) {
+//   let trav: (keyof any)[] = [],
+//       head: keyof any | undefined
+//   while((head = path.shift()) !== undefined) {
+//     if (typeof head === "number") return [trav, [head, ...path]]
+//     else if ()
+//   }
+//     // out.push(typeof head)
+//     // out += char in TO ? TO[char as never] : char
+//   return [trav, []]
 // }

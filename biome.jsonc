@@ -53,6 +53,7 @@
         "noExplicitAny": "off",
         "noSelfCompare": "off",
         "noShadowRestrictedNames": "off",
+        "noUnsafeDeclarationMerging": "off",
         "noConfusingVoidType": "off",
         "noEmptyInterface": "off",
         "useValidTypeof": "off",

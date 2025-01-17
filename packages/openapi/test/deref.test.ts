@@ -1,7 +1,7 @@
-import * as vi from "vitest"
-import { deref } from "@traversable/openapi"
-import { fn, Result } from "@traversable/data"
 import { is, tree } from "@traversable/core"
+import { Result, fn } from "@traversable/data"
+import { deref } from "@traversable/openapi"
+import * as vi from "vitest"
 
 const doc_01 = {
   paths: {},

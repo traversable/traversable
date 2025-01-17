@@ -1,4 +1,5 @@
 import { fn } from "@traversable/data"
+import type { Invertible } from "@traversable/registry"
 import { URI } from "@traversable/registry"
 import type { newtype } from "any-ts"
 
@@ -215,4 +216,24 @@ export namespace Prism {
         to,
         Prism.right(from),
       )(Choice.right(choice))
+}
+
+function iso<const D extends Invertible>(dict: D):  {
+  to<S extends string>(text: S): string
+  from<S extends string>(text: S): string
+} {
+  let rev: Invertible = {}
+  for (const k in dict) rev[dict[k]] = k
+  return { 
+    to: function to(text: string) {
+      let ks = [...text], out = "", k: string | undefined
+      while ((k = ks.shift()) !== undefined) out += k in dict ? String(dict[k]) : k
+      return out
+    }, 
+    from: function from(text: string) {
+      let ks = [...text], out = "", k: string | undefined
+      while ((k = ks.shift()) !== undefined) out += k in rev ? String(rev[k]) : k
+      return out 
+    }
+  }
 }

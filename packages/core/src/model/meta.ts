@@ -25,7 +25,7 @@ export interface Context<T = any> {
   typeName: string
   absolutePath: string[]
   siblingCount: number
-  document: { paths: { [x: string]: {} } }
+  // document: { paths: { [x: string]: {} } }
   T?: T
 }
 export declare namespace Context {
@@ -41,11 +41,11 @@ declare namespace Meta {
 
   interface Meta_integer<_ = unknown> extends Meta.Base, Meta.Numeric {}
   interface Meta_number<_ = unknown> extends Meta.Base, Meta.Numeric {}
-  interface Meta_string<_ = unknown> extends Meta.Base { format?: string }
+  interface Meta_string<_ = unknown> extends Meta.Base, Meta.Enumerable { format?: string }
 
-  interface Meta_tuple<_ = unknown> extends Meta.Base {}
+  interface Meta_tuple<_ = unknown> extends Meta.Base, Meta.Enumerable {}
   interface Meta_record<_ = unknown> extends Meta.Base {}
-  interface Meta_array<_ = unknown> extends Meta.Base {}
+  interface Meta_array<_ = unknown> extends Meta.Base, Meta.Enumerable {}
   interface Meta_allOf<_ = unknown> extends Meta.Base {}
   interface Meta_anyOf<_ = unknown> extends Meta.Base {}
   interface Meta_oneOf<_ = unknown> extends Meta.Base {}
@@ -54,6 +54,9 @@ declare namespace Meta {
     format?: string
     minimum?: number
     maximum?: number
+    multipleOf?: number
+    exclusiveMinimum?: number | boolean
+    exclusiveMaximum?: number | boolean
   }
   interface Enumerable {
     minLength?: number

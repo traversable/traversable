@@ -76,6 +76,8 @@ namespace string_ {
   /////
   /**
    * ### {@link emoji `KnownFormat.string.emoji`}
+   * @example
+   * 🥳
    */
   export const emoji = "emoji" as const
   export type emoji = typeof string_.emoji
@@ -107,6 +109,8 @@ namespace string_ {
   /**
    * ### {@link ipv4 `KnownFormat.string.ipv4`}
    * Specified by [RFC-2373 section 3.2](https://datatracker.ietf.org/doc/html/rfc2373#section-3.2)
+   * @example
+   * "192.168.1.1"
    */
   export const ipv4 = "ipv4" as const
   export type ipv4 = typeof string_.ipv4
@@ -114,6 +118,8 @@ namespace string_ {
   /**
    * ### {@link ipv6 `KnownFormat.string.ipv6`}
    * Specified by [RFC-2373 section 2.2](https://datatracker.ietf.org/doc/html/rfc2373#section-2.2)
+   * @example
+   * "84d5:51a0:9114:1855:4cfa:f2d7:1f12:192.168.1.1"
    */
   export const ipv6 = "ipv6" as const
   export type ipv6 = typeof string_.ipv6
@@ -173,8 +179,10 @@ namespace string_ {
   /////
   /**
    * ### {@link ulid `KnownFormat.string.ulid`}
-   * An elegant, univerally unique identifier optimized for sortability and readability.
+   * An univerally unique identifier optimized for sortability and readability.
    * Implementations must satisfy the [spec](https://github.com/ulid/spec)
+   * @example
+   * "01arZ3nDeKTsV4RRffQ69G5FAV"
    */
   export const ulid = "ulid" as const
   export type ulid = typeof string_.ulid

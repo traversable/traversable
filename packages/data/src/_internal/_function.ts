@@ -1,4 +1,4 @@
-import { type Either, type Functor, type HKT, type IndexedFunctor, Invariant, Kind, URI } from "@traversable/registry"
+import { type Either, type Functor, type HKT, type IndexedFunctor, Invariant, type IxFunctor, type Kind, URI } from "@traversable/registry"
 
 import type { any, mut } from "any-ts"
 import type { array_shift } from "./_array.js"
@@ -900,10 +900,10 @@ export function cata<F extends HKT>(F: Functor<F>) {
 }
 
 export function cataIx
-  <Ix, F extends HKT, _F>(F: IndexedFunctor<Ix, F, _F>): 
+  <Ix, F extends HKT, _F>(F: IxFunctor<F, _F>): 
   <T>(algebra: Functor.IxAlgebra<Ix, F, T>) 
     => <S extends _F>(ix: Ix, term: S) 
-    => T 
+    => T
     
 export function cataIx<Ix, F extends HKT>(F: IndexedFunctor<Ix, F>) {
   return <T>(g: Functor.IxAlgebra<Ix, F, T>) => {

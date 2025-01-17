@@ -1,10 +1,11 @@
 import type { newtype } from "any-ts"
 
-import { HKT, Kind, PATTERN } from "@traversable/registry"
+import { map } from "@traversable/data"
+import type { HKT, Kind } from "@traversable/registry"
+import { PATTERN } from "@traversable/registry"
 import * as fn from "./_function.js"
 import { prop } from "./_prop.js"
 import { escape as escapeString, isQuoted } from "./_string.js"
-import { map } from "@traversable/data"
 
 /** @internal */
 type matchUppercaseAlpha<T extends string> = key.uppercase<T> extends T ? key.lowercase<T> extends T ? never : T : never

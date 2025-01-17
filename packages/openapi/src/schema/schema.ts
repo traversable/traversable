@@ -150,7 +150,6 @@ function Schema_null(_constraints?: Constraints): fc.Arbitrary<Schema_null> {
   return fc.record(
     typed(
       DataType.null, { 
-        enum: fc.constant([null]),
         nullable: fc.constant(true),
       }
     ), 

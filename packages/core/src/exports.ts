@@ -11,7 +11,8 @@ export { JsonPointer } from "./json-pointer.js"
 export { Json } from "./json.js"
 
 export type * from "./model/index.js"
-export { JsonSchema, Traversable, Extension } from "./model/index.js"
+export { JsonSchema, Traversable /* , Extension */ } from "./model/index.js"
+export { Extension } from "./model/ext.js"
 
 export type JsonSchema = import("./model/json-schema.js").any
 export type Traversable = import("./model/traversable.js").Traversable

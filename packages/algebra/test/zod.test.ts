@@ -3,12 +3,11 @@ import * as path from "node:path"
 import * as vi from "vitest"
 import { z } from "zod"
 
-import prettier from "@prettier/sync"
 import { Traversable, fc, is, test, tree } from "@traversable/core"
-import { fn, map } from "@traversable/data"
+import { fn, keys, map } from "@traversable/data"
 import { arbitrary } from "@traversable/openapi"
 
-import { zod } from "@traversable/algebra"
+import { escapePathSegment, zod } from "@traversable/algebra"
 import { _ } from "@traversable/registry"
 import IR = zod.IR
 
@@ -19,6 +18,7 @@ const PATH = {
   targets: {
     jsdocHack: path.join(DIR, "traversable.gen.json.ts"),
     zod: path.join(DIR, "zod.gen.ts"),
+    zodTypesOnly: path.join(DIR, "zodtypesOnly.gen.ts"),
   }
 } as const
 
@@ -42,68 +42,32 @@ interface Invertible { [x: keyof any]: keyof any }
 const sub
   : <const D extends Invertible>(dict: D) => (text: string) => string
   = (dict) => (text) => {
-    let ks = [...text], out = "", k
+    let ks = [...text], out = "", k: string | undefined
     while ((k = ks.shift()) !== undefined) out += k in dict ? String(dict[k]) : k
     return out
   }
 
-function iso<const D extends Invertible>(dict: D):  {
-  to<S extends string>(text: S): string
-  from<S extends string>(text: S): string
-} {
-  let rev: Invertible = {}
-  for (const k in dict) rev[dict[k]] = k
-  return { 
-    to: function to(text: string) {
-      let ks = [...text], out = "", k
-      while ((k = ks.shift()) !== undefined) out += k in dict ? String(dict[k]) : k
-      return out
-    }, 
-    from: function from(text: string) {
-      let ks = [...text], out = "", k
-      while ((k = ks.shift()) !== undefined) out += k in rev ? String(rev[k]) : k
-      return out 
-    }
-  }
-}
-
-function mapKeysRec(f: (s: string) => string) {
-  return <T>(x: T): {} | null | undefined => {
-    switch (true) {
-      case x == null:
-      case typeof x === "boolean":
-      case typeof x === "string":
-      case typeof x === "number": return x
-      case Array_isArray(x): return map(x, mapKeysRec(f))
-      case !!x && typeof x === "object": {
-        let out: Record<keyof any, unknown> = {}
-        for (const k in x) out[f(k)] = mapKeysRec(f)(x[k])
-        return out
-      }
-    }
-  }
-}
-
 const pathify = fn.flow(
-  mapKeysRec(sub({ "/": "𛰎", "{": "𛰧", "}": "𛰨", "~": "𛰃" })),
-  JSON.stringify,
-  (_) => prettier.format(_, { parser: "json" }),
+  keys.map.deep(escapePathSegment),
+  (_) => JSON.stringify(_, null, 2),
   (_) => "export default " + _.trimEnd() + " as const;"
 )
-
 
 // const randomIdent = () => 
 //   (Math.random().toString(32).split(".")[1] ?? "A")
 //   .replace(/\d/, (_) => String.fromCharCode(_.charCodeAt(0) + 0x11))
 
 const capitalize = (s: string) => s.charAt(0).toUpperCase().concat(s.slice(1))
-const typeNameFromPath = (k: string) => capitalize(k.slice("/paths/".length).replace(PATTERN.CleanPathName, "_"))
+const typeNameFromPath = (k: string) => k.startsWith("/paths/") 
+  ? capitalize(k.slice("/paths/".length).replace(PATTERN.CleanPathName, "_"))
+  : capitalize(k).replace(PATTERN.CleanPathName, "_")
 
 vi.describe("〖️⛳️〗‹‹‹ ❲@traversable/algebra/zod❳", () => {
   vi.it("〖️⛳️〗› ❲zod.derive❳", async () => {
     if (!fs.existsSync(PATH.generated)) fs.mkdirSync(PATH.generated, { recursive: true })
     if (!fs.existsSync(PATH.targets.zod)) fs.writeFileSync(PATH.targets.zod, "")
-    if (!fs.existsSync(PATH.spec)) fs.writeFileSync(PATH.spec, prettier.format(generateSpec(), { parser: "json" }))
+    if (!fs.existsSync(PATH.targets.zod)) fs.writeFileSync(PATH.targets.zodTypesOnly, "")
+    if (!fs.existsSync(PATH.spec)) fs.writeFileSync(PATH.spec, generateSpec())
     if (!fs.existsSync(PATH.targets.jsdocHack)) fs.writeFileSync(PATH.targets.jsdocHack, "")
 
     /** 
@@ -126,18 +90,19 @@ vi.describe("〖️⛳️〗‹‹‹ ❲@traversable/algebra/zod❳", () => {
       `import type $doc from "./traversable.gen.json.js"`,
     ]
     let derivedSchemas: z.ZodTypeAny[] = []
+    let generatedTypes = [
+      `import type { z } from "zod"`, 
+      `import type $doc from "./traversable.gen.json.js"`,
+    ]
 
     for (const k in schemas) {
       const jsonSchema = schemas[k]
       const options = {
         typeName: typeNameFromPath(k),
-        futureFlags: {
-          // includeLinkToOpenApiNode: "./traversable.gen.json"
-        },
         document,
         absolutePath: ["components", "schemas", k],
       } satisfies Parameters<typeof zod.generate>[1]
-      const schema = await zod.generate(jsonSchema, options)
+      const schema = zod.generate(jsonSchema, options)
 
       void generatedSchemas.push(schema)
     }
@@ -150,12 +115,26 @@ vi.describe("〖️⛳️〗‹‹‹ ❲@traversable/algebra/zod❳", () => {
         absolutePath: ["components", "schemas", k],
       } satisfies Parameters<typeof zod.generate>[1]
 
-      const schema = await zod.derive(jsonSchema, options)
+      const schema = zod.derive(jsonSchema, options)
       void derivedSchemas.push(schema)
     }
 
+    for (const k in schemas) {
+      const jsonSchema = schemas[k]
+      const options = {
+        typeName: typeNameFromPath(k),
+        document,
+        absolutePath: ["components", "schemas", k],
+      } satisfies Parameters<typeof zod.generate>[1]
+
+      const schema = zod.typelevel(jsonSchema, options)
+      void generatedTypes.push(schema)
+    }
+
     fs.writeFileSync(PATH.targets.zod, generatedSchemas.join("\n\n"))
+    fs.writeFileSync(PATH.targets.zodTypesOnly, generatedTypes.join("\n\n"))
     vi.assert.isTrue(fs.existsSync(PATH.targets.zod))
+    vi.assert.isTrue(fs.existsSync(PATH.targets.zodTypesOnly))
   })
 })
 

@@ -5,8 +5,8 @@ import { PATTERN, type newtype } from "@traversable/registry"
 
 import { createDepthIdentifier } from "fast-check"
 import * as N from "./normalize.js"
-import type { SchemaLoop } from "./schema/schema.js"
 import { Schema } from "./schema/exports.js"
+import type { SchemaLoop } from "./schema/schema.js"
 import type { $ref } from "./types.js"
 
 /** @internal */
