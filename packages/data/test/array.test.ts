@@ -1,5 +1,5 @@
-import * as vi from "vitest"
 import { fc, test } from "@fast-check/vitest"
+import * as vi from "vitest"
 
 import { array } from "@traversable/data"
 import { symbol } from "@traversable/registry"

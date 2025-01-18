@@ -1,5 +1,6 @@
 import { core, fc, tree } from "@traversable/core"
-import { type record as Record, fn, type keys, map, object } from "@traversable/data"
+import type { record as Record, keys } from "@traversable/data"
+import { fn, integer, map, object } from "@traversable/data"
 import type { Intersect } from "@traversable/registry"
 import { type Schema, type arbitrary, format } from "../types.js"
 
@@ -116,17 +117,20 @@ namespace Bounded {
     Math_min(x ?? Number_NaN, y ?? Number_NaN)
   export const maximumOf= (x?: number, y?: number) =>
     Math_max(x ?? Number_NaN, y ?? Number_NaN)
-  export const factorOf = (lo?: number, hi?: number) => (x?: number) =>
-    (x ?? Number_NaN) %
-      Math_abs(Math_min(lo ?? Number_NaN, hi ?? Number_NaN)) ===
-      0 &&
-    Math_abs(Math_max(lo ?? Number_NaN, hi ?? Number_NaN)) %
-      (x ?? Number_NaN) ===
-      0
-      ? (x ?? Number_NaN)
-      : Number_NaN
+  export const factorOf = (lo?: number, hi?: number) => {
+    if (!lo) return Number_NaN 
+    else if (!hi) return Number_NaN 
+    else {
+      const x = integer.gcd(lo, hi)
+      const abs = Math_abs(+x)
+      return (
+        abs === 1 || 
+        abs === Math_abs(lo) || 
+        abs === Math_abs(hi) 
+      ) ? Number_NaN : +x
+    }
+  }
 }
-
 
 //////////////////
 ///    NULL    ///
@@ -199,11 +203,10 @@ type Schema_integer = t.Schema_integer
 Schema_integer.defaults = { exclude: false as boolean } satisfies Schema_integer.Constraints
 Schema_integer.static = {
   format: fc.oneof(format.integer, format.any),
-  minimum: fc.integer(),
-  maximum: fc.integer(),
+  minimum: fc.integer({ min: -0x100000000 }),
+  maximum: fc.integer({ max: +0x100000000 }),
   exclusiveMinimum: fc.boolean(),
   exclusiveMaximum: fc.boolean(),
-  multipleOf: fc.nat(),
 }
 Schema_integer.requiredKeys = ["type"] as const satisfies string[]
 ///
@@ -220,14 +223,17 @@ function Schema_integer(_constraints?: Constraints): fc.Arbitrary<t.Schema_integ
       Schema_integer.static,
     ), 
     { requiredKeys: Schema_integer.requiredKeys },
-  ).map(({ type, format, minimum, maximum, multipleOf, exclusiveMinimum, exclusiveMaximum, ...node }) => ({
+  ).map(({ type, format, minimum: min, maximum: max, exclusiveMinimum: gt, exclusiveMaximum: lt, ...node }) => ({
     type,
     format,
-    ...Bounded.absorbNaN("minimum", Bounded.minimumOf(minimum, maximum)),
-    ...Bounded.absorbNaN("maximum", Bounded.maximumOf(minimum, maximum)),
-    ...Bounded.absorbNaN("multipleOf", Bounded.factorOf(minimum, maximum)(multipleOf)),
-    ...(exclusiveMinimum != null && minimum != null && { exclusiveMinimum }),
-    ...(exclusiveMaximum != null && maximum != null && { exclusiveMaximum }),
+    ...Bounded.absorbNaN("minimum", Bounded.minimumOf(min, max)),
+    ...Bounded.absorbNaN("maximum", Bounded.maximumOf(min, max)),
+    ...Bounded.absorbNaN("multipleOf", Bounded.factorOf(
+      typeof min === "number" && gt !== true ? min : min, 
+      typeof max === "number" && lt !== true ? max : max
+    )),
+    ...(gt !== undefined && min != null && { exclusiveMinimum: gt }),
+    ...(lt !== undefined && max != null && { exclusiveMaximum: lt }),
     ...node,
   }))
 }
@@ -288,8 +294,13 @@ Schema_string.format = (constraints: Constraints = Constraints.defaults) => fc.o
   fc.record(uri(constraints), { requiredKeys: [] }),
 )
 Schema_string.static = {
-  minLength: fc.nat(),
-  maxLength: fc.nat(),
+  minLength: fc.nat(0x100),
+  maxLength: fc.nat(0x100),
+  /** 
+   * As specified by [ECMA 262](https://262.ecma-international.org/5.1/#sec-15.10.1)
+   * TODO: map over generated value and:
+   * - [ ] escape special characters, per the BNF
+   */
   pattern: fc.string(),
 }
 Schema_string.requiredKeys = ["type"] as const satisfies string[]
@@ -317,11 +328,32 @@ function Schema_string(constraints?: Constraints): fc.Arbitrary<t.Schema_string>
       },
       { requiredKeys: ["type"] }),
     )
-    .map(([format, { example, ...body }]) => ({
-      ...format,
-      ...body,
-      ...optionally({ example: format.example ?? example }),
-    })
+    .map(([format, { example, minLength: min, maxLength: max, ...body }]) => {
+      const minimum = Bounded.minimumOf(min, max)
+      const maximum = Bounded.maximumOf(min, max)
+      const minLength = Bounded.absorbNaN(
+        "minLength", 
+        ( ["date", "date-time"].includes(format.format) ? Number.NaN
+        : ["email", "ulid", "uuid", "uri"].includes(format.format) ? minimum % 0x00 
+        : minimum 
+        )
+      );
+      const maxLength = Bounded.absorbNaN(
+        "maxLength",
+        ( ["date", "date-time"].includes(format.format) ? Number.NaN
+        : ["email", "ulid", "uuid", "uri"].includes(format.format) ? maximum % 0x00 
+        : maximum )
+      );
+
+      return {
+        ...format,
+        ...!["date", "date-time"].includes(format.format) && { minLength: minLength.minLength, maxLength: maxLength.maxLength },
+        ...minLength,
+        ...maxLength,
+        ...body,
+        ...optionally({ example: format.example ?? example }),
+      }
+    }
   )
 }
 /** @internal */
@@ -330,43 +362,39 @@ const RFC_3339 = fc.date({ noInvalidDate: true }).map((d) => d.toISOString())
 export function datetime(constraints: Constraints = Constraints.defaults) {
   return {
     format: fc.constant("date-time"),
-    ...(constraints.base.include?.example && {
-      example: RFC_3339,
-    }),
+    ...constraints.base.include?.example && { example: RFC_3339 },
   }
 }
 export function date(constraints: Constraints = Constraints.defaults) {
   return {
     format: fc.constant("date"),
-    ...(constraints.base.include?.example && {
-      example: RFC_3339.map((ds) => ds.substring(0, 10)),
-    }),
+    ...constraints.base.include?.example && { example: RFC_3339.map((ds) => ds.substring(0, 10)) },
   }
 }
 export function uuid(constraints: Constraints = Constraints.defaults) {
   return {
     format: fc.constant("uuid"),
-    ...(constraints.base.include?.example && { example: fc.uuid({ version: 7 }) }),
+    ...constraints.base.include?.example && { example: fc.uuid({ version: 7 }) },
   }
 }
 export function ulid(constraints: Constraints = Constraints.defaults) {
   return {
     format: fc.constant("ulid"),
-    ...(constraints.base.include?.example && { example: fc.ulid() }),
+    ...constraints.base.include?.example && { example: fc.ulid() },
   }
 }
 export function uri(constraints: Constraints = Constraints.defaults) {
   return {
     format: fc.constant("uri"),
-    ...(constraints.base.include?.example && {
+    ...constraints.base.include?.example && {
       example: fc.webUrl({ withQueryParameters: true, withFragments: true }),
-    }),
+    },
   }
 }
 export function email(constraints: Constraints = Constraints.defaults) {
   return {
-    format: fc.constant("string"),
-    ...(constraints.base.include?.example && { example: fc.emailAddress() }),
+    format: fc.constant("email"),
+    ...constraints.base.include?.example && { example: fc.emailAddress() },
   } satisfies Record<string, fc.Arbitrary<unknown>>
 }
 ///    STRING    ///
@@ -794,18 +822,22 @@ export function loop(constraints: Constraints = Constraints.defaults) {
           constraints.boolean.exclude ? null : LOOP("boolean"),
           constraints.integer.exclude ? null : LOOP("integer"),
           constraints.number.exclude ? null : LOOP("number"),
+          constraints.string.exclude ? null : LOOP("string"),
           constraints.object.exclude ? null : LOOP("object"),
+          constraints.array.exclude ? null : LOOP("array"),
           constraints.allOf.exclude ? null : LOOP("allOf"),
           constraints.anyOf.exclude ? null : LOOP("anyOf"),
         ].filter((_) => _ != null),
       ) as 
       fc.Arbitrary<
-        | t.Schema_number<Schema, {}> 
-        | t.Schema_boolean<Schema, {}> 
-        | t.Schema_object<Schema, {}> 
         | t.Schema_null<Schema, {}> 
+        | t.Schema_boolean<Schema, {}> 
         | t.Schema_integer<Schema, {}> 
+        | t.Schema_number<Schema, {}> 
+        | t.Schema_object<Schema, {}> 
+        | t.Schema_array<Schema, {}> 
         | t.Schema_allOf<Schema, {}>
+        | t.Schema_anyOf<Schema, {}>
       >
     }
   })

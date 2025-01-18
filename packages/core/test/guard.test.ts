@@ -56,7 +56,12 @@ vi.describe(`〖⛳️〗‹‹‹ ❲@traversable/core/guard❳`, () => {
     vi.assert.isFalse(t.short("'xyz'").is(""))
     vi.assert.isFalse(t.short("''").is("xyz"))
 
-    vi.expect(() => t.short("xyz" as never)).toThrowError("Unrecognized string literal")
+    vi.expect(() => t.short("xyz" as never)).toThrowErrorMatchingInlineSnapshot(`
+      [Error: [
+        "Unrecognized string literal. Expected the name of a type (like \`string\`\\") or a string wrapped in quotes (like \`'xyx'\`, x), got: ",
+        "xyz"
+      ]]
+    `)
     vi.assert.isFalse(t.short("''").is([]))
 
     vi.assert.isTrue(

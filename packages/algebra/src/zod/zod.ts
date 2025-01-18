@@ -1,35 +1,32 @@
 import * as path from "node:path"
 
 import type { Context, Meta } from "@traversable/core"
-import { Extension, Traversable, core, keyOf$ } from "@traversable/core"
+import { Extension, type Traversable, core, keyOf$, show } from "@traversable/core"
 import { fn, object } from "@traversable/data"
 import { openapi } from "@traversable/openapi"
 import type { _ } from "@traversable/registry"
 import { KnownFormat } from "@traversable/registry"
 import { z } from "zod"
 
-import type { Options as Options_ } from "../shared.js"
-import { createMask, createOpenApiNodePath, createZodIdent, typescript as ts } from "../shared.js"
+import type { Index, Matchers, Options } from "../shared.js"
+import { 
+  createMask, 
+  createOpenApiNodePath, 
+  createTarget,
+  createZodIdent, 
+  defaults as defaults_,
+  defineOptions,
+} from "../shared.js"
+import * as Print from "../print.js"
 
 export {
-  type Matchers,
-  type Options,
   defaults,
-  defineOptions,
   derive,
   derived,
   generate,
   generated,
   typelevel,
   typesOnly,
-}
-
-type Index = Options_.Base & Context
-type Matchers<S> = Extension.BuiltIns<S, Options_.Base & Context>
-
-type Options<S> = Options_<Index, S>
-declare namespace Options {
-  interface Config<S> extends Options_.Config<S, Index> {}
 }
 
 /** @internal */
@@ -39,91 +36,15 @@ const Object_fromEntries = globalThis.Object.fromEntries
 /** @internal */
 const JSON_stringify = (u: unknown) => JSON.stringify(u, null, 2)
 
-///////////////////////////////////
-///    CANDIDATES FOR SHARED    ///
-function fold<T>($: Options.Config<T>) { 
-  return Traversable.foldIx(Extension.match($)) 
-}
-
-const createTarget 
-  : <T>(matchers: Matchers<T>) => (schema: Traversable.any, options: Options<T>) => [target: T, config: Options.Config<T>]
-  = (matchers) => (schema, options) => {
-    const $ = defineOptions(matchers)(options)
-    return fn.pipe(
-      fold($),
-      fn.applyN($, schema),
-      (target) => [target, $] satisfies [any, any],
-    )
-  }
-
 const defaults = {
-  typeName: "AnonymousZodSchema",
-  absolutePath: ["components", "schemas"],
-  document: openapi.doc({}),
-  flags: {
-    nominalTypes: true,
-    preferInterfaces: true,
-    includeJsdocLinks: true,
-    includeExamples: true,
-    includeLinkToOpenApiNode: path.resolve(),
-  },
-  indent: 0,
-  path: [],
-  depth: 0,
-  siblingCount: 0,
+  ...defaults_,
+  typeName: defaults_.typeName + "ZodSchema",
 } satisfies Omit<Options.Config<unknown>, "handlers">
 
-function defineOptions<S>(handlers: Extension.Handlers<S, Index>): (options?: Options<S> & { handlers?: Extension.Handlers<S, Index> }) => Options.Config<S> {
-  return ($?: Omit<Options<S>, "handlers">) => ({
-    handlers,
-    typeName: $?.typeName ?? defaults.typeName,
-    document: $?.document ?? defaults.document,
-    flags: !$?.flags ? defaults.flags : {
-      nominalTypes: $.flags.nominalTypes ?? defaults.flags.nominalTypes,
-      preferInterfaces: $.flags.preferInterfaces ?? defaults.flags.preferInterfaces,
-      includeExamples: $.flags.includeExamples ?? defaults.flags.includeExamples,
-      includeJsdocLinks: $.flags.includeJsdocLinks ?? defaults.flags.includeJsdocLinks,
-      includeLinkToOpenApiNode: $.flags.includeLinkToOpenApiNode ?? defaults.flags.includeLinkToOpenApiNode,
-    },
-    absolutePath: $?.absolutePath ?? defaults.absolutePath,
-    indent: defaults.indent,
-    path: defaults.path,
-    depth: defaults.depth,
-    siblingCount: defaults.siblingCount,
-    /** 
-     * TODO: figure out how you want to handle: 
-     * 
-     * 1) Zod namespace aliasing (no more hardcoding "z." everywhere)
-     * 2) users being able to provide their "own zod" lib
-     */
-    // const z: vendor.zod["z"] = await(
-    //   $?.z && typeof $?.z === "object" ? Promise_resolve($.z)
-    //   : typeof $?.z === "string" ? import($.z)
-    //   : import("zod").then((_) => _.z)
-    // )
-    // z,
-  })
-}
+///////////////////////////////////
+///    CANDIDATES FOR SHARED    ///
 
-namespace Print {
-  export const pad = ($: { indent: number }) => " ".repeat($.indent)
-  export const tab = ($: { indent: number }) => " ".repeat($.indent + 2)
-  export const newline = ($: { indent: number }, count = 0) => "\n" + " ".repeat($.indent + (2 * (count + 1)))
-  export function array($: { indent: number }): 
-    <L extends string, const Body extends string[], R extends string>(left: L, ...body: [...Body, R]) 
-      => `${L}${string}${R}`
-  export function array($: { indent: number }) {
-    return (...args: [string, ...string[], string]) => {
-      const [left, body, right] = [args[0], args.slice(1, -1), args[args.length - 1]]
-      return ""
-      + left.trim() 
-      + Print.pad($) 
-      + [Print.pad($) + body.map((_) => Print.newline($) + _.trim()).join("," + Print.tab($))].join("," + Print.newline($))
-      + Print.newline($, -1) 
-      + right.trim()
-    }
-  }
-}
+
 ///    CANDIDATES FOR SHARED    ///
 ///////////////////////////////////
 
@@ -175,16 +96,18 @@ const StringSchema = {
 const numericConstraints 
   : (meta: Meta.Numeric) => string[]
   = ({ exclusiveMaximum: lt, exclusiveMinimum: gt, maximum: max, minimum: min, multipleOf: factor }) => [
-    typeof lt === "number" ? `.lt(${lt})` : max !== undefined && lt === true ? `.lt(${max})` : `.max(${max})`,
-    typeof gt === "number" ? `.gt(${gt})` : min !== undefined && gt === true ? `.gt(${min})` : `.min(${min})`,
+    typeof gt === "number" ? `.gt(${gt})` : min !== undefined && (gt === true ? `.gt(${min})` : `.min(${min})`),
+    typeof lt === "number" ? `.lt(${lt})` : max !== undefined && (lt === true ? `.lt(${max})` : `.max(${max})`),
     factor !== undefined && `.multipleOf(${factor})`,
   ].filter(core.is.string)
+
 const enumerableConstraints
   : (meta: Meta.Enumerable) => string[]
   = ({ maxLength: max, minLength: min }) => [
-    max !== undefined && `.max(${max})`,
     min !== undefined && `.min(${min})`,
+    max !== undefined && `.max(${max})`,
   ].filter(core.is.string)
+
 const stringConstraints
   : (meta: Meta.string) => string[]
   = (meta) => [
@@ -192,7 +115,7 @@ const stringConstraints
     ...enumerableConstraints(meta),
   ].filter(core.is.string)
 
-const generateConstraint = {
+const Constrain = {
   integer: numericConstraints,
   number: numericConstraints,
   string: stringConstraints,
@@ -209,9 +132,10 @@ const generateEntry
     const MASK = createMask($)([...$.path, k]).join("")
     const JSDOC_IDENTIFIER = !$.flags.includeJsdocLinks ? null : " * ## {@link " + IDENT + ` \`${MASK}\`}`
     const OPENAPI_LINK = $.flags.includeLinkToOpenApiNode === undefined ? null : fn.pipe(
-      createOpenApiNodePath($)([ "properties", k]).join(""),
+      createOpenApiNodePath($)(["properties", k]).join(""),
       (_) => ` * #### {@link $doc.${_} \`Link to OpenAPI node\`}`
     )
+    // console.log("v", show.serialize(v, "leuven"))
     return ([
       "",
       "/**",
@@ -236,9 +160,9 @@ const generateEntry
 const generated = {
   null() { return "z.null()" as const },
   boolean() { return "z.boolean()" as const },
-  integer({ meta = {} }) { return `z.number().int()` }, // ${generateConstraint.integer(meta).join("")}` as const },
-  number({ meta = {} }) { return `z.number()` }, // ${generateConstraint.number(meta).join("")}` as const },
-  string({ meta = {} }) { return `z.string()` }, // ${generateConstraint.string(meta).join("")}` as const },
+  integer({ meta = {} }) { return `z.number().int()${Constrain.integer(meta).join("")}` as const },
+  number({ meta = {} }) { return `z.number()${Constrain.number(meta).join("")}` as const },
+  string({ meta = {} }) { return `z.string()${Constrain.string(meta).join("")}` as const },
   enum({ enum: xs }, $) {
     if (xs.length === 0) return "z.never()"
     else if (xs.every(core.is.string)) return "z.enum([" + xs.join(", ") + "])"
@@ -247,7 +171,7 @@ const generated = {
       return ss.length === 1 ? ss[0] : Print.array($)("z.union([", ...ss, "])")
     }
   },
-  array({ items: s }, $) { return Print.array($)("z.array(", s, ")") },
+  array({ items: s }, $) { return (console.log("s", s), Print.array($)("z.array(", s, ")")) },
   record({ additionalProperties: s }, $) { return Print.array($)("z.record(", s, ")") },
   tuple({ items: ss }, $) { return Print.array($)("z.tuple([", ...ss, "])") },
   anyOf({ anyOf: [s0 = "z.never()", s1 = "z.never()", ...ss] }, $) { return Print.array($)("z.union([", s0, s1, ...ss, "])") },

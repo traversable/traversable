@@ -1,7 +1,7 @@
 import { core, fc, t, tree, zip } from "@traversable/core"
 import { fn, map, object } from "@traversable/data"
 import { http } from "@traversable/http"
-import { PATTERN, Required, RequireN, type newtype } from "@traversable/registry"
+import { PATTERN, type RequireN, type Required, type newtype } from "@traversable/registry"
 
 import { createDepthIdentifier } from "fast-check"
 import * as N from "./normalize.js"

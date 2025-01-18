@@ -17,7 +17,7 @@ export type integer<_ = number> = import("@traversable/registry").integer<_>
 export type Option<T = unknown> = import("@traversable/registry").Option<T>
 export type Result<T = unknown, E = never> = import("@traversable/registry").Result<T, E>
 export * as Either from "./either.js"
-export * as integer from "./integer.js"
+export { integer } from "./integer.js"
 export * as Option from "./option.js"
 export * as Result from "./result.js"
 

@@ -1,12 +1,13 @@
 import * as path from "node:path"
 
 import { Extension, Traversable, is } from "@traversable/core"
-import type { Context } from "@traversable/core"
 import { fn, object } from "@traversable/data"
+import { openapi } from "@traversable/openapi"
 import { KnownFormat, symbol } from "@traversable/registry"
 
-import { openapi } from "@traversable/openapi"
-import { type Options as Options_, createMask, createZodIdent, typescript as ts } from "../shared.js"
+
+import type { Index, Matchers, Options } from "../shared.js"
+import { createMask, createZodIdent } from "../shared.js"
 import * as zod from "../zod/exports.js"
 
 //////////////////
@@ -31,17 +32,15 @@ import * as zod from "../zod/exports.js"
 //////////////////
 
 export { 
-  type Options,
   generate 
 }
 
-type Index = Options_.Base & Context
-type Options<S> = Options_<Index, S>
-declare namespace Options {
-  interface Config<S> extends Options_.Config<S, Index> {}
-}
-
-type Matchers<S> = Extension.BuiltIns<S, Options_.Base & Context>
+// type Index = Options_.Base & Context
+// type Options<S> = Options_<Index, S>
+// declare namespace Options {
+//   interface Config<S> extends Options_.Config<S, Index> {}
+// }
+// type Matchers<S> = Extension.BuiltIns<S, Options_.Base & Context>
 
 /** @internal */
 const JSON_stringify = (u: unknown) => JSON.stringify(u, null, 2)

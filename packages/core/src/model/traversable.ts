@@ -1,4 +1,4 @@
-import { fn, map, type nonempty } from "@traversable/data"
+import { fn, map, object, type nonempty } from "@traversable/data"
 import { symbol } from "@traversable/registry"
 import type {
   Functor,
@@ -498,7 +498,7 @@ const IxFunctor: IndexedFunctor<Context, Traversable_lambda, Traversable_any> = 
         // `next` is already applied to the path, bc sometimes `next`
         // isn't actually last (as is the case with `symbol.optional`)
         path,
-        absolutePath: [...$.absolutePath, PathPrefixMap[xs.type], String(next)].filter((_) => _ !== null),
+        absolutePath: [...$.absolutePath, PathPrefixMap[xs.type], ...next === undefined ? [] : [String(next)]].filter((_) => _ !== null),
         ...overrides,
       } satisfies Context)
 
@@ -554,19 +554,20 @@ const fromJsonSchema = (expr: JsonSchema.any) => {
     ...has("originalIndex", t.number().is)(expr) && { originalIndex: expr.originalIndex },
     ...has("required", t.array(t.string()).is)(expr) && { required: expr.required },
   }
+  const { type: __yeet, ...x } = { ...expr, type: null }
   switch (true) {
     default: return fn.softExhaustiveCheck(expr)
-    case JsonSchema.is.null(expr): return { meta, ...expr, type: expr.type }
-    case JsonSchema.is.enum(expr): return { meta, ...expr, type: "enum" }
-    case JsonSchema.is.boolean(expr): return { meta, ...expr, type: expr.type }
-    case JsonSchema.is.integer(expr): return { meta, ...expr, type: expr.type }
-    case JsonSchema.is.number(expr): return { meta, ...expr, type: expr.type }
-    case JsonSchema.is.string(expr): return { meta, ...expr, type: expr.type }
-    case JsonSchema.is.allOf(expr): return { meta, ...expr, type: "allOf", allOf: expr.allOf, }
-    case JsonSchema.is.anyOf(expr): return { meta, ...expr, type: "anyOf", anyOf: expr.anyOf }
-    case JsonSchema.is.oneOf(expr): return { meta, ...expr, type: "oneOf", oneOf: expr.oneOf }
-    case JsonSchema.is.array(expr): return { meta, ...expr, type: is.array(expr.items) ? "tuple" : "array" }
-    case JsonSchema.is.object(expr): return { meta, ...expr, type: expr.properties ? "object" : "record" }
+    case JsonSchema.is.null(expr): return { type: expr.type, meta: { ...meta, ...x } }
+    case JsonSchema.is.enum(expr): return { type: "enum", enum: expr.enum, meta: { ...meta, ...x } }
+    case JsonSchema.is.boolean(expr): return { type: expr.type, meta: { ...meta, ...x } }
+    case JsonSchema.is.integer(expr): return { type: expr.type, meta: { ...meta, ...x } }
+    case JsonSchema.is.number(expr): return { type: expr.type, meta: { ...meta, ...x } }
+    case JsonSchema.is.string(expr): return { type: expr.type, meta: { ...meta, ...x } }
+    case JsonSchema.is.allOf(expr): return { type: "allOf", allOf: expr.allOf, meta: { ...meta, ...x } }
+    case JsonSchema.is.anyOf(expr): return { type: "anyOf", anyOf: expr.anyOf, meta: { ...meta, ...x } }
+    case JsonSchema.is.oneOf(expr): return { type: "oneOf", oneOf: expr.oneOf, meta: { ...meta, ...x } }
+    case JsonSchema.is.array(expr): return { type: is.array(expr.items) ? "tuple" : "array", items: expr.items, meta: { ...meta, ...x } }
+    case JsonSchema.is.object(expr): return { type: expr.properties ? "object" : "record", meta: { ...meta, ...x } }
   }
 }
 

@@ -120,30 +120,10 @@ namespace integer_ {
     : from<T>
     ;
 
-
-    /////////////////
-    ///  numbers  ///
-    type ex_01 = integer_.parse<1>
-    //   ^? type ex_01 = 1
-    type ex_02 = integer_.parse<-2>
-    //   ^? type ex_02 = -2
-    type ex_03 = integer_.parse<3n>
-    //   ^? type ex_03 = 3
-    type ex_04 = integer_.parse<-4.4>
-    //   ^? type ex_04 = -4
-    /////////////////
-    ///  strings  ///
-    type ex_11 = integer_.parse<"11">
-    //   ^? type ex_05 = 11
-    type ex_12 = integer_.parse<"-12">
-    //   ^? type ex_12 = -12
-    type ex_13 = integer_.parse<"13n">
-    //   ^? type ex_13 = 13
-    type ex_14 = integer_.parse<"-14.14">
-    //   ^? type ex_14 = -14
-
-
-
   export function isOdd(x: integer): boolean { return (+x & 1) === 1 }
   export function isEven(x: integer): boolean { return (+x & 1) === 0 }
+
+  export const gcd = function loop(x: integer, y: integer): integer {
+    return Number.isNaN(x) ? y : Number.isNaN(y) ? x : y === 0 ? x : loop(y, +x % +y)
+  }
 }

@@ -703,9 +703,9 @@ export type Require<T, K extends keyof T = never> = [K] extends [never]
 
 export type RequireN<T, Depth extends 1[] = [1, 1]> = never | RequireN.loop<[], T, Depth["length"]>
 export declare namespace RequireN {
-  type loop<Depth extends 1[] , T, Max extends number>
-    = Depth["length"] extends Max ? T : { [K in keyof T]-?: RequireN.loop<[...Depth, 1], T[K], Max> }
-
+  type loop<Depth extends 1[], T, Max extends number> = Depth["length"] extends Max
+    ? T
+    : { [K in keyof T]-?: RequireN.loop<[...Depth, 1], T[K], Max> }
 }
 
 /**

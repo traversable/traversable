@@ -17,7 +17,7 @@ const PATH = {
   spec: path.join(DIR, "traversable.gen.json"),
   targets: {
     jsdocHack: path.join(DIR, "traversable.gen.json.ts"),
-    zod: path.join(DIR, "zod.gen.ts"),
+    zodSchemas: path.join(DIR, "zod.gen.ts"),
     zodTypesOnly: path.join(DIR, "zodtypesOnly.gen.ts"),
   }
 } as const
@@ -76,8 +76,8 @@ const typeNameFromPath = (k: string) => k.startsWith("/paths/")
 vi.describe("〖️⛳️〗‹‹‹ ❲@traversable/algebra/zod❳", () => {
   vi.it("〖️⛳️〗› ❲zod.derive❳", async () => {
     if (!fs.existsSync(PATH.generated)) fs.mkdirSync(PATH.generated, { recursive: true })
-    if (!fs.existsSync(PATH.targets.zod)) fs.writeFileSync(PATH.targets.zod, "")
-    if (!fs.existsSync(PATH.targets.zod)) fs.writeFileSync(PATH.targets.zodTypesOnly, "")
+    if (!fs.existsSync(PATH.targets.zodSchemas)) fs.writeFileSync(PATH.targets.zodSchemas, "")
+    if (!fs.existsSync(PATH.targets.zodTypesOnly)) fs.writeFileSync(PATH.targets.zodTypesOnly, "")
     if (!fs.existsSync(PATH.spec)) fs.writeFileSync(PATH.spec, generateSpec())
     if (!fs.existsSync(PATH.targets.jsdocHack)) fs.writeFileSync(PATH.targets.jsdocHack, "")
 
@@ -96,12 +96,12 @@ vi.describe("〖️⛳️〗‹‹‹ ❲@traversable/algebra/zod❳", () => {
       : Record<string, Traversable.any>
       = document.components?.schemas ?? {}
 
-    let generatedSchemas = [
+    let zodSchemas = [
       `import { z } from "zod"`, 
       `import type $doc from "./traversable.gen.json.js"`,
     ]
     let derivedSchemas: z.ZodTypeAny[] = []
-    let generatedTypes = [
+    let zodTypesOnly = [
       `import type { z } from "zod"`, 
       `import type $doc from "./traversable.gen.json.js"`,
     ]
@@ -115,7 +115,7 @@ vi.describe("〖️⛳️〗‹‹‹ ❲@traversable/algebra/zod❳", () => {
       } satisfies Parameters<typeof zod.generate>[1]
       const schema = zod.generate(jsonSchema, options)
 
-      void generatedSchemas.push(schema)
+      void zodSchemas.push(schema)
     }
 
     for (const k in schemas) {
@@ -125,7 +125,6 @@ vi.describe("〖️⛳️〗‹‹‹ ❲@traversable/algebra/zod❳", () => {
         document,
         absolutePath: ["components", "schemas", k],
       } satisfies Parameters<typeof zod.generate>[1]
-
       const schema = zod.derive(jsonSchema, options)
       void derivedSchemas.push(schema)
     }
@@ -137,14 +136,13 @@ vi.describe("〖️⛳️〗‹‹‹ ❲@traversable/algebra/zod❳", () => {
         document,
         absolutePath: ["components", "schemas", k],
       } satisfies Parameters<typeof zod.generate>[1]
-
       const schema = zod.typelevel(jsonSchema, options)
-      void generatedTypes.push(schema)
+      void zodTypesOnly.push(schema)
     }
 
-    fs.writeFileSync(PATH.targets.zod, generatedSchemas.join("\n\n"))
-    fs.writeFileSync(PATH.targets.zodTypesOnly, generatedTypes.join("\n\n"))
-    vi.assert.isTrue(fs.existsSync(PATH.targets.zod))
+    fs.writeFileSync(PATH.targets.zodSchemas, zodSchemas.join("\n\n"))
+    fs.writeFileSync(PATH.targets.zodTypesOnly, zodTypesOnly.join("\n\n"))
+    vi.assert.isTrue(fs.existsSync(PATH.targets.zodSchemas))
     vi.assert.isTrue(fs.existsSync(PATH.targets.zodTypesOnly))
   })
 })

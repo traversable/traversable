@@ -1,12 +1,22 @@
 import * as path from "node:path"
 
-import type { Context, Extension } from "@traversable/core"
-import { is, keyOf$, t, tree } from "@traversable/core"
+import type { Context } from "@traversable/core"
+import { Extension, Traversable, is, keyOf$, t } from "@traversable/core"
+import { array, fn, object } from "@traversable/data"
 import { deref, openapi } from "@traversable/openapi"
 import type { Partial, Requiring, newtype } from "@traversable/registry"
 import { symbol } from "@traversable/registry"
-import { array, fn } from "@traversable/data"
 
+/** @internal */
+const Object_values 
+  : <T extends Record<keyof any, unknown>>(xs: T) => (T[keyof T])[]
+  = (xs) => globalThis.Object.getOwnPropertySymbols(xs).map((sym) => xs[sym]) as never
+
+/** @internal */
+const Math_max = globalThis.Math.max
+/** @internal */
+const Math_abs = globalThis.Math.abs
+  
 export interface Flags extends t.typeof<typeof Flags> {}
 export const Flags = t.object({
   nominalTypes: t.boolean(),
@@ -25,14 +35,66 @@ export type BuildPathInterpreter
   = <T extends Record<keyof any, keyof any | null>>(lookup: T) 
   => PathInterpreter
 
-/** @internal */
-const Object_values 
-  : <T extends Record<keyof any, unknown>>(xs: T) => (T[keyof T])[]
-  = (xs) => globalThis.Object.getOwnPropertySymbols(xs).map((sym) => xs[sym]) as never
+export type Index = Options.Base & Context
+export type Matchers<T> = Extension.BuiltIns<T, Index>
+export type Handlers<T> = Extension.Handlers<T, Index> 
+export type Options<T> = Partial<
+  & Options.Base
+  & { handlers: Extension.Handlers<T, Index> }
+>
+export declare namespace Options {
+  interface Base {
+    absolutePath: Context["absolutePath"]
+    flags: Flags
+    typeName: string
+    document: openapi.doc
+  }
+  interface Config<T> extends Options.Base, Context { 
+    handlers: Extension.Handlers<T, Index>
+  }
+}
 
-/** @internal */
-const Math_max = globalThis.Math.max
-  
+export function fold<T>($: Options.Config<T>) {
+  return Traversable.foldIx(Extension.match($)) 
+}
+
+export function defineOptions<T>(handlers: Extension.Handlers<T, Index>): (options?: Options<T>) => Options.Config<T> {
+  return ($?: Options<T>) => ({
+    handlers,
+    typeName: $?.typeName ?? defaults.typeName,
+    document: $?.document ?? defaults.document,
+    flags: !$?.flags ? defaults.flags : {
+      nominalTypes: $.flags.nominalTypes ?? defaults.flags.nominalTypes,
+      preferInterfaces: $.flags.preferInterfaces ?? defaults.flags.preferInterfaces,
+      includeExamples: $.flags.includeExamples ?? defaults.flags.includeExamples,
+      includeJsdocLinks: $.flags.includeJsdocLinks ?? defaults.flags.includeJsdocLinks,
+      includeLinkToOpenApiNode: $.flags.includeLinkToOpenApiNode ?? defaults.flags.includeLinkToOpenApiNode,
+    },
+    absolutePath: $?.absolutePath ?? defaults.absolutePath,
+    indent: defaults.indent,
+    path: defaults.path,
+    depth: defaults.depth,
+    siblingCount: defaults.siblingCount,
+  })
+}
+
+export const defaults = {
+  typeName: "Anonymous",
+  absolutePath: ["components", "schemas"],
+  document: openapi.doc({}),
+  flags: {
+    nominalTypes: true,
+    preferInterfaces: true,
+    includeJsdocLinks: true,
+    includeExamples: true,
+    includeLinkToOpenApiNode: path.resolve(),
+  },
+  indent: 0,
+  path: [],
+  depth: 0,
+  siblingCount: 0,
+} satisfies Omit<Options.Config<unknown>, "handlers">
+
 
 const ZOD_IDENT_MAP = {
   [symbol.optional]: "._def.innerType",
@@ -50,12 +112,6 @@ const MASK_MAP = {
 } as const
 ///
 
-const OPENAPI_PATH_MAP = {
-  [symbol.object]: "properties",
-  [symbol.optional]: null,
-  [symbol.required]: null,
-  [symbol.array]: "items",
-} as const
 
 interface Invertible { [x: keyof any]: keyof any }
 const sub
@@ -68,6 +124,7 @@ const sub
 
 export const ESC_MAP = { "/": "𛰎", "{": "𛰧", "}": "𛰨", "-": "𛰃", "~": "ꕀ" } as const
 export const escapePathSegment = sub(ESC_MAP)
+export const unescapePathSegment = sub(object.invert(ESC_MAP))
 
 /** @internal */
 const buildIdentInterpreter: BuildPathInterpreter = (lookup) => ($) => (xs) => {
@@ -76,6 +133,7 @@ const buildIdentInterpreter: BuildPathInterpreter = (lookup) => ($) => (xs) => {
   let k: keyof any | null | undefined
   while ((k = ks.shift()) !== undefined) {
     switch (true) {
+      case k === symbol.anyOf: return out
       case k === symbol.allOf: {
         const siblings = deref($.absolutePath.slice(0, -1).join("/"), is.array)($.document)
         if (!siblings) continue 
@@ -83,11 +141,11 @@ const buildIdentInterpreter: BuildPathInterpreter = (lookup) => ($) => (xs) => {
         const j = ks.shift()
         if (typeof j !== "number") continue
         if (j === 0) {
-          const next = "._def.left".repeat(Math.max((siblingCount ?? 0) - 1, 0))
+          const next = "._def.left".repeat(Math_max((siblingCount ?? 0) - 1, 0))
           out.push(next)
         }
         else {
-          const next = "._def.left".repeat(Math.abs((siblingCount ?? 0) - j) - 1) + "._def.right"
+          const next = "._def.left".repeat(Math_abs((siblingCount ?? 0) - j) - 1) + "._def.right"
           out.push(next)
         }
         continue
@@ -112,7 +170,7 @@ const trimPath = (xs: (keyof any | null)[]) => fn.pipe(
   xs,
   array.lastIndexOf((_) => is.string(_) && !ZOD_IDENTS.includes(_ as never)),
   (x) => x = 1,
-  (x) => Math.max(x, 1),
+  (x) => Math_max(x, 1),
   (x) => xs.slice(0, x),
 )
 
@@ -138,7 +196,9 @@ const buildMaskInterpreter: BuildPathInterpreter = (lookup) => ({ typeName }) =>
 }
 
 /** @internal */
-const buildOpenApiNodePathInterpreter: BuildPathInterpreter = (lookup)  => ($) => (xs) => {
+const buildOpenApiNodePathInterpreter: BuildPathInterpreter = ()  => ($) => (xs) => {
+  console.log("$.absolutePath", $.absolutePath)
+  console.log("xs", xs)
   const path = $.absolutePath.map(escapePathSegment)
   switch (true) {
     case path.includes("anyOf"): {
@@ -158,80 +218,34 @@ const buildOpenApiNodePathInterpreter: BuildPathInterpreter = (lookup)  => ($) =
 
 export const createMask: PathInterpreter = buildMaskInterpreter(MASK_MAP)
 export const createZodIdent: PathInterpreter = buildIdentInterpreter(ZOD_IDENT_MAP)
-export const createOpenApiNodePath: PathInterpreter = buildOpenApiNodePathInterpreter(OPENAPI_PATH_MAP)
+export const createOpenApiNodePath: PathInterpreter = buildOpenApiNodePathInterpreter({})
 
-// type Ix = Options.Base
-
-export type Options<Ix, S = {}> = Partial<
-  & Options.Base
-  & { handlers: Extension.Handlers<S, Ix> }
->
-
-export declare namespace Options {
-  interface Base {
-    absolutePath: Context["absolutePath"]
-    flags: Flags
-    typeName: string
-    document: openapi.doc
-  }
-
-  interface Config<S, Ix> extends Options.Base, Context { 
-    handlers: Extension.Handlers<S, Ix>
-  }
-}
-
-type Ix = Options.Base & Context
-
-const defaults = {
-  typeName: "AnonymousZodSchema",
-  absolutePath: ["components", "schemas"],
-  document: openapi.doc({}),
-  flags: {
-    nominalTypes: true,
-    preferInterfaces: true,
-    includeJsdocLinks: true,
-    includeExamples: true,
-    includeLinkToOpenApiNode: path.resolve(),
-  },
-  indent: 0,
-  path: [],
-  depth: 0,
-  siblingCount: 0,
-} satisfies Omit<Options.Config<unknown, Ix>, "handlers">
-
-export function defineOptions<S>(handlers: Extension.Handlers<S, Ix>, $?: Options<S>): Options.Config<S, Ix> {
-  return {
-    // z,
-    handlers,
-    typeName: $?.typeName ?? defaults.typeName,
-    document: $?.document ?? defaults.document,
-    flags: !$?.flags ? defaults.flags : {
-      nominalTypes: $.flags.nominalTypes ?? defaults.flags.nominalTypes,
-      preferInterfaces: $.flags.preferInterfaces ?? defaults.flags.preferInterfaces,
-      includeExamples: $.flags.includeExamples ?? defaults.flags.includeExamples,
-      includeJsdocLinks: $.flags.includeJsdocLinks ?? defaults.flags.includeJsdocLinks,
-      includeLinkToOpenApiNode: $.flags.includeLinkToOpenApiNode ?? defaults.flags.includeLinkToOpenApiNode,
-    },
-    absolutePath: $?.absolutePath ?? defaults.absolutePath,
-    indent: defaults.indent,
-    path: defaults.path,
-    depth: defaults.depth,
-    siblingCount: defaults.siblingCount,
+export function createTarget<T, Ix>(matchers: Extension.Handlers<T, Ix>): (schema: Traversable.any, options: Options<T>) => [target: T, config: Options.Config<T>]
+export function createTarget<T, Ix>(matchers: Extension.Handlers<T, Ix>): (schema: Traversable.any, options: Options<T>) => [target: T, config: Options.Config<T>]
+export function createTarget<T>(matchers: Handlers<T>) {
+  return (schema: Traversable.any, options: Options<T>) => {
+    const $ = defineOptions(matchers)(options)
+    return fn.pipe(
+      fold($),
+      fn.applyN($, schema),
+      (target) => [target, $] satisfies [any, any],
+    )
   }
 }
 
 
+////////////////////////////////
+///    ☠️ ☠️ ☠️ LEGACY ☠️ ☠️ ☠️    ///
+////////////////////////////////
+////////////////////////////////
+
+/** TODO: delete this namespace */
 export declare namespace typescript {
   export type { handlers as Handlers }
   type handlers<Ix, T = unknown> = never | Handlers<
     & Extension.BuiltIns<T, Ix>
     & Partial<Extension.UserDefs<T, Ix>>
   >
-  // export type HandlersWithContext<S = unknown, Ix = any> = Handlers<
-  //   & Extension.BuiltInsWithContext<S, Ix>
-  //   & globalThis.Partial<Extension.UserDefinitionsWithContext<S, Ix>>
-  // >
-
   /** @internal */
   interface Handlers<T extends {}> extends newtype<T> {}
 }

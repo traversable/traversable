@@ -193,10 +193,6 @@ export const isNotNaN
   : (x: unknown) => boolean
   = (x: unknown) => is(x) && x === x
 
-/**
- * ## {@link parse `number.parse`}
- * A runtime-safe version of {@link parseFloat `parseFloat`}
- */
 export const parse
   : (numeric: string) => float
   = globalThis.Number.parseFloat
