@@ -1,6 +1,6 @@
-import * as vi from "vitest"
-import { Extension, registry } from "@traversable/core"
 import { createTarget } from "@traversable/algebra"
+import { Extension, registry } from "@traversable/core"
+import * as vi from "vitest"
 
 interface Brr { type: "Brr", brr: number }
 interface Bro { type: "Bro", bro: string }

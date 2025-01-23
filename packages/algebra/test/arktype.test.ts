@@ -1,14 +1,22 @@
 import * as fs from "node:fs"
 import * as path from "node:path"
 import * as vi from "vitest"
-import { type } from "arktype"
 
-import { Traversable, fc, is, test, tree } from "@traversable/core"
+import { Traversable, fc, is, show, tree } from "@traversable/core"
 import { fn, keys, map } from "@traversable/data"
-import { arbitrary } from "@traversable/openapi"
+import { Schema, arbitrary, type openapi, Spec, $ref } from "@traversable/openapi"
+import type { _ } from "@traversable/registry"
 
-import { ark, escapePathSegment } from "@traversable/algebra"
-import { _ } from "@traversable/registry"
+import { ark, escapePathSegment, unescapePathSegment } from "@traversable/algebra"
+
+type Any = {} | null | undefined
+
+/** @internal */
+const JSON_parse = globalThis.JSON.parse
+/** @internal */
+const JSON_stringify = <T>(_: T) => globalThis.JSON.stringify(_, null, 2)
+/** @internal */
+const Array_isArray: <T>(u: unknown) => u is readonly T[] = globalThis.Array.isArray
 
 const DIR = path.join(path.resolve(), "packages", "algebra", "test", "__generated__")
 const PATH = {
@@ -17,7 +25,6 @@ const PATH = {
   targets: {
     jsdocHack: path.join(DIR, "traversable.gen.json.ts"),
     ark: path.join(DIR, "ark.gen.ts"),
-    arkTypesOnly: path.join(DIR, "arkTypesOnly.gen.ts"),
   }
 } as const
 
@@ -26,44 +33,66 @@ const PATTERN = {
 } as const
 
 const generateSpec = () => fn.pipe(
-  arbitrary({ include: { examples: true, description: true } }),
+  Spec.generate({
+    include: { examples: false, description: false }, 
+    schemas: {
+      allOf: {
+        arbitrary: (LOOP, $) => Schema.allOf.base(fc.dictionary(LOOP), $)
+      }
+    }
+  }),
   fc.peek,
-  tree.modify("components", "schemas")(map(Traversable.fromJsonSchema)),
-  (_) => JSON.stringify(_, null, 2),
+  // (x) => Spec.map(x, Traversable.fromJsonSchema),
+  // (x) => tree.modify(x, ["paths"], map((v: Record<string, unknown>, k) => ({ $unref: unescapePathSegment(k), ...v }))),
+  (x) => Spec.map(x, Traversable.fromJsonSchema),
+  // (x) => tree.modify(x, ["paths"], map(Traversable.fromJsonSchema)),
+  // (x) => show.serialize(x, "json")
+  x=> (console.log(x), x),
+  JSON_stringify,
 )
 
-const Array_isArray 
-  : <T>(u: unknown) => u is readonly T[]
-  = globalThis.Array.isArray
+  // Spec.map(Traversable.fromJsonSchema),
+//   arbitrary({
+//     include: { examples: false, description: false }, 
+//     schemas: {
+//       allOf: {
+//         arbitrary: (LOOP, $) => Schema.allOf.base(fc.dictionary(LOOP), $)
+//       }
+//     }
+//   }),
+//   fc.peek,
+//   // tree.modify("components", "schemas")(map(Traversable.fromJsonSchema)),
+//   x=>x,
+//   // tree.modify("paths")(map((v: Record<string, unknown>, k) => ({ $unref: unescapePathSegment(k), ...v }))),
+//   // JSON_stringify,
+// )
 
-interface Invertible { [x: keyof any]: keyof any }
-
-const sub
-  : <const D extends Invertible>(dict: D) => (text: string) => string
-  = (dict) => (text) => {
-    let ks = [...text], out = "", k: string | undefined
-    while ((k = ks.shift()) !== undefined) out += k in dict ? String(dict[k]) : k
-    return out
-  }
-
-const refsDeep = (leaveUnescaped: string) => (x: {} | null | undefined): {} | null | undefined => {
-  switch (true) {
-    default: return fn.exhaustive(x)
-    case x == null: return x
-    case Array_isArray(x): return x.map(refsDeep(leaveUnescaped))
-    case tree.has("$ref", is.string)(x): {
-      if (x.$ref.startsWith(leaveUnescaped)) return { $ref: leaveUnescaped + escapePathSegment(x.$ref.substring(leaveUnescaped.length)) }
-      else return { $ref: escapePathSegment(x.$ref) }
+const refsDeep 
+  : (leaveUnescaped: string) => (x: Any) => Any
+  = (leaveUnescaped) => (x) => {
+    switch (true) {
+      default: return fn.exhaustive(x)
+      case x == null: return x
+      case Array_isArray(x): 
+        return x.map(refsDeep(leaveUnescaped))
+      case tree.has("$ref", is.string)(x):
+        if (x.$ref.startsWith(leaveUnescaped)) return { 
+          $ref: leaveUnescaped + escapePathSegment(x.$ref.substring(leaveUnescaped.length)),
+          $unref: x.$ref,
+        }
+        else return { 
+          $ref: escapePathSegment(x.$ref),
+        }
+      case !!x && typeof x === "object": 
+        return map(x, refsDeep(leaveUnescaped))
+      case is.nonnullable(x): return x
     }
-    case !!x && typeof x === "object": return map(x, refsDeep(leaveUnescaped))
-    case is.nonnullable(x): return x
   }
-}
 
 const pathify = fn.flow(
   keys.map.deep(escapePathSegment),
   refsDeep("#/components/schemas"),
-  (_) => JSON.stringify(_, null, 2),
+  JSON_stringify,
   (_) => "export default " + _.trimEnd() + " as const;"
 )
 
@@ -76,24 +105,42 @@ vi.describe("〖️⛳️〗‹‹‹ ❲@traversable/algebra/ark❳", () => {
   vi.it("〖️⛳️〗› ❲ark.generate❳", async () => {
     if (!fs.existsSync(PATH.generated)) fs.mkdirSync(PATH.generated, { recursive: true })
     if (!fs.existsSync(PATH.targets.ark)) fs.writeFileSync(PATH.targets.ark, "")
-    if (!fs.existsSync(PATH.targets.ark)) fs.writeFileSync(PATH.targets.arkTypesOnly, "")
     if (!fs.existsSync(PATH.spec)) fs.writeFileSync(PATH.spec, generateSpec())
     if (!fs.existsSync(PATH.targets.jsdocHack)) fs.writeFileSync(PATH.targets.jsdocHack, "")
 
     /** 
-     * TODO: generate tests that confirm that {@link ark.derive `derived`} and {@link ark.generate `generated`}
-     * algebras are equivalent / at parity
+     * Whether or not this next line is commented out changes this test suite's behavior when 
+     * running:
+     * 
+     * ```shell
+     * $ pnpm test:watch ark
+     * ```
+     * 
+     * Behavior:
+     * 
+     * - _Comment out this line_, and chokidar will regenerate **just** `__generated__/arg.gen.ts` on save
+     * - _Uncomment this line_, and chokidar will regenerate **all of** `__generated__` on save 
+     * 
+     * **tl,dr:** Jon't put anything in `__generated__` that you care about and you'll be good either way
      */
-    const document = JSON.parse(fs.readFileSync(PATH.spec).toString("utf8"))
+    ////////////////////////////////////////////
+    fs.writeFileSync(PATH.spec, generateSpec())
+    //////////////////////////////////////////
+
+    /** 
+     * TODO: generate tests that confirm that {@link ark.derive `derived`} and {@link ark.generate `generated`}
+     * algebras are equivalent
+     */
+    const document
+      : openapi.doc
+      = JSON_parse(fs.readFileSync(PATH.spec).toString("utf8"))
 
     fs.writeFileSync(
       PATH.targets.jsdocHack, 
       pathify(document),
     )
 
-    const schemas
-      : Record<string, Traversable.any>
-      = document.components?.schemas ?? {}
+    const schemas = document.components?.schemas ?? {}
 
     let generatedSchemas = [
       `import { type } from "arktype"`, 
@@ -101,20 +148,17 @@ vi.describe("〖️⛳️〗‹‹‹ ❲@traversable/algebra/ark❳", () => {
     ]
 
     for (const k in schemas) {
-      const jsonSchema = schemas[k]
+      const schema = schemas[k]
       const options = {
         typeName: typeNameFromPath(k),
         document,
         absolutePath: ["components", "schemas", k],
       } satisfies Parameters<typeof ark.generate>[1]
 
-      const schema = ark.generate(jsonSchema, options)
-      void generatedSchemas.push(schema)
+      void generatedSchemas.push(ark.generate(schema, options))
     }
 
     fs.writeFileSync(PATH.targets.ark, generatedSchemas.join("\n\n") + "\n")
-    // fs.writeFileSync(PATH.targets.arkTypesOnly, generatedTypes.join("\n\n"))
     vi.assert.isTrue(fs.existsSync(PATH.targets.ark))
-    // vi.assert.isTrue(fs.existsSync(PATH.targets.arkTypesOnly))
   })
 })

@@ -11,6 +11,7 @@ export type Showable = null | undefined | boolean | number | bigint | string
 export type Primitive = null | undefined | boolean | number | bigint | string | symbol
 export type Entry<T> = readonly [k: string, v: T]
 export type Entries<T> = readonly Entry<T>[]
+
 export interface Array<T = unknown, Length extends number = number> extends newtype<readonly T[]> {
   length: Length
 }
@@ -20,6 +21,15 @@ export type Consumes<T> = T extends (_: infer I) => unknown ? I : never
 export type Produces<T> = T extends (_: never) => infer O ? O : never
 export type Returns<T> = T extends (..._: any) => infer O ? O : T
 export type Partial<T> = never | { [K in keyof T]+?: T[K] }
+
+export type isNonUnion<T, U = T, S = U extends U ? ([T] extends [U] ? true : false) : never> = [S] extends [
+  true,
+]
+  ? true
+  : false
+export type isSingleton<T> = [T] extends [never] ? false : isNonUnion<T>
+export type isUnion<T> = [isNonUnion<T>] extends [true] ? false : true
+
 // export type Partial<T, Depth extends keyof Partial.depth = never>
 //   = Depth extends 1 ? Partial1<T>
 //   : Depth extends 2 ? Partial2<T>
@@ -189,7 +199,7 @@ export declare namespace Position {
  *   to keep API surface area small, and to keep the API "spec-able"
  */
 export interface HKT<I = unknown, O = unknown> extends newtype<{ [0]: I; [-1]: O }> {}
-export type Kind<F extends HKT, T extends F[0] = F[0]> = never | (F & { [0]: T })[-1]
+export type Kind<F extends HKT, T extends F[0] = F[0]> = (F & { [0]: T })[-1]
 export declare namespace Kind {
   export { bind as new }
   export type of<F extends HKT> = [F] extends [infer T extends F] ? T : never
@@ -236,7 +246,7 @@ export declare namespace HKT {
 
   export type unapply<F extends HKT> = [F] extends [infer T extends F] ? T : never
 
-  export type product<F extends HKT, T> = Kind<F, [F, T]>
+  export type product<F extends HKT, T> = Kind<F, [source: Kind<F, T>, target: T]>
   export type sum<F extends HKT, T> = Kind<F, Either<F, T>>
   export interface ap<T> extends HKT<HKT> {
     [-1]: apply_<this[0], T>
@@ -350,7 +360,7 @@ export declare namespace Functor {
   }
 
   interface Covariant<F extends HKT = HKT> {
-    map<A, B>(f: (a: A) => B): (F: Kind<F, A>) => Kind<F, B>
+    // map<A, B>(f: (a: A) => B): (F: Kind<F, A>) => Kind<F, B>
     map<A, B>(F: Kind<F, A>, f: (a: A) => B): Kind<F, B>
   }
 }
@@ -366,7 +376,13 @@ export interface Applicative<F extends HKT>
     Functor.Covariant<F>,
     Functor.Invariant<F>,
     Product<F> {
-  of<A>(a: A): A
+  of<A>(a: A): Kind<F, A>
+}
+
+export function makeAp<F extends HKT>(
+  F: Applicative<F>,
+): <A>(fa: Kind<F, A>) => <B>(fab: Kind<F, (a: A) => B>) => Kind<F, B> {
+  return (fa) => (fab) => F.map(fa, (a) => F.map(fab, (f) => F.of(f(a))))
 }
 
 export interface Traversable<T extends HKT> extends Typeclass<T> {
@@ -589,7 +605,7 @@ export interface Predicate<in T = any> {
 /**
  * ## {@link Predicate `Predicate`}
  */
-export type Equal<in T> = (left: T, right: T) => boolean
+export type Eq<in T> = (left: T, right: T) => boolean
 
 /**
  * ## {@link Compare `Compare`}
@@ -1035,3 +1051,37 @@ export declare namespace Open {
 // interface Capture extends HKT<(_: any) => unknown> {
 //   [-1]: <T extends Parameters<this[0] & {}>[0]>(_: T) => ReturnType<this[0] & {}>
 // }
+
+export interface Recursive<T extends HKT, F extends HKT, A, _ = any> extends Typeclass<T> {
+  readonly F: Functor<F, _>
+  project(T: Kind<T, A>): Kind<F, Kind<T, A>>
+}
+
+export interface Corecursive<T extends HKT, F extends HKT, A, _ = any> extends Typeclass<T> {
+  readonly F: Functor<F, _>
+  embed(f: Kind<F, Kind<T, A>>): Kind<T, A>
+}
+
+/**
+ * Type-level predicate that asserts that two types are "equal".
+ *
+ * If you're looking for a type that describes
+ * the binary relation between two values, see {@link Equal `Equal`}.
+ *
+ * The semantics of _equality_ are somewhat ambiguous, since
+ * equality is, on some level, "in the eye of the beholder" ❲*❳.
+ *
+ * ❲*❳ By "in the eye of the beholder", I mean _not portable_:
+ * that equality is about our ability to perceive (or, in this case,
+ * our inability) to perceive difference.
+ *
+ * My first draft had "irrevocably bound to some context", but
+ * it sounded a bit stiff.
+ *
+ * > [Edit]: Probably just cut this comment out altogether.
+ */
+export type Equals<S, T> = (<F>() => F extends S ? true : false) extends <F>() => F extends T ? true : false
+  ? true
+  : false
+
+export type autocomplete<T> = T | (string & {})

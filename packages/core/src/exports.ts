@@ -12,7 +12,16 @@ export { Json } from "./json.js"
 
 export type * from "./model/index.js"
 export { JsonSchema, Traversable /* , Extension */ } from "./model/index.js"
-export { Extension, registry } from "./model/ext.js"
+
+export type {
+  BuiltIns,
+  ExtensionName,
+  ExtensionSet,
+  Handlers,
+  UserDef,
+  UserDefs,
+} from "./model/ext.js"
+export { Extension, registry, Extension_match2 } from "./model/ext.js"
 
 export type JsonSchema = import("./model/json-schema.js").any
 export type Traversable = import("./model/traversable.js").Traversable

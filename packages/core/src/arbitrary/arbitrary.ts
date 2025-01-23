@@ -1177,3 +1177,22 @@ export declare namespace dictionary {
     | [valueArb: fc.Arbitrary<T>, constraints?: fc.DictionaryConstraints]
     | [keyArb: fc.Arbitrary<K>, valueArb: fc.Arbitrary<T>, constraints?: fc.DictionaryConstraints]
 }
+
+/**
+ * ### {@link fix `fc.fix`}
+ * 
+ * Returns a string representing a number in "fixed-point" notation.
+ * 
+ * See also: 
+ * - {@link globalThis.Number.prototype.toFixed `Number.prototype.toFixed`}
+ *
+ * @example
+ * console.log(fc.peek(fc.fix(1)))                     // => 5.6
+ * console.log(fc.peek(fc.fix(2)))                     // => -101031.12
+ * console.log(fc.peek(fc.fix(3)))                     // => 404.923
+ * console.log(fc.peek(fc.fix(2, { min: 0, max: 1 }))) // => 0.98
+ */
+export const fix = (n: number, constraints?: fc.IntegerConstraints) => fc.tuple(
+ fc.integer(constraints), 
+ fc.nat(10 ** n),
+).map(([base, dec]) => +((base + (dec === 0 ? dec : dec / (10 ** n))).toFixed(n)))

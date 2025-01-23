@@ -1,7 +1,8 @@
-import type { newtype } from "@traversable/registry"
 import type { key, prop } from "@traversable/data"
 import { fn } from "@traversable/data"
+import type { newtype } from "@traversable/registry"
 
+import type { StandardSchemaV1 } from "@standard-schema/spec"
 import * as Traversable from "./traversable.js"
 
 export { Extension }
@@ -12,8 +13,6 @@ type Object_keys<T, K extends keyof T = prop.and<keyof T>> = never | ([K] extend
 const Object_keys 
   : <T extends object>(object: T) => Object_keys<T>
   = globalThis.Object.keys
-
-
 
 declare namespace Union {
   type toIntersection<U> 
@@ -96,16 +95,16 @@ export const registry = new Map()
  * declare module "@traversable/core" { interface Extension extends Extension.register<typeof myExt> {} }
  */
 
-interface Extension_register<S> extends newtype<{ [K in keyof S]: RegisteredExtension<K, TargetOf<S[K]>> }> {}
+interface Extension_register<S> extends newtype<{ [K in keyof S]: Registered<K, TargetOf<S[K]>> }> {}
 function Extension_register<S extends { [ext: string]: (u: any) => u is any }>(exts: S): Extension_register<S>
 function Extension_register<S extends { [ext: string]: (u: any) => u is any }>(exts: S) { 
   void Object.entries(exts).forEach(([k, v]) => (registry as never as globalThis.Map<any, any>).set(k, v)) 
   return exts
 }
 
-interface RegisteredExtension<Tag extends keyof any, T> { (u: unknown): u is T; tag: Tag }
-declare namespace RegisteredExtension {
-  type infer<T> = T extends RegisteredExtension<any, infer Ext> ? Ext : never
+interface Registered<Tag extends keyof any, T> { (u: unknown): u is T; tag: Tag }
+declare namespace Registered {
+  type infer<T> = T extends Registered<any, infer Ext> ? Ext : never
 }
 
 interface Extension<S = unknown> extends Extension_register<Traversable.Map<S>> {}
@@ -116,7 +115,7 @@ declare namespace Extension {
     Extension_register as register,
     ExtensionSet as Set,
     StructureMap,
-    RegisteredExtension as Registered,
+    Registered,
     BuiltIns,
     Handlers,
     UserDef,
@@ -130,23 +129,25 @@ namespace Extension {
   Extension.register = Extension_register
 }
 
+export type BuiltIns<S, Ix> = { [K in keyof Traversable.Map<S>]: (x: Traversable.Map<S>[K], ix: Ix) => S }
+export type ExtensionSet<S> = Omit<Extension, keyof Traversable.Map<S>>
+export type ExtensionName = keyof ExtensionSet<any>
 
-type BuiltIns<S, Ix> = { [K in keyof Traversable.Map<S>]: (x: Traversable.Map<S>[K], ix: Ix) => S }
-type ExtensionSet<S> = Omit<Extension, keyof Traversable.Map<S>>
-type ExtensionName = keyof ExtensionSet<any>
-
-type UserDef<S, Out> = { 
+export type UserDef<S, Out> = { 
   predicate(u: unknown): u is S; 
   handler(n: S): Out 
 }
-type UserDefs<S, Ix> = { [K in ExtensionName]: (x: RegisteredExtension.infer<TargetOf<UserDef<Extension[K], S>["predicate"]>>, ix: Ix) => S } // UserDef<Extension[K], S> }
 
-type Handlers<S, Ix> = (
+export type UserDefs<S, Ix> = { 
+  [K in ExtensionName]: 
+  (ext: Registered.infer<TargetOf<UserDef<Extension[K], S>["predicate"]>>, ix: Ix) => S
+}
+
+export type Handlers<S, Ix> = (
   & UserDefs<S, Ix>
   & BuiltIns<S, Ix>
 )
 
-/** TODO: replace this with `Config` or `ConfigwithContext` in "./config.ts" */
 interface Config<S, Ix> { handlers: Partial<Handlers<S, Ix>> }
 
 function Extension_product<S, Ix>(config: Config<S, Ix>)
@@ -171,7 +172,134 @@ function Extension_product<S, Ix>(config: Config<S, Ix>) {
 /** @internal */
 let count = 0
 
-function Extension_match<S, Ix>(config: Config<S, Ix>) {
+type Param<F> = F extends (_: infer T, ...args: any) => any ? T : F
+
+export function Extension_match3<
+  S, 
+  Ix, 
+  Ext extends Partial<UserDefs<S, Ix>>,
+>(builtins: Partial<BuiltIns<S, Ix>>, ext: Ext) {
+  const config = { handlers: { ...builtins, ...ext } }
+  return (ix: Ix, n: Param<Ext[keyof Ext]> | Traversable.F<S>) => {
+    return (ix: Ix, n: Traversable.F<S>): S => {
+      const meta = { count: count++ }
+      const [userDefs, $] = Extension_product(config)
+      const key = Object_keys(userDefs)
+      //    ^?
+      for (let ix = 0, len = key.length; ix < len; ix++) {
+        const { predicate, handler } = userDefs[key[ix]]
+        if (predicate(n)) return handler({ ...n, ...meta })
+      }
+  
+      switch (true) {
+        default: return fn.softExhaustiveCheck(n)
+        case Traversable.is.enum(n): return $.enum(n, ix)
+        case Traversable.is.null(n): return $.null(n, ix)
+        case Traversable.is.boolean(n): return $.boolean(n, ix)
+        case Traversable.is.integer(n): return $.integer(n, ix)
+        case Traversable.is.number(n): return $.number(n, ix)
+        case Traversable.is.string(n): return $.string(n, ix)
+        case Traversable.is.allOf(n): return $.allOf(n, ix)
+        case Traversable.is.anyOf(n): return $.anyOf(n, ix)
+        case Traversable.is.oneOf(n): return $.oneOf(n, ix)
+        case Traversable.is.array(n): return $.array(n, ix)
+        case Traversable.is.tuple(n): return $.tuple(n, ix)
+        case Traversable.is.record(n): return $.record(n, ix)
+        case Traversable.is.object(n): return $.object(n, ix)
+      }
+    }
+  }
+}
+
+
+// export function Extension_match2<Ix>(indexSchema: StandardSchemaV1<unknown, Ix>): <
+//   P extends Partial<Extension>, 
+//   M extends { [K in keyof P]: (target: MatchTarget<P, K>, ix: Ix) => unknown }
+// >(matchers: M) => { [K in keyof M]-?: fn.return<M[K]> }
+
+
+
+// export function Extension_match2<Ix>(indexSchema: StandardSchemaV1<unknown, Ix>): 
+//   <P extends Partial<Extension>, M extends { [K in keyof P]: (target: MatchTarget<P, K>, ix: Ix) => unknown; }>(matchers: M) => { [K in keyof M]-?: fn.return<M[K]>; }
+
+type MatchTarget<T, K extends keyof T> 
+  = [K] extends [keyof Traversable.Map<infer S>] 
+  ? Exclude<TargetOf<T[K]>, undefined> // Extract<Traversable.F<S>, T[K]>
+  : Exclude<TargetOf<T[K]>, undefined>
+
+
+// export function Extension_match2
+//   <Ix>(indexSchema: StandardSchemaV1<unknown, Ix>): <
+//     P extends Partial<Extension>, 
+//     M extends { [K in keyof P]: (target: MatchTarget<P, K>, ix: Ix) => unknown; }
+//   >(matchers: M) 
+//     => (ix: Ix, n: TargetOf<Extension[keyof M & keyof Extension]>) 
+//     => { [K in keyof M]-?: fn.return<M[K]>; } 
+
+export function Extension_match2
+  <Ix>(indexSchema: StandardSchemaV1<unknown, Ix>) { 
+    return <
+      P extends Partial<Extension>, 
+      M extends { [K in keyof P]: (target: MatchTarget<P, K>, ix: Ix) => unknown }
+    >(matchers: M) => {
+      return (ix: Ix, n: TargetOf<Extension[keyof M & keyof Extension]>) => {
+        const meta = { count: count++ }
+        const [userDefs, $] = Extension_product({ handlers: { }})
+        // const [userDefs, $] = Extension_product({ handlers: matchers })
+        const key = Object_keys(userDefs)
+        //    ^?
+        for (let ix = 0, len = key.length; ix < len; ix++) {
+          const { predicate, handler } = userDefs[key[ix]]
+          if (predicate(n)) return handler({ ...n, ...meta })
+        }
+      }
+    }
+  } 
+  /* 
+  function Extension_product<S, Ix>(config: Config<S, Ix>)
+  : [keyof UserDefs<S, Ix>] extends [never] 
+  ? [Record<string, UserDef<unknown, S>>, BuiltIns<S, Ix>]
+  : [UserDefs<S, Ix>, BuiltIns<S, Ix>]
+  */
+
+type UserDefsDefined<T> = [keyof UserDefs<any, any>] extends [never] ? never : unknown
+
+
+function handlersFromMatchers<Ix>(): {
+  <
+    P extends Partial<Extension>, 
+    M extends UserDefsDefined<{ [K in keyof P]: (target: MatchTarget<P, K>, ix: Ix) => unknown }>
+  >(matchers: M): [UserDefs<M, Ix>, BuiltIns<M, Ix>]
+  <
+    P extends Partial<Extension>, 
+    M extends { [K in keyof P]: (target: MatchTarget<P, K>, ix: Ix) => unknown }
+  >(matchers: M): [Record<string, UserDef<M, unknown>>, BuiltIns<M, Ix>]
+  <
+    P extends Partial<Extension>, 
+    M extends UserDefsDefined<{ [K in keyof P]: (target: MatchTarget<P, K>, ix: Ix) => unknown }>
+  >(matchers: M): [Record<string, unknown>, Record<string, unknown>]
+} {
+  return <
+    P extends Partial<Extension>, 
+    M extends { [K in keyof P]: (target: MatchTarget<P, K>, ix: Ix) => unknown }
+  >(matchers: M): [any, any] => {
+      const ks: (string | number)[] = Object_keys(matchers)
+      let userDefs: Record<string, unknown> = {},
+          builtIns: Record<string, unknown> = {}
+      for (let ix = 0, len = ks.length; ix < len; ix++) {
+        const k = ks[ix]
+        if (Traversable.Known.includes(k as Traversable.Known[number]))
+          void (builtIns[k] = matchers[k as keyof M])
+        else 
+          void (userDefs[k] = matchers[k as keyof M])
+      }
+      return [userDefs, builtIns] satisfies [any, any]
+    }  
+}
+
+function Extension_match<S, Ix>(config: Config<S, Ix>): (ix: Ix, n: Traversable.F<S>) => S
+function Extension_match<S, Ix>(config: Config<S, Ix>): (ix: Ix, n: Traversable.F<S>) => S
+ {
   return (ix: Ix, n: Traversable.F<S>): S => {
     const meta = { count: count++ }
     const [userDefs, $] = Extension_product(config)

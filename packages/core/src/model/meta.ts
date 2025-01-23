@@ -1,5 +1,4 @@
 import { t } from "../guard/index.js"
-import type { Meta_Base as Base } from "./traversable.js"
 
 export { Meta }
 
@@ -25,33 +24,26 @@ export interface Context<T = any> {
   typeName: string
   absolutePath: string[]
   siblingCount: number
-  // document: { paths: { [x: string]: {} } }
   T?: T
 }
+
 export declare namespace Context {
   export interface withMeta<T = any, Meta = {}> extends Context<T> { meta?: Meta }
 }
 
-declare namespace Meta { export { Base } }
+/** 
+ * @internal 
+ * 
+ * TODO: figure out where to put schemas that are used in many places
+ */
+const key = t.anyOf(t.string(), t.symbol(), t.number())
+
 declare namespace Meta { 
   type has<T> = { meta?: T }
-
   interface Traversable<_ = unknown> extends Meta.Base {}
   interface JsonSchema<_ = unknown> { originalIndex?: number }
-
-  interface Meta_integer<_ = unknown> extends Meta.Base, Meta.Numeric {}
-  interface Meta_number<_ = unknown> extends Meta.Base, Meta.Numeric {}
-  interface Meta_string<_ = unknown> extends Meta.Base, Meta.Enumerable { format?: string }
-
-  interface Meta_tuple<_ = unknown> extends Meta.Base, Meta.Enumerable {}
-  interface Meta_record<_ = unknown> extends Meta.Base {}
-  interface Meta_array<_ = unknown> extends Meta.Base, Meta.Enumerable {}
-  interface Meta_allOf<_ = unknown> extends Meta.Base {}
-  interface Meta_anyOf<_ = unknown> extends Meta.Base {}
-  interface Meta_oneOf<_ = unknown> extends Meta.Base {}
-  interface Meta_object<_ = unknown> extends Meta.Base {}
+  ///
   interface Numeric {
-    format?: string
     minimum?: number
     maximum?: number
     multipleOf?: number
@@ -62,12 +54,29 @@ declare namespace Meta {
     minLength?: number
     maxLength?: number 
   }
+  ///
+  interface Meta_integer<_ = unknown> extends Meta.Base, Meta.Numeric { format?: string }
+  interface Meta_number<_ = unknown> extends Meta.Base, Meta.Numeric { format?: string }
+  interface Meta_string<_ = unknown> extends Meta.Base, Meta.Enumerable { 
+    format?: string
+
+  }
+  ///
+  interface Meta_tuple<_ = unknown> extends Meta.Base, Meta.Enumerable {}
+  interface Meta_record<_ = unknown> extends Meta.Base {}
+  interface Meta_array<_ = unknown> extends Meta.Base, Meta.Enumerable {}
+  interface Meta_allOf<_ = unknown> extends Meta.Base {}
+  interface Meta_anyOf<_ = unknown> extends Meta.Base {}
+  interface Meta_oneOf<_ = unknown> extends Meta.Base {}
+  interface Meta_object<_ = unknown> extends Meta.Base {}
 }
 
-Meta.is = Meta().is
-interface Meta extends t.typeof<ReturnType<typeof Meta>> {}
-function Meta() {
-  return t.object({
+namespace Meta {
+  export interface Base extends t.typeof<typeof Base> {}
+  export const Base = t.object({
     originalIndex: t.optional(t.number()),
+    nullable: t.optional(t.boolean()),
+    optional: t.optional(t.boolean()),
+    path: t.optional(t.array(key)),
   })
 }

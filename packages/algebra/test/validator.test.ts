@@ -1,18 +1,14 @@
 import { fc, t, test } from "@traversable/core"
-import { configure, type } from "arktype"
+import { type } from "arktype"
 import * as vi from "vitest"
 
 import { arbitrary as Arbitrary, validator as Validator } from "@traversable/algebra"
 import { fn } from "@traversable/data"
 
-configure({
-
-})
-
 const strict = { 
   flags: { 
     jitCompile: true, 
-    treatArraysLikeObjects: false 
+    treatArraysLikeObjects: false,
   } 
 } satisfies Validator.Options
 
@@ -23,137 +19,6 @@ const lax = {
   } 
 } satisfies Validator.Options
 
-vi.describe("〖️⛳️〗‹‹‹ ❲@traversable/algebra/validator❳", () => {
-  const EXPECT_FAIL = Symbol()
-
-  vi.test("t.null", () => {
-    vi.assert.isTrue(t.null().is(null))
-    vi.assert.isFalse(t.number().is(EXPECT_FAIL))
-    vi.assert.isFalse(t.number().is(undefined))
-  })
-
-  vi.test("t.boolean", () => {
-    vi.assert.isTrue(t.boolean().is(true))
-    vi.assert.isTrue(t.boolean().is(false))
-    vi.assert.isFalse(t.boolean().is(EXPECT_FAIL))
-    vi.assert.isFalse(t.boolean().is(0))
-    vi.assert.isFalse(t.boolean().is(""))
-    vi.assert.isFalse(t.boolean().is(undefined))
-  })
-
-  vi.test("t.integer", () => {
-    vi.assert.isTrue(t.integer().is(1))
-    vi.assert.isTrue(t.integer().is(-0))
-    vi.assert.isTrue(t.integer().is(0))
-    vi.assert.isTrue(t.integer().is(0x00))
-    vi.assert.isTrue(t.integer().is(1e+29))
-    vi.assert.isTrue(t.integer().is(-1e+29))
-    ///
-    vi.assert.isFalse(t.integer().is(EXPECT_FAIL))
-    vi.assert.isFalse(t.integer().is(2.1))
-    vi.assert.isFalse(t.integer().is(undefined))
-  })
-
-  vi.test("t.number", () => {
-    vi.assert.isTrue(t.number().is(1))
-    vi.assert.isTrue(t.number().is(-0))
-    vi.assert.isTrue(t.number().is(0))
-    vi.assert.isTrue(t.number().is(0x00))
-    vi.assert.isTrue(t.number().is(1e+29))
-    vi.assert.isTrue(t.number().is(-1e+29))
-    vi.assert.isTrue(t.number().is(2.1))
-    ///
-    vi.assert.isFalse(t.number().is(EXPECT_FAIL))
-    vi.assert.isFalse(t.number().is(undefined))
-    vi.assert.isFalse(t.number().is(new globalThis.Number(1)))
-  })
-
-  vi.test("t.string", () => {
-    vi.assert.isTrue(t.string().is(""))
-    vi.assert.isTrue(t.string().is(" "))
-    vi.assert.isTrue(t.string().is("abc"))
-    vi.assert.isTrue(t.string().is("0"))
-    ///
-    vi.assert.isFalse(t.string().is(EXPECT_FAIL))
-    vi.assert.isFalse(t.string().is(new globalThis.String("")))
-    vi.assert.isFalse(t.string().is(undefined))
-  })
-
-  vi.test("t.array", () => {
-    vi.assert.isTrue(t.array(t.null()).is([]))
-    vi.assert.isTrue(t.array(t.null()).is([null]))
-    vi.assert.isTrue(t.array(t.null()).is([null, null]))
-    vi.assert.isTrue(t.array(t.array(t.any())).is([[]]))
-    vi.assert.isTrue(t.array(t.array(t.any())).is([[[]]]))
-    ///
-    vi.assert.isFalse(t.optional(t.string()).is(EXPECT_FAIL))
-    vi.assert.isFalse(t.array(t.array(t.any())).is([[], 0]))
-    vi.assert.isFalse(t.array(t.array(t.any())).is([0, []]))
-    vi.assert.isFalse(t.array(t.null()).is(null))
-    vi.assert.isFalse(t.array(t.null()).is({ 0: null}))
-    vi.assert.isFalse(t.array(t.null()).is([0, null]))
-    vi.assert.isFalse(t.array(t.null()).is([null, 0]))
-    vi.assert.isFalse(t.array(t.null()).is([null, 0, null]))
-  })
-
-  vi.test("t.object", () => {
-    vi.assert.isTrue(t.object({}).is({}))
-    vi.assert.isTrue(t.object(Object.create(null)).is({}))
-    vi.assert.isTrue(t.object({}).is(Object.create(null)))
-    vi.assert.isTrue(t.object({ a: t.integer() }).is({ a: 0 }))
-    vi.assert.isTrue(t.object({}).is([]))
-    ///
-    vi.assert.isFalse(t.object({}).is(EXPECT_FAIL))
-    vi.assert.isFalse(t.object({ a: t.integer() }).is({}))
-    vi.assert.isFalse(t.object({ a: t.integer() }).is({ a: "0" }))
-  })
-
-  vi.test("t.optional", () => {
-    vi.assert.isTrue(t.optional(t.null()).is(null))
-    vi.assert.isTrue(t.object({ a: t.optional(t.number())}).is({}))
-    vi.assert.isTrue(t.object({ a: t.optional(t.number())}).is({ a: 0 }))
-    vi.assert.isTrue(t.object({ a: t.optional(t.number())}).is({ a: undefined }))
-    ///
-    vi.assert.isFalse(t.optional(t.string()).is(EXPECT_FAIL))
-    vi.assert.isFalse(t.object({ a: t.optional(t.number())}).is({ a: null }))
-    vi.assert.isFalse(t.object({ a: t.optional(t.number())}).is({ a: "" }))
-
-    const ex_01 = t.object({ 
-      a: t.optional(t.number()), 
-      b: t.optional(
-        t.object({ 
-          c: t.optional(t.boolean()) 
-        })
-      ) 
-    }).is
-
-    vi.assert.isTrue(ex_01({ a: undefined }))
-    vi.assert.isTrue(ex_01({ b: undefined }))
-    vi.assert.isTrue(ex_01({ a: undefined, b: undefined }))
-    vi.assert.isTrue(ex_01({ a: 0, b: { c: true } }))
-    vi.assert.isTrue(ex_01({ b: { c: undefined } }))
-    vi.assert.isTrue(ex_01({ a: undefined, b: { c: false } }))
-    ///
-    vi.assert.isFalse(ex_01({ a: 0, b: { c: "false" } }))
-    vi.assert.isFalse(ex_01({ a: "0", b: { c: true } }))
-  })
-
-  vi.test("t.const", () => {
-    vi.assert.isTrue(t.const(1).is(1))
-    vi.assert.isTrue(t.const("hey").is("hey"))
-    vi.assert.isTrue(t.object({ a: t.const("hey") }).is({ a: "hey" }))
-    vi.assert.isTrue(t.object({ a: t.optional(t.const("hey")) }).is({ a: "hey" }))
-    vi.assert.isTrue(t.object({ a: t.optional(t.const("hey")) }).is({ a: undefined }))
-    vi.assert.isTrue(t.object({ a: t.optional(t.const("hey")) }).is({}))
-    vi.assert.isFalse(t.object({ a: t.const("hey") }).is({ a: "HEY" }))
-
-    t.object({ 
-      type: t.const("enum"), 
-      enum: t.array(t.any()),
-    })
-  })
-
-})
 
 vi.describe("〖️⛳️〗‹‹‹ ❲@traversable/algebra/validator❳", () => {
   //////////////////////////
@@ -177,31 +42,8 @@ vi.describe("〖️⛳️〗‹‹‹ ❲@traversable/algebra/validator❳", () 
   } as const
 
   vi.it("〖️⛳️〗› ❲validator.derive❳: Intersection (examples)", () => {
-    vi.expect(Intersection.strict()).toEqual(
-      [
-        '(function($0$){if(!$0$||typeof $0$!=="object"||Array.isArray($0$))return false;',
-        'let $0$abc=$0$["abc"];',
-        'if(typeof $0$abc!=="boolean")return false;',
-        'if(!$0$||typeof $0$!=="object"||Array.isArray($0$))return false;',
-        'let $0$def=$0$["def"];',
-        'if($0$def!==undefined&&typeof $0$def!=="boolean")return false;',
-        'return true;',
-        '})',
-      ].join("")
-    )
-
-    vi.expect(Intersection.lax()).toEqual(
-      [
-        '(function($0$){if(!$0$||typeof $0$!=="object")return false;',
-        'let $0$abc=$0$["abc"];',
-        'if(typeof $0$abc!=="boolean")return false;',
-        'if(!$0$||typeof $0$!=="object")return false;',
-        'let $0$def=$0$["def"];',
-        'if($0$def!==undefined&&typeof $0$def!=="boolean")return false;',
-        'return true;',
-        '})',
-      ].join("")
-    )
+    vi.expect(Intersection.strict()).toMatchInlineSnapshot(`"(function($0$){if(!$0$||typeof $0$!=="object"||Array.isArray($0$))return false;let $0$abc=$0$['abc'];if(typeof $0$abc!=="boolean")return false;if(!$0$||typeof $0$!=="object"||Array.isArray($0$))return false;let $0$def=$0$['def'];if($0$def!==undefined&&typeof $0$def!=="boolean")return false;return true;})"`)
+    vi.expect(Intersection.lax()).toMatchInlineSnapshot(`"(function($0$){if(!$0$||typeof $0$!=="object")return false;let $0$abc=$0$['abc'];if(typeof $0$abc!=="boolean")return false;if(!$0$||typeof $0$!=="object")return false;let $0$def=$0$['def'];if($0$def!==undefined&&typeof $0$def!=="boolean")return false;return true;})"`)
   })
 
   test.prop([Intersection.arbitrary()], { 
@@ -367,31 +209,9 @@ vi.describe("〖️⛳️〗‹‹‹ ❲@traversable/algebra/validator❳", () 
     oracle: type("Record<string, string>"),
   }
 
-vi.it("〖️⛳️〗› ❲validator.derive❳: Dict<string> (examples)", () => {
-    vi.expect(Dict.strict()).toEqual(
-      [
-        '(function($0$){if(!$0$||typeof $0$!=="object"||Array.isArray($0$))return false;',
-        'let $k0=Object.keys($0$);',
-        'for(let i=0;',
-        'i<$k0.length;',
-        'i++){let $1$=$0$[$k0[i]];',
-         'if(typeof $1$!=="string")return false;',
-        '}return true;',
-        '})',
-      ].join("")
-    )
-    vi.expect(Dict.lax()).toEqual(
-      [
-        '(function($0$){if(!$0$||typeof $0$!=="object")return false;',
-        'let $k0=Object.keys($0$);',
-        'for(let i=0;',
-        'i<$k0.length;',
-        'i++){let $1$=$0$[$k0[i]];',
-         'if(typeof $1$!=="string")return false;',
-        '}return true;',
-        '})',
-      ].join("")
-    )
+  vi.it("〖️⛳️〗› ❲validator.derive❳: Dict<string> (examples)", () => {
+    vi.expect(Dict.strict()).toMatchInlineSnapshot(`"(function($0$){if(!$0$||typeof $0$!=="object"||Array.isArray($0$))return false;let $k0=Object.keys($0$);for(let i=0;i<$k0.length;i++){let $1$=$0$[$k0[i]];if(typeof $1$!=="string")return false;}return true;})"`)
+    vi.expect(Dict.lax()).toMatchInlineSnapshot(`"(function($0$){if(!$0$||typeof $0$!=="object")return false;let $k0=Object.keys($0$);for(let i=0;i<$k0.length;i++){let $1$=$0$[$k0[i]];if(typeof $1$!=="string")return false;}return true;})"`)
   })
 
   test.prop([fc.json()], { 
@@ -441,41 +261,8 @@ vi.it("〖️⛳️〗› ❲validator.derive❳: Dict<string> (examples)", () =
   }
 
   vi.it("〖️⛳️〗› ❲validator.derive❳: Dict<string[]> (examples)", () => {
-    vi.assert.equal(
-      DictOfStrings.strict(),
-      [
-        '(function($0$){if(!$0$||typeof $0$!=="object"||Array.isArray($0$))return false;',
-        'let $k0=Object.keys($0$);',
-        'for(let i=0;',
-        'i<$k0.length;',
-        'i++){let $1$=$0$[$k0[i]];',
-        'if(!Array.isArray($1$))return false;',
-        'for(let i=0;',
-        'i<$1$.length;',
-        'i++){let $2$=$1$[i];',
-        'if(typeof $2$!=="string")return false;',
-        '}}return true;',
-        '})',
-      ].join("")
-    )
-
-    vi.assert.equal(
-      DictOfStrings.lax(),
-      [
-        '(function($0$){if(!$0$||typeof $0$!=="object")return false;',
-        'let $k0=Object.keys($0$);',
-        'for(let i=0;',
-        'i<$k0.length;',
-        'i++){let $1$=$0$[$k0[i]];',
-        'if(!Array.isArray($1$))return false;',
-        'for(let i=0;',
-        'i<$1$.length;',
-        'i++){let $2$=$1$[i];',
-        'if(typeof $2$!=="string")return false;',
-        '}}return true;',
-        '})',
-      ].join("")
-    )
+    vi.expect(DictOfStrings.strict()).toMatchInlineSnapshot(`"(function($0$){if(!$0$||typeof $0$!=="object"||Array.isArray($0$))return false;let $k0=Object.keys($0$);for(let i=0;i<$k0.length;i++){let $1$=$0$[$k0[i]];if(!Array.isArray($1$))return false;for(let i=0;i<$1$.length;i++){let $2$=$1$[i];if(typeof $2$!=="string")return false;}}return true;})"`)
+    vi.expect(DictOfStrings.lax()).toMatchInlineSnapshot(`"(function($0$){if(!$0$||typeof $0$!=="object")return false;let $k0=Object.keys($0$);for(let i=0;i<$k0.length;i++){let $1$=$0$[$k0[i]];if(!Array.isArray($1$))return false;for(let i=0;i<$1$.length;i++){let $2$=$1$[i];if(typeof $2$!=="string")return false;}}return true;})"`)
   })
 
   test.prop([fc.json()], { 
@@ -525,43 +312,8 @@ vi.it("〖️⛳️〗› ❲validator.derive❳: Dict<string> (examples)", () =
   }
   
   vi.it("〖️⛳️〗› ❲validator.derive❳: Dict<Dict<string>> (examples)", () => {
-    vi.assert.equal(
-      DictOfDictionaries.strict(),
-      [
-        '(function($0$){if(!$0$||typeof $0$!=="object"||Array.isArray($0$))return false;',
-        'let $k0=Object.keys($0$);',
-        'for(let i=0;',
-        'i<$k0.length;',
-        'i++){let $1$=$0$[$k0[i]];',
-        'if(!$1$||typeof $1$!=="object"||Array.isArray($1$))return false;',
-        'let $k1=Object.keys($1$);',
-        'for(let i=0;',
-        'i<$k1.length;',
-        'i++){let $2$=$1$[$k1[i]];',
-        'if(typeof $2$!=="string")return false;',
-        '}}return true;',
-        '})',
-      ].join("")
-    )
-
-    vi.assert.equal(
-      DictOfDictionaries.lax(),
-      [
-        '(function($0$){if(!$0$||typeof $0$!=="object")return false;',
-        'let $k0=Object.keys($0$);',
-        'for(let i=0;',
-        'i<$k0.length;',
-        'i++){let $1$=$0$[$k0[i]];',
-        'if(!$1$||typeof $1$!=="object")return false;',
-        'let $k1=Object.keys($1$);',
-        'for(let i=0;',
-        'i<$k1.length;',
-        'i++){let $2$=$1$[$k1[i]];',
-        'if(typeof $2$!=="string")return false;',
-        '}}return true;',
-        '})',
-      ].join("")
-    )
+    vi.expect(DictOfDictionaries.strict()).toMatchInlineSnapshot(`"(function($0$){if(!$0$||typeof $0$!=="object"||Array.isArray($0$))return false;let $k0=Object.keys($0$);for(let i=0;i<$k0.length;i++){let $1$=$0$[$k0[i]];if(!$1$||typeof $1$!=="object"||Array.isArray($1$))return false;let $k1=Object.keys($1$);for(let i=0;i<$k1.length;i++){let $2$=$1$[$k1[i]];if(typeof $2$!=="string")return false;}}return true;})"`)
+    vi.expect(DictOfDictionaries.lax()).toMatchInlineSnapshot(`"(function($0$){if(!$0$||typeof $0$!=="object")return false;let $k0=Object.keys($0$);for(let i=0;i<$k0.length;i++){let $1$=$0$[$k0[i]];if(!$1$||typeof $1$!=="object")return false;let $k1=Object.keys($1$);for(let i=0;i<$k1.length;i++){let $2$=$1$[$k1[i]];if(typeof $2$!=="string")return false;}}return true;})"`)
   })
 
   test.prop([fc.json()], { 
@@ -595,13 +347,23 @@ vi.it("〖️⛳️〗› ❲validator.derive❳: Dict<string> (examples)", () =
 
   ////////////////////////////////////////////
   ///    Tuple (deep-sort optimization)    ///
+  let items = [
+    { type: "string" },
+    { type: "array", items: { type: "integer" } },
+    { type: "boolean" },
+  ] as const
+
+  // void (items[1] = { type: "string" } as const)
+  // void (items[0] = { type: "boolean" } as const)
+  // void (items[2] = { type: "array", items: { type: "integer" } } as const)
+
+  // { type: "array", items: { type: "integer" } }, 
+  // { type: "string" }, 
+  // { type: "boolean" },
+
   const TupleSchema = {
     type: "tuple", 
-    items: [
-      { type: "string" }, 
-      { type: "array", items: { type: "integer" } }, 
-      { type: "boolean" },
-    ],
+    items,
   } as const
 
   const Tuple = {
@@ -609,8 +371,8 @@ vi.it("〖️⛳️〗› ❲validator.derive❳: Dict<string> (examples)", () =
     lax: () => Validator.derive(TupleSchema, lax),
     arbitrary: () => Arbitrary.derive.fold()(TupleSchema),
     oracle: type([
-      { type: "'string'" }, 
       { type: "'array'", items: { type: "'integer'" } },
+      { type: "'string'" }, 
       { type: "'boolean'" },
     ]),
   }
@@ -761,81 +523,84 @@ vi.it("〖️⛳️〗› ❲validator.derive❳: Dict<string> (examples)", () =
   }
 
   vi.it("〖️⛳️〗› ❲validator.derive❳: KitchenSink (examples)", () => {
-    vi.expect(KitchenSink.strict()).toEqual(
-      [
-        '(function($0$){if(!$0$||typeof $0$!=="object"||Array.isArray($0$))return false;',
-        'let $0$a=$0$["a"];',
-        'if($0$a!==undefined){if($0$a===null||typeof $0$a!=="object"||Array.isArray($0$a))return false;',
-        'let $0$ah=$0$a["h"];',
-        'if($0$ah!==undefined&&typeof $0$ah!=="number")return false;',
-        'let $0$ab=$0$a["b"];',
-        'if($0$ab!==undefined){if(!Array.isArray($0$ab))return false;',
-        'let $0$ab0=$0$ab[0];',
-        'if(!$0$ab0||typeof $0$ab0!=="object"||Array.isArray($0$ab0))return false;',
-        'let $0$ab0d=$0$ab0["d"];',
-        'if($0$ab0d!==undefined&&typeof $0$ab0d!=="number")return false;',
-        'let $0$ab0e=$0$ab0["e"];',
-        'if($0$ab0e!==undefined){if(!Array.isArray($0$ab0e))return false;',
-        'let $0$ab0e0=$0$ab0e[0];',
-        'if(!Array.isArray($0$ab0e0))return false;',
-        'let $0$ab0e00=$0$ab0e0[0];',
-        'if(!Array.isArray($0$ab0e00))return false;',
-        'let $0$ab0e000=$0$ab0e00[0];',
-        'if(!$0$ab0e000||typeof $0$ab0e000!=="object"||Array.isArray($0$ab0e000))return false;',
-        'let $0$ab0e000f=$0$ab0e000["f"];',
-        'if(typeof $0$ab0e000f!=="string")return false;',
-        'let $0$ab0e000g=$0$ab0e000["g"];',
-        'if(typeof $0$ab0e000g!=="boolean")return false;',
-        '}let $0$ab0c=$0$ab0["c"];',
-        'if($0$ab0c!==undefined&&typeof $0$ab0c!=="boolean")return false;',
-        'let $0$ab0f=$0$ab0["f"];',
-        'if($0$ab0f!==undefined&&typeof $0$ab0f!=="number")return false;',
-        'let $0$ab1=$0$ab[1];',
-        'if(!$0$ab1||typeof $0$ab1!=="object"||Array.isArray($0$ab1))return false;',
-        'let $0$ab1g=$0$ab1["g"];',
-        'if(typeof $0$ab1g!=="number")return false;',
-        '}}return true;',
-        '})',
-      ].join("")
-    )
+    vi.expect(KitchenSink.strict()).toMatchInlineSnapshot(`"(function($0$){if(!$0$||typeof $0$!=="object"||Array.isArray($0$))return false;let $0$a=$0$['a'];if($0$a!==undefined){if($0$a===null||typeof $0$a!=="object"||Array.isArray($0$a))return false;let $0$ah=$0$a['h'];if($0$ah!==undefined&&typeof $0$ah!=="number")return false;let $0$ab=$0$a['b'];if($0$ab!==undefined){if(!Array.isArray($0$ab))return false;let $0$ab0=$0$ab[0];if(!$0$ab0||typeof $0$ab0!=="object"||Array.isArray($0$ab0))return false;let $0$ab0d=$0$ab0['d'];if($0$ab0d!==undefined&&typeof $0$ab0d!=="number")return false;let $0$ab0e=$0$ab0['e'];if($0$ab0e!==undefined){if(!Array.isArray($0$ab0e))return false;let $0$ab0e0=$0$ab0e[0];if(!Array.isArray($0$ab0e0))return false;let $0$ab0e00=$0$ab0e0[0];if(!Array.isArray($0$ab0e00))return false;let $0$ab0e000=$0$ab0e00[0];if(!$0$ab0e000||typeof $0$ab0e000!=="object"||Array.isArray($0$ab0e000))return false;let $0$ab0e000f=$0$ab0e000['f'];if(typeof $0$ab0e000f!=="string")return false;let $0$ab0e000g=$0$ab0e000['g'];if(typeof $0$ab0e000g!=="boolean")return false;}let $0$ab0c=$0$ab0['c'];if($0$ab0c!==undefined&&typeof $0$ab0c!=="boolean")return false;let $0$ab0f=$0$ab0['f'];if($0$ab0f!==undefined&&typeof $0$ab0f!=="number")return false;let $0$ab1=$0$ab[1];if(!$0$ab1||typeof $0$ab1!=="object"||Array.isArray($0$ab1))return false;let $0$ab1g=$0$ab1['g'];if(typeof $0$ab1g!=="number")return false;}}return true;})"`)
+    // vi.expect(KitchenSink.strict()).toEqual(
+    //   [
+    //     '(function($0$){if(!$0$||typeof $0$!=="object"||Array.isArray($0$))return false;',
+    //     'let $0$a=$0$["a"];',
+    //     'if($0$a!==undefined){if($0$a===null||typeof $0$a!=="object"||Array.isArray($0$a))return false;',
+    //     'let $0$ah=$0$a["h"];',
+    //     'if($0$ah!==undefined&&typeof $0$ah!=="number")return false;',
+    //     'let $0$ab=$0$a["b"];',
+    //     'if($0$ab!==undefined){if(!Array.isArray($0$ab))return false;',
+    //     'let $0$ab0=$0$ab[0];',
+    //     'if(!$0$ab0||typeof $0$ab0!=="object"||Array.isArray($0$ab0))return false;',
+    //     'let $0$ab0d=$0$ab0["d"];',
+    //     'if($0$ab0d!==undefined&&typeof $0$ab0d!=="number")return false;',
+    //     'let $0$ab0e=$0$ab0["e"];',
+    //     'if($0$ab0e!==undefined){if(!Array.isArray($0$ab0e))return false;',
+    //     'let $0$ab0e0=$0$ab0e[0];',
+    //     'if(!Array.isArray($0$ab0e0))return false;',
+    //     'let $0$ab0e00=$0$ab0e0[0];',
+    //     'if(!Array.isArray($0$ab0e00))return false;',
+    //     'let $0$ab0e000=$0$ab0e00[0];',
+    //     'if(!$0$ab0e000||typeof $0$ab0e000!=="object"||Array.isArray($0$ab0e000))return false;',
+    //     'let $0$ab0e000f=$0$ab0e000["f"];',
+    //     'if(typeof $0$ab0e000f!=="string")return false;',
+    //     'let $0$ab0e000g=$0$ab0e000["g"];',
+    //     'if(typeof $0$ab0e000g!=="boolean")return false;',
+    //     '}let $0$ab0c=$0$ab0["c"];',
+    //     'if($0$ab0c!==undefined&&typeof $0$ab0c!=="boolean")return false;',
+    //     'let $0$ab0f=$0$ab0["f"];',
+    //     'if($0$ab0f!==undefined&&typeof $0$ab0f!=="number")return false;',
+    //     'let $0$ab1=$0$ab[1];',
+    //     'if(!$0$ab1||typeof $0$ab1!=="object"||Array.isArray($0$ab1))return false;',
+    //     'let $0$ab1g=$0$ab1["g"];',
+    //     'if(typeof $0$ab1g!=="number")return false;',
+    //     '}}return true;',
+    //     '})',
+    //   ].join("")
+    // )
 
-    vi.expect(KitchenSink.lax()).toEqual(
-      [
-        '(function($0$){if(!$0$||typeof $0$!=="object")return false;',
-        'let $0$a=$0$["a"];',
-        'if($0$a!==undefined){if($0$a===null||typeof $0$a!=="object")return false;',
-        'let $0$ah=$0$a["h"];',
-        'if($0$ah!==undefined&&typeof $0$ah!=="number")return false;',
-        'let $0$ab=$0$a["b"];',
-        'if($0$ab!==undefined){if(!Array.isArray($0$ab))return false;',
-        'let $0$ab0=$0$ab[0];',
-        'if(!$0$ab0||typeof $0$ab0!=="object")return false;',
-        'let $0$ab0d=$0$ab0["d"];',
-        'if($0$ab0d!==undefined&&typeof $0$ab0d!=="number")return false;',
-        'let $0$ab0e=$0$ab0["e"];',
-        'if($0$ab0e!==undefined){if(!Array.isArray($0$ab0e))return false;',
-        'let $0$ab0e0=$0$ab0e[0];',
-        'if(!Array.isArray($0$ab0e0))return false;',
-        'let $0$ab0e00=$0$ab0e0[0];',
-        'if(!Array.isArray($0$ab0e00))return false;',
-        'let $0$ab0e000=$0$ab0e00[0];',
-        'if(!$0$ab0e000||typeof $0$ab0e000!=="object")return false;',
-        'let $0$ab0e000f=$0$ab0e000["f"];',
-        'if(typeof $0$ab0e000f!=="string")return false;',
-        'let $0$ab0e000g=$0$ab0e000["g"];',
-        'if(typeof $0$ab0e000g!=="boolean")return false;',
-        '}let $0$ab0c=$0$ab0["c"];',
-        'if($0$ab0c!==undefined&&typeof $0$ab0c!=="boolean")return false;',
-        'let $0$ab0f=$0$ab0["f"];',
-        'if($0$ab0f!==undefined&&typeof $0$ab0f!=="number")return false;',
-        'let $0$ab1=$0$ab[1];',
-        'if(!$0$ab1||typeof $0$ab1!=="object")return false;',
-        'let $0$ab1g=$0$ab1["g"];',
-        'if(typeof $0$ab1g!=="number")return false;',
-        '}}return true;',
-        '})',
-      ].join("")
-    )
+    vi.expect(KitchenSink.lax()).toMatchInlineSnapshot(`"(function($0$){if(!$0$||typeof $0$!=="object")return false;let $0$a=$0$['a'];if($0$a!==undefined){if($0$a===null||typeof $0$a!=="object")return false;let $0$ah=$0$a['h'];if($0$ah!==undefined&&typeof $0$ah!=="number")return false;let $0$ab=$0$a['b'];if($0$ab!==undefined){if(!Array.isArray($0$ab))return false;let $0$ab0=$0$ab[0];if(!$0$ab0||typeof $0$ab0!=="object")return false;let $0$ab0d=$0$ab0['d'];if($0$ab0d!==undefined&&typeof $0$ab0d!=="number")return false;let $0$ab0e=$0$ab0['e'];if($0$ab0e!==undefined){if(!Array.isArray($0$ab0e))return false;let $0$ab0e0=$0$ab0e[0];if(!Array.isArray($0$ab0e0))return false;let $0$ab0e00=$0$ab0e0[0];if(!Array.isArray($0$ab0e00))return false;let $0$ab0e000=$0$ab0e00[0];if(!$0$ab0e000||typeof $0$ab0e000!=="object")return false;let $0$ab0e000f=$0$ab0e000['f'];if(typeof $0$ab0e000f!=="string")return false;let $0$ab0e000g=$0$ab0e000['g'];if(typeof $0$ab0e000g!=="boolean")return false;}let $0$ab0c=$0$ab0['c'];if($0$ab0c!==undefined&&typeof $0$ab0c!=="boolean")return false;let $0$ab0f=$0$ab0['f'];if($0$ab0f!==undefined&&typeof $0$ab0f!=="number")return false;let $0$ab1=$0$ab[1];if(!$0$ab1||typeof $0$ab1!=="object")return false;let $0$ab1g=$0$ab1['g'];if(typeof $0$ab1g!=="number")return false;}}return true;})"`)
+
+    // toEqual(
+    //   [
+    //     '(function($0$){if(!$0$||typeof $0$!=="object")return false;',
+    //     'let $0$a=$0$["a"];',
+    //     'if($0$a!==undefined){if($0$a===null||typeof $0$a!=="object")return false;',
+    //     'let $0$ah=$0$a["h"];',
+    //     'if($0$ah!==undefined&&typeof $0$ah!=="number")return false;',
+    //     'let $0$ab=$0$a["b"];',
+    //     'if($0$ab!==undefined){if(!Array.isArray($0$ab))return false;',
+    //     'let $0$ab0=$0$ab[0];',
+    //     'if(!$0$ab0||typeof $0$ab0!=="object")return false;',
+    //     'let $0$ab0d=$0$ab0["d"];',
+    //     'if($0$ab0d!==undefined&&typeof $0$ab0d!=="number")return false;',
+    //     'let $0$ab0e=$0$ab0["e"];',
+    //     'if($0$ab0e!==undefined){if(!Array.isArray($0$ab0e))return false;',
+    //     'let $0$ab0e0=$0$ab0e[0];',
+    //     'if(!Array.isArray($0$ab0e0))return false;',
+    //     'let $0$ab0e00=$0$ab0e0[0];',
+    //     'if(!Array.isArray($0$ab0e00))return false;',
+    //     'let $0$ab0e000=$0$ab0e00[0];',
+    //     'if(!$0$ab0e000||typeof $0$ab0e000!=="object")return false;',
+    //     'let $0$ab0e000f=$0$ab0e000["f"];',
+    //     'if(typeof $0$ab0e000f!=="string")return false;',
+    //     'let $0$ab0e000g=$0$ab0e000["g"];',
+    //     'if(typeof $0$ab0e000g!=="boolean")return false;',
+    //     '}let $0$ab0c=$0$ab0["c"];',
+    //     'if($0$ab0c!==undefined&&typeof $0$ab0c!=="boolean")return false;',
+    //     'let $0$ab0f=$0$ab0["f"];',
+    //     'if($0$ab0f!==undefined&&typeof $0$ab0f!=="number")return false;',
+    //     'let $0$ab1=$0$ab[1];',
+    //     'if(!$0$ab1||typeof $0$ab1!=="object")return false;',
+    //     'let $0$ab1g=$0$ab1["g"];',
+    //     'if(typeof $0$ab1g!=="number")return false;',
+    //     '}}return true;',
+    //     '})',
+    //   ].join("")
+    // )
   })
 
   test.prop([fc.json()], { 

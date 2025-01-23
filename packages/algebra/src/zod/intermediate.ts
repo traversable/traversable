@@ -1,3 +1,7 @@
+import { z } from "zod"
+
+import { fc } from "@traversable/core"
+import { fn, map, object } from "@traversable/data"
 import type { 
   Functor as Functor_, 
   HKT, 
@@ -7,11 +11,6 @@ import type {
   newtype, 
 } from "@traversable/registry"
 import { PATTERN, symbol } from "@traversable/registry"
-
-import { fc } from "@traversable/core"
-import { fn, map, object } from "@traversable/data"
-
-import { z } from "zod"
 
 export {
   /// namespaces
@@ -52,25 +51,25 @@ type IR_Boolean<M extends Meta.Base = never> = { tag: z.ZodFirstPartyTypeKind.Zo
 type IR_Number<M extends Meta.Base = never> = { tag: z.ZodFirstPartyTypeKind.ZodNumber, meta: meta<M> }
 type IR_String<M extends Meta.Base = never> = { tag: z.ZodFirstPartyTypeKind.ZodString, meta: meta<M> }
 type IR_Literal<V extends Primitive = Primitive> = { tag: z.ZodFirstPartyTypeKind.ZodLiteral, meta: Meta<{ literal: V }> }
-type IR_Optional<Recursive, M extends Meta.Base = never> = { tag: z.ZodFirstPartyTypeKind.ZodOptional, meta: meta<M>, def: Recursive }
-type IR_Array<Recursive, M extends Meta.Base = never> = { tag: z.ZodFirstPartyTypeKind.ZodArray, meta: meta<M>, def: Recursive }
-type IR_Record<Recursive, M extends Meta.Base = never> = { tag: z.ZodFirstPartyTypeKind.ZodRecord, meta: meta<M>, def: Recursive }
-type IR_Tuple<Recursive, M extends Meta.Base = never> = { 
+type IR_Optional<Rec, M extends Meta.Base = never> = { tag: z.ZodFirstPartyTypeKind.ZodOptional, meta: meta<M>, def: Rec }
+type IR_Array<Rec, M extends Meta.Base = never> = { tag: z.ZodFirstPartyTypeKind.ZodArray, meta: meta<M>, def: Rec }
+type IR_Record<Rec, M extends Meta.Base = never> = { tag: z.ZodFirstPartyTypeKind.ZodRecord, meta: meta<M>, def: Rec }
+type IR_Tuple<Rec, M extends Meta.Base = never> = { 
   tag: z.ZodFirstPartyTypeKind.ZodTuple, 
-  meta: meta<Meta.Base>, 
-  def: readonly [Recursive, ...Recursive[]] 
+  meta: meta<M>, 
+  def: readonly [Rec, ...Rec[]] 
 }
 
-type IR_Object<Recursive, Meta extends Meta.Base = never> = { 
+type IR_Object<Rec, Meta extends Meta.Base = never> = { 
   tag: z.ZodFirstPartyTypeKind.ZodObject, 
   meta: meta<Meta>, 
-  def: { [x: string]: Recursive }
+  def: { [x: string]: Rec }
 }
 
-type IR_Union<Recursive, M extends Meta.Base = never> = { 
+type IR_Union<Rec, M extends Meta.Base = never> = { 
   tag: z.ZodFirstPartyTypeKind.ZodUnion, 
   meta: meta<M>, 
-  def: readonly [Recursive, ...Recursive[]] 
+  def: readonly [Rec, ...Rec[]] 
 }
 
 type IR_Intersection<Recursive, M extends Meta.Base = never> = { 

@@ -3,7 +3,7 @@ export type { any } from "./any.js"
 export { type Ansi, ANSI } from "./ansi.js"
 
 export type Compare<T> = import("@traversable/registry").Compare<T>
-export type Equal<T = any> = import("@traversable/registry").Equal<T>
+export type Equal<T = any> = import("@traversable/registry").Eq<T>
 export type Err<T> = import("@traversable/registry").Err<T>
 export type Monoid<T> = import("@traversable/registry").Monoid<T>
 export type None = import("@traversable/registry").None
@@ -33,6 +33,7 @@ export { jsdoc, unicode } from "./unicode.js"
 
 export * from "./version.js"
 export * as Equal from "./equal.js"
+export * as Graph from "./graph.js"
 export * as array from "./array.js"
 export * as fn from "./function.js"
 export * as number from "./number.js"

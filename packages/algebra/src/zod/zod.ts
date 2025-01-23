@@ -1,13 +1,11 @@
-import * as path from "node:path"
-
-import type { Context, Meta } from "@traversable/core"
-import { Extension, type Traversable, core, keyOf$, show } from "@traversable/core"
+import type { Meta } from "@traversable/core"
+import { type Traversable, core, keyOf$ } from "@traversable/core"
 import { fn, object } from "@traversable/data"
-import { openapi } from "@traversable/openapi"
 import type { _ } from "@traversable/registry"
 import { KnownFormat } from "@traversable/registry"
 import { z } from "zod"
 
+import * as Print from "../print.js"
 import type { Index, Matchers, Options } from "../shared.js"
 import { 
   createMask, 
@@ -17,7 +15,6 @@ import {
   defaults as defaults_,
   defineOptions,
 } from "../shared.js"
-import * as Print from "../print.js"
 
 export {
   defaults,
@@ -41,37 +38,10 @@ const defaults = {
   typeName: defaults_.typeName + "ZodSchema",
 } satisfies Omit<Options.Config<unknown>, "handlers">
 
-///////////////////////////////////
-///    CANDIDATES FOR SHARED    ///
-
-
-///    CANDIDATES FOR SHARED    ///
-///////////////////////////////////
-
-/** 
- * TODO: add lightweight infrastructure to support deriving/generating codecs 
- * (lossless to/from transformations that are baked into the parsing layer)
- */
-// const StringCodec = {
-//   [KnownFormat.string.datetime]: {
-//     decoder: "z.string().datetime({ offset: true }).pipe(z.coerce.date())",
-//     encoder: "z.date().pipe(z.coerce.string())",
-//   },
-//   [KnownFormat.string.date]: {
-//     decoder: [
-//       "z.preprocess((u) =>",
-//       "  typeof u === \"string\" ? !Number.isNaN(new Date(u).getTime()) ? new Date(u) : null : u,",
-//       "  z.date()",
-//       ")"
-//     ].filter(core.is.notnull).join(""),
-//     encoder: "z.date().pipe(z.coerce.string())",
-//   },
-// }
-
 type StringFormat = typeof StringFormat
 const StringFormat = {
-  [KnownFormat.string.datetime]: ".datetime({ offset: true })",
   [KnownFormat.string.date]: ".date()",
+  [KnownFormat.string.datetime]: ".datetime({ offset: true })",
   [KnownFormat.string.email]: ".email()",
   [KnownFormat.string.emoji]: ".emoji()",
   [KnownFormat.string.ipv4]: ".ip({ version: \"v4\" })",
@@ -79,11 +49,11 @@ const StringFormat = {
   [KnownFormat.string.ulid]: ".ulid()",
   [KnownFormat.string.uri]: ".url()",
   [KnownFormat.string.uuid]: ".uuid()",
-} as const satisfies { [K in KnownFormat.string[keyof typeof KnownFormat.string]]+?: string }
+} as const satisfies { [K in KnownFormat.string[keyof KnownFormat.string]]+?: string }
 
 const StringSchema = {
-  [KnownFormat.string.datetime]: z.string().datetime({ offset: true }),
   [KnownFormat.string.date]: z.string().date(),
+  [KnownFormat.string.datetime]: z.string().datetime({ offset: true }),
   [KnownFormat.string.email]: z.string().email(),
   [KnownFormat.string.emoji]: z.string().emoji(),
   [KnownFormat.string.ipv4]: z.string().ip({ version: "v4" }),
@@ -110,9 +80,10 @@ const enumerableConstraints
 
 const stringConstraints
   : (meta: Meta.string) => string[]
-  = (meta) => [
-    meta.format && keyOf$(StringFormat)(meta.format) && StringFormat[meta.format],
-    ...enumerableConstraints(meta),
+  = ({ format, maxLength: max, minLength: min }) => [
+    format && keyOf$(StringFormat)(format) && StringFormat[format],
+    min !== undefined && `.min(${min})`,
+    max !== undefined && `.max(${max})`,
   ].filter(core.is.string)
 
 const Constrain = {
@@ -135,7 +106,6 @@ const generateEntry
       createOpenApiNodePath($)(["properties", k]).join(""),
       (_) => ` * #### {@link $doc.${_} \`Link to OpenAPI node\`}`
     )
-    // console.log("v", show.serialize(v, "leuven"))
     return ([
       "",
       "/**",
@@ -171,7 +141,7 @@ const generated = {
       return ss.length === 1 ? ss[0] : Print.array($)("z.union([", ...ss, "])")
     }
   },
-  array({ items: s }, $) { return (console.log("s", s), Print.array($)("z.array(", s, ")")) },
+  array({ items: s }, $) { return Print.array($)("z.array(", s, ")") },
   record({ additionalProperties: s }, $) { return Print.array($)("z.record(", s, ")") },
   tuple({ items: ss }, $) { return Print.array($)("z.tuple([", ...ss, "])") },
   anyOf({ anyOf: [s0 = "z.never()", s1 = "z.never()", ...ss] }, $) { return Print.array($)("z.union([", s0, s1, ...ss, "])") },
@@ -329,16 +299,16 @@ const derive
  *     }
  *   }
  * }
- * 
+ *
  * type Id<T> = T
  * interface Ex02 extends Id<typeof ex_02> {}
  * 
  * function identity<T>(x: T): T { return x }
  * 
  * const ex_03 = identity(ex_01).a
- * // If you hover over `a` here 𐋇 you'll see that JSDoc link is broken
+ * // If you hover over `a` here 𐋇 you'll see that the JSDoc link is broken
  * const ex_04 = identity(ex_02).a
- * // If you hover over `a` here 𐋇 you'll see that JSDoc link works
+ * // If you hover over `a` here 𐋇 you'll see that the JSDoc link works 🥳
  */
 const typelevel
   : (schema: core.Traversable.any, options: Options<string>) => string
@@ -350,3 +320,23 @@ const typelevel
       "export declare const " + $.typeName + ": " + target,
     ].join("\n")
   )
+
+/** 
+ * TODO: add lightweight infrastructure to support deriving/generating codecs 
+ * (lossless to/from transformations that are baked into the parsing layer)
+ */
+// const StringCodec = {
+//   [KnownFormat.string.datetime]: {
+//     decoder: "z.string().datetime({ offset: true }).pipe(z.coerce.date())",
+//     encoder: "z.date().pipe(z.coerce.string())",
+//   },
+//   [KnownFormat.string.date]: {
+//     decoder: [
+//       "z.preprocess((u) =>",
+//       "  typeof u === \"string\" ? !Number.isNaN(new Date(u).getTime()) ? new Date(u) : null : u,",
+//       "  z.date()",
+//       ")"
+//     ].filter(core.is.notnull).join(""),
+//     encoder: "z.date().pipe(z.coerce.string())",
+//   },
+// }

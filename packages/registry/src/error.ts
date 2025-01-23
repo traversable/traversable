@@ -23,13 +23,13 @@ function Error<Msg extends string>(
   msg: Msg,
   filepath?: string,
 ): <ID extends string, T>(identifier: ID, ...values: T[]) => never {
-  return (id, ...v) =>
+  return (identifier, ...v) =>
     throw_(
       globalThis.Error(
         "\n\n[🚫 Source: " +
           SCOPE +
           "/" +
-          id +
+          identifier +
           "]" +
           (filepath !== undefined ? "\n at: " + filepath + "\n" : "") +
           msg +
@@ -71,14 +71,16 @@ export const IllegalState = Error.withTrace(
 )
 
 export const NotYetSupported = (featureName: string, functionName: string) =>
-  Error("NotYetSupported")(
-    "'" +
+  Error(
+    ":\n\n'" +
       featureName +
       "' is not currently supported by '" +
       functionName +
-      "'." +
-      "If you'd like us to add that support, let us know at: " +
-      pkg.bugs.url,
+      "'. " +
+      "\n\nIf you'd like us to add support for that, consider filing an issue:\n\n" +
+      " › " +
+      pkg.bugs.url +
+      "\n",
   )
 
 export const FailedToRegisterSymbol = (uri: string) =>

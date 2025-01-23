@@ -4,9 +4,9 @@ import * as vi from "vitest"
 import { array } from "@traversable/data"
 import { symbol } from "@traversable/registry"
 
-vi.describe(`〖️⛳️〗‹‹‹ ❲@traversable/data/array❳ is red on yellow`, () => {
-  const isString = (u: any): u is string => typeof u === "string"
+const isString = (u: any): u is string => typeof u === "string"
 
+vi.describe("〖️⛳️〗‹‹‹ ❲@traversable/data/array❳", () => {
   vi.test.each([
     [[], -1],
     [[1], -1],
@@ -18,6 +18,6 @@ vi.describe(`〖️⛳️〗‹‹‹ ❲@traversable/data/array❳ is red on ye
     [["a", 3, 4], 0],
     [["a", "b", "c", 3], 2],
     [[symbol.object, 123, symbol.optional, symbol.anyOf, "hey"], 4],
-  ])(`〖️⛳️〗› ❲array.lastIndexOf❳: array.lastIndexOf(%j) === %i`, 
+  ])("〖️⛳️〗› ❲array.lastIndexOf❳: array.lastIndexOf(%j) === %i", 
     (xs, exp) => vi.assert.equal(array.lastIndexOf(isString)(xs), exp))
 })

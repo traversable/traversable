@@ -38,7 +38,7 @@ vi.describe("〖⛳️〗‹‹‹ ❲@traversable/openapi/arbitrary❳", () => 
 
     const componentSchemas = fn.pipe(
       Object_entries(doc.components?.schemas!).filter(([k]) => k.startsWith("/paths/")),
-      map(([k, v]) => [k, JsonPointer.toPath(k), v] satisfies [string, string[], openapi.Schema.any])
+      map(([k, v]) => [k, JsonPointer.toPath(k), v] satisfies [string, string[], openapi.Schema.any | openapi.$ref])
     )
 
     componentSchemas.forEach(([originalRef, jsonPointerPath, schema]) => {

@@ -7,6 +7,8 @@ import * as tree from "../tree.js"
 import type { Meta } from "./meta.js"
 import type { Enum, Items, MaybeAdditionalProps, Props } from "./shared.js"
 
+export { Format } from "./format.js"
+
 export type {
   JsonSchema_F as F,
   JsonSchema_Meta as Meta,
@@ -102,8 +104,6 @@ const JsonSchema_isScalar
   : (u: unknown) => u is JsonSchema_Scalar
   = JsonSchema_Scalar.is
 
-
-
 interface JsonSchema_allOf { allOf: readonly JsonSchema[] }
 interface JsonSchema_allOfF<T> { allOf: readonly T[] }
 const JsonSchema_allOf = t.object({ allOf: t.array(t.any()) })
@@ -147,6 +147,7 @@ type JsonSchema_Combinator =
   | JsonSchema_allOf
   | JsonSchema_anyOf
   | JsonSchema_oneOf
+  ;
 const JsonSchema_Combinator = t.anyOf(
   JsonSchema_allOf,
   JsonSchema_anyOf,
@@ -159,6 +160,7 @@ function JsonSchema_isCombinator(u: unknown) { return JsonSchema_Combinator.is(u
 type JsonSchema_Composite =
   | JsonSchema_array
   | JsonSchema_object
+  ;
 const JsonSchema_Composite = t.anyOf(
   JsonSchema_array,
   JsonSchema_object,

@@ -455,23 +455,32 @@ vi.describe("〖⛳️〗‹‹‹ ❲@traversable/core/tree❳", () => {
 
   vi.it("〖⛳️〗› ❲tree.modify❳", () => {
     const ex_00 = {a: 1}
-    const actual_00 = tree.modify()(ex_00 as never)(() => 1)
+    const actual_00 = tree.modify(ex_00, [], () => 1)
     vi.assert.equal(actual_00, actual_00)
 
     const ex_01 = {}
-    const actual_01 = tree.modify("a")(() => 1)(ex_01 as never)
+    const actual_01 = tree.modify(ex_01, ["a"] as never as [], () => 1)
     vi.assert.deepEqual(actual_01, { a: 1 })
 
-    const ac = tree.modify("a", "b", "c", has("d", is.number))
-    ac((c) => ({ d: c.d + 1 }))
+    const ex_02 = { a: { b: { c: { d: 0, e: 1 }, f: 2 }, g: 3 }, h: 4 } as const
+    const actual_02 = tree.modify(ex_02, ["a", "b", "c"], (c) => ({ ...c, d: `${c.d}` as const }))
 
-    const ex_02 = { a: { b: { c: { d: 0 } } } }
-    const actual_02 = tree.modify("a", "b", "c", has("d", is.number))((c) => ({ d: c.d + 1 }))(ex_02)
-    vi.assert.deepEqual(actual_02, { a: { b: { c: { d: 1 } } } })
-
-    const ex_03 = { a: { b: { c: { d: 0, e: 1 }, f: 2 }, g: 3 }, h: 4 }
-    const actual_03 = tree.modify("a", "b", "c", has("d", is.number))((c) => ({ ...c, d: c.d + 10 }))(ex_03)
-    vi.assert.deepEqual(actual_03, { a: { b: { c: { d: 10, e: 1 }, f: 2 }, g: 3 }, h: 4 })
+    vi.assertType<{ h: 4; a: { g: 3, b: { f: 2, c: { d: "0", e: 1 } } } }>(actual_02)
+    vi.assert.deepEqual(
+      actual_02, {
+        h: 4,
+        a: {
+            g: 3,
+            b: {
+                f: 2,
+                c: {
+                    d: "0",
+                    e: 1,
+                },
+            },
+        },
+      }
+    )
   })
 
   const constraints = { 

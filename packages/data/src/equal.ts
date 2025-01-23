@@ -8,13 +8,13 @@ export {
 	Equal_array as array,
 	Equal_bigint as bigint,
 	Equal_boolean as boolean,
-	Equal_compose as compose,
+	Equal_reduce as compose,
 	Equal_date as date,
 	Equal_deep as deep,
 	Equal_every as every,
 	Equal_mapInput as mapInput,
 	Equal_nonemptyArray as nonemptyArray,
-	Equal_noop as noop,
+	Equal_identity as noop,
 	Equal_number as number,
 	Equal_object as object,
 	Equal_or as or,
@@ -26,5 +26,4 @@ export {
 	Equal_struct as struct,
 	Equal_symbol as symbol,
 	Equal_tuple as tuple,
-	// namespaces
-} from "./_internal/_equal.js";
+} from "./_internal/_equal.js"

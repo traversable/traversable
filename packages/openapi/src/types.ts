@@ -84,7 +84,9 @@ export namespace format {
   export const ExtendedStringFormats = [
     "date",
     "datetime",
+    "duration",
     "email",
+    "time",
     "uuid",
     "ulid",
     "uri",
@@ -177,6 +179,9 @@ export type Schema =
   | Schema_tuple<Schema>
   | Schema_object<Schema>
   ;
+
+type SchemaType = 
+  | Schema_null["type"]
 
 type F<T> =
   | $ref

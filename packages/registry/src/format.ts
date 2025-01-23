@@ -1,4 +1,14 @@
-export { integer_ as integer, number_ as number, string_ as string }
+export { integer_ as integer, number_ as number, string_ as string, ReverseLookup }
+
+function invert<const T extends Record<keyof any, keyof any>>(xs: T): { [K in keyof T as T[K]]: K }
+function invert(xs: Record<keyof any, keyof any>): Record<keyof any, keyof any> {
+  const keys: (keyof any)[] = Object.keys(xs)
+  const syms = Object.getOwnPropertySymbols(xs)
+  const ixs = keys.concat(syms)
+  let out: Record<keyof any, keyof any> = {}
+  for (let ix = 0, len = ixs.length; ix < len; ix++) out[ixs[ix]] = ix
+  return out
+}
 
 type integer_ = { -readonly [K in keyof typeof integer_]: (typeof integer_)[K] }
 namespace integer_ {
@@ -214,4 +224,10 @@ namespace string_ {
    */
   export const uuid = "uuid" as const
   export type uuid = typeof string_.uuid
+}
+
+const ReverseLookup = {
+  integer: invert(integer_),
+  number: invert(number_),
+  string: invert(string_),
 }

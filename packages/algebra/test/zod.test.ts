@@ -29,7 +29,7 @@ const PATTERN = {
 const generateSpec = () => fn.pipe(
   arbitrary({ include: { examples: true, description: true } }),
   fc.peek,
-  tree.modify("components", "schemas")(map(Traversable.fromJsonSchema)),
+  (x) => tree.modify(x, ["components", "schemas"], map(Traversable.fromJsonSchema)),
   (_) => JSON.stringify(_, null, 2),
 )
 
@@ -292,7 +292,7 @@ vi.describe("〖️⛳️〗‹‹‹ ❲@traversable/algebra/zod❳", () => {
       const mock = fc.peek(arbitrary)
       const parsed = schema.safeParse(mock)
       if (!parsed.success) {
-        console.group("failure:")
+        console.group("\n\n\nFAILURE:\n\n\n")
         console.dir(["mock", mock], { depth: 10 })
         console.dir(["error", parsed.error], { depth: 10, getters: true })
         console.log(IR.toString(ir))

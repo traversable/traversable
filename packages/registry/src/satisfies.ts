@@ -1,4 +1,5 @@
-import type { NonFiniteBoolean, NonFiniteIndex, NonFiniteNumber, NonFiniteString } from "./error.js"
+import type * as Error from "./error.js"
+import type { Equals, isNonUnion, isSingleton, isUnion } from "./types.js"
 
 /**
  * ## {@link Finite `Finite`}
@@ -27,8 +28,8 @@ import type { NonFiniteBoolean, NonFiniteIndex, NonFiniteNumber, NonFiniteString
  * //    ^?const ex_01: [1, [2, [3]]]
  *
  * type ex_02 = CheckFinite<1>
- * //   ^?  type ex_02 = number
- * //                    ^^^^^^ this is `number` instead of `1` because `Finite`
+ * //    ^?  type ex_02 = number
+ * //                     ^^^^^^ this is `number` instead of `1` because `Finite`
  * //                           only _constraints_ its argument
  *
  * const ex_02 = finite([1, [2, { a: Math.random() }]])
@@ -42,7 +43,8 @@ import type { NonFiniteBoolean, NonFiniteIndex, NonFiniteNumber, NonFiniteString
  *   0.02e+2,
  *   0.003e+3,
  *   0.00005e+5,
- *   0.00000008e+8, *   0.0000000000013e+13,
+ *   0.00000008e+8,
+ *   0.0000000000013e+13,
  *   0.000000000000000000021e+21,
  *   0.0000000000000000000000000000000034e+34,
  *   0.0000000000000000000000000000000000000000000000000000055e+55,
@@ -67,29 +69,32 @@ import type { NonFiniteBoolean, NonFiniteIndex, NonFiniteNumber, NonFiniteString
  */
 export type Finite<S> = [S] extends [boolean]
   ? [boolean] extends [S]
-    ? NonFiniteBoolean
+    ? Error.NonFiniteBoolean
     : boolean
   : [S] extends [number]
     ? [number] extends [S]
-      ? NonFiniteNumber
+      ? Error.NonFiniteNumber
       : number
     : [S] extends [string]
       ? [string] extends [S]
-        ? NonFiniteString
+        ? Error.NonFiniteString
         : string
       : [S] extends [{ [x: number]: any }]
         ? [string] extends [keyof S]
-          ? NonFiniteIndex<S>
+          ? Error.NonFiniteIndex<S>
           : { -readonly [K in keyof S]: Finite<S[K]> }
         : void
+
+export type EmptyObject<T> = { [K in keyof T]: never }
 
 /**
  * ## {@link finite `finite`}
  *
- * An **inductive constraint** that recursively unfolds a type from a seed
- * an makes sure its argument is entirely finite.
+ * An **inductive constraint** that recursively unfolds a type from a seed,
+ * and dies if any part of itself cannot be represented as finite.
  *
- * {@link finite `finite`} behaves like an identity function at runtime.
+ * **Note:** this is a type-level utility function; at runtime,
+ * {@link finite `finite`} is equivalent to `identity`.
  *
  * For additional docs/usage examples, see {@link Finite `Finite`}.
  */
@@ -97,3 +102,25 @@ export function finite<S extends Finite<S>>(s: S): S
 export function finite<S extends Finite<S>>(s: S) {
   return s
 }
+
+// declare function emptyObject<const T extends EmptyObject<T>>(x: T): T
+// type NonEmpty<T> = [T] extends [readonly [any, ...any]] ? readonly [unknown, ...unknown[]] : never
+// type OneOrMoreProperties<T, K extends keyof T = keyof T> = [K] extends [never] ? never : Record<K, T[K]>
+// type TwoOrMoreProperties<T> = T
+
+const identity: <T>(x: T) => T = (x) => x
+
+export type NonUnion<T> = [isNonUnion<T>] extends [true] ? unknown : never
+export const nonunion: <T extends NonUnion<T>>(x: T) => T = identity
+
+export type Singleton<T> = [isSingleton<T>] extends [true] ? unknown : never
+export const singleton: <T extends Singleton<T>>(x: T) => T = identity
+
+export type Union<T> = [isUnion<T>] extends [true] ? unknown : never
+export const union: <T extends Union<T>>(x: T) => T = identity
+
+export type Char<T> = [T] extends [`${string}${infer _}`] ? ([_] extends [""] ? string : never) : never
+export declare function char<T extends Char<T>>(x: T): T
+
+export type Equal<S, T> = [Equals<S, T>] extends [true] ? unknown : never
+export declare function equal<const S>(s: S): <const T extends Equal<S, T>>(t: T) => T

@@ -2,8 +2,8 @@ import { Traversable } from "@traversable/core"
 import type { Compare } from "@traversable/data"
 import { fn, map, order } from "@traversable/data"
 import { Weight, openapi } from "@traversable/openapi"
-import type { Functor } from "@traversable/registry"
-import { type Partial, WeightByType, WeightMap } from "@traversable/registry"
+import type { Functor, Partial } from "@traversable/registry"
+import { WeightByType, WeightMap } from "@traversable/registry"
 
 export { deriveSort as derive }
 

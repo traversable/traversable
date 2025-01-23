@@ -1,6 +1,6 @@
 import type { Universal, mutable as mut, newtype, nonempty, some } from "any-ts"
 
-import type { Partial } from "@traversable/registry"
+import { type Partial, equal } from "@traversable/registry"
 // type-level dependencies
 import type * as array from "../array.js"
 import type { entry } from "../entry.js"
@@ -18,7 +18,7 @@ import {
   toString,
 } from "./_string.js"
 import type { to } from "./_to.js"
-import type { jsdoc } from "./_unicode.js"
+import { jsdoc } from "./_unicode.js"
 
 type mutable<T> = never | { -readonly [K in keyof T]: T[K] }
 /** @internal */
@@ -444,6 +444,7 @@ export function object_pick<
   J extends keyof T,
   K extends globalThis.Exclude<keyof T, J>
 >(object: T, ...keys: [J, K]): object_pick<T, J | K>;
+
 export function object_pick<
   const T extends object.any,
   K extends keyof T

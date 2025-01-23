@@ -1,3 +1,7 @@
+///////////////////////////////
+///    Moved: 2025-01-22    ///
+///////////////////////////////
+
 export {
   type Autocomplete,
   type Binary,
@@ -33,7 +37,7 @@ import { symbol } from "@traversable/registry"
 import type { any } from "any-ts"
 
 
-import { Schema } from "./schema/exports.js"
+import { Schema } from "../schema/exports.js"
 
 interface Refs { [$ref: string]: string }
 type CompilationTarget = never | { refs: { [x: string]: string }, out: string }
@@ -378,8 +382,8 @@ namespace Context {
     } as const)
 
 
-  export function handleObject(
-    node: Schema.object, 
+  export function handleObject<T extends Schema.any>(
+    node: Schema.object<T>, 
     $refs: Refs, 
     xf: (prev: unknown) => unknown = fn.identity
   ) {
@@ -400,11 +404,9 @@ namespace Context {
           example: parseExample(is.object)(node, prev, $refs),
         }),
         pair.duplicate,
-        x=>x,
         pair.mapBoth(
           object.pick.defer(...optionalKeys), 
           object.omit.defer(...optionalKeys),
-            // Option.fromPartial(...optionalKeys)
         ),
         ([opt, req]) => object.intersect(opt, req),
       )

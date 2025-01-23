@@ -1,4 +1,3 @@
-export type { Config } from "./config.js"
 export type { Context, Meta } from "./meta.js"
 export * as JsonSchema from "./json-schema.js"
 export * as Traversable from "./traversable.js"

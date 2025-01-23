@@ -1,5 +1,5 @@
 import { fn, map } from "@traversable/data"
-import type { Entries, Functor, HKT } from "@traversable/registry"
+import type { Entries, Functor, HKT, Kind } from "@traversable/registry"
 import { URI, symbol } from "@traversable/registry"
 
 import * as t from "./ast.js"
@@ -150,7 +150,7 @@ export namespace TagTree {
   export function nullary<Tag extends keyof Nullary>(tag: Tag): () => Extract<TagTree_Scalar, [Tag]>
   export function nullary(tag: Nullary[keyof Nullary][0] | "const") { return () => [tag] as never }
   ///
-  export function unary<Tag extends keyof Unary$>(x: Tag): (x: any) => HKT.apply<Unary$[Tag], TagTree>
+  export function unary<Tag extends keyof Unary$>(x: Tag): (x: any) => Kind<Unary$[Tag], TagTree>
   export function unary<Tag extends TagTree[0]>(tag: Tag) { return <T>(x: T) => [tag, x] }
 
   export type byName<URI extends keyof typeof byName> = typeof byName[URI]
@@ -209,11 +209,12 @@ export namespace TagTree {
           case x[0] === symbol.allOf:
           case x[0] === symbol.anyOf:
           case x[0] === symbol.tuple: return [x[0], map(x[1], f)]
-          case x[0] === symbol.object: return [x[0], map.entries(f)(x[1])]
+          case x[0] === symbol.object: return [x[0], map.entries(x[1], f)]
         }
       }
     }
   }
+
   export function fold<T>(algebra: Functor.Algebra<TagTree.lambda, T>) 
     { return fn.cata(TagTree.Functor)(algebra) }
 

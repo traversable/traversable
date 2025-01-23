@@ -1,0 +1,51 @@
+import { fn } from "@traversable/data"
+import type {
+  Corecursive,
+  Functor,
+  HKT,
+  Kind,
+  Recursive,
+} from "@traversable/registry"
+
+export const cata = <T extends HKT, F extends HKT, TA, _ = any>(T: Recursive<T, F, TA, _>) => 
+  <A>(alg: (f: Kind<F, A>) => A): (t: Kind<T, TA>) => A => {
+    return function go(t: Kind<T, TA>): A {
+      return alg(T.F.map(go)(T.project(t)))
+    }
+  }
+
+export const para = <T extends HKT, F extends HKT, TA, _ = any>(T: Recursive<T, F, TA, _>) => 
+  <A>(alg: (f: Kind<F, [Kind<T, TA>, A]>) => A): (t: Kind<T, TA>) => A => {
+    return function go(t: Kind<T, TA>): A {
+      return alg(T.F.map((_) => [_, go(_)])(T.project(t)))
+    }
+  }
+
+type Cofree<F extends HKT, A> = [A, Kind<F, Cofree<F, A>>]
+declare namespace Cofree {
+  type Algebra<F extends HKT, A> = (f: Kind<F, Cofree<F, A>>) => A
+}
+namespace Cofree {
+  export const extract 
+    : <F extends HKT, A>(w: Cofree<F, A>) => A
+    = (w) => w[0]
+
+  export const unwrap 
+    : <F extends HKT, A>(wa: Cofree<F, A>) => Kind<F, Cofree<F, A>>
+    = (w) => w[1]
+
+  export const extend = <F extends HKT, _ = any>(F: Functor<F, _>): 
+    <A, B>(self: Cofree<F, A>, f: (wa: Cofree<F, A>) => B) => Cofree<F, B> =>
+    function loop<A, B>(self: Cofree<F, A>, f: (wa: Cofree<F, A>) => B): Cofree<F, B> {
+      return [f(self), fn.pipe(unwrap(self), F.map((_) => loop(_, f)))]
+    }
+}
+
+const histo = <T extends HKT, F extends HKT, TA, _ = any>(T: Recursive<T, F, TA, _>) => 
+  <A>(g: Cofree.Algebra<F, A>) => (t: Kind<T, TA>): A => {
+    function go(t: Kind<T, TA>): Cofree<F, A> {
+      const bc = fn.pipe(T.project(t), T.F.map(go))
+      return [g(bc), bc]
+    }
+    return Cofree.extract(go(t))
+  }

@@ -1,19 +1,22 @@
-import { fn, map, object, type nonempty } from "@traversable/data"
-import { symbol } from "@traversable/registry"
+import { fn, map, type nonempty, object } from "@traversable/data"
+import { Invariant, Traversable as Trav, symbol } from "@traversable/registry"
 import type {
+  Applicative,
   Functor,
   HKT,
   IndexedFunctor,
   Kind,
   Merge,
-  Mutable
+  Mutable,
+  inline
 } from "@traversable/registry"
 
 import { t } from "../guard/index.js"
 import { is } from "../guard/predicates.js"
 import { has } from "../tree.js"
 import * as JsonSchema from "./json-schema.js"
-import type { Context, Meta } from "./meta.js"
+import type { Context } from "./meta.js"
+import { Meta } from "./meta.js"
 import type {
   AdditionalProps,
   Combinator,
@@ -149,16 +152,7 @@ type Traversable_Map<F> = {
   object: Traversable_objectF<F>
 }
 
-const key = t.anyOf(t.symbol(), t.number(), t.string())
-
-export interface Meta_Base extends t.typeof<typeof Meta_Base> {}
-export const Meta_Base = t.object({
-  nullable: t.optional(t.boolean()),
-  optional: t.optional(t.boolean()),
-  path: t.optional(t.array(key)),
-})
-
-const Traversable_Meta = t.object({ meta: Meta_Base })
+const Traversable_Meta = t.object({ meta: Meta.Base })
 interface Traversable_Meta extends Meta.has<Meta.Base> {}
 
 interface Traversable_lambda extends HKT { [-1]: Traversable_F<this[0]> }
@@ -235,7 +229,8 @@ interface Traversable_oneOfF<T> extends
   Traversable_Meta
   { type: "oneOf" }
 
-type Traversable_F<T> =
+type Traversable_F<T, Ext extends HKT = never> =
+  | Ext
   | Traversable_Scalar
   | Traversable_Special
   | Traversable_allOfF<T>
@@ -313,6 +308,7 @@ declare namespace Traversable_toType {
     : never
 }
 
+type Traversable_Known = typeof Traversable_Known
 const Traversable_Known = [
   "null",
   "boolean",
@@ -558,32 +554,41 @@ const fromJsonSchema = (expr: JsonSchema.any) => {
   switch (true) {
     default: return fn.softExhaustiveCheck(expr)
     case JsonSchema.is.null(expr): return { type: expr.type, meta: { ...meta, ...x } }
-    case JsonSchema.is.enum(expr): return { type: "enum", enum: expr.enum, meta: { ...meta, ...x } }
+    case JsonSchema.is.enum(expr): return { type: "enum", enum: expr.enum, meta: { ...meta, ...object.omit(x, "enum") } }
     case JsonSchema.is.boolean(expr): return { type: expr.type, meta: { ...meta, ...x } }
     case JsonSchema.is.integer(expr): return { type: expr.type, meta: { ...meta, ...x } }
     case JsonSchema.is.number(expr): return { type: expr.type, meta: { ...meta, ...x } }
     case JsonSchema.is.string(expr): return { type: expr.type, meta: { ...meta, ...x } }
-    case JsonSchema.is.allOf(expr): return { type: "allOf", allOf: expr.allOf, meta: { ...meta, ...x } }
-    case JsonSchema.is.anyOf(expr): return { type: "anyOf", anyOf: expr.anyOf, meta: { ...meta, ...x } }
-    case JsonSchema.is.oneOf(expr): return { type: "oneOf", oneOf: expr.oneOf, meta: { ...meta, ...x } }
-    case JsonSchema.is.array(expr): return { type: is.array(expr.items) ? "tuple" : "array", items: expr.items, meta: { ...meta, ...x } }
-    case JsonSchema.is.object(expr): return { type: expr.properties ? "object" : "record", meta: { ...meta, ...x } }
+    case JsonSchema.is.allOf(expr): return { type: "allOf", allOf: expr.allOf, meta: { ...meta, ...object.omit(x, "allOf") } }
+    case JsonSchema.is.anyOf(expr): return { type: "anyOf", anyOf: expr.anyOf, meta: { ...meta, ...object.omit(x, "anyOf") } }
+    case JsonSchema.is.oneOf(expr): return { type: "oneOf", oneOf: expr.oneOf, meta: { ...meta, ...object.omit(x, "oneOf") } }
+    case JsonSchema.is.array(expr): return { type: is.array(expr.items) ? "tuple" : "array", items: expr.items, meta: { ...meta, ...object.omit(x, "items") } }
+    case JsonSchema.is.object(expr): {
+      return { 
+        type: expr.properties ? "object" : "record", 
+        ...expr.properties && { properties: expr.properties },
+        ...expr.additionalProperties && { additionalProperties: expr.additionalProperties },
+        meta: { ...meta, ...object.omit(x, "properties", "additionalProperties") }
+      }
+    }
   }
 }
+
+const NotYetSupported = (...args: Parameters<typeof Invariant.NotYetSupported>) => Invariant.NotYetSupported(...args)("core/src/model/traversable")
 
 const fromAST
   : Functor.Algebra<t.AST.lambda, Traversable>
   = (x) => {
     switch (true) {
       default: return fn.exhaustive(x)
-      case x._tag === "any": return fn.throw("Unimplemented")
-      case x._tag === "symbol": return fn.throw("Unimplemented")
+      case x._tag === "any": return NotYetSupported("Traversable.any", "Traversable.fromAST")
+      case x._tag === "symbol": return NotYetSupported("Traversable.symbol", "Traversable.fromAST")
       case x._tag === "null": return { ...x, ...Traversable_null, type: x._tag }
       case x._tag === "boolean": return { ...x, ...Traversable_boolean, type: x._tag }
       case x._tag === "integer": return { ...x, ...Traversable_integer, type: x._tag }
       case x._tag === "number": return { ...x, ...Traversable_number, type: x._tag }
       case x._tag === "string": return { ...x, ...Traversable_string, type: x._tag }
-      case x._tag === "const": return { ...x, type: "enum", enum: x._def }  // <- TODO: make sure this isn't lossy
+      case x._tag === "const": return { ...x, type: "enum", enum: x._def }  //  <- TODO: make sure this isn't lossy
       case x._tag === "optional": return { ...x._def, meta: { ...x._def.meta, optional: true } }
       case x._tag === "allOf": return { ...x, type: x._tag, allOf: x._def }
       case x._tag === "anyOf": return { ...x, type: x._tag, anyOf: x._def }

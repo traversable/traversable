@@ -4,6 +4,7 @@ import type { any, array, key, nonempty, prop, unicode } from "@traversable/data
 import { Option, fn, keys, map, object, props } from "@traversable/data"
 
 import { Invariant, URI, _, symbol,   } from "@traversable/registry";
+import type { Force, Omit } from "@traversable/registry"
 import type { Json } from "./json.js"
 
 declare namespace Predicate {
@@ -384,7 +385,7 @@ type has_maybe<KS extends keys.any, T = {}>
   ? has_maybe<Todo, { [P in K]+?: T }>
   : T extends infer U extends {} ? tentatively<U> : never
 
-interface tentatively<T extends {}> extends newtype<T> {}
+export interface tentatively<T extends {}> extends newtype<T> {}
 
 /** 
  * ## {@link set `tree.set`}
@@ -452,11 +453,223 @@ export function mutate(
   }
 }
 
-export function modify<KS extends props.any>(...path: [...KS]):
-  <T extends has.path<KS>, S extends get<T, KS>>(modifyFn: (prev: S) => S) => <U extends T>(tree: U) => U
-export function modify<KS extends props.any, V>(...args: [...KS, (u: unknown) => u is V]):
-  <T extends has.path<KS, V>, S extends get<T, KS>>(modifyFn: (prev: V) => S) => <U extends T>(tree: U) => U
 
+export type modify<KS extends readonly unknown[], T, V>
+  = KS extends readonly [infer K extends keyof T] ? Force<Omit<T, K> & { [P in K]: V }>
+  : KS extends nonempty.props<infer K, infer Todo>
+  ? K extends keyof T ? Force<Omit<T, K> & { [P in K]: modify<Todo, T[K], V> }>
+  : T
+  : T
+  ;
+
+// export function modify_defer<KS extends props.any>(...path: [...KS]): <
+//   A extends get<Q, KS>, 
+//   B,
+//   Q extends has.path<KS>, 
+//   R extends has.path<KS, A>, 
+// >(modifyFn: (prev: A) => B) => 
+//   <S>(tree: R & S) => modify<KS, S, B>
+
+// export function modify_defer(...path: keys.any) {
+//   return (modifyFn: (_: {} | undefined) => {}) => (tree: {}) => 
+//     !path.length ? tree 
+//     : fn.pipe(
+//       get(tree, ...path),
+//       modifyFn,
+//       set(...path)(tree)
+//     )
+// }
+  
+// export function modify<
+//   KS extends props.any, 
+//   R extends has.path<KS>
+// >(...path: [...KS]): 
+//   <const S extends R, T extends get<S, KS>, B>(
+//     tree: S, 
+//     modifyFn: <A extends T>(a: A) => B
+//   ) => modify<KS, S, B>
+
+// export function modify(...path: keys.any) {
+//   return (tree: {}, g: (a: {} | null | undefined) => {}) => !path.length ? tree 
+//   : fn.pipe(
+//     get(tree, ...path),
+//     g,
+//     set(...path)(tree),
+//   )
+// }
+
+
+export function modify<
+  const S extends {},
+  A extends S[K1][K2][K3][K4][K5][K6][K7][K8][K9],
+  K9 extends keyof S[K1][K2][K3][K4][K5][K6][K7][K8],
+  K8 extends keyof S[K1][K2][K3][K4][K5][K6][K7],
+  K7 extends keyof S[K1][K2][K3][K4][K5][K6],
+  K6 extends keyof S[K1][K2][K3][K4][K5],
+  K5 extends keyof S[K1][K2][K3][K4],
+  K4 extends keyof S[K1][K2][K3],
+  K3 extends keyof S[K1][K2],
+  K2 extends keyof S[K1],
+  K1 extends keyof S,
+  B
+>(
+  tree: S, 
+  path: readonly [K1, K2, K3, K4, K5, K6, K7, K8, K9], 
+  modifyFn: (a: A) => B
+): 
+  [A, B] extends [B, A] ? S : modify<[K1, K2, K3, K4, K5, K6, K7, K8, K9], S, B>
+
+export function modify<
+  const S extends {},
+  A extends S[K1][K2][K3][K4][K5][K6][K7][K8],
+  K8 extends keyof S[K1][K2][K3][K4][K5][K6][K7],
+  K7 extends keyof S[K1][K2][K3][K4][K5][K6],
+  K6 extends keyof S[K1][K2][K3][K4][K5],
+  K5 extends keyof S[K1][K2][K3][K4],
+  K4 extends keyof S[K1][K2][K3],
+  K3 extends keyof S[K1][K2],
+  K2 extends keyof S[K1],
+  K1 extends keyof S,
+  B
+>(
+  tree: S, 
+  path: readonly [K1, K2, K3, K4, K5, K6, K7, K8], 
+  modifyFn: (a: A) => B
+): 
+  [A, B] extends [B, A] ? S : modify<[K1, K2, K3, K4, K5, K6, K7, K8], S, B>
+
+export function modify<
+  const S extends {},
+  A extends S[K1][K2][K3][K4][K5][K6][K7],
+  K7 extends keyof S[K1][K2][K3][K4][K5][K6],
+  K6 extends keyof S[K1][K2][K3][K4][K5],
+  K5 extends keyof S[K1][K2][K3][K4],
+  K4 extends keyof S[K1][K2][K3],
+  K3 extends keyof S[K1][K2],
+  K2 extends keyof S[K1],
+  K1 extends keyof S,
+  B
+>(
+  tree: S, 
+  path: readonly [K1, K2, K3, K4, K5, K6, K7], 
+  modifyFn: (a: A) => B
+): 
+  [A, B] extends [B, A] ? S : modify<[K1, K2, K3, K4, K5, K6, K7], S, B>
+
+export function modify<
+  const S extends {},
+  A extends S[K1][K2][K3][K4][K5][K6],
+  K6 extends keyof S[K1][K2][K3][K4][K5],
+  K5 extends keyof S[K1][K2][K3][K4],
+  K4 extends keyof S[K1][K2][K3],
+  K3 extends keyof S[K1][K2],
+  K2 extends keyof S[K1],
+  K1 extends keyof S,
+  B
+>(
+  tree: S, 
+  path: readonly [K1, K2, K3, K4, K5, K6], 
+  modifyFn: (a: A) => B
+): 
+  [A, B] extends [B, A] ? S : modify<[K1, K2, K3, K4, K5, K6], S, B>
+
+export function modify<
+  const S extends {},
+  A extends S[K1][K2][K3][K4][K5],
+  K5 extends keyof S[K1][K2][K3][K4],
+  K4 extends keyof S[K1][K2][K3],
+  K3 extends keyof S[K1][K2],
+  K2 extends keyof S[K1],
+  K1 extends keyof S,
+  B
+>(
+  tree: S, 
+  path: readonly [K1, K2, K3, K4, K5], 
+  modifyFn: (a: A) => B
+): 
+  [A, B] extends [B, A] ? S : modify<[K1, K2, K3, K4, K5], S, B>
+
+
+export function modify<
+  const S extends {},
+  A extends S[K1][K2][K3][K4],
+  K4 extends keyof S[K1][K2][K3],
+  K3 extends keyof S[K1][K2],
+  K2 extends keyof S[K1],
+  K1 extends keyof S,
+  B
+>(
+  tree: S, 
+  path: readonly [K1, K2, K3, K4], 
+  modifyFn: (a: A) => B
+): 
+  [A, B] extends [B, A] ? S : modify<[K1, K2, K3, K4], S, B>
+
+export function modify<
+  const S extends {},
+  A extends S[K1][K2][K3],
+  K3 extends keyof S[K1][K2],
+  K2 extends keyof S[K1],
+  K1 extends keyof S,
+  B
+>(
+  tree: S, 
+  path: readonly [K1, K2, K3], 
+  modifyFn: (a: A) => B
+): 
+  [A, B] extends [B, A] ? S : modify<[K1, K2, K3], S, B>
+
+export function modify<
+  const S extends {},
+  A extends S[K1][K2],
+  K2 extends keyof S[K1],
+  K1 extends keyof S,
+  B
+>(
+  tree: S, 
+  path: readonly [K1, K2], 
+  modifyFn: (a: A) => B
+): 
+  [A, B] extends [B, A] ? S : modify<[K1, K2], S, B>
+
+export function modify<
+  const S extends {},
+  K1 extends keyof S,
+  A extends S[K1],
+  B
+>(
+  tree: S, 
+  path: readonly [K1], 
+  modifyFn: (a: A) => B
+): 
+  [A, B] extends [B, A] ? S : modify<[K1], S, B>
+
+export function modify<
+  const S extends {},
+  A extends S,
+  B
+>(
+  tree: S, 
+  path: readonly [], 
+  modifyFn: (a: A) => B
+): 
+  [A, B] extends [B, A] ? S : modify<[], S, B>
+
+export function modify(
+  tree: {}, 
+  path: readonly [...keys.any],
+  modifyFn: (a: {} | null | undefined) => {}
+): unknown {
+  return !path.length ? tree 
+  : fn.pipe(
+    get(tree, ...path),
+    modifyFn,
+    set(...path)(tree),
+  )
+}
+
+// export function modify<KS extends props.any, V>(...args: [...KS, (u: unknown) => u is V]):
+//   <T extends has.path<KS, V>, S extends get<T, KS>>(modifyFn: (prev: V) => S) => <U extends T>(tree: U) => U
 // {
 //   <T extends has.path<KS>, S extends get<T, KS>, V>(
 //     modifyFn: (prev: NoInfer<V>) => S,
@@ -469,26 +682,26 @@ export function modify<KS extends props.any, V>(...args: [...KS, (u: unknown) =>
 //   ): (tree: T) => T
 // }
 
-export function modify(
-  ...args: 
-    | [...keys.any]
-    | [...keys.any, (u: any) => u is unknown]
-) {
-  const [path, guard] = separatePath(args)
-  return (mod: (prev: unknown) => unknown) => (tree: {}) =>  {
-    return !path.length ? tree : fn.pipe(
-      get(tree, ...path),
-      Option.guard(guard),
-      Option.map(
-        fn.flow(
-          mod,
-          set(...path)(tree),
-        )
-      ),
-      Option.getOrElse(() => tree)
-    )
-  }
-}
+// export function modify(
+//   ...args: 
+//     | [...keys.any]
+//     | [...keys.any, (u: any) => u is unknown]
+// ) {
+//   const [path, guard] = separatePath(args)
+//   return (mod: (prev: unknown) => unknown) => (tree: {}) =>  {
+//     return !path.length ? tree : fn.pipe(
+//       get(tree, ...path),
+//       Option.guard(guard),
+//       Option.map(
+//         fn.flow(
+//           mod,
+//           set(...path)(tree),
+//         )
+//       ),
+//       Option.getOrElse(() => tree)
+//     )
+//   }
+// }
 
 
 //   const [path, guard] = separatePath(args)

@@ -48,23 +48,27 @@ const Object_hasOwn =
   !!(u) && typeof u === "object" && globalThis.Object.hasOwn(u, k)
 
 /** @internal */
-type Any = 
+type JsonLike = 
   | null 
   | undefined 
   | boolean 
   | number 
   | string 
-  | readonly Any[] 
-  | { [x: string]: Any }
+  | readonly JsonLike[] 
+  | JsonLikeObject
+
+type Any = undefined | null | {}
+
+interface JsonLikeObject { [x: string]: JsonLike }
 
 /** @internal */
 const isArray
-  : (u: Any) => u is readonly Any[]
+  : (u: JsonLike) => u is readonly JsonLike[]
   = globalThis.Array.isArray
 /** @internal */
 const isObject
-  : (u: Any) => u is Record<string, Any>
-  = (u): u is Record<string, Any> => !!u && typeof u === "object"
+  : (u: JsonLike) => u is Record<string, JsonLike>
+  = (u): u is Record<string, JsonLike> => !!u && typeof u === "object"
 
 namespace char {
   export const Alphabet = [
@@ -796,7 +800,8 @@ function keys_map(f: (k: keyof any) => keyof any) {
 }
 ///
 namespace keys_map {
-  export function deep(f: (s: string) => string): (x: Any) => Any {
+  export function deep(f: (s: string) => string): (x: Any) => Any 
+  export function deep(f: (s: string) => string): (x: JsonLike) => JsonLike {
     return (x) => {
       switch (true) {
         default: return fn.exhaustive(x)
@@ -807,7 +812,7 @@ namespace keys_map {
         case typeof x === "string": return x
         case isArray(x): return map(x, keys_map.deep(f))
         case isObject(x): {
-          let out: Record<keyof any, Any> = {}
+          let out: Record<keyof any, JsonLike> = {}
           for (const k in x) out[f(k)] = keys_map.deep(f)(x[k])
           return out
         }

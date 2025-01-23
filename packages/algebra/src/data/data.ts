@@ -15,7 +15,7 @@ type Nullary =
   { kind: "*" }
 interface Unary<T> 
   { kind: "* -> *", value: T }
-interface Binary<L, R> 
+interface Binary<L, R>
   { kind: "* -> * -> *", left: L, right: R }
 interface Variadic<T>
   { kind: "(* -> *) -> *" }
@@ -44,7 +44,6 @@ namespace Binary {
 
 namespace Variadic {
 }
-
 
 export namespace Expr {
   export const Functor: Functor<ExprLambda> = {

@@ -12,8 +12,8 @@ export * as KnownFormat from "./format.js"
 export type { integer, number } from "./newtypes.js"
 export type { string } from "./newtypes.js"
 
-export type { Finite } from "./finite.js"
-export { finite } from "./finite.js"
+export type { Char, Equal, Finite } from "./satisfies.js"
+export { char, equal, finite } from "./satisfies.js"
 
 export * as Invariant from "./error.js"
 export type {

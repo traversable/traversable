@@ -1,4 +1,5 @@
 import * as path from "node:path"
+import type { StandardSchemaV1 } from "@standard-schema/spec"
 
 import type { Context } from "@traversable/core"
 import { Extension, Traversable, is, keyOf$, t } from "@traversable/core"
@@ -58,7 +59,7 @@ export function fold<T>($: Options.Config<T>) {
   return Traversable.foldIx(Extension.match($)) 
 }
 
-export function defineOptions<T>(handlers: Extension.Handlers<T, Index>): (options?: Options<T>) => Options.Config<T> {
+export function defineOptions<T, Ix>(handlers: Extension.Handlers<T, Index>): (options?: Options<T>) => Options.Config<T> {
   return ($?: Options<T>) => ({
     handlers,
     typeName: $?.typeName ?? defaults.typeName,
@@ -197,8 +198,6 @@ const buildMaskInterpreter: BuildPathInterpreter = (lookup) => ({ typeName }) =>
 
 /** @internal */
 const buildOpenApiNodePathInterpreter: BuildPathInterpreter = ()  => ($) => (xs) => {
-  console.log("$.absolutePath", $.absolutePath)
-  console.log("xs", xs)
   const path = $.absolutePath.map(escapePathSegment)
   switch (true) {
     case path.includes("anyOf"): {

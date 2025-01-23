@@ -1,11 +1,11 @@
-import type { Compare, Monoid, Predicate, Semigroup } from "@traversable/registry"
+import type { Applicative, Compare, Functor, HKT, Kind, Monoid, Predicate, Semigroup } from "@traversable/registry"
 import type { 
   any, 
   mut, 
   nonempty, 
   some, 
 } from "any-ts"
-import { identity, tuple } from "./_function.js"
+import { identity, pipe, tuple } from "./_function.js"
 import { key, type keys } from "./_key.js"
 import type { prop } from "./_prop.js"
 import type { jsdoc } from "./_unicode.js"
@@ -71,6 +71,8 @@ export type array_finite<T> = [T] extends [readonly unknown[]] ? [number] extend
  *  noTuples([1, 2, 3])          // 🚫
  */
 export type array_nonfinite<T> = [T] extends [readonly unknown[]] ? [number] extends [T["length"]] ? readonly unknown[] : never : never
+
+export interface lambda extends HKT { [-1]: readonly this[0][] }
 
 /** @internal */
 namespace local {
@@ -1096,3 +1098,17 @@ export type array_zip<
  */
 export function array_forEach<T extends array_any>(xs: T, effect: (x: T[number], ix: number) => void): void
   { return xs.forEach(effect) }
+
+/** 
+ * ## {@link array_forEach `array.forEach`}
+ * ### ｛ {@link jsdoc.preserves_structure ` ️🌿️ ` } ｝
+ * 
+ * Derive an array from an {@link globalThis.Iterable `Iterable`}.
+ */
+export const array_fromIterable
+  : <T>(xs: globalThis.Iterable<T>) => Kind<lambda, T>
+  = (xs) => globalThis.Array.isArray(xs) ? xs : globalThis.Array.from(xs)
+
+export function array_traverse<F extends HKT>(F: Applicative<F>)
+  : <A, B>(f: (a: A) => Kind<F, B>) => (iter: globalThis.Iterable<A>) => Kind<F, B[]> 
+  { return (f) => (iter) => F.map(F.of(f), array_fromIterable(iter).map) }

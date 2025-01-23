@@ -1,5 +1,6 @@
 export {
   /// types
+  type lambda,
   type array_any as any,
   type array_finite as finite,
   type array_flattenOnce as flattenOnce,
@@ -24,6 +25,7 @@ export {
   array_fold as fold,
   array_foldMap as foldMap,
   array_forEach as forEach,
+  array_fromIterable as fromIterable,
   array_fst as fst,
   array_getSemigroup as getSemigroup,
   array_getMonoid as getMonoid,
@@ -53,6 +55,7 @@ export {
   array_startsWith as startsWith,
   array_tail as tail,
   array_tails as tails,
+  array_traverse as traverse,
   array_unappend as unappend,
   array_uncapitalize as uncapitalize,
   array_unprefix as unprefix,

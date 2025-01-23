@@ -1,18 +1,20 @@
-import { core, fc, t, tree, zip } from "@traversable/core"
+import { core, fc, tree, zip } from "@traversable/core"
 import { fn, map, object } from "@traversable/data"
 import { http } from "@traversable/http"
-import { PATTERN, type RequireN, type Required, type newtype } from "@traversable/registry"
+import { PATTERN } from "@traversable/registry"
+import type {
+  autocomplete,
+  inline,
+  RequireN, 
+  Required, 
+  newtype,
+} from "@traversable/registry"
+
 
 import { createDepthIdentifier } from "fast-check"
 import * as N from "./normalize.js"
 import { Schema } from "./schema/exports.js"
-import type { SchemaLoop } from "./schema/schema.js"
 import type { $ref } from "./types.js"
-
-/** @internal */
-type inline<T> = T
-/** @internal */
-type autocomplete<T> = T | (string & {})
 
 /** @internal */
 const predicate = tree.has("schemas", tree.has("type", core.is.string))
@@ -25,43 +27,45 @@ openapi.is = {
   request: (u: openapi.requestBody): u is openapi.request => !("$ref" in u),
 }
 
+const openapi_v3xx = "3.1.0"
+const defaultInfo = {
+  title: "",
+  version: "0.0.0",
+} satisfies doc["info"]
+
 export function doc<const T extends doc>(specification: T): T
-export function doc<const T extends Partial<doc>>(specification: T): T & doc
+export function doc<T extends Partial<doc>>(specification: T): T & doc
 export function doc({ info, openapi, paths, ...spec }: Partial<doc>): doc {
   return {
-    openapi: openapi ?? "3.1.0",
-    info: {
-      title: info?.title ?? "",
-      version: info?.version ?? "0.0.0",
+    openapi: openapi ?? openapi_v3xx,
+    info: !info ? defaultInfo : {
       ...info,
+      title: info.title ?? defaultInfo.title,
+      version: info.version ?? defaultInfo.version,
     },
-    paths: paths ?? {},
+    paths: paths || {},
     components: { schemas: {} },
     ...spec,
   }
 }
 
+
 export interface doc extends doc.meta {
-  openapi: string
+  openapi: autocomplete<typeof openapi_v3xx>
   paths: openapi.paths
   components: openapi.components
 }
 export declare namespace doc {
-    interface meta {
-      info: openapi.meta.info
-      servers?: openapi.meta.servers
-      security?: openapi.meta.security
-      tags?: openapi.meta.tags
-      externalDocs?: openapi.meta.externalDocs
-    }
-  }
-
-interface 𐠀<T extends {}> extends newtype<T> {}
-interface 𐠀𐠀<T extends {}> extends newtype<T> {}
-interface ꘌ {}
-export declare namespace openapi {
   export { $ref, doc as document }
+  export interface meta {
+    info: openapi.meta.info
+    servers?: openapi.meta.servers
+    security?: openapi.meta.security
+    tags?: openapi.meta.tags
+    externalDocs?: openapi.meta.externalDocs
+  }
 }
+
 export declare namespace openapi {
   const doc: doc.meta & {
     openapi: "3.1.0"
@@ -140,15 +144,16 @@ export declare namespace openapi {
 
 
   interface components { schemas: schemas }
-  interface paths extends inline<{ [path: string]: openapi.pathitem }> {}
+  interface paths { [path: string]: openapi.pathitem }
 
-  interface pathitem extends
-    pathitem.meta,
-    pathitem.verbs {}
+  // interface pathitem extends
+  //   pathitem.meta,
+  //   pathitem.verbs {}
+  type pathitem = pathitem.meta & pathitem.verbs
 
   namespace pathitem {
     /** TODO: implement trace, head, options */
-    interface verbs {
+    type verbs = {
       [http.Verb.enum.get]?: openapi.operation
       [http.Verb.enum.get]?: openapi.operation
       [http.Verb.enum.post]?: openapi.operation
@@ -195,7 +200,7 @@ export declare namespace openapi {
     content?: openapi.content
   }
 
-  interface schemas { [x: string]: Schema.any }
+  interface schemas { [x: string]: Schema.any | $ref }
   interface parameters extends inline<readonly openapi.parameter[]> {}
 
   type response = {
@@ -204,28 +209,30 @@ export declare namespace openapi {
     content?: openapi.content
     headers?: openapi.headers
   }
-  interface responses extends
-    inline<{ [x: `1${number}`]: openapi.response }>,
-    inline<{ [x: `2${number}`]: openapi.response }>,
-    inline<{ [x: `3${number}`]: openapi.response }>,
-    inline<{ [x: `4${number}`]: openapi.response }>,
-    inline<{ [x: `5${number}`]: openapi.response }> {}
+  type responses = Record<string, openapi.response>
+  type content = Record<http.MediaType, openapi.mediatype>
 
-  interface content {
-    [http.MediaType.enum.applicationJSON]?: openapi.mediatype
-    [http.MediaType.enum.applicationFormURLEncoded]?: openapi.mediatype
-    [http.MediaType.enum.applicationOctetStream]?: openapi.mediatype
-    [http.MediaType.enum.applicationXML]?: openapi.mediatype
-    [http.MediaType.enum.applicationJavascript]?: openapi.mediatype
-    [http.MediaType.enum.imageGIF]?: openapi.mediatype
-    [http.MediaType.enum.imageJPEG]?: openapi.mediatype
-    [http.MediaType.enum.imagePNG]?: openapi.mediatype
-    [http.MediaType.enum.multipartFormData]?: openapi.mediatype
-    [http.MediaType.enum.textCSV]?: openapi.mediatype
-    [http.MediaType.enum.textHTML]?: openapi.mediatype
-    [http.MediaType.enum.textPlain]?: openapi.mediatype
-    [http.MediaType.enum.textXML]?: openapi.mediatype
-  }
+  // interface responses extends
+  //   inline<{ [x: `1${number}`]: openapi.response }>,
+  //   inline<{ [x: `2${number}`]: openapi.response }>,
+  //   inline<{ [x: `3${number}`]: openapi.response }>,
+  //   inline<{ [x: `4${number}`]: openapi.response }>,
+  //   inline<{ [x: `5${number}`]: openapi.response }> {}
+  // interface content {
+  //   [http.MediaType.enum.applicationJSON]?: openapi.mediatype
+  //   [http.MediaType.enum.applicationFormURLEncoded]?: openapi.mediatype
+  //   [http.MediaType.enum.applicationOctetStream]?: openapi.mediatype
+  //   [http.MediaType.enum.applicationXML]?: openapi.mediatype
+  //   [http.MediaType.enum.applicationJavascript]?: openapi.mediatype
+  //   [http.MediaType.enum.imageGIF]?: openapi.mediatype
+  //   [http.MediaType.enum.imageJPEG]?: openapi.mediatype
+  //   [http.MediaType.enum.imagePNG]?: openapi.mediatype
+  //   [http.MediaType.enum.multipartFormData]?: openapi.mediatype
+  //   [http.MediaType.enum.textCSV]?: openapi.mediatype
+  //   [http.MediaType.enum.textHTML]?: openapi.mediatype
+  //   [http.MediaType.enum.textPlain]?: openapi.mediatype
+  //   [http.MediaType.enum.textXML]?: openapi.mediatype
+  // }
 
   type header =
     | openapi.header.any
@@ -238,7 +245,7 @@ export declare namespace openapi {
   }
 
   interface mediatype<T = unknown> {
-    schema?: Schema.any // | openapi.$ref
+    schema?: Schema.any | $ref
     examples?: openapi.meta.examples
     example?: T
     encoding?: openapi.encoding
@@ -259,12 +266,9 @@ export declare namespace arbitrary {
     maxCount?: number
     minCount?: number
   }
-
-
   interface Schemas extends arbitrary.Countable {
     /// cross-cutting configuration
     depthIdentifier?: fc.DepthIdentifier
-    bias?: keyof SchemaLoop
     /// node-specific options
     null?: Schema.null.Constraints
     boolean?: Schema.boolean.Constraints
@@ -279,7 +283,6 @@ export declare namespace arbitrary {
     anyOf?: Schema.anyOf.Constraints
     oneOf?: Schema.oneOf.Constraints
   }
-
   interface Paths extends arbitrary.Countable {}
   interface PathParams extends arbitrary.Countable {}
   interface PathSegments extends arbitrary.Countable {}
@@ -294,11 +297,10 @@ export declare namespace arbitrary {
     description?: boolean
     const?: boolean
   }
-  interface Node { exclude?: boolean }
-  interface Nodes {
-  }
+  type Exclude = readonly Schema.Tag[]
   interface Constraints {
     include?: arbitrary.Include
+    exclude?: arbitrary.Exclude
     schemas?: arbitrary.Schemas
     paths?: arbitrary.Paths
     pathParams?: arbitrary.PathParams
@@ -322,11 +324,11 @@ export declare namespace arbitrary {
  */
 export function arbitrary(constraints?: arbitrary.Constraints): fc.Arbitrary<doc>
 export function arbitrary(_: arbitrary.Constraints = defaults): fc.Arbitrary<{}> {
-  const constraints = applyConstraints(_)
+  const $ = applyConstraints(_)
   return fc.record({
-    openapi: fc.constantFrom("3.0.1"),
-    components: components(constraints),
-    paths: paths(constraints),
+    openapi: fc.constantFrom("3.1.0"),
+    components: components($),
+    paths: paths($),
     info: Info,
   }, { requiredKeys: [ "components", "paths", "openapi" ] }).map(normalize)
 }
@@ -345,9 +347,10 @@ const applyConstraints
     }
     : {
       schemas: !_.schemas ? { ...defaults.schemas, depthIdentifier: fc.createDepthIdentifier() }
-      : {
+      :
+
+      {
         /// cross-cutting schema configuration
-        bias: _.schemas.bias ?? defaults.schemas.bias,
         depthIdentifier: _.schemas.depthIdentifier ?? createDepthIdentifier(),
         maxCount: _.schemas.maxCount ?? defaults.schemas.maxCount,
         minCount: _.schemas.minCount ?? defaults.schemas.minCount,
@@ -365,6 +368,8 @@ const applyConstraints
         string: { ..._.schemas.string, ...defaults.schemas.string },
         tuple: { ..._.schemas.tuple, ...defaults.schemas.tuple },
       },
+
+      exclude: _.exclude || defaults.exclude,
       include: !_.include ? defaults.include: {
         const: _.include.const ?? defaults.include.const,
         description: _.include.description ?? defaults.include.description,
@@ -395,7 +400,6 @@ export const defaults = {
   schemas: {
     minCount: 1,
     maxCount: 3,
-    bias: "object",
     allOf: Schema.allOf.defaults,
     anyOf: Schema.anyOf.defaults,
     array: Schema.array.defaults,
@@ -409,6 +413,7 @@ export const defaults = {
     string: Schema.string.defaults,
     tuple: Schema.tuple.defaults,
   },
+  exclude: [],
   include: {
     const: false,
     description: false,
@@ -763,30 +768,42 @@ export interface mediatype extends fc.Arbitrary.infer<ReturnType<typeof mediatyp
  * See also:
  * - [OpenAPI docs](https://swagger.io/docs/specification/v3_0/media-types/)
  */
-export function mediatype(constraints?: mediatype.Constraints): fc.Arbitrary<openapi.mediatype>
-export function mediatype(_: mediatype.Constraints = mediatype.defaults) {
-  const constraints = {
-    ...applyConstraints(_),
-    schema: _.schema,
-  }
-  return fc.record(
-    {
-      schema: constraints.schema ?? mediatype.defaults.schema, // fc.oneof(Ref.typedef, Schema.any),
-      ...constraints?.include?.description && { description: fc.lorem() },
-      ...constraints?.include?.examples && { examples: fc.dictionary(fc.jsonValue().filter((x) => x !== null)) },
-      // encoding: fc.dictionary(fc.string(), Encoding),
-      // TODO: `Mediatype` is disjoint on `example` and `examples` IRL
-      // const ExampleXORExamples = fc.oneof(Example, Finite.Examples)
-      // ...(constraints?.includeExamples && { example: fc.oneof(fc.jsonValue()) }),
-      // ...(
-      //   constraints?.includeExamples
-      //   && { examples: fc.jsonValue() } // fc.dictionary(fc.string(), Example) }
-      //   // && { examples: fc.dictionary(fc.string(), fc.oneof(Ref.typedef, Example)) }
-      // ),
-    },
-    { requiredKeys: ["schema"] },
-  ) satisfies fc.Arbitrary<openapi.mediatype>
+// export function mediatype(constraints?: mediatype.Constraints): fc.Arbitrary<openapi.mediatype>
+export function mediatype(_?: mediatype.Constraints) {
+  const $ = applyConstraints(_)
+  const schemaConstraints = constraintsAdapter($)
+  return fc.record({
+    schema: _?.schema! ?? Schema.any(schemaConstraints), // fc.oneof(Ref.typedef, Schema.any),
+    ...$?.include?.description && { description: fc.lorem() },
+    ...$?.include?.examples && { examples: fc.dictionary(fc.jsonValue().filter((x) => x !== null)) },
+    // encoding: fc.dictionary(fc.string(), Encoding),
+    // TODO: `Mediatype` is disjoint on `example` and `examples` IRL
+    // const ExampleXORExamples = fc.oneof(Example, Finite.Examples)
+    // ...(constraints?.includeExamples && { example: fc.oneof(fc.jsonValue()) }),
+    // ...(
+    //   constraints?.includeExamples
+    //   && { examples: fc.jsonValue() } // fc.dictionary(fc.string(), Example) }
+    //   // && { examples: fc.dictionary(fc.string(), fc.oneof(Ref.typedef, Example)) }
+    // ),
+  }, { requiredKeys: ["schema"] }) satisfies fc.Arbitrary<openapi.mediatype>
 }
+
+const constraintsAdapter
+  : (arbitraryConstraints?: arbitrary.Constraints) => Schema.Constraints
+  = (_?: arbitrary.Constraints) => {
+    return {
+      base: {
+        exclude: _?.exclude ?? Schema.Constraints.defaults.base.exclude,
+        include: !_?.include ? Schema.Constraints.defaults.base.include : {
+          const: _?.include.const ?? Schema.Constraints.defaults.base.include.const,
+          description: _?.include.description ?? Schema.Constraints.defaults.base.include.description,
+          example: _?.include.const ?? Schema.Constraints.defaults.base.include.example,
+          examples: _?.include.const ?? Schema.Constraints.defaults.base.include.examples,
+        }
+      },
+      sortBias: Schema.Constraints.defaults.sortBias,
+    }
+  }
 
 export declare namespace mediatype {
   interface Constraint {
@@ -844,24 +861,26 @@ export namespace Header {
     allowReserved: fc.boolean(), // default: false
   } as const
   /** ### {@link Header.withSchema `openapi.Header.withSchema`} */
-  export const withSchema = fc.record(
-    {
+  export const withSchema = (_?: arbitrary.Constraints) => {
+    const $ = applyConstraints(_)
+    const schemaConstraints = constraintsAdapter($)
+    return fc.record({
       ...Header.shape,
-      schema: Schema.any(),
       // schema: fc.oneof(Ref.typedef, Schema.any),
-    },
-    { requiredKeys: [] },
-  )
+      schema: Schema.any(schemaConstraints),
+    }, { requiredKeys: [] })
+  }
+
   /** ### {@link Header.withContent `openapi.Header.withContent`} */
-  export const withContent = fc.record(
-    {
-      ...Header.shape,
-      content: fc.dictionary(fc.constantFrom(...http.MediaType.all), mediatype(), { maxKeys: 1, minKeys: 1 }),
-    },
-    { requiredKeys: [] },
-  )
+  export const withContent = fc.record({
+    ...Header.shape,
+    content: fc.dictionary(fc.constantFrom(...http.MediaType.all), mediatype(), { maxKeys: 1, minKeys: 1 }),
+  }, { requiredKeys: [] })
   /** ### {@link Header.typedef `openapi.Header.typedef`} */
-  export const typedef = fc.oneof(Header.withContent, Header.withSchema)
+  export const typedef = (_?: arbitrary.Constraints) => {
+    const $ = applyConstraints(_)
+    fc.oneof(Header.withContent, Header.withSchema($))
+  }
 }
 
 /** ### {@link response `openapi.Response`} */
@@ -874,7 +893,6 @@ export function response(constraints?: arbitrary.Constraints) {
       ...constraints,
       schema: Schema.any(),
     }),
-    // Note: this field is required (not configurable)
   })
 }
 
@@ -886,15 +904,17 @@ export function response(constraints?: arbitrary.Constraints) {
 
 /** ### {@link request `openapi.request`} */
 export function request(constraints?: arbitrary.Constraints): fc.Arbitrary<openapi.request>
-export function request(constraints?: arbitrary.Constraints) {
+export function request(_?: arbitrary.Constraints) {
+  const $ = applyConstraints(_)
+  const schemaConstraints = constraintsAdapter($)
   return fc.record(
     {
       content: fc.dictionary(
         fc.constantFrom(...http.MediaType.all),
-        mediatype({ ...constraints, schema: Schema.any() }),
+        mediatype({ ...$, schema: Schema.any(schemaConstraints) }),
       ),
       required: fc.boolean(),
-      ...constraints?.include?.description && { description: fc.string() },
+      ...$?.include?.description && { description: fc.string() },
     },
     { requiredKeys: ["content"] },
   ) satisfies fc.Arbitrary<openapi.request>
@@ -920,7 +940,7 @@ export function requestBody(_?: arbitrary.Constraints): fc.Arbitrary<openapi.req
 interface path_parameter extends inline<{
   in: autocomplete<"path">
   name: string
-  schema: Schema.any
+  schema: Schema.any | $ref
   required: boolean
   style?: parameter.style.path
   explode?: boolean
@@ -929,7 +949,7 @@ interface path_parameter extends inline<{
 interface query_parameter extends inline<{
   in: autocomplete<"query">
   name: string
-  schema: Schema.any
+  schema: Schema.any | $ref
   required?: boolean
   style?: parameter.style.query
   explode?: boolean
@@ -939,7 +959,7 @@ interface query_parameter extends inline<{
 interface header_parameter extends inline<{
   in: autocomplete<"header">
   name: string
-  schema: Schema.any
+  schema: Schema.any | $ref
   required?: boolean
   style?: parameter.style.header
   explode?: boolean
@@ -949,7 +969,7 @@ interface header_parameter extends inline<{
 interface cookie_parameter extends inline<{
   in: autocomplete<"cookie">
   name: string
-  schema: Schema.any
+  schema: Schema.any | $ref
   required?: boolean
   style?: parameter.style.cookie
   explode?: boolean
@@ -1007,23 +1027,24 @@ export namespace parameter {
     export type query = typeof parameter.style.query[number]
   }
 
-  export function pathSchema(constraints: Schema.Constraints = Schema.Constraints.defaults) {
+  export function pathSchema($: Schema.Constraints = Schema.Constraints.defaults) {
     return fc.oneof(
-      Schema.number(constraints),
-      Schema.string(constraints),
-      Schema.integer(constraints),
-      Schema.boolean(constraints),
+      Schema.number($),
+      Schema.string($),
+      Schema.integer($),
+      Schema.boolean($),
     )
   }
 
   /** ### {@link parameter.path `openapi.parameter.path`} */
   export function path(constraints?: arbitrary.Constraints): fc.Arbitrary<globalThis.Omit<openapi.parameter.path, "name">>
   export function path(_?: arbitrary.Constraints): fc.Arbitrary<globalThis.Omit<openapi.parameter.path, "name">> {
-    const constraints = applyConstraints(_)
+    const $ = applyConstraints(_)
+    const schemaConstraints = constraintsAdapter($)
     return fc.record({
       in: fc.constant("path"),
       required: fc.constant(true),
-      schema: pathSchema(),
+      schema: pathSchema(schemaConstraints),
       style: fc.constantFrom(...style.path),
       explode: fc.boolean(),
     }, {
@@ -1038,11 +1059,13 @@ export namespace parameter {
   /** ### {@link parameter.query `openapi.parameter.query`} */
   export function query(constraints?: arbitrary.Constraints): fc.Arbitrary<openapi.parameter.query>
   export function query(_?: arbitrary.Constraints): fc.Arbitrary<openapi.parameter.query> {
-    const constraints = applyConstraints(_)
+    const $ = applyConstraints(_)
+    const schemaConstraints = constraintsAdapter($)
     return fc.record({
       in: fc.constant("query"),
       name: fc.identifier(),
-      schema: Schema.any(),
+      // HERE
+      schema: Schema.any(schemaConstraints),
       required: fc.boolean(),
       style: fc.constantFrom(...style.query),
       explode: fc.boolean(),
@@ -1079,13 +1102,15 @@ export namespace parameter {
   /** ### {@link parameter.cookie `openapi.parameter.cookie`} */
   export function cookie(constraints?: arbitrary.Constraints): fc.Arbitrary<openapi.parameter.cookie>
   export function cookie(_?: arbitrary.Constraints): fc.Arbitrary<openapi.parameter.cookie> {
-    const constraints = applyConstraints(_)
+    const $ = applyConstraints(_)
+    const schemaConstraints = constraintsAdapter($)
     return fc.record({
       in: fc.constant("cookie"),
       name: fc.identifier(),
       style: fc.constant(...parameter.style.cookie),
       required: fc.boolean(),
-      schema: Schema.any(Schema.Constraints.defaults),
+      // HERE
+      schema: Schema.any(schemaConstraints),
       deprecated: fc.boolean(),
     }, { requiredKeys: ["in", "name", "schema"] })
   }
@@ -1246,7 +1271,6 @@ export function pathname(_?: arbitrary.Constraints): fc.Arbitrary<pathname> {
     )
 }
 
-
 /** ### {@link pathnames `openapi.pathnames`} */
 export function pathnames(constraints?: arbitrary.Constraints): fc.Arbitrary<readonly pathname[]>
 export function pathnames(_?: arbitrary.Constraints): fc.Arbitrary<readonly pathname[]> {
@@ -1287,13 +1311,12 @@ export function paths(_?: arbitrary.Constraints): fc.Arbitrary<openapi.paths> {
 export function components(constraints?: arbitrary.Constraints): fc.Arbitrary<openapi.components>
 export function components(_?: arbitrary.Constraints): fc.Arbitrary<openapi.components> {
   const $ = applyConstraints(_)
-  map($.schemas, (x) => x)
-  $.schemas.null
-  const bias = Schema[$.schemas.bias]
+  const schemaConstraints = constraintsAdapter($)
+
   return fc.record({
     schemas: fc.dictionary(
       fc.alphanumeric(),
-      Schema.any({ ...Schema.Constraints.defaults, anyOf: { ...Schema.Constraints.defaults.allOf, exclude: false, }}), {
+      Schema.any(schemaConstraints), {
         minKeys: $.schemas.minCount,
         maxKeys: $.schemas.maxCount,
       },
@@ -1302,12 +1325,7 @@ export function components(_?: arbitrary.Constraints): fc.Arbitrary<openapi.comp
   }, { requiredKeys: ["schemas"] })
 }
 
-const getExcludeConfig = <K extends keyof typeof Schema.Constraints.defaults>(key: K) => tree.get.defer("Constraints", "defaults", key, "constraints", "exclude")
-
-
-
 // /** ### {@link Components `openapi.Components`} */
 // export interface Components extends Arbitrary.infer<ReturnType<typeof components>> {}
 // export interface Tag extends Arbitrary.infer<typeof tag> {}
 // export interface Example extends Arbitrary.infer<typeof example> {}
-

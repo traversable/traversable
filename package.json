@@ -29,6 +29,7 @@
     "reboot": "./bin/reboot.ts",
     "test": "vitest run -- --skipTypes",
     "test:watch": "vitest watch",
+    "watch": "./bin/watch.ts",
     "workspace:new": "./bin/workspace-create.ts",
     "workspace:rm": "./bin/workspace-cleanup.ts"
   },
@@ -49,8 +50,8 @@
     "madge": "^8.0.0",
     "tinybench": "^3.0.4",
     "typescript": "5.6.3",
-    "vite": "^5.4.11",
-    "vitest": "^2.1.5"
+    "vite": "^5.4.12",
+    "vitest": "^2.1.8"
   },
   "overrides": {
     "typescript": "5.6.3"

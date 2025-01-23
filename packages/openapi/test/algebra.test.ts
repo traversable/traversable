@@ -1,3 +1,7 @@
+///////////////////////////////
+///    Moved: 2025-01-22    ///
+///////////////////////////////
+
 import { show, test } from "@traversable/core"
 import { openapi } from "@traversable/openapi"
 
@@ -44,7 +48,8 @@ vi.describe("〖⛳️〗‹‹‹ ❲@traversable/openapi/algebra❳", () => {
   })(
     "〖⛳️〗‹ ❲algebra.forget❳: roundtrip is lossless",
     (schema) => {
-      const free = JSON.parse(interpret(schema).out)
+      // TODO: FIX THIS TYPE ERROR
+      const free = JSON.parse(interpret(schema as never).out)
       const forget = openapi.forget(free)
       vi.assert.deepEqual(
         free,

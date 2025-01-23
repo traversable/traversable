@@ -1,7 +1,9 @@
 {
   "typescript.tsdk": "node_modules/typescript/lib",
   "typescript.preferences.importModuleSpecifier": "non-relative",
-  // "typescript.preferences.autoImportSpecifierExcludeRegexes": [],
+  "typescript.preferences.autoImportSpecifierExcludeRegexes": [
+	  "^(node:)?os$"
+  ],
   "typescript.enablePromptUseWorkspaceTsdk": true,
   "typescript.experimental.expandableHover": true,
   "typescript.updateImportsOnFileMove.enabled": "never",
