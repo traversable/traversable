@@ -1,7 +1,8 @@
-import { type JsonSchema, core, fc, tree } from "@traversable/core"
+import { type JsonSchema, core, fc, tree, Traversable } from "@traversable/core"
 import type { record as Record, keys } from "@traversable/data"
 import { fn, integer } from "@traversable/data"
 import type { Require, inline } from "@traversable/registry"
+import { PATTERN, REPLACER } from "@traversable/registry"
 
 import { type Schema, type arbitrary, format } from "../types.js"
 import type * as t from "../types.js"
@@ -463,14 +464,13 @@ Schema_string.format = (constraints: Constraints.Config) => fc.oneof(
   fc.record(uri(constraints), { requiredKeys: [] }),
 )
 Schema_string.static = {
-  minLength: fc.nat(0x100),
-  maxLength: fc.nat(0x100),
-  /**
-   * As specified by [ECMA 262](https://262.ecma-international.org/5.1/#sec-15.10.1)
-   * TODO: map over generated value and:
-   * - [ ] escape special characters, per the BNF
-   */
-  pattern: fc.string(),
+  minLength: fc.integer({ min: -0x100, max: +0x00 }),
+  maxLength: fc.integer({ min: -0x100, max: +0x00 }),
+  pattern: fc.string({ minLength: +0x1, maxLength: +0x20 }).map(escapeRegularExpression),
+}
+
+function escapeRegularExpression(pattern: string) {
+  return new RegExp(pattern.replace(PATTERN.escapeRegExp, `\\${REPLACER.Match}`)).toString()
 }
 
 Schema_string.base = ($: Constraints.Config): fc.Arbitrary<Schema_string> => {
@@ -507,11 +507,7 @@ Schema_string.base = ($: Constraints.Config): fc.Arbitrary<Schema_string> => {
         maxLength,
       },
       ...body,
-      /**
-       * TODO: turn 'pattern' off by default -- this was turned on for testing purposes
-       */
-      pattern,
-      // ...!format && pattern && { pattern },
+      ...!format && pattern && { pattern },
       ...optionally({ example: format?.example ?? example }),
     }
   })
@@ -1198,12 +1194,12 @@ export interface SchemaLoop<Meta extends {} = {}> {
  */
 
 export const Tags = [
-  "null",
-  "boolean",
-  "integer",
-  "number",
   "string",
+  "number",
+  "integer",
   "object",
+  "boolean",
+  "null",
   "array",
   "record",
   "tuple",
@@ -1326,3 +1322,4 @@ else {
   })
 }
 */
+

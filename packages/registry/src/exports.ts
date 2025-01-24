@@ -2,7 +2,7 @@ import type { newtype } from "any-ts"
 
 export * from "./version.js"
 export type { emoji, gitmoji, jsdoc, math } from "./utf-16.js"
-export { PATTERN } from "./pattern.js"
+export { PATTERN, REPLACER } from "./pattern.js"
 export { URI, symbol } from "./symbol.js"
 
 export type * from "./types.js"

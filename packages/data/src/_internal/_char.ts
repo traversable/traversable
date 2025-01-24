@@ -10,6 +10,13 @@ export {
   char_isEscapable as isEscapable,
 }
 
+const CODE = {
+  a: 97,
+  z: 122,
+  A: 65,
+  Z: 90,
+} as const
+
 /**
  * ### {@link char_finite `char.finite`}
  * 
@@ -92,4 +99,16 @@ const char_is
 
 const char_escapeChar = (char?: string) => 
   char && char in char_Escapable ? "\\".concat(char) : char
+
+export const invertCase = (char?: string) => {
+  if (char === undefined) return ""
+  else {
+    const prev = char.charCodeAt(0)
+    const delta 
+      = CODE.a <= prev && prev <= CODE.z ? -32  
+      : CODE.A <= prev && prev <= CODE.Z ? 32 
+      : 0
+    return globalThis.String.fromCharCode(prev + delta)
+  }
+}
 

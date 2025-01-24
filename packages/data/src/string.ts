@@ -374,7 +374,7 @@ export const titlecase
  * object.
  *
  * @example
- * import { string } from "@traversable/shared/data"
+ * import { string } from "@traversable/data"
  *
  * const ex_1 = string.camel("recursive_descent")
  * //    ^? const ex_1: "recursiveDescent"

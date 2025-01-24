@@ -98,7 +98,12 @@ const generated = {
   string({ meta = {} }) {
     const constraints = Constrain.string(meta)
     const format = isStringFormat(meta.format) ? StringFormat[meta.format] : null
-    return format === null
+
+    const pattern = meta.pattern === undefined ? null : new RegExp(meta.pattern)
+
+    // const pattern 
+    return meta.pattern !== undefined ? meta.pattern
+      : format === null
       ? 'type.string' + constraints
       : 'type.keywords.string'
       + format

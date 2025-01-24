@@ -154,7 +154,7 @@ namespace Spec {
   Spec.map = Spec_map
   Spec.new = Spec_new
 
-  export function generate<T>(constraints?: arbitrary.Constraints): fc.Arbitrary<Spec.doc<T>> 
+  export function generate<T>(constraints?: arbitrary.Constraints): fc.Arbitrary<Spec.doc<Schema>> 
   export function generate<T>(constraints?: arbitrary.Constraints) {
     return arbitrary(constraints)
   }

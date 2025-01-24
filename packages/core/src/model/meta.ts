@@ -59,8 +59,9 @@ declare namespace Meta {
   interface Meta_number<_ = unknown> extends Meta.Base, Meta.Numeric { format?: string }
   interface Meta_string<_ = unknown> extends Meta.Base, Meta.Enumerable { 
     format?: string
-
+    pattern?: string
   }
+
   ///
   interface Meta_tuple<_ = unknown> extends Meta.Base, Meta.Enumerable {}
   interface Meta_record<_ = unknown> extends Meta.Base {}
