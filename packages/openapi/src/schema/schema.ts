@@ -1,4 +1,4 @@
-import { type JsonSchema, core, fc, tree, Traversable } from "@traversable/core"
+import { type JsonSchema, Traversable, core, fc, tree } from "@traversable/core"
 import type { record as Record, keys } from "@traversable/data"
 import { fn, integer } from "@traversable/data"
 import type { Require, inline } from "@traversable/registry"
@@ -269,7 +269,7 @@ declare namespace Schema_null {
 function Schema_null(constraints?: Constraints): fc.Arbitrary<Schema_null>
 function Schema_null(_?: Constraints): fc.Arbitrary<Schema_null> {
   const $ = Constraints.configure(_)
-  return $.null.arbitrary($)
+  return $.null.arbitrary($) satisfies fc.Arbitrary<JsonSchema.null>
 }
 ///    NULL    ///
 //////////////////
@@ -313,7 +313,7 @@ declare namespace Schema_boolean {
 function Schema_boolean(constraints?: Constraints): fc.Arbitrary<Schema_boolean>
 function Schema_boolean(_?: Constraints): fc.Arbitrary<Schema_boolean> {
   const $ = Constraints.configure(_)
-  return $.boolean.arbitrary($)
+  return $.boolean.arbitrary($) satisfies fc.Arbitrary<JsonSchema.boolean>
 }
 ///    BOOLEAN    ///
 /////////////////////
@@ -380,7 +380,7 @@ declare namespace Schema_integer {
 function Schema_integer(constraints?: Constraints): fc.Arbitrary<Schema_integer>
 function Schema_integer(_?: Constraints): fc.Arbitrary<Schema_integer> {
   const $ = Constraints.configure(_)
-  return $.integer.arbitrary($)
+  return $.integer.arbitrary($) satisfies fc.Arbitrary<JsonSchema.integer>
 }
 ///    INTEGER    ///
 /////////////////////
@@ -439,7 +439,7 @@ declare namespace Schema_number {
 function Schema_number(constraints?: Constraints): fc.Arbitrary<Schema_number>
 function Schema_number(_?: Constraints): fc.Arbitrary<Schema_number> {
   const $ = Constraints.configure(_)
-  return $.number.arbitrary($)
+  return $.number.arbitrary($) satisfies fc.Arbitrary<JsonSchema.number>
 }
 ///    NUMBER    ///
 ////////////////////
@@ -530,7 +530,7 @@ declare namespace Schema_string {
 function Schema_string(constraints?: Constraints): fc.Arbitrary<Schema_string>
 function Schema_string(_?: Constraints): fc.Arbitrary<Schema_string> {
   const $ = Constraints.configure(_)
-  return $.string.arbitrary($)
+  return $.string.arbitrary($) satisfies fc.Arbitrary<JsonSchema.string>
 }
 ///    STRING    ///
 ////////////////////
@@ -597,7 +597,7 @@ function Schema_record<T>
 ///
 function Schema_record<T>(LOOP: fc.Arbitrary<T>, _?: Constraints) {
   const $ = Constraints.configure(_)
-  return $.record.arbitrary(LOOP, $)
+  return $.record.arbitrary(LOOP, $) satisfies fc.Arbitrary<Omit<JsonSchema.objectF<T>, "properties">>
 }
 ///    RECORD    ///
 ////////////////////
@@ -664,7 +664,7 @@ function Schema_allOf<T>(
   _: Constraints = Constraints.defaults
 ): fc.Arbitrary<Schema_allOf<T>> {
   const $ = Constraints.configure(_)
-  return $.allOf.arbitrary(LOOP, $)
+  return $.allOf.arbitrary(LOOP, $)  satisfies fc.Arbitrary<JsonSchema.allOfF<T>>
 }
 ///    ALL OF    ///
 ////////////////////
@@ -727,7 +727,7 @@ function Schema_anyOf<T>(
   _: Constraints = Constraints.defaults
 ): fc.Arbitrary<Schema_anyOf<T>> {
   const $ = Constraints.configure(_)
-  return $.anyOf.arbitrary(LOOP, $)
+  return $.anyOf.arbitrary(LOOP, $)  satisfies fc.Arbitrary<JsonSchema.anyOfF<T>>
 }
 ///    ANY OF    ///
 ////////////////////
@@ -807,7 +807,7 @@ function Schema_oneOf<T>(
   _: Constraints = Constraints.defaults
 ): fc.Arbitrary<Schema_oneOf<T>> {
   const $ = Constraints.configure(_)
-  return $.oneOf.arbitrary(LOOP, $)
+  return $.oneOf.arbitrary(LOOP, $)  satisfies fc.Arbitrary<JsonSchema.oneOfF<T>>
 }
 ///    ONE OF    ///
 ////////////////////
@@ -873,7 +873,7 @@ function Schema_array<T>(
   _: Constraints = Constraints.defaults
 ): fc.Arbitrary<t.Schema_array<T>> {
   const $ = Constraints.configure(_)
-  return $.array.arbitrary(LOOP, $)
+  return $.array.arbitrary(LOOP, $)  satisfies fc.Arbitrary<JsonSchema.arrayF<T>>
 }
 ///    ARRAY    ///
 ///////////////////
@@ -952,12 +952,12 @@ function Schema_object
   <T>(model: Schema_object.Model<T>, constraints?: Constraints):
     fc.Arbitrary<Schema_object<T>>
 ///
-function Schema_object(
-  LOOP: Schema_object.Model,
+function Schema_object<T>(
+  LOOP: Schema_object.Model<T>,
   _: Constraints = Constraints.defaults
 ): fc.Arbitrary<Schema_object> {
   const $ = Constraints.configure(_)
-  return $.object.arbitrary(LOOP, $)
+  return $.object.arbitrary(LOOP, $)  satisfies fc.Arbitrary<JsonSchema.objectF<T>>
 }
 ///    OBJECT    ///
 ////////////////////
@@ -1023,7 +1023,7 @@ function Schema_tuple<T>(
   _: Constraints = Constraints.defaults
 ): fc.Arbitrary<Schema_tuple<T>> {
   const $ = Constraints.configure(_)
-  return $.tuple.arbitrary(LOOP, $)
+  return $.tuple.arbitrary(LOOP, $)  satisfies fc.Arbitrary<JsonSchema.arrayF<T>>
 }
 ///    TUPLE    ///
 ///////////////////

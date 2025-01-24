@@ -2,9 +2,10 @@ import * as fs from "node:fs"
 import * as path from "node:path"
 import * as vi from "vitest"
 
+import type { JsonSchema } from "@traversable/core"
 import { Traversable, fc, is, tree } from "@traversable/core"
 import { fn, keys, map } from "@traversable/data"
-import { Schema, type openapi, Spec, $ref } from "@traversable/openapi"
+import { $ref, Schema, Spec, type openapi } from "@traversable/openapi"
 import type { _ } from "@traversable/registry"
 
 import { ark, escapePathSegment, unescapePathSegment } from "@traversable/algebra"
@@ -57,26 +58,11 @@ const generateSpec = () => fn.pipe(
     }
   }),
   fc.peek,
-  (x) => Spec.map(x, (_) => Traversable.fromJsonSchema(_)),
+  // TODO: fix this type assertion
+  (x) => Spec.map(x, (_) => Traversable.fromJsonSchema(_ as Traversable.any)),
   (x) => tree.modify(x, ["paths"], map((v, k) => ({ $unref: unescapePathSegment(k), ...(v as {}) }))),
   JSON_stringify,
 )
-
-  // Spec.map(Traversable.fromJsonSchema),
-//   arbitrary({
-//     include: { examples: false, description: false }, 
-//     schemas: {
-//       allOf: {
-//         arbitrary: (LOOP, $) => Schema.allOf.base(fc.dictionary(LOOP), $)
-//       }
-//     }
-//   }),
-//   fc.peek,
-//   // tree.modify("components", "schemas")(map(Traversable.fromJsonSchema)),
-//   x=>x,
-//   // tree.modify("paths")(map((v: Record<string, unknown>, k) => ({ $unref: unescapePathSegment(k), ...v }))),
-//   // JSON_stringify,
-// )
 
 const refsDeep 
   : (leaveUnescaped: string) => (x: Any) => Any
@@ -154,7 +140,8 @@ vi.describe("〖️⛳️〗‹‹‹ ❲@traversable/algebra/ark❳", () => {
         absolutePath: ["components", "schemas", k],
       } satisfies Parameters<typeof ark.generate>[1]
 
-      void generatedSchemas.push(ark.generate(schema, options))
+      // TODO: fix this type assertion
+      void generatedSchemas.push(ark.generate(schema as JsonSchema, options))
     }
 
     fs.writeFileSync(PATH.targets.ark, generatedSchemas.join("\n\n") + "\n")

@@ -1,14 +1,11 @@
-import { fn, map, type nonempty, object } from "@traversable/data"
-import { Invariant, Traversable as Trav, symbol } from "@traversable/registry"
+import { fn, type nonempty, object } from "@traversable/data"
+import { Invariant, symbol } from "@traversable/registry"
 import type {
-  Applicative,
   Functor,
   HKT,
   IndexedFunctor,
-  Kind,
   Merge,
   Mutable,
-  inline
 } from "@traversable/registry"
 
 import { t } from "../guard/index.js"
@@ -66,6 +63,7 @@ export type {
 }
 
 export {
+  type Traversable_toType as toType,
   Traversable_Functor as Functor,
   IndexedFunctor,
   Traversable_Known as Known,
@@ -76,8 +74,6 @@ export {
   /// adjunctions
   Traversable_fromAST as fromAST,
   Traversable_fromJsonSchema as fromJsonSchema,
-  type Traversable_toType as toType,
-
 }
 
 /** @internal */
@@ -242,27 +238,12 @@ type Traversable_F<T, Ext extends HKT = never> =
   | Traversable_objectF<T>
   ;
 
-type Traversable_init =
-  | Traversable_Scalar
-  | Traversable_enum
-  | Traversable_allOfF<Traversable_init>
-  | Traversable_anyOfF<Traversable_init>
-  | Traversable_oneOfF<Traversable_init>
-  | Traversable_arrayF<Traversable_init>
-  | Traversable_tupleF<Traversable_init>
-  | Traversable_recordF<Traversable_init>
-  | Traversable_objectF<Traversable_init>
-
-// Kind<Traversable_lambda, Kind<Traversable_lambda>>
-
-
 declare namespace Traversable_Combinator {
   type F<T> = Traversable_allOfF<T> | Traversable_anyOfF<T> | Traversable_oneOfF<T>
 }
 declare namespace Traversable_Composite {
   type F<T> = Traversable_arrayF<T> | Traversable_recordF<T> | Traversable_tupleF<T> | Traversable_objectF<T>
 }
-
 
 type Traversable_fromJsonSchema<T extends JsonSchema.any> = Traversable_fromJsonSchema.loop<T>
 declare namespace Traversable_fromJsonSchema {

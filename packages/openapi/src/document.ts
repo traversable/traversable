@@ -3,10 +3,10 @@ import { fn, map, object } from "@traversable/data"
 import { http } from "@traversable/http"
 import { PATTERN } from "@traversable/registry"
 import type {
-  autocomplete,
-  inline,
   RequireN, 
   Required, 
+  autocomplete,
+  inline,
   newtype,
 } from "@traversable/registry"
 

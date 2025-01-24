@@ -1,15 +1,15 @@
 import { fn, map } from "@traversable/data"
-import * as fc from "fast-check"
 import type {
   _,
   autocomplete,
   newtype,
 } from "@traversable/registry"
-import { HKT } from "@traversable/registry"
+import type { HKT } from "@traversable/registry"
+import type * as fc from "fast-check"
 
+import { arbitrary, type doc as document, type parameter } from "./document.js"
 import type { Schema as Schema_ } from "./schema/exports.js"
 import type { $ref } from "./types.js"
-import { parameter, doc as document, arbitrary } from "./document.js"
 
 export {
   Spec,

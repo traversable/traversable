@@ -1,6 +1,6 @@
 import * as vi from "vitest"
 
-import { Spec, Schema } from "@traversable/openapi"
+import { Schema, Spec } from "@traversable/openapi"
 
 const doc = Spec.new({
   components: {

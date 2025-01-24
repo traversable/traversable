@@ -1,6 +1,6 @@
-import * as vi from "vitest"
 import { fc, test } from "@fast-check/vitest"
 import oracle from "lodash.isequal"
+import * as vi from "vitest"
 
 import { Equal } from "@traversable/data"
 

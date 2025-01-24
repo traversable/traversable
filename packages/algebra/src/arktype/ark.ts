@@ -61,14 +61,23 @@ const numericConstraints
 
 const integerConstraints = numericConstraints
 const numberConstraints = numericConstraints
+
+const getStringFormat = (meta: Meta.string) => isStringFormat(meta.format) ? StringFormat[meta.format] : null
+
 const stringConstraints
   : (meta: Meta.string) => string
-  = ({ minLength: min, maxLength: max, format }) => ([
+  = ({ minLength: min, maxLength: max, ...meta }) => {
+  const format = getStringFormat(meta)
+  const methods = ([
     min !== undefined && `.atLeastLength(${min})`,
     max !== undefined && `.atMostLength(${max})`
-  ])
-  .filter(core.is.string)
-  .join("")
+  ]).filter(core.is.string).join("")
+  return format === null 
+    ? methods 
+    : format 
+    + (format.endsWith('email') ? '' : '.root') 
+    + methods
+}
 
 const Constrain = {
   integer: integerConstraints,
@@ -96,18 +105,10 @@ const generated = {
   integer({ meta = {} }) { return 'type.keywords.number.integer' + Constrain.integer(meta) },
   number({ meta = {} }) { return 'type.number' + Constrain.number(meta) },
   string({ meta = {} }) {
-    const constraints = Constrain.string(meta)
-    const format = isStringFormat(meta.format) ? StringFormat[meta.format] : null
-
-    const pattern = meta.pattern === undefined ? null : new RegExp(meta.pattern)
-
-    // const pattern 
-    return meta.pattern !== undefined ? meta.pattern
-      : format === null
-      ? 'type.string' + constraints
-      : 'type.keywords.string'
-      + format
-      + (format.endsWith('email') ? constraints : '.root' + constraints)
+    const base = getStringFormat(meta) === null ? 'type.string' : 'type.keywords.string'
+    return typeof meta.pattern === 'string' 
+      ? meta.pattern 
+      : base + Constrain.string(meta)
   },
   array({ items: xs }) {
     return (

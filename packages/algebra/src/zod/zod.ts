@@ -71,19 +71,13 @@ const numericConstraints
     factor !== undefined && `.multipleOf(${factor})`,
   ].filter(core.is.string)
 
-const enumerableConstraints
-  : (meta: Meta.Enumerable) => string[]
-  = ({ maxLength: max, minLength: min }) => [
-    min !== undefined && `.min(${min})`,
-    max !== undefined && `.max(${max})`,
-  ].filter(core.is.string)
-
 const stringConstraints
   : (meta: Meta.string) => string[]
-  = ({ format, maxLength: max, minLength: min }) => [
+  = ({ format, maxLength: max, minLength: min, pattern }) => [
     format && keyOf$(StringFormat)(format) && StringFormat[format],
     min !== undefined && `.min(${min})`,
     max !== undefined && `.max(${max})`,
+    pattern !== undefined && `.regex(${pattern})`
   ].filter(core.is.string)
 
 const Constrain = {
@@ -166,7 +160,7 @@ const derived = {
   boolean() { return z.boolean() },
   integer() { return z.number().int() },
   number() { return z.number() },
-  string({ meta }) { return StringSchema[(meta?.format ?? "") as never] ?? z.string() },
+  string({ meta }) { return (StringSchema[(meta?.format ?? "") as never] ?? z.string()) },
   enum({ enum: ss }) {
     const [s0, s1, ...sn] = ss.filter(core.is.primitive).map((v) => z.literal(v))
     return z.union([s0, s1, ...sn])

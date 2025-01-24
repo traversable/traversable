@@ -1,4 +1,4 @@
-import { type Equal } from "../exports.js"
+import type { Equal } from "../exports.js"
 
 /** @internal */
 const Array_isArray 

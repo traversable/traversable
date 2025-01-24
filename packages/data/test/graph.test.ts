@@ -1,5 +1,5 @@
-import * as vi from "vitest"
 import { Graph } from "@traversable/data"
+import * as vi from "vitest"
 
 vi.describe("〖️⛳️〗‹‹‹ ❲@traversable/data/Graph❳", () => {
   vi.test("〖️⛳️〗› ❲Graph.sequence❳: it handles an empty graph", () => {
