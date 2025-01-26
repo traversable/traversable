@@ -50,6 +50,7 @@ export default {
   },
   "devDependencies": {
     "@faker-js/faker": "^9.3.0",
+    "@standard-schema/spec": "1.0.0-rc.0",
     "@traversable/bench": "workspace:^",
     "@traversable/core": "workspace:^",
     "@traversable/data": "workspace:^",

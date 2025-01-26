@@ -45,7 +45,8 @@ export default {
     "any-ts": { "optional": false }
   },
   "devDependencies": {
-    "@traversable/data": "workspace:^",
-    "@traversable/bench": "workspace:^"
+    "@standard-schema/spec": "1.0.0-rc.0",
+    "@traversable/bench": "workspace:^",
+    "@traversable/data": "workspace:^"
   }
 } as const

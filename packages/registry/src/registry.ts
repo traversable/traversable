@@ -64,6 +64,10 @@ export const WeightMap = {
     weight: WeightByType.string,
     predicate: (u): u is never => true,
   },
+  const: {
+    weight: WeightByType.const,
+    predicate: (u): u is never => true,
+  },
   allOf: {
     weight: WeightByType.allOf,
     predicate: (u): u is never => true,

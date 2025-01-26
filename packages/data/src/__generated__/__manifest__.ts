@@ -45,6 +45,7 @@ export default {
     }
   },
   "devDependencies": {
-    "@traversable/bench": "workspace:^"
+    "@traversable/bench": "workspace:^",
+    "lodash.isequal": "^4.5.0"
   }
 } as const
