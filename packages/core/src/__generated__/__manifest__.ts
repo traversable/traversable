@@ -14,8 +14,12 @@ export default {
     "email": "ahrjarrett@gmail.com"
   },
   "@traversable": {
-    "generateExports": { "include": ["**/*.ts"] },
-    "generateIndex": { "include": ["**/*.ts"] }
+    "generateExports": {
+      "include": ["**/*.ts"]
+    },
+    "generateIndex": {
+      "include": ["**/*.ts"]
+    }
   },
   "publishConfig": {
     "directory": "dist",
@@ -41,8 +45,12 @@ export default {
     "any-ts": "0.48.1"
   },
   "peerDependenciesMeta": {
-    "@traversable/data": { "optional": false },
-    "any-ts": { "optional": false }
+    "@traversable/data": {
+      "optional": false
+    },
+    "any-ts": {
+      "optional": false
+    }
   },
   "devDependencies": {
     "@standard-schema/spec": "1.0.0-rc.0",
