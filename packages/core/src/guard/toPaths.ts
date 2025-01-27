@@ -119,22 +119,26 @@ export namespace Recursive {
       case n._tag === "string": 
       case n._tag === "any": 
       case n._tag === "const": return path({ leaf: n._tag })
-      case n._tag === "optional": return n._def.map(prepend(Sym.optional))
-      case n._tag === "array": return n._def.map(prepend(Sym.array))
-      case n._tag === "record": return n._def.map(prepend(Sym.record))
-      case n._tag === "allOf": return n._def.length === 0
-        ? path({ leaf: n._def }) 
-        : n._def.flatMap((ks, i) => ks.map(prepend(Sym.allOf, i)))
-      case n._tag === "anyOf": return n._def.length === 0
-        ? path({ leaf: n._def }) 
-        : n._def.flatMap((ks, i) => ks.map(prepend(Sym.anyOf, i)))
-      case n._tag === "tuple": return n._def.length === 0
-        ? path({ leaf: n._def }) 
-        : n._def.flatMap((ks, i) => ks.map(prepend(i)))
+      case n._tag === "enum": return path({ leaf: n._tag })
+      case n._tag === "optional": return n.def.map(prepend(Sym.optional))
+      case n._tag === "array": return n.def.map(prepend(Sym.array))
+      case n._tag === "record": return n.def.map(prepend(Sym.record))
+      case n._tag === "allOf": return n.def.length === 0
+        ? path({ leaf: n.def }) 
+        : n.def.flatMap((ks, i) => ks.map(prepend(Sym.allOf, i)))
+      case n._tag === "anyOf": return n.def.length === 0
+        ? path({ leaf: n.def }) 
+        : n.def.flatMap((ks, i) => ks.map(prepend(Sym.anyOf, i)))
+      case n._tag === "oneOf": return n.def.length === 0
+        ? path({ leaf: n.def })
+        : n.def.flatMap((ks, i) => ks.map(prepend(i)))
+      case n._tag === "tuple": return n.def.length === 0
+        ? path({ leaf: n.def }) 
+        : n.def.flatMap((ks, i) => ks.map(prepend(i)))
       case n._tag === "object": {
-        const xs = Object.entries(n._def) 
+        const xs = Object.entries(n.def) 
         return xs.length === 0
-          ? path({ leaf: n._def }) 
+          ? path({ leaf: n.def }) 
           : xs.flatMap(([k, ks]) => ks.map(prepend(k))) 
       }
     }

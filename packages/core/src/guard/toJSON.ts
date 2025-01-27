@@ -14,14 +14,16 @@ export namespace Recursive {
       case term._tag === "number":
       case term._tag === "string": 
       case term._tag === "any": return { _tag: term._tag }
+      case term._tag === "enum":
       case term._tag === "const":
       case term._tag === "optional": 
       case term._tag === "array":
       case term._tag === "record":
       case term._tag === "anyOf":
       case term._tag === "allOf":
+      case term._tag === "oneOf":
       case term._tag === "tuple":
-      case term._tag === "object": return { _tag: term._tag, _def: term._def }
+      case term._tag === "object": return { _tag: term._tag, _def: term.def }
     }
   }
 }

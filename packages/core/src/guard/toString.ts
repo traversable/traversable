@@ -18,15 +18,17 @@ export namespace Recursive {
       case n._tag === "number": return "number"
       case n._tag === "string": return "string"
       case n._tag === "any": return "unknown"
-      case n._tag === "const": return JSON.stringify(n._def)
-      case n._tag === "optional": return n._def + " | undefined"
-      case n._tag === "array": return "Array<" + n._def + ">"
-      case n._tag === "record": return "Record<string, " + n._def + ">"
-      case n._tag === "allOf": return n._def.join(" & ")
-      case n._tag === "anyOf": return n._def.join(" | ")
-      case n._tag === "tuple": return "[" + n._def.join(", ") + "]"
+      case n._tag === "enum": return n.def.join(" | ")
+      case n._tag === "const": return JSON.stringify(n.def)
+      case n._tag === "optional": return n.def + " | undefined"
+      case n._tag === "array": return "Array<" + n.def + ">"
+      case n._tag === "record": return "Record<string, " + n.def + ">"
+      case n._tag === "allOf": return n.def.join(" & ")
+      case n._tag === "anyOf": return n.def.join(" | ")
+      case n._tag === "oneOf": return n.def.join(" | ")
+      case n._tag === "tuple": return "[" + n.def.join(", ") + "]"
       case n._tag === "object": {
-        const xs = Object_entries(n._def).map(([k, v]) => [stringify(k), v])
+        const xs = Object_entries(n.def).map(([k, v]) => [stringify(k), v])
         return xs.length === 0 ? "{}" : "{ " + xs.join(", ") + " }"
       }
     }

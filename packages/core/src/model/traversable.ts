@@ -580,36 +580,24 @@ const fromAST
       default: return fn.exhaustive(x)
       case x._tag === "any": return NotYetSupported("Traversable.any", "Traversable.fromAST")
       case x._tag === "symbol": return NotYetSupported("Traversable.symbol", "Traversable.fromAST")
-      case x._tag === "null": return { ...x, ...Traversable_null, type: x._tag }
-      case x._tag === "boolean": return { ...x, ...Traversable_boolean, type: x._tag }
-      case x._tag === "integer": return { ...x, ...Traversable_integer, type: x._tag }
-      case x._tag === "number": return { ...x, ...Traversable_number, type: x._tag }
-      case x._tag === "string": return { ...x, ...Traversable_string, type: x._tag }
-      /*
-      case x._tag === "const": return { ...x, type: "enum", enum: x.def }  //  <- TODO: make sure this isn't lossy
+      case x._tag === "null": return { ...x, ...Traversable_null, type: x._tag } satisfies Traversable_null
+      case x._tag === "boolean": return { ...x, ...Traversable_boolean, type: x._tag } satisfies Traversable_boolean
+      case x._tag === "integer": return { ...x, ...Traversable_integer, type: x._tag } satisfies Traversable_integer
+      case x._tag === "number": return { ...x, ...Traversable_number, type: x._tag } satisfies Traversable_number
+      case x._tag === "string": return { ...x, ...Traversable_string, type: x._tag } satisfies Traversable_string
+      case x._tag === "enum": return { ...x, ...Traversable_enum, type: x._tag, enum: x.def } satisfies Traversable_enum
+      case x._tag === "const": return { ...x, type: x._tag, const: x.def } satisfies Traversable_const
       case x._tag === "optional": return { ...x.def, meta: { ...x.def.meta, optional: true } }
-      case x._tag === "allOf": return { ...x, type: x._tag, allOf: x.def }
-      case x._tag === "anyOf": return { ...x, type: x._tag, anyOf: x.def }
-      case x._tag === "array": return { type: x._tag, items: x.def }
-      case x._tag === "record": return { type: x._tag, additionalProperties: x.def }
-      case x._tag === "tuple": return { type: x._tag, items: x.def }
-      */
-
-      case x._tag === "const": return { ...x, type: "enum", enum: x._def }  //  <- TODO: make sure this isn't lossy
-      case x._tag === "optional": return { ...x._def, meta: { ...x._def.meta, optional: true } }
-      case x._tag === "allOf": return { ...x, type: x._tag, allOf: x._def }
-      case x._tag === "anyOf": return { ...x, type: x._tag, anyOf: x._def }
-      case x._tag === "array": return { type: x._tag, items: x._def }
-      case x._tag === "record": return { type: x._tag, additionalProperties: x._def }
-      case x._tag === "tuple": return { type: x._tag, items: x._def }
+      case x._tag === "allOf": return { ...x, type: x._tag, allOf: x.def } satisfies Traversable_allOf
+      case x._tag === "anyOf": return { ...x, type: x._tag, anyOf: x.def } satisfies Traversable_anyOf
+      case x._tag === "oneOf": return { ...x, type: x._tag, oneOf: x.def } satisfies Traversable_oneOf
+      case x._tag === "array": return { type: x._tag, items: x.def } satisfies Traversable_array
+      case x._tag === "record": return { type: x._tag, additionalProperties: x.def } satisfies Traversable_record
+      case x._tag === "tuple": return { type: x._tag, items: x.def } satisfies Traversable_tuple
       case x._tag === "object": return {
         type: x._tag,
-        properties: x._def,
-        required: Object.keys(x._def).filter((k) => !x._def[k].meta?.optional),
-        /* 
         properties: x.def,
         required: Object.keys(x.def).filter((k) => !x.def[k].meta?.optional),
-        */
       } satisfies Traversable_object
     }
   }

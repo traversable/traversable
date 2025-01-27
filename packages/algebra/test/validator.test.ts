@@ -23,17 +23,17 @@ const lax = {
 vi.describe("〖️⛳️〗‹‹‹ ❲@traversable/algebra/validator❳", () => {
   //////////////////////////
   ///    Intersection    ///
-  const IntersectionSchema = {
-    allOf: [
-      { type: "object", properties: { abc: { type: "boolean" } }, required: ["abc"] },
-      { type: "object", properties: { def: { type: "boolean" } } },
-    ]
-  } as const
+  const IntersectionSchema = t.allOf(
+    t.object({ abc: t.boolean() }),
+    t.object({ def: t.optional(t.boolean() )}),
+  )
+  const IntersectionJsonSchema = IntersectionSchema.toJsonSchema
+  //    ^?
 
   const Intersection = {
-    strict: () => Validator.derive(IntersectionSchema, strict),
-    lax: () => Validator.derive(IntersectionSchema, lax),
-    arbitrary: () => Arbitrary.derive.fold()(IntersectionSchema),
+    strict: () => Validator.derive(IntersectionJsonSchema, strict),
+    lax: () => Validator.derive(IntersectionJsonSchema, lax),
+    arbitrary: () => Arbitrary.derive.fold()(IntersectionJsonSchema),
     oracle: type(
       { abc: "boolean" }, 
       "&",
@@ -92,22 +92,18 @@ vi.describe("〖️⛳️〗‹‹‹ ❲@traversable/algebra/validator❳", () 
 
   ///////////////////
   ///    Union    ///
-  const UnionSchema = {
-    anyOf: [
-      { type: "object", properties: { abc: { type: "boolean" } }, required: ["abc"] },
-      { type: "object", properties: { def: { type: "boolean" } } },
-    ]
-  } as const
+  const UnionSchema = t.anyOf(
+    t.object({ abc: t.boolean() }),
+    t.object({ def: t.optional(t.boolean()) }),
+  )
+  const UnionJsonSchema = UnionSchema.toJsonSchema
+  //    ^?
 
   const Union = {
-    strict: () => Validator.derive(UnionSchema, strict),
-    lax: () => Validator.derive(UnionSchema, lax),
-    arbitrary: () => Arbitrary.derive.fold()(UnionSchema),
-    oracle: type(
-      { abc: "boolean" }, 
-      "|",
-      { "def?": "boolean" },
-    ),
+    strict: () => Validator.derive(UnionJsonSchema, strict),
+    lax: () => Validator.derive(UnionJsonSchema, lax),
+    arbitrary: () => Arbitrary.derive.fold()(UnionJsonSchema),
+    oracle: type({ abc: "boolean" }).or({ "def?": "boolean" }),
   } as const
 
   test.prop([fc.json()], { 
@@ -145,8 +141,10 @@ vi.describe("〖️⛳️〗‹‹‹ ❲@traversable/algebra/validator❳", () 
   ////////////////////////////
   ///    Disjoint Union    ///
   const DisjointUnionSchema = {
-    oneOf: UnionSchema.anyOf,
+    oneOf: UnionJsonSchema.anyOf,
   } as const
+  // const DisjointUnionJsonSchema = DisjointUnionSchema
+  //    ^?
 
   const DisjointUnion = {
     strict: () => Validator.derive(DisjointUnionSchema, strict),
@@ -447,57 +445,39 @@ vi.describe("〖️⛳️〗‹‹‹ ❲@traversable/algebra/validator❳", () 
     }
   }
 
-  const KitchenSinkSchema = {
-    type: "object",
-    required: [],
-    properties: {
-      a: {
-        type: "object",
-        required: [],
-        properties: {
-          b: {
-            type: "array",
-            items: [
-              {
-                type: "object", 
-                required: [],
-                properties: {
-                  d: { type: "number" },
-                  e: {
-                    type: "array",
-                    items: [
-                      {
-                        type: "array",
-                        items: [
-                          {
-                            type: "array",
-                            items: [ 
-                              { 
-                                type: "object", 
-                                required: ["f", "g"],
-                                properties: { 
-                                  f: { type: "string" }, 
-                                  g: { type: "boolean" } 
-                                }
-                              }
-                            ]
-                          }
-                        ]
-                      }
-                    ]
-                  },
-                  c: { type: "boolean" },
-                  f: { type: "number" }
-                }
-              },
-              { type: "object", required: ["g"], properties: { g: { type: "number" } } }
-            ]
-          },
-          h: { type: "number" },
-        }
-      }
-    }
-  } as const
+  const KitchenSinkSchema = t.object({
+    a: t.optional(
+      t.object({ 
+        b: t.optional(
+          t.tuple(
+            t.object({
+              d: t.optional(t.number()),
+              e: t.optional(
+                t.tuple(
+                  t.tuple(
+                    t.tuple(
+                      t.object({ 
+                        f: t.string(), 
+                        g: t.boolean(),
+                      })
+                    )
+                  )
+                )
+              ),
+              c: t.optional(t.boolean()),
+              f: t.optional(t.number()),
+            }),
+            t.object({ 
+              g: t.number(),
+            }),
+          ),
+        ),
+        h: t.optional(t.number()),
+      })
+    )
+  });
+
+  const KitchenSinkJsonSchema = KitchenSinkSchema.toJsonSchema
 
   const e = type([ [ [ { f: "string", g: "boolean" } ] ] ])
   const b = type([
@@ -514,9 +494,9 @@ vi.describe("〖️⛳️〗‹‹‹ ❲@traversable/algebra/validator❳", () 
     "h?": "number|undefined",
   })
   const KitchenSink = {
-    strict: () => Validator.derive(KitchenSinkSchema, strict),
-    lax: () => Validator.derive(KitchenSinkSchema, lax),
-    arbitrary: () => Arbitrary.derive.fold()(KitchenSinkSchema),
+    strict: () => Validator.derive(KitchenSinkJsonSchema, strict),
+    lax: () => Validator.derive(KitchenSinkJsonSchema, lax),
+    arbitrary: () => Arbitrary.derive.fold()(KitchenSinkJsonSchema),
     oracle: type({
       "a?": a.or("undefined"),
     }),
@@ -524,83 +504,7 @@ vi.describe("〖️⛳️〗‹‹‹ ❲@traversable/algebra/validator❳", () 
 
   vi.it("〖️⛳️〗› ❲validator.derive❳: KitchenSink (examples)", () => {
     vi.expect(KitchenSink.strict()).toMatchInlineSnapshot(`"(function($0$){if(!$0$||typeof $0$!=="object"||Array.isArray($0$))return false;let $0$a=$0$['a'];if($0$a!==undefined){if($0$a===null||typeof $0$a!=="object"||Array.isArray($0$a))return false;let $0$ah=$0$a['h'];if($0$ah!==undefined&&typeof $0$ah!=="number")return false;let $0$ab=$0$a['b'];if($0$ab!==undefined){if(!Array.isArray($0$ab))return false;let $0$ab0=$0$ab[0];if(!$0$ab0||typeof $0$ab0!=="object"||Array.isArray($0$ab0))return false;let $0$ab0d=$0$ab0['d'];if($0$ab0d!==undefined&&typeof $0$ab0d!=="number")return false;let $0$ab0e=$0$ab0['e'];if($0$ab0e!==undefined){if(!Array.isArray($0$ab0e))return false;let $0$ab0e0=$0$ab0e[0];if(!Array.isArray($0$ab0e0))return false;let $0$ab0e00=$0$ab0e0[0];if(!Array.isArray($0$ab0e00))return false;let $0$ab0e000=$0$ab0e00[0];if(!$0$ab0e000||typeof $0$ab0e000!=="object"||Array.isArray($0$ab0e000))return false;let $0$ab0e000f=$0$ab0e000['f'];if(typeof $0$ab0e000f!=="string")return false;let $0$ab0e000g=$0$ab0e000['g'];if(typeof $0$ab0e000g!=="boolean")return false;}let $0$ab0c=$0$ab0['c'];if($0$ab0c!==undefined&&typeof $0$ab0c!=="boolean")return false;let $0$ab0f=$0$ab0['f'];if($0$ab0f!==undefined&&typeof $0$ab0f!=="number")return false;let $0$ab1=$0$ab[1];if(!$0$ab1||typeof $0$ab1!=="object"||Array.isArray($0$ab1))return false;let $0$ab1g=$0$ab1['g'];if(typeof $0$ab1g!=="number")return false;}}return true;})"`)
-    // vi.expect(KitchenSink.strict()).toEqual(
-    //   [
-    //     '(function($0$){if(!$0$||typeof $0$!=="object"||Array.isArray($0$))return false;',
-    //     'let $0$a=$0$["a"];',
-    //     'if($0$a!==undefined){if($0$a===null||typeof $0$a!=="object"||Array.isArray($0$a))return false;',
-    //     'let $0$ah=$0$a["h"];',
-    //     'if($0$ah!==undefined&&typeof $0$ah!=="number")return false;',
-    //     'let $0$ab=$0$a["b"];',
-    //     'if($0$ab!==undefined){if(!Array.isArray($0$ab))return false;',
-    //     'let $0$ab0=$0$ab[0];',
-    //     'if(!$0$ab0||typeof $0$ab0!=="object"||Array.isArray($0$ab0))return false;',
-    //     'let $0$ab0d=$0$ab0["d"];',
-    //     'if($0$ab0d!==undefined&&typeof $0$ab0d!=="number")return false;',
-    //     'let $0$ab0e=$0$ab0["e"];',
-    //     'if($0$ab0e!==undefined){if(!Array.isArray($0$ab0e))return false;',
-    //     'let $0$ab0e0=$0$ab0e[0];',
-    //     'if(!Array.isArray($0$ab0e0))return false;',
-    //     'let $0$ab0e00=$0$ab0e0[0];',
-    //     'if(!Array.isArray($0$ab0e00))return false;',
-    //     'let $0$ab0e000=$0$ab0e00[0];',
-    //     'if(!$0$ab0e000||typeof $0$ab0e000!=="object"||Array.isArray($0$ab0e000))return false;',
-    //     'let $0$ab0e000f=$0$ab0e000["f"];',
-    //     'if(typeof $0$ab0e000f!=="string")return false;',
-    //     'let $0$ab0e000g=$0$ab0e000["g"];',
-    //     'if(typeof $0$ab0e000g!=="boolean")return false;',
-    //     '}let $0$ab0c=$0$ab0["c"];',
-    //     'if($0$ab0c!==undefined&&typeof $0$ab0c!=="boolean")return false;',
-    //     'let $0$ab0f=$0$ab0["f"];',
-    //     'if($0$ab0f!==undefined&&typeof $0$ab0f!=="number")return false;',
-    //     'let $0$ab1=$0$ab[1];',
-    //     'if(!$0$ab1||typeof $0$ab1!=="object"||Array.isArray($0$ab1))return false;',
-    //     'let $0$ab1g=$0$ab1["g"];',
-    //     'if(typeof $0$ab1g!=="number")return false;',
-    //     '}}return true;',
-    //     '})',
-    //   ].join("")
-    // )
-
     vi.expect(KitchenSink.lax()).toMatchInlineSnapshot(`"(function($0$){if(!$0$||typeof $0$!=="object")return false;let $0$a=$0$['a'];if($0$a!==undefined){if($0$a===null||typeof $0$a!=="object")return false;let $0$ah=$0$a['h'];if($0$ah!==undefined&&typeof $0$ah!=="number")return false;let $0$ab=$0$a['b'];if($0$ab!==undefined){if(!Array.isArray($0$ab))return false;let $0$ab0=$0$ab[0];if(!$0$ab0||typeof $0$ab0!=="object")return false;let $0$ab0d=$0$ab0['d'];if($0$ab0d!==undefined&&typeof $0$ab0d!=="number")return false;let $0$ab0e=$0$ab0['e'];if($0$ab0e!==undefined){if(!Array.isArray($0$ab0e))return false;let $0$ab0e0=$0$ab0e[0];if(!Array.isArray($0$ab0e0))return false;let $0$ab0e00=$0$ab0e0[0];if(!Array.isArray($0$ab0e00))return false;let $0$ab0e000=$0$ab0e00[0];if(!$0$ab0e000||typeof $0$ab0e000!=="object")return false;let $0$ab0e000f=$0$ab0e000['f'];if(typeof $0$ab0e000f!=="string")return false;let $0$ab0e000g=$0$ab0e000['g'];if(typeof $0$ab0e000g!=="boolean")return false;}let $0$ab0c=$0$ab0['c'];if($0$ab0c!==undefined&&typeof $0$ab0c!=="boolean")return false;let $0$ab0f=$0$ab0['f'];if($0$ab0f!==undefined&&typeof $0$ab0f!=="number")return false;let $0$ab1=$0$ab[1];if(!$0$ab1||typeof $0$ab1!=="object")return false;let $0$ab1g=$0$ab1['g'];if(typeof $0$ab1g!=="number")return false;}}return true;})"`)
-
-    // toEqual(
-    //   [
-    //     '(function($0$){if(!$0$||typeof $0$!=="object")return false;',
-    //     'let $0$a=$0$["a"];',
-    //     'if($0$a!==undefined){if($0$a===null||typeof $0$a!=="object")return false;',
-    //     'let $0$ah=$0$a["h"];',
-    //     'if($0$ah!==undefined&&typeof $0$ah!=="number")return false;',
-    //     'let $0$ab=$0$a["b"];',
-    //     'if($0$ab!==undefined){if(!Array.isArray($0$ab))return false;',
-    //     'let $0$ab0=$0$ab[0];',
-    //     'if(!$0$ab0||typeof $0$ab0!=="object")return false;',
-    //     'let $0$ab0d=$0$ab0["d"];',
-    //     'if($0$ab0d!==undefined&&typeof $0$ab0d!=="number")return false;',
-    //     'let $0$ab0e=$0$ab0["e"];',
-    //     'if($0$ab0e!==undefined){if(!Array.isArray($0$ab0e))return false;',
-    //     'let $0$ab0e0=$0$ab0e[0];',
-    //     'if(!Array.isArray($0$ab0e0))return false;',
-    //     'let $0$ab0e00=$0$ab0e0[0];',
-    //     'if(!Array.isArray($0$ab0e00))return false;',
-    //     'let $0$ab0e000=$0$ab0e00[0];',
-    //     'if(!$0$ab0e000||typeof $0$ab0e000!=="object")return false;',
-    //     'let $0$ab0e000f=$0$ab0e000["f"];',
-    //     'if(typeof $0$ab0e000f!=="string")return false;',
-    //     'let $0$ab0e000g=$0$ab0e000["g"];',
-    //     'if(typeof $0$ab0e000g!=="boolean")return false;',
-    //     '}let $0$ab0c=$0$ab0["c"];',
-    //     'if($0$ab0c!==undefined&&typeof $0$ab0c!=="boolean")return false;',
-    //     'let $0$ab0f=$0$ab0["f"];',
-    //     'if($0$ab0f!==undefined&&typeof $0$ab0f!=="number")return false;',
-    //     'let $0$ab1=$0$ab[1];',
-    //     'if(!$0$ab1||typeof $0$ab1!=="object")return false;',
-    //     'let $0$ab1g=$0$ab1["g"];',
-    //     'if(typeof $0$ab1g!=="number")return false;',
-    //     '}}return true;',
-    //     '})',
-    //   ].join("")
-    // )
   })
 
   test.prop([fc.json()], { 
