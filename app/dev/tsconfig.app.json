@@ -1,4 +1,5 @@
 {
+  "extends": "./tsconfig.json",
   "compilerOptions": {
     "tsBuildInfoFile": "./node_modules/.tmp/tsconfig.app.tsbuildinfo",
     "target": "ES2020",
@@ -22,5 +23,10 @@
     "noFallthroughCasesInSwitch": true,
     "noUncheckedSideEffectImports": true
   },
+  "references": [
+    { "path": "../../packages/data" },
+    { "path": "../../packages/openapi" },
+    { "path": "../../packages/registry" }
+  ],
   "include": ["src"]
 }

@@ -53,7 +53,7 @@
     "typescript": "5.6.3",
     "vite": "^5.4.12",
     "vite-plugin-watch-and-run": "^1.7.3",
-    "vitest": "^2.1.8"
+    "vitest": "^3.0.4"
   },
   "overrides": {
     "typescript": "5.6.3"

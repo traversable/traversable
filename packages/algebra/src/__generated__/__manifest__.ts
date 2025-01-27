@@ -35,6 +35,7 @@ export default {
     "clean": "pnpm run \"/^clean:.*/\"",
     "clean:build": "rm -rf .tsbuildinfo dist build",
     "clean:deps": "rm -rf node_modules",
+    "clean:generated": "rm -rf test/__generated__",
     "test": "vitest"
   },
   "dependencies": {

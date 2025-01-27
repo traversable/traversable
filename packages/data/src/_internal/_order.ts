@@ -1,4 +1,4 @@
-import type { integer } from "@traversable/data"
+import type { integer } from "@traversable/registry"
 import type { Compare } from "../exports.js"
 
 /** @internal */

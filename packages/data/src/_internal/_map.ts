@@ -1,6 +1,7 @@
-import type { key, keys, unicode } from "@traversable/data"
 import type { Entries, Indexable as S } from "@traversable/registry"
 import type { some } from "any-ts"
+import type { key, keys } from "./_key.js"
+import type * as unicode from "./_unicode.js"
 
 /** @internal */
 const Array_isArray = globalThis.Array.isArray
