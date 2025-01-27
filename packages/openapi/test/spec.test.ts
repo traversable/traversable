@@ -1,8 +1,8 @@
 import * as vi from "vitest"
 
-import { Schema, Spec } from "@traversable/openapi"
+import { OpenAPI, Schema } from "@traversable/openapi"
 
-const doc = Spec.new({
+const doc = OpenAPI.new({
   components: {
     schemas: {
       "D12": {
@@ -85,11 +85,11 @@ const doc = Spec.new({
   }
 })
 
-vi.describe.only("〖⛳️〗‹‹‹ ❲@traversable/openapi/Spec❳", () => {
-  vi.test("〖⛳️〗‹ ❲Spec.map❳", () => {
+vi.describe.only("〖⛳️〗‹‹‹ ❲@traversable/openapi/OpenAPI❳", () => {
+  vi.test("〖⛳️〗‹ ❲OpenAPI.map❳", () => {
     let count = 0
 
-    vi.expect(Spec.map(doc, () => (count++) + "")).toMatchInlineSnapshot(`
+    vi.expect(OpenAPI.map(doc, () => (count++) + "")).toMatchInlineSnapshot(`
       {
         "components": {
           "schemas": {

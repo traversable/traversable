@@ -7,17 +7,18 @@ import type {
 import type { HKT } from "@traversable/registry"
 import type * as fc from "fast-check"
 
-import { arbitrary, type doc as document, type parameter } from "./document.js"
+import { arbitrary, defaults, type doc as document, type parameter } from "./document.js"
 import type { Schema as Schema_ } from "./schema/exports.js"
 import type { $ref } from "./types.js"
+import Constraints = arbitrary.Constraints
 
 export {
-  Spec,
+  OpenAPI,
 }
 
 type Schema = Schema_.any | $ref
 
-declare namespace Spec {
+declare namespace OpenAPI {
   namespace param {
     interface path<T> {
       in: autocomplete<"path">
@@ -115,7 +116,7 @@ declare namespace Spec {
     interface header<T extends {}> extends newtype<T> {}
   }
 
-  interface lambda extends HKT { [-1]: Spec.F<this[0]> }
+  interface lambda extends HKT { [-1]: OpenAPI.F<this[0]> }
   type F<T> =
     | Paths<T>
     | Components<T>
@@ -129,33 +130,36 @@ declare namespace Spec {
     | Response<T>
     | Headers<T>
     ;
-  type Paths<T> = Spec.doc<T>["paths"]
-  type Components<T> = Spec.doc<T>["components"]
-  type Schemas<T> = Spec.doc<T>["components"]["schemas"]
-  type Recursive<T> = Spec.Schemas<T>[keyof Spec.Schemas<T>]
-  type Operation<T> = Spec.Paths<T>["paths"][keyof Spec.Paths<T>["paths"]]
-  type RequestBody<T> = ({} & Spec.Operation<T>)["requestBody"]
-  type Headers<T> = {} & Spec.Response<T>["headers"]
-  type Responses<T> = ({} & Spec.Operation<T>)["responses"]
-  type ResponseParameters<T> = ({} & Spec.Operation<T>)["parameters"]
-  type ResponseContent<T> = {} & Spec.Response<T>["content"]
-  type Response<T> = Spec.Responses<T>[keyof Spec.Responses<T>]
-  type Fixpoint = Spec.F<Schema>
+  type Paths<T> = OpenAPI.doc<T>["paths"]
+  type Components<T> = OpenAPI.doc<T>["components"]
+  type Schemas<T> = OpenAPI.doc<T>["components"]["schemas"]
+  type Recursive<T> = OpenAPI.Schemas<T>[keyof OpenAPI.Schemas<T>]
+  type Operation<T> = OpenAPI.Paths<T>["paths"][keyof OpenAPI.Paths<T>["paths"]]
+  type RequestBody<T> = ({} & OpenAPI.Operation<T>)["requestBody"]
+  type Headers<T> = {} & OpenAPI.Response<T>["headers"]
+  type Responses<T> = ({} & OpenAPI.Operation<T>)["responses"]
+  type ResponseParameters<T> = ({} & OpenAPI.Operation<T>)["parameters"]
+  type ResponseContent<T> = {} & OpenAPI.Response<T>["content"]
+  type Response<T> = OpenAPI.Responses<T>[keyof OpenAPI.Responses<T>]
+  type Fixpoint = OpenAPI.F<Schema>
 }
 
-declare namespace Spec { 
+declare namespace OpenAPI { 
   export { 
-    Spec_map as map,
-    Spec_new as new,
+    OpenAPI_map as map,
+    OpenAPI_new as new,
+    Constraints,
+    defaults,
   } 
 }
-function Spec() {}
-namespace Spec {
-  Spec.map = Spec_map
-  Spec.new = Spec_new
+function OpenAPI() {}
+namespace OpenAPI {
+  OpenAPI.map = OpenAPI_map
+  OpenAPI.new = OpenAPI_new
+  OpenAPI.defaults = defaults
 
-  export function generate<T>(constraints?: arbitrary.Constraints): fc.Arbitrary<Spec.doc<Schema>> 
-  export function generate<T>(constraints?: arbitrary.Constraints) {
+  export function generate(constraints?: arbitrary.Constraints): fc.Arbitrary<OpenAPI.doc<Schema>> 
+  export function generate(constraints?: arbitrary.Constraints) {
     return arbitrary(constraints)
   }
 }
@@ -164,13 +168,13 @@ const openapi_v3xx = "3.1.0"
 const defaultInfo = {
   title: "",
   version: "0.0.0",
-} satisfies Spec.doc["info"]
+} satisfies OpenAPI.doc["info"]
 
-function Spec_new<T extends Spec.doc<Schema>>(spec: Partial<T>): T
-function Spec_new<S>(): <T extends Spec.F<S>>(spec: T) => T 
-function Spec_new(spec?: Partial<Spec.F<any>>) { 
+function OpenAPI_new<T extends OpenAPI.doc<Schema>>(spec: Partial<T>): T
+function OpenAPI_new<S>(): <T extends OpenAPI.F<S>>(spec: T) => T 
+function OpenAPI_new(spec?: Partial<OpenAPI.F<any>>) { 
   return spec === undefined 
-    ? (spec: Partial<Spec.F<any>>) => Spec_new(spec)
+    ? (spec: Partial<OpenAPI.F<any>>) => OpenAPI_new(spec)
     : {
       ...spec,
       openapi: spec.openapi ?? openapi_v3xx,
@@ -183,10 +187,10 @@ function Spec_new(spec?: Partial<Spec.F<any>>) {
         schemas: spec.components.schemas || {}
       },
       paths: !spec.paths ? {} : spec.paths,
-    } satisfies Spec.doc<any>
+    } satisfies OpenAPI.doc<any>
 }
 
-function Spec_map<S, T>(doc: Spec.doc<S>, f: (s: S) => T): Spec.doc<T> {
+function OpenAPI_map<S, T>(doc: OpenAPI.doc<S>, f: (s: S) => T): OpenAPI.doc<T> {
   return {
     ...doc,
     components: {

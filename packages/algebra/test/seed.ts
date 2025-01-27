@@ -4,7 +4,7 @@ import * as path from "node:path"
 import { escapePathSegment, unescapePathSegment } from "@traversable/algebra"
 import { Traversable, fc, is, tree } from "@traversable/core"
 import { fn, keys, map } from "@traversable/data"
-import { Schema, Spec, type openapi } from "@traversable/openapi"
+import { OpenAPI, Schema } from "@traversable/openapi"
 import type { _, autocomplete } from "@traversable/registry"
 
 /** @internal */
@@ -67,24 +67,27 @@ const pathify = fn.flow(
   (_) => "export default " + _.trimEnd() + " as const;"
 )
 
-const generateSpec = () => fn.pipe(
-  Spec.generate({
-    include: { example: true, description: false }, 
+const allOf = (LOOP: fc.Arbitrary<unknown>, $: Schema.Constraints.Config) => Schema.allOf.base(fc.dictionary(LOOP), $)
+
+const generateSpec = (options: seed.Options) => fn.pipe(
+  OpenAPI.generate({
+    include: options.include, 
     schemas: {
+      ...options.schemas,
       allOf: {
-        arbitrary: (LOOP, $) => Schema.allOf.base(fc.dictionary(LOOP), $)
+        arbitrary: options.schemas?.allOf?.arbitrary || allOf,
       }
     }
   }),
   fc.peek,
   // TODO: fix this type assertion
-  (x) => Spec.map(x, (_) => Traversable.fromJsonSchema(_ as Traversable.any)),
+  (x) => OpenAPI.map(x, (_) => Traversable.fromJsonSchema(_ as Traversable.any)),
   (x) => tree.modify(x, ["paths"], map((v, k) => ({ $unref: unescapePathSegment(k), ...(v as {}) }))),
   JSON_stringify,
 )
 
 declare namespace seed {
-  export interface Options {
+  export interface Options extends OpenAPI.Constraints {
     /** 
      * Whether or not {@link seed `seed`} should regenerate test files on save.
      * 
@@ -99,37 +102,39 @@ declare namespace seed {
 
 export const defaults = {
   regenerateSeedFilesOnSave: false,
+  ...OpenAPI.defaults,
 } as const satisfies Required<seed.Options>
 
 let firstRun = !fs.existsSync(PATH.spec)
 
-if (firstRun) {
-  if (!fs.existsSync(PATH.generated)) fs.mkdirSync(PATH.generated, { recursive: true })
-  if (!fs.existsSync(PATH.targets.ark)) fs.writeFileSync(PATH.targets.ark, "")
-  if (!fs.existsSync(PATH.targets.zod)) fs.writeFileSync(PATH.targets.ark, "")
-  if (!fs.existsSync(PATH.spec)) fs.writeFileSync(PATH.spec, generateSpec())
-  if (!fs.existsSync(PATH.targets.jsdocHack)) fs.writeFileSync(PATH.targets.jsdocHack, "")
-  firstRun = false
-}
-
-export function seed({ 
-  regenerateSeedFilesOnSave = defaults.regenerateSeedFilesOnSave, 
-}: seed.Options = defaults) {
-  if (regenerateSeedFilesOnSave) {
-    console.log("RE-GENERATING...")
-    fs.writeFileSync(PATH.spec, generateSpec())
+export function seed(options?: seed.Options): void
+export function seed($: seed.Options = defaults) {
+  if (firstRun) {
+    if (!fs.existsSync(PATH.generated)) fs.mkdirSync(PATH.generated, { recursive: true })
+    if (!fs.existsSync(PATH.targets.ark)) fs.writeFileSync(PATH.targets.ark, "")
+    if (!fs.existsSync(PATH.targets.zod)) fs.writeFileSync(PATH.targets.ark, "")
+    if (!fs.existsSync(PATH.spec)) fs.writeFileSync(PATH.spec, generateSpec($))
+    if (!fs.existsSync(PATH.targets.jsdocHack)) fs.writeFileSync(PATH.targets.jsdocHack, "")
+    firstRun = false
   }
 
-    /** 
-     * TODO: generate tests that confirm that {@link ark.derive `derived`} and {@link ark.generate `generated`}
-     * algebras are equivalent
-     */
-    const document
-      : openapi.doc
-      = JSON_parse(fs.readFileSync(PATH.spec).toString("utf8"))
+  if ($.regenerateSeedFilesOnSave) {
+    const newDoc = generateSpec($)
+    // console.log("newDoc", newDoc)
+    // console.log("RE-GENERATING...")
+    fs.writeFileSync(PATH.spec, newDoc)
+  }
 
-    fs.writeFileSync(
-      PATH.targets.jsdocHack, 
-      pathify(document),
-    )
+  /** 
+   * TODO: generate tests that confirm that {@link ark.derive `derived`} and {@link ark.generate `generated`}
+   * algebras are equivalent
+   */
+  const document
+    : OpenAPI.doc
+    = JSON_parse(fs.readFileSync(PATH.spec).toString("utf8"))
+
+  fs.writeFileSync(
+    PATH.targets.jsdocHack, 
+    pathify(document),
+  )
 }

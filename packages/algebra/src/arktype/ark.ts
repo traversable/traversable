@@ -147,7 +147,6 @@ const generated = {
       ...xs.map(serialize(ix)),
       ')',
     )
-    // NotYetSupported('enum') 
   },
   null() { return 'type.null' },
   boolean() { return 'type.boolean' },

@@ -664,7 +664,7 @@ Schema_const.defaults = {
 Schema_const.base = <T>(
   $: Constraints.Config
 ) => fc.record(
-  { const: ConstantValue.any }, 
+  { const:  ConstantValue.any }, 
   { requiredKeys: Schema_const.requiredKeys },
 )
 
@@ -678,6 +678,38 @@ function Schema_const<T = ConstantTree>(_?: Constraints) {
 declare namespace Schema_const {
   interface Constraints<T = unknown> extends Partial<Constraints.Base<T>> {
     arbitrary: typeof Schema_const.base
+  }
+}
+///    CONST    ///
+///////////////////
+
+//////////////////
+///    ENUM    ///
+Schema_enum.requiredKeys = [
+  "enum", 
+] as const satisfies string[]
+Schema_enum.defaults = {
+  arbitrary: Schema_enum.base,
+  include: defaultInclude,
+} satisfies Schema_enum.Constraints
+
+Schema_enum.base = (
+  $: Constraints.Config
+): fc.Arbitrary<Schema_enum> => fc.record(
+  { enum: fc.array(fc.anything()) }, 
+  { requiredKeys: Schema_enum.requiredKeys },
+)
+
+interface Schema_enum<T = unknown, M extends {} = {}> extends t.Schema_enum<T, M> {}
+function Schema_enum<T>(constraints?: Constraints): fc.Arbitrary<Schema_enum<T>>
+function Schema_enum<T>(_?: Constraints) {
+  const $ = Constraints.configure(_)
+  return $.enum.arbitrary($) satisfies fc.Arbitrary<JsonSchema.enum>
+}
+
+declare namespace Schema_enum {
+  interface Constraints<T = unknown> extends Partial<Constraints.Base<T>> {
+    arbitrary: typeof Schema_enum.base
   }
 }
 ///    CONST    ///
@@ -1232,6 +1264,7 @@ export declare namespace Constraints {
     number: Require<Schema_number.Constraints, "arbitrary">
     string: Require<Schema_string.Constraints, "arbitrary">
     const: Require<Schema_const.Constraints, "arbitrary">
+    enum: Require<Schema_enum.Constraints, "arbitrary">
     record: Require<Schema_record.Constraints, "arbitrary">
     object: Require<Schema_object.Constraints, "arbitrary">
     tuple: Require<Schema_tuple.Constraints, "arbitrary">
@@ -1254,6 +1287,7 @@ export namespace Constraints {
     anyOf: { ...Schema_anyOf.defaults, arbitrary: Schema_anyOf.base },
     array: { ...Schema_array.defaults, arbitrary: Schema_array.base },
     const: { ...Schema_const.defaults, arbitrary: Schema_const.base },
+    enum: { ...Schema_enum.defaults, arbitrary: Schema_enum.base },
     boolean: { ...Schema_boolean.defaults, arbitrary: Schema_boolean.base },
     integer: { ...Schema_integer.defaults, arbitrary: Schema_integer.base },
     null: { ...Schema_null.defaults, arbitrary: Schema_null.base },
@@ -1309,6 +1343,7 @@ export namespace Constraints {
       number: !_.number ? Constraints.defaults.number : { ...Constraints.defaults.number, ..._?.number },
       string:  !_.string ? Constraints.defaults.string : { ...Constraints.defaults.string, ..._?.string },
       const: !_.const ? Constraints.defaults.const : { ...Constraints.defaults.const, ..._?.const },
+      enum: !_.enum ? Constraints.defaults.enum : { ...Constraints.defaults.enum, ..._?.enum },
       allOf: !_.allOf ? Constraints.defaults.allOf : { ...Constraints.defaults.allOf, ..._?.allOf },
       anyOf: !_.anyOf ? Constraints.defaults.anyOf : { ...Constraints.defaults.anyOf, ..._?.anyOf },
       oneOf: !_.oneOf ? Constraints.defaults.oneOf : { ...Constraints.defaults.oneOf, ..._?.oneOf },
@@ -1316,7 +1351,6 @@ export namespace Constraints {
       record: !_.record ? Constraints.defaults.record : { ...Constraints.defaults.record, ..._?.record },
       object: !_.object ? Constraints.defaults.object : { ...Constraints.defaults.object, ..._?.object },
       tuple: !_.tuple ? Constraints.defaults.tuple : { ...Constraints.defaults.tuple, ..._?.tuple },
-
     } satisfies Constraints.Config
   }
 }
@@ -1378,6 +1412,7 @@ export function loop(constraints: Constraints = Constraints.defaults): fc.Letrec
       integer: Schema_integer(constraints),
       number: Schema_number(constraints),
       string: Schema_string(constraints),
+      enum: Schema_enum(constraints),
       const: Schema_const(constraints),
       array: Schema_array(LOOP("any"), constraints),
       record: Schema_record(LOOP("any"), constraints),

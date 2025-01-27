@@ -100,15 +100,18 @@ vi.describe("〖🧙〗‹‹‹ ❲@traversable/core/ast❳", () => {
     vi.assertType<
       t.allOf<[
         t.object<{
-        d: t.optional<t.allOf<[ t.object<{ x: t.optional<t.number> }>, t.object<{ y: t.optional<t.number> }>, t.object<{ z: t.optional<t.number> }> ]>>
-        a: t.array<t.string>
-        b: t.array<t.number>
-        c: t.record<t.array<t.boolean>>
-        e:
-          & t.anyOf<[
-              t.object<{ xs: t.anyOf<[t.null, t.array<t.number>]> }>
-            , t.object<{ ys: t.anyOf<[t.null, t.array<t.number>]> }>
-            , t.object<{ zs: t.anyOf<[t.null, t.array<t.number>]> }>
+          a: t.array<t.string>
+          b: t.array<t.number>
+          c: t.record<t.array<t.boolean>>
+          d: t.optional<t.allOf<[ 
+            t.object<{ x: t.optional<t.number> }>, 
+            t.object<{ y: t.optional<t.number> }>, 
+            t.object<{ z: t.optional<t.number> }> 
+          ]>>
+          e: t.anyOf<[
+            t.object<{ xs: t.anyOf<[t.null, t.array<t.number>]> }>, 
+            t.object<{ ys: t.anyOf<[t.null, t.array<t.number>]> }>,
+            t.object<{ zs: t.anyOf<[t.null, t.array<t.number>]> }>
           ]>
         }>
       ]>
@@ -258,6 +261,41 @@ vi.describe("〖⛳️〗‹‹‹ ❲@traversable/core/ast❳", () => {
   } as const
 
   vi.it("〖⛳️〗› ❲ast: `ast.toJsonSchema` adapter❳", () => {
+    vi.expect(
+      $(
+        t.object({
+          a: t.optional(
+            t.object({
+              b: t.optional(
+                t.tuple(
+                  t.object({
+                    d: t.optional(t.number()),
+                    e: t.optional(
+                      t.tuple(
+                        t.tuple(
+                          t.tuple(
+                            t.object({
+                              f: t.string(), g: t.boolean(),
+                            })
+                          )
+                        )
+                      )
+                    ),
+                    c: t.optional(t.boolean()),
+                    f: t.optional(t.number()),
+                  }),
+                  t.object({
+                    g: t.number(),
+                  })
+                )
+              ),
+              h: t.optional(t.number()),
+            })
+          )
+        }).toJsonSchema
+      )
+    ).toMatchInlineSnapshot(`"{"type":"object","required":[],"properties":{"a":{"type":"object","required":[],"properties":{"b":{"type":"array","items":[{"type":"object","required":[],"properties":{"d":{"type":"number"},"e":{"type":"array","items":[{"type":"array","items":[{"type":"array","items":[{"type":"object","required":["f","g"],"properties":{"f":{"type":"string"},"g":{"type":"boolean"}}}],"minItems":1,"maxItems":1}],"minItems":1,"maxItems":1}],"minItems":1,"maxItems":1},"c":{"type":"boolean"},"f":{"type":"number"}}},{"type":"object","required":["g"],"properties":{"g":{"type":"number"}}}],"minItems":2,"maxItems":2},"h":{"type":"number"}}}}}"`)
+
     vi.expect($(seed.null.toJsonSchema)).toMatchInlineSnapshot(`"{"type":"null","enum":[null]}"`)
     vi.expect($(seed.bool.toJsonSchema)).toMatchInlineSnapshot(`"{"type":"boolean"}"`)
     vi.expect($(seed.int_.toJsonSchema)).toMatchInlineSnapshot(`"{"type":"integer"}"`)

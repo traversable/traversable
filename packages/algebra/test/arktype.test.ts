@@ -8,7 +8,13 @@ import type { _ } from "@traversable/registry"
 
 import { PATH, seed, typeNameFromPath } from "./seed.js"
 
-seed({regenerateSeedFilesOnSave: true })
+seed({ 
+  regenerateSeedFilesOnSave: true,
+  exclude: ["boolean"],
+  include: {
+    example: false,
+  }
+})
 
 vi.describe("〖️⛳️〗‹‹‹ ❲@traversable/algebra/ark❳", () => {
   vi.it("〖️⛳️〗› ❲ark.generate❳", async () => {
@@ -18,6 +24,8 @@ vi.describe("〖️⛳️〗‹‹‹ ❲@traversable/algebra/ark❳", () => {
       `import { type } from "arktype"`, 
       `import $doc from "./traversable.gen.json.js"`,
     ]
+
+    console.log(JSON.stringify(document, null, 2))
 
     for (const k in schemas) {
       const schema = schemas[k]

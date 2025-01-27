@@ -1,7 +1,7 @@
 import { execSync as $ } from "node:child_process"
 import * as path from "node:path"
 import * as vi from "vitest"
-import * as API from "./__generated__/zod.gen.js"
+// import * as API from "./__generated__/zod.gen.js"
 
 import { type Handlers, Matchers, type Options as Options_, defineOptions, zod } from "@traversable/algebra"
 import { Traversable, fc, is, test, tree } from "@traversable/core"

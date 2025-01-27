@@ -384,6 +384,7 @@ export type Schema_scalar<Meta extends {} = {}> =
   | Schema_string<Meta>
   ;
 
+export interface Schema_enum<T = unknown, Meta extends {} = {}> extends newtype<Meta> { readonly enum: readonly T[] }
 export interface Schema_const<T = unknown, Meta extends {} = {}> extends newtype<Meta> { readonly const: T }
 export interface Schema_allOf<T = unknown, Meta extends {} = {}> extends newtype<Meta> { readonly allOf: readonly T[] }
 export interface Schema_anyOf<T = unknown, Meta extends {} = {}> extends newtype<Meta> { readonly anyOf: readonly T[] }
