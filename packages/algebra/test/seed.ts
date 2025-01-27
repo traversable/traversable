@@ -1,11 +1,11 @@
 import * as fs from "node:fs"
 import * as path from "node:path"
 
-import type { _, autocomplete } from "@traversable/registry"
+import { escapePathSegment, unescapePathSegment } from "@traversable/algebra"
 import { Traversable, fc, is, tree } from "@traversable/core"
 import { fn, keys, map } from "@traversable/data"
-import { Schema, Spec, openapi } from "@traversable/openapi"
-import { escapePathSegment, unescapePathSegment } from "@traversable/algebra"
+import { Schema, Spec, type openapi } from "@traversable/openapi"
+import type { _, autocomplete } from "@traversable/registry"
 
 /** @internal */
 type Any = {} | null | undefined

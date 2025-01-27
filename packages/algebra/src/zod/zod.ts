@@ -8,6 +8,7 @@ import { z } from "zod"
 import * as Print from "../print.js"
 import type { Index, Matchers, Options } from "../shared.js"
 import {
+  JsonLike,
   createMask,
   createOpenApiNodePath,
   createTarget,
@@ -15,7 +16,6 @@ import {
   defaults as defaults_,
   defineOptions,
   escapePathSegment,
-  JsonLike,
 } from "../shared.js"
 
 export {
@@ -161,6 +161,45 @@ const serialize
       : loop(ix.indent)(x)
   }
 
+const serializeType
+  : (ix: Index) => (x: unknown) => string
+  = (ix) => {
+    const loop = (indent: number) => (x: JsonLike): string => {
+      switch (true) {
+        default: return fn.exhaustive(x)
+        case x === null:
+        case x === undefined:
+        case typeof x === 'boolean':
+        case typeof x === 'number': return 'z.ZodLiteral<' + String(x) + '>'
+        case typeof x === 'string': return 'z.ZodLiteral<"' + x + '">'
+        case JsonLike.isArray(x): {
+          return x.length === 0
+            ? 'z.ZodTuple<[]>'
+            : Print.array({ indent })(
+              'z.ZodTuple<[', 
+              ...x.map(loop(indent + 2)), 
+              ']>'
+            )
+        }
+        case !!x && typeof x === 'object': {
+          const entries = Object
+            .entries(x)
+            .map(([k, v]) => [JSON.stringify(k), loop(indent + 2)(v)] satisfies [any, any])
+          return entries.length === 0 
+            ? 'z.ZodObject<{}>' 
+            : Print.array({ indent })(
+              'z.ZodObject<{',
+              ...entries.map(([k, v]) => k + ': ' + v),
+              '}>'
+            )
+        }
+      }
+    }
+    return (x: unknown) => !JsonLike.is(x) 
+      ? Invariant.NonSerializableInput("zod.serializeType", x)
+      : loop(ix.indent)(x)
+  }
+
 
 const generated = {
   null() { return 'z.null()' as const },
@@ -237,14 +276,15 @@ const typesOnly = {
       : xs.every(core.is.string) ? 'z.ZodEnum<[' + xs.map(JSON_stringify).join(', ') + ']>'
       : 'z.ZodUnion<[' + xs.map((s) => `z.ZodLiteral<${typeof s === 'string' ? JSON_stringify : String(s)}>`) + ']>'
   },
-  const() { return '' },
+  // const() {},
+  const({ const: x }, ix) { return serializeType(ix)(x) },
   array({ items: s }, $) { return Print.array($)('z.ZodArray<', s, '>') },
   record({ additionalProperties: s }, $) { return Print.array($)('z.ZodRecord<z.ZodString, ', s, '>') },
   tuple({ items: ss }, $) { return Print.array($)('z.ZodTuple<[', ...ss, ']>') },
   anyOf({ anyOf: [s0 = 'z.ZodNever', ...ss] }, $) { return Print.array($)('z.ZodUnion<[', s0, ...ss, ']>') },
   oneOf({ oneOf: [s0 = 'z.ZodNever', ...ss] }, $) { return Print.array($)('z.ZodUnion<[', s0, ...ss, ']>') },
   allOf({ allOf: [s0, s1 = 'z.ZodUnknown', ...ss] }, $) {
-    return s0 === undefined ? 'z.ZodUnknown'
+    return s0 === undefined ? s1
       : ss.length === 0 ? s1
       : Print.array($)('', [s1, ...ss].reduce((acc, x) => acc === '' ? x : `z.ZodIntersection<${acc}, ${x}>`, s0), '')
   },

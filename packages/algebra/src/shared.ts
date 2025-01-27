@@ -150,8 +150,6 @@ const sub
     return out
   }
 
-// export const ESC_MAP = { "/": "𛰎", "{": "𛰧", "}": "𛰨", "-": "𛰃", "~": "ꕀ" } as const
-
 export const ESC_MAP = { 
   "#": "ꖛ",
   ".": "ⴰ",

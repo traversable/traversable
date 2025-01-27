@@ -7,10 +7,10 @@ import { Invariant, KnownFormat } from "@traversable/registry"
 import * as Print from "../print.js"
 import type { Index, Matchers, Options } from "../shared.js"
 import {
+  JsonLike,
   createTarget,
   defaults as defaults_,
   escapePathSegment,
-  JsonLike,
 } from "../shared.js"
 
 export {

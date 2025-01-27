@@ -1,10 +1,10 @@
 import * as fs from "node:fs"
 import * as vi from "vitest"
 
+import { ark } from "@traversable/algebra"
 import type { JsonSchema } from "@traversable/core"
 import type { openapi } from "@traversable/openapi"
 import type { _ } from "@traversable/registry"
-import { ark } from "@traversable/algebra"
 
 import { PATH, seed, typeNameFromPath } from "./seed.js"
 

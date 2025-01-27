@@ -2,13 +2,13 @@ import * as fs from "node:fs"
 import * as vi from "vitest"
 import { z } from "zod"
 
-import { Traversable, fc, test } from "@traversable/core"
+import { type Traversable, fc, test } from "@traversable/core"
 
 import { zod } from "@traversable/algebra"
 import { _ } from "@traversable/registry"
 import IR = zod.IR
 
-import { typeNameFromPath, PATH, seed } from "./seed.js"
+import { PATH, seed, typeNameFromPath } from "./seed.js"
 
 seed()
 
