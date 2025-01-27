@@ -27,7 +27,6 @@ vi.describe("〖️⛳️〗‹‹‹ ❲@traversable/algebra/augmentation❳", 
   })
 
   vi.it("〖️⛳️〗› ❲algebra/augmentation❳: matchers are applied during evaluation", async () => {
-
     const za = createTarget({
       Bro(x, $) { return x.type  },
       Brr(x, $) { return x.type + 1 },
@@ -37,6 +36,7 @@ vi.describe("〖️⛳️〗‹‹‹ ❲@traversable/algebra/augmentation❳", 
       array(x, $) { return x.type },
       boolean(x, $) { return x.type },
       enum(x, $) { return x.type },
+      const(x, $) { return x.type },
       integer(x, $) { return x.type },
       null(x, $) { return x.type },
       number(x, $) { return x.type },

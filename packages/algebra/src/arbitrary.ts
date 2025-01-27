@@ -44,6 +44,7 @@ export namespace Algebra {
         // TODO: turn back on
         default: return fn.softExhaustiveCheck(x)
         case Traversable.is.enum(x): return fc.constantFrom(...x.enum)
+        case Traversable.is.const(x): return fc.constant(x.const)
         case Traversable.is.null(x): return fc.constant(null)
         case Traversable.is.boolean(x): return fc.boolean()
         case Traversable.is.integer(x): return fc.integer()
@@ -72,8 +73,8 @@ export namespace Algebra {
     switch (true) {
       // TODO: turn back on
       default: return fn.softExhaustiveCheck(x)
-      // default: return fn.softExhaustiveCheck(x) // fn.exhaustive(x)
       case Traversable.is.enum(x): return "fc.constantFrom(" + x + ")"
+      case Traversable.is.const(x): return "fc.constant(" + x.const + ")"
       case Traversable.is.null(x): return "fc.constant(null)"
       case Traversable.is.boolean(x): return "fc.boolean()"
       case Traversable.is.integer(x): return "fc.integer()"

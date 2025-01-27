@@ -31,10 +31,14 @@ export const key = (u: unknown): u is keyof any =>
      typeof u === "string" 
   || typeof u === "number" 
   || typeof u === "symbol"
-export const showable = (u: unknown) => u == null
+export const showable = (u: unknown): u is boolean | number | bigint | string => u == null
   || typeof u === "boolean"
   || typeof u === "number"
   || typeof u === "bigint"
+  || typeof u === "string"
+export const scalar = (u: unknown): u is undefined | null | boolean | number | string => u == null
+  || typeof u === "boolean"
+  || typeof u === "number"
   || typeof u === "string"
 export const primitive = (u: unknown) => u == null
   || typeof u === "boolean"

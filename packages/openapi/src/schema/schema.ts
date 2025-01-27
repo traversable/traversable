@@ -2,9 +2,9 @@ import { type JsonSchema, Traversable, core, fc, tree } from "@traversable/core"
 import type { record as Record, keys } from "@traversable/data"
 import { fn, integer } from "@traversable/data"
 import type { Require, inline } from "@traversable/registry"
-import { PATTERN, REPLACER } from "@traversable/registry"
+import { PATTERN, REPLACER, symbol } from "@traversable/registry"
 
-import { type Schema, type arbitrary, format } from "../types.js"
+import { type Schema, format } from "../types.js"
 import type * as t from "../types.js"
 import {
   DataType,
@@ -17,6 +17,7 @@ export {
   type Schema_F as F,
   type Schema_Node as Node,
   type Schema_scalar as scalar,
+  type Schema_const as const,
   ///
   Schema_is as is,
   Schema_isBoolean as isBoolean,
@@ -37,6 +38,7 @@ export {
   Schema_isCombinator as isCombinator,
   Schema_isRef as isRef,
   Schema_isConst as isConst,
+  Schema_isEnum as isEnum,
   ///
   Schema_tag as tag,
   Schema_kinds as kinds,
@@ -132,20 +134,23 @@ namespace Bounded {
   }
 }
 
+function compact<T extends object>(x: T): T
+function compact<T extends object>(x: T) {
+  let out: { [x: string]: unknown } = {}
+  for (let k in x) {
+    if (x[k] === void 0) continue
+    out[k] = x[k]
+  }
+  return out
+}
+
 /** @internal */
 const RFC_3339 = fc.date({ noInvalidDate: true })
 /** @internal */
-const RFC_3339_DATETIME = RFC_3339.map((d) => d.toISOString())
-/** @internal */
-const RFC_3339_DATE = RFC_3339_DATETIME.map((ds) => ds.substring(0, 10))
-/** @internal */
-const RFC_3339_TIME = RFC_3339.map((d) => d.toISOString().substring(11))
-
-/** @internal */
 const EXAMPLE = {
-  date: RFC_3339_DATE,
-  datetime: RFC_3339_DATETIME,
-  time: RFC_3339_TIME,
+  date: RFC_3339.map((d) => d.toISOString().substring(0, 10)),
+  datetime: RFC_3339.map((d) => d.toISOString()),
+  time: RFC_3339.map((d) => d.toISOString().substring(11)),
   uri: fc.webUrl({ withQueryParameters: true, withFragments: true }),
   uuid: fc.uuid({ version: 7 }),
   ulid: fc.ulid(),
@@ -228,6 +233,45 @@ const constrainNumeric = (options?: { includeMultipleOf?: boolean }) => fn.flow(
   })
 )
 
+type ConstantTree = 
+  | null | boolean | number | string
+  | readonly ConstantTree[]
+  | { [x: string]: ConstantTree }
+  ;
+interface ConstantValue {
+  scalar: null | boolean | number | string
+  array: readonly ConstantTree[]
+  object: { [x: string]: ConstantTree }
+  any: ConstantTree
+}
+const scalar = fc.oneof(
+  fc.constant(null),
+  fc.boolean(),
+  fc.integer(),
+  fc.fix(2),
+  fc.lorem(),
+)
+const ConstantValue
+  : core.fc.LetrecValue<ConstantValue>
+  = fc.letrec(
+    (LOOP: fc.LetrecTypedTie<ConstantValue>) => ({
+      scalar,
+      array: fc.array(LOOP("any")),
+      object: fc.dictionary(LOOP("any")),
+      any: fc.oneof(
+        scalar,
+        LOOP("any"),
+        LOOP("object"),
+      ),
+    })
+  )
+
+const defaultInclude = {
+  const: false,
+  example: false,
+  examples: false,
+  description: false,
+} as const
 
 //////////////////
 ///    NULL    ///
@@ -235,6 +279,7 @@ export { Schema_null as null }
 
 Schema_null.defaults = {
   arbitrary: Schema_null.base,
+  include: defaultInclude,
 } satisfies Schema_null.Constraints
 Schema_null.requiredKeys = [
   "type",
@@ -253,6 +298,17 @@ Schema_null.base = ($: Constraints.Config): fc.Arbitrary<Schema_null> =>
     }
   )
 
+interface Notched<T, Tag> extends fc.Arbitrary<T> {
+  [symbol.unit]: Tag
+}
+function notch<Tag>(tag: Tag): <T>(arbitrary: fc.Arbitrary<T>) => Notched<T, Tag>
+function notch<Tag>(tag: Tag) {
+  return <T>(arbitrary: fc.Arbitrary<T>): Notched<T, Tag> => globalThis.Object.assign(
+    arbitrary,
+    { [symbol.unit]: tag }
+  )
+} 
+
 interface Schema_null<T = unknown, M extends {} = {}> extends t.Schema_null<T, M> {}
 declare namespace Schema_null {
   interface Constraints<T = unknown> extends
@@ -266,10 +322,14 @@ declare namespace Schema_null {
  *
  * An opinionated and extensible pseudo-random generator of "null" JSON Schema / OpenAPI 3.1 nodes.
  */
-function Schema_null(constraints?: Constraints): fc.Arbitrary<Schema_null>
-function Schema_null(_?: Constraints): fc.Arbitrary<Schema_null> {
+// function Schema_null(constraints?: Constraints): fc.Arbitrary<Schema_null>
+// function Schema_null(_?: Constraints): fc.Arbitrary<Schema_null> {
+
+function Schema_null(constraints?: Constraints): Notched<Schema_null, null>
+function Schema_null(_?: Constraints) {
   const $ = Constraints.configure(_)
-  return $.null.arbitrary($) satisfies fc.Arbitrary<JsonSchema.null>
+  const generator = $.null.arbitrary($) satisfies fc.Arbitrary<JsonSchema.null>
+  return notch(fc.peek(fc.constant(null)))(generator) 
 }
 ///    NULL    ///
 //////////////////
@@ -281,6 +341,7 @@ export { Schema_boolean as boolean }
 
 Schema_boolean.defaults = {
   arbitrary: Schema_boolean.base,
+  include: defaultInclude,
 } satisfies Schema_boolean.Constraints
 Schema_boolean.requiredKeys = [
   "type",
@@ -325,6 +386,7 @@ export { Schema_integer as integer }
 
 Schema_integer.defaults = {
   arbitrary: Schema_integer.base,
+  include: defaultInclude,
 } satisfies Schema_integer.Constraints
 Schema_integer.requiredKeys = [
   "type",
@@ -377,13 +439,45 @@ declare namespace Schema_integer {
  * See also:
  * - {@link Schema_number `openapi.Schema.number`}
  */
-function Schema_integer(constraints?: Constraints): fc.Arbitrary<Schema_integer>
-function Schema_integer(_?: Constraints): fc.Arbitrary<Schema_integer> {
+function Schema_integer(_?: Constraints) {
   const $ = Constraints.configure(_)
-  return $.integer.arbitrary($) satisfies fc.Arbitrary<JsonSchema.integer>
+  const generator = $.integer.arbitrary($)
+  const integerExample = ({ min, max, mod }: { min?: number, max?: number, mod?: number }) =>
+    fc.integer({ min, max }).map(
+      (x) => 
+        mod === undefined ?  x 
+      : min === undefined ? (x - (x % mod))
+      : max === undefined ? (x - (x % mod) + mod)
+      : min < (x - (x % mod)) ? (x - (x % mod))
+      : max > (x - (x % mod) + mod) ? (x - (x % mod) + mod)
+      : undefined
+    )
+
+  return !$.base.include.example && !$.base.include.examples
+    ? generator
+    : generator.chain(({ minimum: min, maximum: max, multipleOf: mod, ..._ }) => {
+      return fc.record({
+        type: fc.constant(_.type),
+        ...mod && { multipleOf: fc.constant(mod) },
+        ...min && { minimum: fc.constant(min) },
+        ...max && {maximum: fc.constant(max) },
+        example: integerExample({ min, max, mod }),
+        ..._.nullable && { nullable: fc.constant(_.nullable) },
+        ..._.format && { format: fc.constant(_.format) },
+        ..._.exclusiveMaximum && { exclusiveMaximum: fc.constant(_.exclusiveMaximum) },
+        ..._.exclusiveMinimum && { exclusiveMinimum: fc.constant(_.exclusiveMinimum) },
+      })
+    }).map(compact)
 }
 ///    INTEGER    ///
 /////////////////////
+
+// function Schema_integer(constraints?: Constraints): fc.Arbitrary<Schema_integer>
+// function Schema_integer(_?: Constraints): fc.Arbitrary<Schema_integer> {
+//   const $ = Constraints.configure(_)
+//   return $.integer.arbitrary($) satisfies fc.Arbitrary<JsonSchema.integer>
+// }
+
 
 
 ////////////////////
@@ -392,6 +486,7 @@ export { Schema_number as number}
 
 Schema_number.defaults = {
   arbitrary: Schema_number.base,
+  include: defaultInclude,
 } satisfies Schema_number.Constraints
 Schema_number.requiredKeys = [
   "type",
@@ -407,8 +502,10 @@ Schema_number.static = {
 Schema_number.base = ($: Constraints.Config): fc.Arbitrary<Schema_number> =>
   fc.record(
     typed(
-      DataType.number,
-      Schema_number.static,
+      DataType.number, {
+        ...Schema_number.static,
+        ...$.number.include?.example && { example: Schema_number.static.minimum },
+      }
     ), {
       requiredKeys: Schema_number.requiredKeys
     },
@@ -439,7 +536,23 @@ declare namespace Schema_number {
 function Schema_number(constraints?: Constraints): fc.Arbitrary<Schema_number>
 function Schema_number(_?: Constraints): fc.Arbitrary<Schema_number> {
   const $ = Constraints.configure(_)
-  return $.number.arbitrary($) satisfies fc.Arbitrary<JsonSchema.number>
+  const generator = $.number.arbitrary($) satisfies fc.Arbitrary<JsonSchema.number>
+
+  return generator.map(({ minimum: min, maximum: max, ..._ }) => {
+    const effectiveMinimum = min === undefined ? Number.MIN_SAFE_INTEGER : min + (_.exclusiveMinimum ? 1 : 0)
+    const effectiveMaximum = max === undefined ? Number.MAX_SAFE_INTEGER : max - (_.exclusiveMaximum ? 1 : 0)
+    const example 
+      = _.example === undefined ? undefined 
+      : _.example < effectiveMinimum ? (_.example % effectiveMinimum) 
+      : _.example > effectiveMaximum ? (_.example % effectiveMaximum)
+      : _.example
+    return {
+      ..._,
+      ...min && { minimum: min },
+      ...max && { maximum: max },
+      ...example && { example }
+    }
+  })
 }
 ///    NUMBER    ///
 ////////////////////
@@ -451,22 +564,24 @@ export { Schema_string as string }
 
 Schema_string.defaults = {
   arbitrary: Schema_string.base,
+  include: defaultInclude,
 } satisfies Schema_string.Constraints
 Schema_string.requiredKeys = [
   "type",
 ] as const satisfies string[]
-Schema_string.format = (constraints: Constraints.Config) => fc.oneof(
-  fc.record(date(constraints), { requiredKeys: [] }),
-  fc.record(datetime(constraints), { requiredKeys: [] }),
-  fc.record(email(constraints), { requiredKeys: [] }),
-  fc.record(ulid(constraints), { requiredKeys: [] }),
-  fc.record(uuid(constraints), { requiredKeys: [] }),
-  fc.record(uri(constraints), { requiredKeys: [] }),
+Schema_string.format = ($: Constraints.Config) => fc.oneof(
+  fc.record(date($), { requiredKeys: [] }),
+  fc.record(datetime($), { requiredKeys: [] }),
+  fc.record(email($), { requiredKeys: [] }),
+  fc.record(ulid($), { requiredKeys: [] }),
+  fc.record(uuid($), { requiredKeys: [] }),
+  fc.record(uri($), { requiredKeys: [] }),
 )
+
 Schema_string.static = {
-  minLength: fc.integer({ min: -0x100, max: +0x00 }),
-  maxLength: fc.integer({ min: -0x100, max: +0x00 }),
-  pattern: fc.string({ minLength: +0x1, maxLength: +0x20 }).map(escapeRegularExpression),
+  minLength: fc.nat(0x100),
+  maxLength: fc.nat(0x100),
+  pattern: fc.string({ minLength: 1, maxLength: 0x10 }).map(escapeRegularExpression),
 }
 
 function escapeRegularExpression(pattern: string) {
@@ -536,6 +651,39 @@ function Schema_string(_?: Constraints): fc.Arbitrary<Schema_string> {
 ////////////////////
 
 
+///////////////////
+///    CONST    ///
+Schema_const.requiredKeys = [
+  "const", 
+] as const satisfies string[]
+Schema_const.defaults = {
+  arbitrary: Schema_const.base,
+  include: defaultInclude,
+} satisfies Schema_const.Constraints
+
+Schema_const.base = <T>(
+  $: Constraints.Config
+) => fc.record(
+  { const: ConstantValue.any }, 
+  { requiredKeys: Schema_const.requiredKeys },
+)
+
+interface Schema_const<T = unknown, M extends {} = {}> extends t.Schema_const<T, M> {}
+function Schema_const<T = ConstantTree>(constraints?: Constraints): fc.Arbitrary<Schema_const<T>>
+function Schema_const<T = ConstantTree>(_?: Constraints) {
+  const $ = Constraints.configure(_)
+  return $.const.arbitrary($) satisfies fc.Arbitrary<JsonSchema.const>
+}
+
+declare namespace Schema_const {
+  interface Constraints<T = unknown> extends Partial<Constraints.Base<T>> {
+    arbitrary: typeof Schema_const.base
+  }
+}
+///    CONST    ///
+///////////////////
+
+
 ////////////////////
 ///    RECORD    ///
 export { Schema_record as record }
@@ -545,6 +693,7 @@ Schema_record.requiredKeys = [
 ] as const satisfies string[]
 Schema_record.defaults = {
   arbitrary: Schema_record.base,
+  include: defaultInclude,
 } satisfies Schema_record.Constraints
 
 Schema_record.base = <T>(
@@ -616,6 +765,7 @@ Schema_allOf.defaults = {
   minLength: 1,
   maxLength: 3,
   selector: Object_keys as never,
+  include: defaultInclude,
 } satisfies Schema_allOf.Constraints
 
 Schema_allOf.base = <T>(
@@ -681,6 +831,7 @@ Schema_anyOf.defaults = {
   arbitrary: Schema_anyOf.base,
   minLength: 1,
   maxLength: 3,
+  include: defaultInclude,
 } satisfies Schema_anyOf.Constraints
 
 Schema_anyOf.base = <T>(
@@ -740,6 +891,7 @@ Schema_oneOf.defaults = {
   arbitrary: Schema_oneOf.base,
   minLength: 1,
   maxLength: 3,
+  include: defaultInclude,
 } satisfies Schema_oneOf.Constraints
 
 Schema_oneOf.base = <T>(
@@ -829,6 +981,7 @@ Schema_array.defaults = {
   minItems: fc.nat(),        // default: 0
   // TODO: this should be a _value_, not an arbitrary... right? 🤔
   uniqueItems: fc.boolean(), // default: false
+  include: defaultInclude,
 } satisfies Schema_array.Constraints
 
 Schema_array.base = <T>(
@@ -890,12 +1043,7 @@ Schema_object.defaults = {
   description: "",
   nullable: false,
   example: void 0,
-  include: {
-    const: false,
-    description: false,
-    example: false,
-    examples: false,
-  },
+  include: defaultInclude,
 } as const satisfies Required<Schema_object.Constraints>
 
 Schema_object.base = <T>(
@@ -974,6 +1122,7 @@ Schema_tuple.requiredKeys = [
 Schema_tuple.defaults = {
   arbitrary: Schema_tuple.base,
   minLength: 1,
+  include: defaultInclude,
 } satisfies Schema_tuple.Constraints
 
 Schema_tuple.base = <T>(
@@ -1082,6 +1231,7 @@ export declare namespace Constraints {
     integer: Require<Schema_integer.Constraints, "arbitrary">
     number: Require<Schema_number.Constraints, "arbitrary">
     string: Require<Schema_string.Constraints, "arbitrary">
+    const: Require<Schema_const.Constraints, "arbitrary">
     record: Require<Schema_record.Constraints, "arbitrary">
     object: Require<Schema_object.Constraints, "arbitrary">
     tuple: Require<Schema_tuple.Constraints, "arbitrary">
@@ -1103,6 +1253,7 @@ export namespace Constraints {
     allOf: { ...Schema_allOf.defaults, arbitrary: Schema_allOf.base },
     anyOf: { ...Schema_anyOf.defaults, arbitrary: Schema_anyOf.base },
     array: { ...Schema_array.defaults, arbitrary: Schema_array.base },
+    const: { ...Schema_const.defaults, arbitrary: Schema_const.base },
     boolean: { ...Schema_boolean.defaults, arbitrary: Schema_boolean.base },
     integer: { ...Schema_integer.defaults, arbitrary: Schema_integer.base },
     null: { ...Schema_null.defaults, arbitrary: Schema_null.base },
@@ -1152,18 +1303,20 @@ export namespace Constraints {
         exclude: _.base.exclude ?? Constraints.rootBase.exclude,
         include: !_.base.include ? Constraints.include : { ...Constraints.include, ..._.base.include },
       },
-      allOf: !_.allOf ? Constraints.defaults.allOf : { ...Constraints.defaults.allOf, ..._?.allOf },
-      anyOf: !_.anyOf ? Constraints.defaults.anyOf : { ...Constraints.defaults.anyOf, ..._?.anyOf },
-      array: !_.array ? Constraints.defaults.array : { ...Constraints.defaults.array, ..._?.array },
+      null: !_.null ? Constraints.defaults.null : { ...Constraints.defaults.null, ..._?.null },
       boolean: !_.boolean ? Constraints.defaults.boolean : { ...Constraints.defaults.boolean, ..._?.boolean },
       integer: !_.integer ? Constraints.defaults.integer : { ...Constraints.defaults.integer, ..._?.integer },
-      null: !_.null ? Constraints.defaults.null : { ...Constraints.defaults.null, ..._?.null },
       number: !_.number ? Constraints.defaults.number : { ...Constraints.defaults.number, ..._?.number },
-      object: !_.object ? Constraints.defaults.object : { ...Constraints.defaults.object, ..._?.object },
-      oneOf: !_.oneOf ? Constraints.defaults.oneOf : { ...Constraints.defaults.oneOf, ..._?.oneOf },
-      record: !_.record ? Constraints.defaults.record : { ...Constraints.defaults.record, ..._?.record },
       string:  !_.string ? Constraints.defaults.string : { ...Constraints.defaults.string, ..._?.string },
+      const: !_.const ? Constraints.defaults.const : { ...Constraints.defaults.const, ..._?.const },
+      allOf: !_.allOf ? Constraints.defaults.allOf : { ...Constraints.defaults.allOf, ..._?.allOf },
+      anyOf: !_.anyOf ? Constraints.defaults.anyOf : { ...Constraints.defaults.anyOf, ..._?.anyOf },
+      oneOf: !_.oneOf ? Constraints.defaults.oneOf : { ...Constraints.defaults.oneOf, ..._?.oneOf },
+      array: !_.array ? Constraints.defaults.array : { ...Constraints.defaults.array, ..._?.array },
+      record: !_.record ? Constraints.defaults.record : { ...Constraints.defaults.record, ..._?.record },
+      object: !_.object ? Constraints.defaults.object : { ...Constraints.defaults.object, ..._?.object },
       tuple: !_.tuple ? Constraints.defaults.tuple : { ...Constraints.defaults.tuple, ..._?.tuple },
+
     } satisfies Constraints.Config
   }
 }
@@ -1176,6 +1329,7 @@ export interface SchemaLoop<Meta extends {} = {}> {
   integer: Schema_integer<Schema_any, Meta>
   number: Schema_number<Schema_any, Meta>
   string: Schema_string<Schema_any, Meta>
+  const: Schema_const<unknown, Meta>
   object: Schema_object<Schema_any, Meta>
   array: Schema_array<Schema_any, Meta>
   record: Schema_record<Schema_any, Meta>
@@ -1199,6 +1353,7 @@ export const Tags = [
   "integer",
   "object",
   "boolean",
+  "const",
   "null",
   "array",
   "record",
@@ -1223,6 +1378,7 @@ export function loop(constraints: Constraints = Constraints.defaults): fc.Letrec
       integer: Schema_integer(constraints),
       number: Schema_number(constraints),
       string: Schema_string(constraints),
+      const: Schema_const(constraints),
       array: Schema_array(LOOP("any"), constraints),
       record: Schema_record(LOOP("any"), constraints),
       allOf: Schema_allOf(LOOP("any"), constraints),

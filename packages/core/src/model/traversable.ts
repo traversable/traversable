@@ -17,6 +17,7 @@ import { Meta } from "./meta.js"
 import type {
   AdditionalProps,
   Combinator,
+  Const,
   Enum,
   FiniteItems,
   Items,
@@ -44,6 +45,7 @@ export type {
   Traversable_string as string,
   Traversable_enum as enum,
   Traversable_allOf as allOf,
+  Traversable_const as const,
   Traversable_anyOf as anyOf,
   Traversable_oneOf as oneOf,
   Traversable_array as array,
@@ -96,6 +98,7 @@ type Traversables = [
   Traversable_number,
   Traversable_string,
   Traversable_enum,
+  Traversable_const,
   Traversable_allOf,
   Traversable_anyOf,
   Traversable_oneOf,
@@ -118,6 +121,7 @@ type Traversable_Scalar =
   ;
 type Traversable_Special =
   | Traversable_enum
+  | Traversable_const
   ;
 type Traversable_Combinator =
   | Traversable_allOf
@@ -139,6 +143,7 @@ type Traversable_Map<F> = {
   number: Traversable_number
   string: Traversable_string
   enum: Traversable_enum
+  const: Traversable_const
   allOf: Traversable_allOfF<F>
   anyOf: Traversable_anyOfF<F>
   oneOf: Traversable_oneOfF<F>
@@ -151,7 +156,7 @@ type Traversable_Map<F> = {
 const Traversable_Meta = t.object({ meta: Meta.Base })
 interface Traversable_Meta extends Meta.has<Meta.Base> {}
 
-interface Traversable_lambda extends HKT { [-1]: Traversable_F<this[0]> }
+interface Traversable_lambda<Ext = never> extends HKT { [-1]: Traversable_F<this[0] | Ext> }
 ///
 interface Traversable_allOf extends
   Combinator<Traversable, "allOf">,
@@ -297,6 +302,7 @@ const Traversable_Known = [
   "number",
   "string",
   "enum",
+  "const",
   "allOf",
   "anyOf",
   "oneOf",
@@ -329,6 +335,10 @@ const Traversable_isString = Traversable_string.is as (u: unknown) => u is Trave
 interface Traversable_enum extends Enum<{ type: "enum" }>, Traversable_Meta {}
 const Traversable_enum = t.object({ type: t.const("enum"), enum: t.array(t.any()) })
 const Traversable_isEnum = Traversable_enum.is as (u: unknown) => u is Traversable_enum
+
+interface Traversable_const extends Const<{ type: "const" }>, Traversable_Meta {}
+const Traversable_const = t.object({ type: t.const("const"), const: t.any() })
+const Traversable_isConst = Traversable_const.is as (u: unknown) => u is Traversable_const
 
 const Traversable_anyOf = t.object({ type: t.const("anyOf"), anyOf: t.array(t.any()) })
 const Traversable_isAnyOf = Traversable_anyOf.is as <T>(u: unknown) => u is Traversable_anyOfF<T>
@@ -375,6 +385,7 @@ const is_ = {
   integer: Traversable_isInteger,
   number: Traversable_isNumber,
   string: Traversable_isString,
+  const: Traversable_isConst,
   enum: Traversable_isEnum,
   allOf: Traversable_isAllOf,
   anyOf: Traversable_isAnyOf,
@@ -404,6 +415,7 @@ const Traversable_is = Object_assign(
       Traversable_number,
       Traversable_string,
       Traversable_enum,
+      Traversable_const,
       Traversable_allOf,
       Traversable_anyOf,
       Traversable_oneOf,
@@ -422,6 +434,7 @@ const Traversable_Functor: Functor<Traversable_lambda, Traversable> = {
       switch (true) {
         default: return fn.softExhaustiveCheck(x)
         case Traversable_is.enum(x): return x
+        case Traversable_is.const(x): return x
         case Traversable_is.null(x): return x
         case Traversable_is.boolean(x): return x
         case Traversable_is.integer(x): return x
@@ -454,6 +467,7 @@ const PathPrefixMap = {
   number: null,
   string: null,
   ///
+  const: "const",
   enum: "enum",
   allOf: "allOf",
   anyOf: "anyOf",
@@ -482,6 +496,7 @@ const IxFunctor: IndexedFunctor<Context, Traversable_lambda, Traversable_any> = 
       switch (true) {
         default: return fn.softExhaustiveCheck(xs)
         case Traversable_is.enum(xs): return xs
+        case Traversable_is.const(xs): return xs
         case Traversable_is.null(xs): return xs
         case Traversable_is.boolean(xs): return xs
         case Traversable_is.integer(xs): return xs
@@ -536,6 +551,7 @@ const fromJsonSchema = (expr: JsonSchema.any) => {
     default: return fn.softExhaustiveCheck(expr)
     case JsonSchema.is.null(expr): return { type: expr.type, meta: { ...meta, ...x } }
     case JsonSchema.is.enum(expr): return { type: "enum", enum: expr.enum, meta: { ...meta, ...object.omit(x, "enum") } }
+    case JsonSchema.is.const(expr): return { type: "const", const: expr.const, meta: { ...meta, ...object.omit(x, "const") } }
     case JsonSchema.is.boolean(expr): return { type: expr.type, meta: { ...meta, ...x } }
     case JsonSchema.is.integer(expr): return { type: expr.type, meta: { ...meta, ...x } }
     case JsonSchema.is.number(expr): return { type: expr.type, meta: { ...meta, ...x } }
@@ -569,6 +585,16 @@ const fromAST
       case x._tag === "integer": return { ...x, ...Traversable_integer, type: x._tag }
       case x._tag === "number": return { ...x, ...Traversable_number, type: x._tag }
       case x._tag === "string": return { ...x, ...Traversable_string, type: x._tag }
+      /*
+      case x._tag === "const": return { ...x, type: "enum", enum: x.def }  //  <- TODO: make sure this isn't lossy
+      case x._tag === "optional": return { ...x.def, meta: { ...x.def.meta, optional: true } }
+      case x._tag === "allOf": return { ...x, type: x._tag, allOf: x.def }
+      case x._tag === "anyOf": return { ...x, type: x._tag, anyOf: x.def }
+      case x._tag === "array": return { type: x._tag, items: x.def }
+      case x._tag === "record": return { type: x._tag, additionalProperties: x.def }
+      case x._tag === "tuple": return { type: x._tag, items: x.def }
+      */
+
       case x._tag === "const": return { ...x, type: "enum", enum: x._def }  //  <- TODO: make sure this isn't lossy
       case x._tag === "optional": return { ...x._def, meta: { ...x._def.meta, optional: true } }
       case x._tag === "allOf": return { ...x, type: x._tag, allOf: x._def }
@@ -580,6 +606,10 @@ const fromAST
         type: x._tag,
         properties: x._def,
         required: Object.keys(x._def).filter((k) => !x._def[k].meta?.optional),
+        /* 
+        properties: x.def,
+        required: Object.keys(x.def).filter((k) => !x.def[k].meta?.optional),
+        */
       } satisfies Traversable_object
     }
   }

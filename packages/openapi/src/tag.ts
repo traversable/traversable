@@ -2,6 +2,7 @@ import { fn, map, object } from "@traversable/data"
 import type { Functor, HKT, Omit, newtype } from "@traversable/registry";
 import { symbol } from "@traversable/registry"
 export { symbol } from "@traversable/registry"
+import { core } from "@traversable/core";
 
 import { Schema } from "./schema/exports.js"
 import type { Scalar, Schema_scalar } from "./types.js"
@@ -41,6 +42,7 @@ export type Tag =
   | Tag.integer
   | Tag.number
   | Tag.string
+  | Tag.const
   | Tag.allOf
   | Tag.anyOf
   | Tag.oneOf
@@ -58,6 +60,7 @@ export declare namespace Tag {
     Tag_boolean as boolean,
     Tag_integer as integer,
     Tag_number as number,
+    Tag_const as const,
     Tag_string as string,
     Tag_allOf as allOf,
     Tag_anyOf as anyOf,
@@ -74,6 +77,7 @@ export declare namespace Tag {
   interface Tag_integer { [symbol.tag]: symbol.integer, type: "integer" }
   interface Tag_number { [symbol.tag]: symbol.number, type: "number" }
   interface Tag_string { [symbol.tag]: symbol.string, type: "string" }
+  interface Tag_const { [symbol.tag]: symbol.constant, type: "const" }
   interface Tag_allOf { [symbol.tag]: symbol.allOf, allOf: readonly Tag[] }
   interface Tag_anyOf { [symbol.tag]: symbol.anyOf, anyOf: readonly Tag[] }
   interface Tag_oneOf { [symbol.tag]: symbol.oneOf, oneOf: readonly Tag[] }
@@ -99,6 +103,7 @@ export declare namespace Tag {
     | { [symbol.tag]: symbol.number, type: "number" }
     | { [symbol.tag]: symbol.integer, type: "integer" }
     | { [symbol.tag]: symbol.string, type: "string" }
+    | { [symbol.tag]: symbol.constant, type: "const" }
     | { [symbol.tag]: symbol.tuple, type: "array", items: readonly T[] }
     | { [symbol.tag]: symbol.object, type: "object", properties: { [x: string]: T } }
     | { [symbol.tag]: symbol.array, type: "array", items: T }
@@ -119,6 +124,7 @@ export declare namespace Tag {
 function bmap<S, T>(f: (s: S) => T): (x: Schema.F<S>) => Schema.F<T> 
 function bmap<S, T>(f: (s: S) => T) {
   return (x: Schema.F<S>) => {
+    if ("const" in x) return x
     if (!("type" in x)) switch (true) {
       case "allOf" in x: return { allOf: x.allOf.map(f) }
       case "anyOf" in x: return { anyOf: x.anyOf.map(f) }
@@ -149,6 +155,7 @@ export function tagAlgebra<T>(xs: Schema.F<T>): T
 export function tagAlgebra<T>(xs: Schema.F<T>) {
   if (!("type" in xs)) switch (true) {
     default: return fn.exhaustive(xs)
+    case "const" in xs: return { ...xs, [symbol.tag]: symbol.constant }
     case "allOf" in xs: return { ...xs, [symbol.tag]: symbol.allOf }
     case "anyOf" in xs: return { ...xs, [symbol.tag]: symbol.anyOf }
     case "oneOf" in xs: return { ...xs, [symbol.tag]: symbol.oneOf }

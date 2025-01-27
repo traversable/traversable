@@ -69,8 +69,8 @@ const createTarget
   }
 
 const defaults = {
-  typeName: "AnonymousTypeScriptType",
-  absolutePath: ["components", "schemas"],
+  typeName: 'AnonymousTypeScriptType',
+  absolutePath: ['components', 'schemas'],
   document: openapi.doc({}),
   flags: {
     nominalTypes: true,
@@ -83,10 +83,10 @@ const defaults = {
   path: [],
   depth: 0,
   siblingCount: 0,
-} satisfies Omit<Options.Config<unknown>, "handlers">
+} satisfies Omit<Options.Config<unknown>, 'handlers'>
 
 function defineOptions<S>(handlers: Extension.Handlers<S, Index>): (options?: Options<S>) => Options.Config<S> {
-  return ($?: Omit<Options<S>, "handlers">) => ({
+  return ($?: Omit<Options<S>, 'handlers'>) => ({
     handlers,
     typeName: $?.typeName ?? defaults.typeName,
     document: $?.document ?? defaults.document,
@@ -109,87 +109,89 @@ function defineOptions<S>(handlers: Extension.Handlers<S, Index>): (options?: Op
 
 
 const KnownStringFormats = {
-  [KnownFormat.string.email]: "string.email",
-  [KnownFormat.string.date]: "string.date",
-  [KnownFormat.string.datetime]: "string.datetime",
+  [KnownFormat.string.email]: 'string.email',
+  [KnownFormat.string.date]: 'string.date',
+  [KnownFormat.string.datetime]: 'string.datetime',
 } as const satisfies { [K in KnownFormat.string[keyof typeof KnownFormat.string]]+?: string }
 
 const isKnownStringFormat = isKeyOf(KnownStringFormats)
 
 const baseHandlers = {
-  null(_) { return "null" },
-  boolean(_) { return "boolean" },
-  integer(_) { return "number" },
-  number(_) { return "number" },
-  string(_) { return "string" },
-  enum(n) { return n.enum.map(JSON_stringify).join(" | ") },
-  allOf(n) { return n.allOf.join(" & ") },
-  anyOf(n) { return n.anyOf.join(" | ") },
-  oneOf(n) { return n.oneOf.join(" | ") },
-  array(n) { return n.items + "[]" },
-  tuple(n) { return "[" + n.items.join(", ") + "]" },
-  record(n) { return "Record<string, " + n.additionalProperties + ">" },
+  null(_) { return 'null' },
+  boolean(_) { return 'boolean' },
+  integer(_) { return 'number' },
+  number(_) { return 'number' },
+  string(_) { return 'string' },
+  enum(n) { return n.enum.map(JSON_stringify).join(' | ') },
+  const() { return '' },
+  allOf(n) { return n.allOf.join(' & ') },
+  anyOf(n) { return n.anyOf.join(' | ') },
+  oneOf(n) { return n.oneOf.join(' | ') },
+  array(n) { return n.items + '[]' },
+  tuple(n) { return '[' + n.items.join(', ') + ']' },
+  record(n) { return 'Record<string, ' + n.additionalProperties + '>' },
   object(n) {
-    return ""
-      + "{"
+    return ''
+      + '{'
       + Object_entries(n.properties)
-        .map(([k, v]) => ""
+        .map(([k, v]) => ''
           + object.parseKey(k)
-          + ((n.required ?? []).includes(k) ? ": " : "?: ")
+          + ((n.required ?? []).includes(k) ? ': ' : '?: ')
           + v
-        ).join(";\n")
-      + "}"
+        ).join(';\n')
+      + '}'
   },
 } satisfies Matchers<string>
 
 const pathHandlers = {
-  null(_) { return "null" },
-  boolean(_) { return "boolean" },
-  integer(_) { return "number.integer" },
-  number(_) { return "number" },
-  string(_) { return "string" },
-  enum(_) { return _.enum.map(JSON_stringify).join(" | ") },
-  allOf(_) { return _.allOf.join(" & ") },
-  anyOf(_) { return _.anyOf.length > 1 ? "\n" + _.anyOf.join("\n | ") : _.anyOf.join(" | ") },
-  oneOf(_) { return _.oneOf.join(" | ") },
-  array(_) { return "Array<" + _.items + ">" },
-  tuple(_) { return "[" + _.items.join(", ") + "]" },
-  record(_) { return "Record<string, " + _.additionalProperties + ">" },
+  null(_) { return 'null' },
+  boolean(_) { return 'boolean' },
+  integer(_) { return 'number.integer' },
+  number(_) { return 'number' },
+  string(_) { return 'string' },
+  enum(_) { return _.enum.map(JSON_stringify).join(' | ') },
+  const() { return '' },
+  allOf(_) { return _.allOf.join(' & ') },
+  anyOf(_) { return _.anyOf.length > 1 ? '\n' + _.anyOf.join('\n | ') : _.anyOf.join(' | ') },
+  oneOf(_) { return _.oneOf.join(' | ') },
+  array(_) { return 'Array<' + _.items + '>' },
+  tuple(_) { return '[' + _.items.join(', ') + ']' },
+  record(_) { return 'Record<string, ' + _.additionalProperties + '>' },
   object(_, $) {
     return (
-      "{"
+      '{'
       + Object_entries(_.properties)
         .map(([k, v]) => {
           const isOptional = !(_.required ?? []).includes(k)
           const keys = [...isOptional ? [symbol.optional, k] : [k]]
           // const symbolicName = createZodIdent($)(...path.docs)(_, $)(...isOptional ? [symbol.optional, k] : [k])
-          // console.log("symbolicName", symbolicName)
-          //path.interpreter(path.docs, [$.typeName, ...$.path, k, { leaf: _ } ]).join("")
-          return ""
-            + "/**\n"
-            // + " * ## {@link " + symbolicName.join("") + "}"
-            + "\n */\n"
-            // + "/** " + path.interpreter(path.docs, [...ix, ...isOptional ? [k, "?"] : [k], { leaf: _ } ]).join("") + " */\n"
+          // console.log('symbolicName', symbolicName)
+          //path.interpreter(path.docs, [$.typeName, ...$.path, k, { leaf: _ } ]).join('')
+          return ''
+            + '/**\n'
+            // + ' * ## {@link ' + symbolicName.join('') + '}'
+            + '\n */\n'
+            // + '/** ' + path.interpreter(path.docs, [...ix, ...isOptional ? [k, '?'] : [k], { leaf: _ } ]).join('') + ' */\n'
             + object.parseKey(k)
-            + (isOptional ? "?: " : ": ")
+            + (isOptional ? '?: ' : ': ')
             + v
             }
-        ).join(";\n")
-      + "}"
+        ).join(';\n')
+      + '}'
     )
   }
 } satisfies Matchers<string>
 
 const nominalHandlers = {
   ...baseHandlers,
-  integer() { return "number.integer" },
-  string(n) { return isKnownStringFormat(n.meta?.format) ? KnownStringFormats[n?.meta.format] : "string" },
+  integer() { return 'number.integer' },
+  string(n) { return isKnownStringFormat(n.meta?.format) ? KnownStringFormats[n?.meta.format] : 'string' },
 } satisfies Matchers<string>
 
 const nominalPathHandlers = {
   ...pathHandlers,
-  integer() { return "number.integer" },
-  string(_) { return isKnownStringFormat(_.meta?.format) ? KnownStringFormats[_?.meta.format] : "string" },
+  integer() { return 'number.integer' },
+  string(_) { return isKnownStringFormat(_.meta?.format) ? KnownStringFormats[_?.meta.format] : 'string' },
 } satisfies Matchers<string>
 
 const extendedHandlers = {
@@ -201,9 +203,9 @@ const generate
   = fn.flow(
     createTarget(pathHandlers),
     ([target, $]) => [
-      "export type " + $.typeName + " = typeof " + $.typeName,
-      "export declare const " + $.typeName + ": " + target,
-    ].join("\n")
+      'export type ' + $.typeName + ' = typeof ' + $.typeName,
+      'export declare const ' + $.typeName + ': ' + target,
+    ].join('\n')
   )
 
 // function generate<Meta>(schema: Traversable.any, options: ts.Options<string, Context, Meta>): string
@@ -212,11 +214,11 @@ const generate
 // // function generate(
 // //   schema: Traversable.any, options: ts.Options.withHandlers<string, Context> = ts.defaults as never
 // // ): string {
-//   const typeName = options?.typeName ?? ts.defaults.typeName.concat("TypeScriptType")
+//   const typeName = options?.typeName ?? ts.defaults.typeName.concat('TypeScriptType')
 //   const document = openapi.doc({})
 //   const handlers = {
 //     ...pathHandlers,
-//     ...(options as { handlers: {} })["handlers"],
+//     ...(options as { handlers: {} })['handlers'],
 //   }
 
 
@@ -246,9 +248,9 @@ const generate
 //     // },
 //   ),
 //     (body) => [
-//       "export type " + typeName + " = typeof " + typeName,
-//       "export declare const " + typeName + ": " + body
-//     ].filter(is.notnull).join("\n")
+//       'export type ' + typeName + ' = typeof ' + typeName,
+//       'export declare const ' + typeName + ': ' + body
+//     ].filter(is.notnull).join('\n')
 //   )
 // }
 
@@ -267,12 +269,12 @@ const generate
 //     flags,
 //     handlers:
 //   }
-//   // _ = minify ? "" : " "
+//   // _ = minify ? '' : ' '
 //   return fn.pipe(
 //     schema,
 //     Sort.derive({ compare }),
 //     deriveType.fold({ compare, typeName, minify }),
-//     (body) => "type " + typeName + _ + "=" + _ + body,
+//     (body) => 'type ' + typeName + _ + '=' + _ + body,
 //   )
 // }
 
@@ -284,64 +286,64 @@ const generate
 //   jsdocConfig: { rootPrefix: string, linkPathPrefix: string, linkTitlePrefix?: string }
 // ) =>
 //   codegen.define({
-//   canonical: (name) => ID.ns.types.concat(".").concat(prefixNumeric(string.pascal(name))),
-//   imports: "",
-//   banner: "",
-//   import: () => "",
-//   export: () => "",
-//   afterEach: (s: string, ctx: Context) => `${s}${ctx.isNullable ? " | null" : ""}`,
+//   canonical: (name) => ID.ns.types.concat('.').concat(prefixNumeric(string.pascal(name))),
+//   imports: '',
+//   banner: '',
+//   import: () => '',
+//   export: () => '',
+//   afterEach: (s: string, ctx: Context) => `${s}${ctx.isNullable ? ' | null' : ''}`,
 //   integer: $.flags.preserveStructure ? ID.type.integer : ID.type.number,
 //   number: ID.type.number,
 //   string: (ctx) =>
-//   ( !$.flags.preserveStructure ? "string"
-//     : ctx.format === "date" ? ID.type.dateString
-//     : ctx.format === "date-time" ? ID.type.datetimeString
+//   ( !$.flags.preserveStructure ? 'string'
+//     : ctx.format === 'date' ? ID.type.dateString
+//     : ctx.format === 'date-time' ? ID.type.datetimeString
 //     : ID.type.string
 //   ),
 //   boolean: ID.type.boolean,
-//   anyObject: "object",
+//   anyObject: 'object',
 //   emptyObject: `{}`,
 //   emptyArray: `[]`,
 //   anyArray: `unknown[]`,
-//   // const: { after: (n) => typeof n === "string" ? `"${n}"` : `${n}` },
+//   // const: { after: (n) => typeof n === 'string' ? `'${n}'` : `${n}` },
 //   anyOf: { join: (xs) => xs.join(` | `) },
 //   oneOf: { join: (xs) => xs.join(` | `) },
-//   allOf: { join: (xs) => xs.join(" & ") },
+//   allOf: { join: (xs) => xs.join(' & ') },
 //   array: { after: (n) => `(${n})[]` },
 //   tuple: { afterAll: (s) => `[${s}]` },
-//   record: { after: string.between("Record<string, ", ">") },
+//   record: { after: string.between('Record<string, ', '>') },
 //   enum: {
-//     join: xs => xs.join(" | "),
-//     afterEach: (x, ix) => [typeof x === "string" ? `"${x}"` : `${x}`, ix],
+//     join: xs => xs.join(' | '),
+//     afterEach: (x, ix) => [typeof x === 'string' ? `'${x}'` : `${x}`, ix],
 //   },
 //   object: {
 //     join: (xs) => xs.join(`, `),
 //     afterEach: (v, k, ctx) => {
-//       //       const jsdoc = (name: string) => buildJsDoc(jsdocSchemaPathReducer, "", jsDocPrefix)($)(name, ctx);
-//       // const jsdoc = (name: string) => buildJsDoc(jsdocSchemaPathReducer, "", jsDocPrefix)($)(name, ctx);
+//       //       const jsdoc = (name: string) => buildJsDoc(jsdocSchemaPathReducer, '', jsDocPrefix)($)(name, ctx);
+//       // const jsdoc = (name: string) => buildJsDoc(jsdocSchemaPathReducer, '', jsDocPrefix)($)(name, ctx);
 //       const jsdoc = (name: string) => buildJsDoc(jsdocSchemaPathReducer, jsdocConfig.linkPathPrefix, jsdocConfig.rootPrefix) ($)(name, ctx);
 
 //       return $.flags.includeComments
 //         ? [
 //           fn.pipe(
-//             string.unprefix(ID.ns.types.concat("."))(ctx.schemaName),
+//             string.unprefix(ID.ns.types.concat('.'))(ctx.schemaName),
 //             jsdoc,
-//             string.postfix(`${k}${ctx.isRequired ? "" : "?"}: `),
+//             string.postfix(`${k}${ctx.isRequired ? '' : '?'}: `),
 //           ),
 //           v
 //         ]
-//         : [`${k}${ctx.isRequired ? "" : "?"}: `, v]
+//         : [`${k}${ctx.isRequired ? '' : '?'}: `, v]
 //     },
 //     afterAll: (s) => `{ ${s} }`,
 //   },
 
 //   identifier: (name, body) => {
-//     const identifier = string.unprefix(ID.ns.types.concat("."))(prefixNumeric(name))
+//     const identifier = string.unprefix(ID.ns.types.concat('.'))(prefixNumeric(name))
 //     return !$.flags.typeScriptPreferInterfaces
 //       ? [
 //         `export type ${identifier} = typeof ${identifier}`,
 //         `export const ${identifier}: ${body}`,
-//       ].join("\n")
+//       ].join('\n')
 //       :
 //       fn.pipe(
 //         generateInterfaceFromDeclarationIfPossible(body),
@@ -349,7 +351,7 @@ const generate
 //           onNone: () => [
 //             `export type ${identifier} = typeof ${identifier}`,
 //             `export const ${identifier}: ${body}`,
-//           ].join("\n"),
+//           ].join('\n'),
 //           onSome: (body) => fn.pipe(
 //             `export interface ${identifier} extends inline<typeof ${identifier}> {}`,
 //             string.newline,
@@ -363,33 +365,33 @@ const generate
 
 // export const trimPath = (xs: readonly (keyof any)[]) => {
 //   const trimmables = [
-//     ".options",
-//     ".shape",
-//     "._def.innerType",
-//     ".element",
-//     ".options.",
-//     ".shape.",
-//     "._def.innerType.",
-//     ".element.",
+//     '.options',
+//     '.shape',
+//     '._def.innerType',
+//     '.element',
+//     '.options.',
+//     '.shape.',
+//     '._def.innerType.',
+//     '.element.',
 //   ]
 //   let ys = [...xs]
 //   let x = ys.pop()
 //   while (trimmables.includes(x as never))
 //     void (x = ys.pop())
-//   return [...ys, x].join("")
+//   return [...ys, x].join('')
 // }
 
-// const unary = (glyph: string, pos: "prefix" | "infix" | "postfix") => (arg: string) => ({ glyph, pos, arg })
-// const nullary = (glyph: string, pos: "prefix" | "infix" | "postfix") => (_?: never) => ({ glyph, pos })
+// const unary = (glyph: string, pos: 'prefix' | 'infix' | 'postfix') => (arg: string) => ({ glyph, pos, arg })
+// const nullary = (glyph: string, pos: 'prefix' | 'infix' | 'postfix') => (_?: never) => ({ glyph, pos })
 // const Op = {
-//   [symbol.optional]: unary("?", "postfix"),
-//   [symbol.nullable]: unary("?", "postfix"),
-//   [symbol.array]: nullary("[number]", "postfix"),
-//   [symbol.record]: nullary("[string]", "postfix"),
+//   [symbol.optional]: unary('?', 'postfix'),
+//   [symbol.nullable]: unary('?', 'postfix'),
+//   [symbol.array]: nullary('[number]', 'postfix'),
+//   [symbol.record]: nullary('[string]', 'postfix'),
 // } as const
 // const behead = (path: readonly (keyof any)[]) => {
-//   const delimiters: string[] = [`"`, "⊔", "∩", "∪", "∅"]
-//   const ix = path.findIndex((k) => typeof k === "string" && string.startsWith(...delimiters)(k))
+//   const delimiters: string[] = [`'`, '⊔', '∩', '∪', '∅']
+//   const ix = path.findIndex((k) => typeof k === 'string' && string.startsWith(...delimiters)(k))
 //   return ix === -1 ? path : path.slice(0, ix)
 // }
 // const truncate = fn.flow(behead, trimPath)
@@ -406,7 +408,7 @@ const generate
 //   //   Option.map(
 //   //     ([left, right]) => {
 //   //       switch (true) {
-//   //         case typeof current === "symbol":
+//   //         case typeof current === symbol":
 //   //           return ([
 //   //             [...left, ".element"],
 //   //             `${right.endsWith("?") ? `${right}.` : right}[${

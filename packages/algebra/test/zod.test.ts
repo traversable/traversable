@@ -1,113 +1,35 @@
 import * as fs from "node:fs"
-import * as path from "node:path"
 import * as vi from "vitest"
 import { z } from "zod"
 
-import { Traversable, fc, is, test, tree } from "@traversable/core"
-import { fn, keys, map } from "@traversable/data"
-import { arbitrary } from "@traversable/openapi"
+import { Traversable, fc, test } from "@traversable/core"
 
-import { escapePathSegment, zod } from "@traversable/algebra"
+import { zod } from "@traversable/algebra"
 import { _ } from "@traversable/registry"
 import IR = zod.IR
 
-const DIR = path.join(path.resolve(), "packages", "algebra", "test", "__generated__")
-const PATH = {
-  generated: DIR,
-  spec: path.join(DIR, "traversable.gen.json"),
-  targets: {
-    jsdocHack: path.join(DIR, "traversable.gen.json.ts"),
-    zodSchemas: path.join(DIR, "zod.gen.ts"),
-    zodTypesOnly: path.join(DIR, "zodtypesOnly.gen.ts"),
-  }
-} as const
+import { typeNameFromPath, PATH, seed } from "./seed.js"
 
-const PATTERN = {
-  CleanPathName: /(\/|~|-|{|})/g
-} as const
-
-const generateSpec = () => fn.pipe(
-  arbitrary({ include: { examples: true, description: true } }),
-  fc.peek,
-  (x) => tree.modify(x, ["components", "schemas"], map(Traversable.fromJsonSchema)),
-  (_) => JSON.stringify(_, null, 2),
-)
-
-const Array_isArray 
-  : <T>(u: unknown) => u is readonly T[]
-  = globalThis.Array.isArray
-
-interface Invertible { [x: keyof any]: keyof any }
-
-const sub
-  : <const D extends Invertible>(dict: D) => (text: string) => string
-  = (dict) => (text) => {
-    let ks = [...text], out = "", k: string | undefined
-    while ((k = ks.shift()) !== undefined) out += k in dict ? String(dict[k]) : k
-    return out
-  }
-
-const refsDeep = (leaveUnescaped: string) => (x: {} | null | undefined): {} | null | undefined => {
-  switch (true) {
-    default: return fn.exhaustive(x)
-    case x == null: return x
-    case Array_isArray(x): return x.map(refsDeep(leaveUnescaped))
-    case tree.has("$ref", is.string)(x): {
-      if (x.$ref.startsWith(leaveUnescaped)) return { $ref: leaveUnescaped + escapePathSegment(x.$ref.substring(leaveUnescaped.length)) }
-      else return { $ref: escapePathSegment(x.$ref) }
-    }
-    case !!x && typeof x === "object": return map(x, refsDeep(leaveUnescaped))
-    case is.nonnullable(x): return x
-  }
-}
-
-const pathify = fn.flow(
-  keys.map.deep(escapePathSegment),
-  refsDeep("#/components/schemas"),
-  (_) => JSON.stringify(_, null, 2),
-  (_) => "export default " + _.trimEnd() + " as const;"
-)
-
-const capitalize = (s: string) => s.charAt(0).toUpperCase().concat(s.slice(1))
-const typeNameFromPath = (k: string) => k.startsWith("/paths/") 
-  ? capitalize(k.slice("/paths/".length).replace(PATTERN.CleanPathName, "_"))
-  : capitalize(k).replace(PATTERN.CleanPathName, "_")
+seed()
 
 vi.describe("〖️⛳️〗‹‹‹ ❲@traversable/algebra/zod❳", () => {
   vi.it("〖️⛳️〗› ❲zod.derive❳", async () => {
-    if (!fs.existsSync(PATH.generated)) fs.mkdirSync(PATH.generated, { recursive: true })
-    if (!fs.existsSync(PATH.targets.zodSchemas)) fs.writeFileSync(PATH.targets.zodSchemas, "")
-    if (!fs.existsSync(PATH.targets.zodTypesOnly)) fs.writeFileSync(PATH.targets.zodTypesOnly, "")
-    if (!fs.existsSync(PATH.spec)) fs.writeFileSync(PATH.spec, generateSpec())
-    if (!fs.existsSync(PATH.targets.jsdocHack)) fs.writeFileSync(PATH.targets.jsdocHack, "")
-
-    /** 
-     * TODO: generate tests that confirm that {@link zod.derive `derived`} and {@link zod.generate `generated`}
-     * algebras are equivalent / at parity
-     */
     const document = JSON.parse(fs.readFileSync(PATH.spec).toString("utf8"))
-
-    fs.writeFileSync(
-      PATH.targets.jsdocHack, 
-      pathify(document),
-    )
-
-    const schemas
+    const jsonSchemas
       : Record<string, Traversable.any>
       = document.components?.schemas ?? {}
-
-    let zodSchemas = [
+    let schemas = [
       `import { z } from "zod"`, 
       `import type $doc from "./traversable.gen.json.js"`,
     ]
-    let derivedSchemas: z.ZodTypeAny[] = []
-    let zodTypesOnly = [
+    let validators: z.ZodTypeAny[] = []
+    let types = [
       `import type { z } from "zod"`, 
       `import type $doc from "./traversable.gen.json.js"`,
     ]
 
-    for (const k in schemas) {
-      const jsonSchema = schemas[k]
+    for (const k in jsonSchemas) {
+      const jsonSchema = jsonSchemas[k]
       const options = {
         typeName: typeNameFromPath(k),
         document,
@@ -115,34 +37,35 @@ vi.describe("〖️⛳️〗‹‹‹ ❲@traversable/algebra/zod❳", () => {
       } satisfies Parameters<typeof zod.generate>[1]
       const schema = zod.generate(jsonSchema, options)
 
-      void zodSchemas.push(schema)
+      void schemas.push(schema)
     }
 
-    for (const k in schemas) {
-      const jsonSchema = schemas[k]
+    for (const k in jsonSchemas) {
+      const jsonSchema = jsonSchemas[k]
       const options = {
         typeName: typeNameFromPath(k),
         document,
         absolutePath: ["components", "schemas", k],
       } satisfies Parameters<typeof zod.generate>[1]
       const schema = zod.derive(jsonSchema, options)
-      void derivedSchemas.push(schema)
+      void validators.push(schema)
     }
 
-    for (const k in schemas) {
-      const jsonSchema = schemas[k]
+    for (const k in jsonSchemas) {
+      const jsonSchema = jsonSchemas[k]
       const options = {
         typeName: typeNameFromPath(k),
         document,
         absolutePath: ["components", "schemas", k],
       } satisfies Parameters<typeof zod.generate>[1]
-      const schema = zod.typelevel(jsonSchema, options)
-      void zodTypesOnly.push(schema)
+      const type = zod.typelevel(jsonSchema, options)
+      void types.push(type)
     }
 
-    fs.writeFileSync(PATH.targets.zodSchemas, zodSchemas.join("\n\n"))
-    fs.writeFileSync(PATH.targets.zodTypesOnly, zodTypesOnly.join("\n\n"))
-    vi.assert.isTrue(fs.existsSync(PATH.targets.zodSchemas))
+    fs.writeFileSync(PATH.targets.zod, schemas.join("\n\n"))
+    fs.writeFileSync(PATH.targets.zodTypesOnly, types.join("\n\n"))
+
+    vi.assert.isTrue(fs.existsSync(PATH.targets.zod))
     vi.assert.isTrue(fs.existsSync(PATH.targets.zodTypesOnly))
   })
 })

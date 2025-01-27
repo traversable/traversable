@@ -33,6 +33,7 @@ export const is = {
   number: _.number,
   object: _.object,
   primitive: _.primitive,
+  scalar: _.scalar,
   showable: _.showable,
   string: _.string,
   symbol: _.symbol,

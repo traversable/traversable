@@ -761,19 +761,21 @@ export type Requiring<T, K extends keyof T> = Force<
   { [P in K]-?: T[P] } & { [P in keyof T as Exclude<P, K>]+?: T[P] }
 >
 
-declare const ex_01: {
-  /** # {@link ex_01.a `ex_01.a`} docs for `ex_01.a` */
-  a?: 1
-  /** # {@link ex_01.b `ex_01.b`} docs for `ex_01.b` */
-  b?: 2
-  /** # {@link ex_01.c `ex_01.c`} docs for `ex_01.c` */
-  c?: 3 | undefined
-  /** # {@link ex_01.d `ex_01.d`} docs for `ex_01.d` */
-  d: undefined
-  /** # {@link ex_01.e `ex_01.e`} docs for `ex_01.e` */
-  e?: 4 | undefined
-}
-declare const ex_02: Requiring<typeof ex_01, "a" | "b" | "d" | "e">
+/**
+ * ## {@link RequiredProps `RequiredProp`}
+ *
+ * Homomorphic (structure-preserving) select that picks
+ * only the non-optional fields from an object.
+ */
+export type RequiredProps<T> = never | { [K in keyof T as {} extends { [P in K]: T[P] } ? never : K]: T[K] }
+
+/**
+ * ## {@link RequiredProps `RequiredProp`}
+ *
+ * Homomorphic (structure-preserving) select that omits
+ * all object fields that might be undefined.
+ */
+export type DefinedProps<T> = never | { [K in keyof T as undefined extends T[K] ? never : K]: T[K] }
 
 export type Optional<T, K extends keyof T = keyof T> = never | { [P in K]+?: T[P] }
 

@@ -80,6 +80,7 @@ namespace RAlgebra {
       switch (true) {
         default: return fn.exhaustive(n)
         case Traversable.is.enum(n): return { GO: () => '' }
+        case Traversable.is.const(n): return { GO: () => '' }
 
         case Traversable.is.null(n): return { 
           GO: ($) => {

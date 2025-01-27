@@ -11,10 +11,10 @@ export {
 }
 
 const CODE = {
-  a: 97,
-  z: 122,
   A: 65,
   Z: 90,
+  a: 97,
+  z: 122,
 } as const
 
 /**
@@ -112,3 +112,40 @@ export const invertCase = (char?: string) => {
   }
 }
 
+/** 
+ * ## {@link isLeadingSurrogate `char.isLeadingSurrogate`}
+ * 
+ * a.k.a. "high-surrogate" characters
+ * 
+ * Surrogates come in pairs, and can be present in any UTF-16 text.
+ * 
+ * When escaping UTF-16, you need to make sure "high" and "low" surrogates
+ * are balanced, the way parens or brackets need to be balanced.
+ * 
+ * See also:
+ * - the [Wikipedia page](https://en.wikipedia.org/wiki/UTF-16#U+D800_to_U+DFFF_(surrogates))
+ *   on surrogates
+ */
+export const isLeadingSurrogate = (char: string) => {
+  let pt = char.charCodeAt(0)
+  return 0xd800 <= pt && pt <= 0xdbff
+}
+
+/** 
+ * ## {@link isTrailingSurrogate `char.isTrailingSurrogate`}
+ * 
+ * a.k.a. "low-surrogate" characters
+ * 
+ * Surrogates come in pairs, and can be present in any UTF-16 text.
+ * 
+ * When escaping UTF-16, you need to make sure "high" and "low" surrogates
+ * are balanced, the way parens or brackets need to be balanced.
+ * 
+ * See also:
+ * - the [Wikipedia page](https://en.wikipedia.org/wiki/UTF-16#U+D800_to_U+DFFF_(surrogates))
+ *   on surrogates
+ */
+export const isTrailingSurrogate = (char: string) => {
+  let pt = char.charCodeAt(0)
+  return 0xdc00 <= pt && pt <= 0xdfff
+}

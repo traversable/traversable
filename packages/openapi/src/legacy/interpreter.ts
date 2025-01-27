@@ -1,7 +1,3 @@
-///////////////////////////////
-///    Moved: 2025-01-22    ///
-///////////////////////////////
-
 export {
   type Autocomplete,
   type Binary,
@@ -22,7 +18,7 @@ export {
 
 import { array$, is, t, tree } from "@traversable/core"
 import { 
-  Option, 
+  Option,
   array, 
   fn, 
   type key, 
@@ -43,6 +39,8 @@ interface Refs { [$ref: string]: string }
 type CompilationTarget = never | { refs: { [x: string]: string }, out: string }
 type Continuation = { (node: Schema.any | Schema.$ref, ctx: Internal.Context, $refs: Refs): string }
 interface UserDefined extends UserDefinitions {}
+
+
 
 interface Hooks extends 
   Root.Hooks, 
@@ -953,7 +951,33 @@ function handleRecord(node: Schema.record<Schema.any>, $: Internal.Context, $ref
   )
 }
 
-// TODO: does this break things?                                          vvvvvvv
+const serializeJson = fn.loop<unknown, string>((x, loop) => {
+  switch (true ) {
+    default: return fn.exhaustive(x as never)
+    case x === null: return 'null'
+    case x === undefined: return 'null'
+    case typeof x === 'boolean': return String(x)
+    case typeof x === 'number': return String(x)
+    case typeof  x === 'string': return '"' + x + '"'
+    case Array.isArray(x): return '[' + x.map(loop).join(', ') + ']'
+    case !!x && typeof x === 'object': {
+      const entries = globalThis.Object.entries(x)
+      return entries.length === 0 ? '{}' : '{'+ entries.map(([k, v]) => JSON.stringify(k) + ': ' + loop(v)).join(', ')  + '}'
+    }
+  }
+})
+
+
+function handleConst<T>(x: Schema.const<T>, $: Internal.Context, _: Refs): string {
+  return fn.pipe(
+    x,
+    $.hooks.const.before($),
+    serializeJson,
+    $.hooks.afterEach($),
+  )
+}
+
+// TODO: does this break things?                                            vvvvv
 function handleObject(node: Schema.object<Schema.any>, $: Internal.Context, $refs: Refs): string {
   const objectContext = Context.handleObject(node, $refs)($)
   return fn.pipe(
@@ -987,6 +1011,7 @@ const loop = fn.loopN<[node: Schema.any | Schema.$ref, ctx: Internal.Context<unk
     switch (true) {
     /** make sure we have the node in-hand before we start pattern matching */
     case Schema.isRef(node): return deref(prev, $refs, loop)(node)
+    case Schema.isConst(node): return handleConst(node, prev, $refs)
     case Schema.isString(node): return handleString(node, prev, $refs)
     case Schema.isNumber(node): return handleNumber(node, prev, $refs)
     case Schema.isBoolean(node): return handleBoolean(node, prev, $refs)
@@ -1103,7 +1128,7 @@ namespace Unary {
       after(context: Internal.Context): (node: string) => string
     }
     const: {
-      before(context: Internal.Context): (node: any.literal) => any.literal
+      before(context: Internal.Context): (node: {} | null | undefined) => {} | null | undefined
       after(context: Internal.Context): (node: string) => string
     }
     record: {
@@ -1128,7 +1153,7 @@ namespace Unary {
         }),
         const: () => ({
           before: (context: Internal.Context) => 
-            (node: any.literal) => tree.has("before", is.function)(hooks?.const)
+            (node: {} | null | undefined) => tree.has("before", is.function)(hooks?.const)
               ? hooks.const.before(node, fromInternal(context))
               : node,
           after: (context: Internal.Context) => 

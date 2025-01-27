@@ -17,13 +17,16 @@ declare namespace Meta {
   }
 }
 
-export interface Context<T = any> {
-  path: (keyof any)[]
-  depth: number
-  indent: number
-  typeName: string
-  absolutePath: string[]
-  siblingCount: number
+export const Context = t.object({
+  path: t.array(t.key),
+  depth: t.number(),
+  indent: t.number(),
+  typeName: t.string(),
+  absolutePath: t.array(t.string()),
+  siblingCount: t.number(),
+})
+
+export interface Context<T = any> extends t.typeof<typeof Context> {
   T?: T
 }
 

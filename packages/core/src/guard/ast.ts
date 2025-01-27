@@ -30,6 +30,7 @@ export {
   fold,
   unfold,
   short,
+  key,
   null_ as null,
   boolean_ as boolean,
   symbol_ as symbol,
@@ -1446,105 +1447,4 @@ const short: {
   }
 }) as never // TODO: fix type assertion
 
-
-// ////////////////////
-// ///    CONTRA    ///
-// type contra_object<T extends typeof object_.children, S> = never | contra.object<[output: T, input: S]>
-// type contra_array<T extends typeof array_.children, S = unknown> = never | contra.array<[output: T, input: S]>
-// type contra_tuple<T extends array.finite<T>, S = unknown> = never | contra.tuple<[output: T, input: S]>
-// type contra_record<T extends typeof record_.children, S = unknown> = never | contra.record<[output: T, input: S]>
-// declare namespace contra {
-//   export {
-//     contra_object as object,
-//     contra_array as array,
-//     contra_record as record,
-//     contra_tuple as tuple,
-//   }
-// }
-// declare namespace contra {
-//   interface contra_object<T extends [output: unknown, input: any]> extends
-//     object_base<T>,
-//     StandardSchemaV1<T[1], T[0]> {}
-//   interface contra_array<T extends [output: unknown, input: any]> extends
-//     array_base<T>,
-//     StandardSchemaV1<T[1], T[0]> {}
-//   interface contra_record<T extends [output: unknown, input: any]> extends
-//     record_base<T>,
-//     StandardSchemaV1<T[1], T[0]> {}
-//   interface contra_tuple<T extends [output: unknown, input: any]> extends
-//     tuple_base<T>,
-//     StandardSchemaV1<T[1], T[0]> {}
-// }
-// /**
-//  * ## {@link contra_object `t.contra.object`}
-//  */
-// // function contra_object<T extends typeof object_.children, S>(xs: T): contra_object<T, S>
-// function contra_object<T extends typeof object_.children, S>(xs: T): contra_object<T, S> {
-//   const z = object_.def(xs)
-//   return {
-//     _tag: Tag.object,
-//     // _def: object_.def(xs),
-//     _opt: object_._opt(xs),
-//     // is: object$(map(xs, (x) => x.is)),
-//     // ["~standard"]: {
-//     //   types:
-//     // }
-//   }
-// }
-// namespace contra_object {
-//   // export function def<T extends typeof object_.children, S>(children: T): contra_object<T, S>
-//   export function def<T extends typeof object_.children, S>(children: T): object_base<[T, S]> {
-//     let out: { [x: string]: unknown } = {}
-//     const ks = Object_keys(children)
-//     for (let ix = 0, len = ks.length; ix < len; ix++) {
-//       const k = ks[ix]
-//       out[object_.rmQuestionMark(k)] = object_.hasQuestionMark(k) ? optional_(children[k]) : children[k]
-//     }
-//     return out
-//   }
-// }
-// namespace contra {
-// }
-///    CONTRA    ///
-////////////////////
-// const input = a["~standard"].types?.input
-// //    ^?
-// const output = a["~standard"].types?.output
-// //    ^?
-// const validate = a["~standard"].validate
-// //    ^?
-// const vendor = a["~standard"].vendor
-// //    ^?
-// const version = a["~standard"].version
-// //    ^?
-// const stdv1 = {
-// }
-
-
-type StandardSchemaV1<Input = unknown, Output = Input> = {
-  "~standard": Props<Input, Output>;
-}
-
-type Result<Output> = SuccessResult<Output> | FailureResult
-
-type SuccessResult<Output> = { value: Output, issues?: undefined }
-type FailureResult = { issues: ReadonlyArray<Issue> }
-
-type Issue = { message: string, path?: ReadonlyArray<PropertyKey | PathSegment> }
-
-type PathSegment = { key: PropertyKey }
-
-interface Types<Input = unknown, Output = Input> {
-  input: Input;
-  output: Output;
-}
-
-type Props<Input = unknown, Output = Input> = {
-  version: 1;
-  vendor: string;
-  validate: (value: unknown) => Result<Output> | Promise<Result<Output>>;
-  types?: Types<Input, Output> | undefined;
-}
-
-object_({ a: number_(), b: optional_(null_()) })._def.b._def._def
-
+const key = anyOf_(string_(), number_(), symbol_())

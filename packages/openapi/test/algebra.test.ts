@@ -1,8 +1,4 @@
-///////////////////////////////
-///    Moved: 2025-01-22    ///
-///////////////////////////////
-
-import { show, test } from "@traversable/core"
+import { test } from "@traversable/core"
 import { openapi } from "@traversable/openapi"
 
 import * as vi from "vitest"
@@ -13,6 +9,7 @@ const [interpreter, _refs] = openapi.Interpreter.define({
   integer: '{ "type": "integer" }',
   number: '{ "type": "number" }',
   string: '{ "type": "string" }',
+  const: { after(_) { return (console.log("const.after"), '{ "const": ' + _ + ' }') } },
   allOf: { afterAll(_) { return '{ "allOf": [' + _ + '] }' } },
   oneOf: { afterAll(_) { return '{ "oneOf": [' + _ + '] }' } },
   anyOf: { afterAll(_) { return '{ "anyOf": [' + _ + '] }' } },
@@ -43,13 +40,16 @@ const interpret = openapi.Interpreter.inline({
 vi.describe("〖⛳️〗‹‹‹ ❲@traversable/openapi/algebra❳", () => {
   test.prop([openapi.Schema.any()], {
     verbose: 2,
-    endOnFailure: false,
-    examples: []
+    endOnFailure: true,
+    examples: [
+      [{ "oneOf": [{ "const":{} },{ "oneOf": [ {"minLength":undefined, "maxLength":undefined,"type":"string"}]}]}],
+      [{ "items": [{ "const":{} }], "type":"array" }],
+      [{"type":"object","additionalProperties":{"const":null}}],
+    ]
   })(
     "〖⛳️〗‹ ❲algebra.forget❳: roundtrip is lossless",
     (schema) => {
-      // TODO: FIX THIS TYPE ERROR
-      const free = JSON.parse(interpret(schema as never).out)
+      const free = JSON.parse(interpret(schema).out)
       const forget = openapi.forget(free)
       vi.assert.deepEqual(
         free,

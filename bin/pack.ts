@@ -1,6 +1,5 @@
 #!/usr/bin/env pnpm dlx tsx
 import * as path from "node:path"
-import * as array from "effect/Array"
 import * as Effect from "effect/Effect"
 import * as Order from "effect/Order"
 import * as object from "effect/Record"

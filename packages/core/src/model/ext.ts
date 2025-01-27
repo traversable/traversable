@@ -194,6 +194,7 @@ export function Extension_match3<
       switch (true) {
         default: return fn.softExhaustiveCheck(n)
         case Traversable.is.enum(n): return $.enum(n, ix)
+        case Traversable.is.const(n): return $.const(n, ix)
         case Traversable.is.null(n): return $.null(n, ix)
         case Traversable.is.boolean(n): return $.boolean(n, ix)
         case Traversable.is.integer(n): return $.integer(n, ix)
@@ -313,6 +314,7 @@ function Extension_match<S, Ix>(config: Config<S, Ix>): (ix: Ix, n: Traversable.
     switch (true) {
       default: return fn.softExhaustiveCheck(n)
       case Traversable.is.enum(n): return $.enum(n, ix)
+      case Traversable.is.const(n): return $.const(n, ix)
       case Traversable.is.null(n): return $.null(n, ix)
       case Traversable.is.boolean(n): return $.boolean(n, ix)
       case Traversable.is.integer(n): return $.integer(n, ix)

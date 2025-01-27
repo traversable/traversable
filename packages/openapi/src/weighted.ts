@@ -32,34 +32,31 @@ export const fold
 export const fromSchema
   : ($: Doclike, mapping?: WeightMap) => (node: Schema.Node) => NodeWeight
   = ($, mapping = WeightMap) => (node) => {
-    if (typeof node === "boolean") return mapping.unknown
-    else {
-      switch (true) {
-        case Schema.isRef(node): return resolveRef(node, $, mapping)
-        case Schema.isAllOf(node): return fn.pipe(node.allOf, fold($, mapping))
-        case Schema.isAnyOf(node): return fn.pipe(node.anyOf, fold($, mapping))
-        case Schema.isOneOf(node): return fn.pipe(node.oneOf, fold($, mapping))
-        default: return mapping[node.type]
-      }
+    switch (true) {
+      case typeof node === "boolean":
+      case Schema.isConst(node): return mapping.const
+      case Schema.isRef(node): return resolveRef(node, $, mapping)
+      case Schema.isAllOf(node): return fn.pipe(node.allOf, fold($, mapping))
+      case Schema.isAnyOf(node): return fn.pipe(node.anyOf, fold($, mapping))
+      case Schema.isOneOf(node): return fn.pipe(node.oneOf, fold($, mapping))
+      default: return mapping[node.type]
     }
   }
 
 export const fromSchemaRec
   : ($: Doclike, mapping?: WeightMap) => (node: Schema.Node) => NodeWeight
   = ($, mapping = WeightMap) => (node) => {
-    if (typeof node === "boolean") return mapping.unknown
-    else {
-      switch (true) {
-        case Schema.isNull(node): return mapping.null
-        case Schema.isRef(node): return resolveRef(node, $, mapping)
-        case Schema.isAllOf(node): return fn.pipe(node.allOf, fold($, mapping))
-        case Schema.isAnyOf(node): return fn.pipe(node.anyOf, fold($, mapping))
-        case Schema.isOneOf(node): return fn.pipe(node.oneOf, fold($, mapping))
-        default: return mapping[node.type]
-      }
+    switch (true) {
+      case typeof node === "boolean": return mapping.unknown
+      case Schema.isConst(node): return mapping.const
+      case Schema.isNull(node): return mapping.null
+      case Schema.isRef(node): return resolveRef(node, $, mapping)
+      case Schema.isAllOf(node): return fn.pipe(node.allOf, fold($, mapping))
+      case Schema.isAnyOf(node): return fn.pipe(node.anyOf, fold($, mapping))
+      case Schema.isOneOf(node): return fn.pipe(node.oneOf, fold($, mapping))
+      default: return mapping[node.type]
     }
   }
-
 
 const trimHash = ($ref: string) => $ref.startsWith("#") ? $ref.slice(1) : $ref
 const toJsonPointer = fn.flow(trimHash, JsonPointer.toPath)

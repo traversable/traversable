@@ -14,15 +14,6 @@ const ESC = [
   /** 80-92 */ '', '', '', '', '', '', '', '', '', '', '', '', '\\\\',
 ]
 
-const isLeadingSurrogate = (char: string) => {
-  let pt = char.charCodeAt(0)
-  return 0xd800 <= pt && pt <= 0xdfff
-}
-const isTrailingSurrogate = (char: string) => {
-  let pt = char.charCodeAt(0)
-  return 0xdc00 <= pt && pt <= 0xdfff
-}
-
 /** 
  * ## {@link chars_escape `chars.escape`}
  * 

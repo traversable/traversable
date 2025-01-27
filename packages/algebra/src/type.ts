@@ -15,7 +15,9 @@ export namespace Algebra {
     (n) => {
       const _ = minify ? "" : " "
       switch (true) {
+        default: return fn.exhaustive(n)
         case Traversable.is.enum(n): return n.enum.join(" | ")
+        case Traversable.is.const(n): return JSON.stringify(n.const)
         case Traversable.is.null(n): return "null"
         case Traversable.is.boolean(n): return "boolean"
         case Traversable.is.integer(n): return "number"
@@ -34,7 +36,6 @@ export namespace Algebra {
             + v
           ).join(";" + _) 
           + _ + "}"
-        default: return fn.exhaustive(n)
       }
     }
 }

@@ -7,6 +7,7 @@ namespace Algebra {
     switch (true) {
       default: return fn.exhaustive(n)
       case Traversable.is.enum(n): return { go: (path) => "Object.is(" + path.join(", ") + ")"}
+      case Traversable.is.const(n): return { go: (path) => "Object.is(" + path.join(", ") + ")" }
       case Traversable.is.null(n): return { go: (path) => `if (${path.join("")} != null) return false;\n` }
       case Traversable.is.boolean(n): return { go: (path) => `if (typeof ${path.join("")} !== "boolean") return false;\n` }
       case Traversable.is.integer(n): return { go: (path) => `if (typeof ${path.join("")} !== "number") return false;\n` }

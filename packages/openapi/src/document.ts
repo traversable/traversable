@@ -3,11 +3,10 @@ import { fn, map, object } from "@traversable/data"
 import { http } from "@traversable/http"
 import { PATTERN } from "@traversable/registry"
 import type {
-  RequireN, 
-  Required, 
+  RequireN,
+  Required,
   autocomplete,
   inline,
-  newtype,
 } from "@traversable/registry"
 
 
@@ -306,6 +305,8 @@ export declare namespace arbitrary {
     pathParams?: arbitrary.PathParams
     pathSegments?: arbitrary.PathSegments
     responses?: arbitrary.Responses
+    // parameters?: parameters.Constraints
+    // operation?: operation.Constraints
   }
 }
 
@@ -335,7 +336,7 @@ export function arbitrary(_: arbitrary.Constraints = defaults): fc.Arbitrary<{}>
 
 type AppliedConstraints = RequireN<arbitrary.Constraints, [1, 1]>
 
-const applyConstraints
+export const applyConstraints
   : (constraints?: arbitrary.Constraints) => AppliedConstraints
   = (_) =>
     !_ ? {
@@ -355,18 +356,268 @@ const applyConstraints
         maxCount: _.schemas.maxCount ?? defaults.schemas.maxCount,
         minCount: _.schemas.minCount ?? defaults.schemas.minCount,
         /// node-specific options
-        allOf: { ..._.schemas.allOf, ...defaults.schemas.allOf },
-        anyOf: { ..._.schemas.anyOf, ...defaults.schemas.anyOf },
-        array: { ..._.schemas.array, ...defaults.schemas.array },
-        boolean: { ..._.schemas.boolean, ...defaults.schemas.boolean },
-        integer: { ..._.schemas.integer, ...defaults.schemas.integer },
-        null: { ..._.schemas.null, ...defaults.schemas.null },
-        number: { ..._.schemas.number, ...defaults.schemas.number },
-        object: { ..._.schemas.object, ...defaults.schemas.object },
-        oneOf: { ..._.schemas.oneOf, ...defaults.schemas.oneOf },
-        record: { ..._.schemas.record, ...defaults.schemas.record },
-        string: { ..._.schemas.string, ...defaults.schemas.string },
-        tuple: { ..._.schemas.tuple, ...defaults.schemas.tuple },
+        null: {
+          ..._.schemas.null,
+          ...defaults.schemas.null,
+          include: {
+            const:
+              _.schemas.null?.include?.const
+              ?? _.include?.const
+              ?? defaults.schemas.null.include.const,
+            example:
+              _.schemas.null?.include?.example
+              ?? _.include?.example
+              ?? defaults.schemas.null.include.example,
+            examples:
+              _.schemas.null?.include?.examples
+              ?? _.include?.examples
+              ?? defaults.schemas.null.include.examples,
+            description:
+              _.schemas.null?.include?.description
+              ?? _.include?.description
+              ?? defaults.schemas.null.include.description,
+          }
+        },
+        boolean: {
+          ..._.schemas.boolean,
+          ...defaults.schemas.boolean,
+          include: {
+            const:
+              _.schemas.boolean?.include?.const
+              ?? _.include?.const
+              ?? defaults.schemas.boolean.include.const,
+            example:
+              _.schemas.boolean?.include?.example
+              ?? _.include?.example
+              ?? defaults.schemas.boolean.include.example,
+            examples:
+              _.schemas.boolean?.include?.examples
+              ?? _.include?.examples
+              ?? defaults.schemas.boolean.include.examples,
+            description:
+              _.schemas.boolean?.include?.description
+              ?? _.include?.description
+              ?? defaults.schemas.boolean.include.description,
+          }
+        },
+        integer: {
+          ..._.schemas.integer,
+          ...defaults.schemas.integer,
+          include: {
+            const:
+              _.schemas.integer?.include?.const
+              ?? _.include?.const
+              ?? defaults.schemas.integer.include.const,
+            example:
+              _.schemas.integer?.include?.example
+              ?? _.include?.example
+              ?? defaults.schemas.integer.include.example,
+            examples:
+              _.schemas.integer?.include?.examples
+              ?? _.include?.examples
+              ?? defaults.schemas.integer.include.examples,
+            description:
+              _.schemas.integer?.include?.description
+              ?? _.include?.description
+              ?? defaults.schemas.integer.include.description,
+          }
+        },
+        number: {
+          ..._.schemas.number,
+          ...defaults.schemas.number,
+          include: {
+            example:
+              _.schemas.number?.include?.example
+              ?? _.include?.example
+              ?? defaults.schemas.number.include.example,
+            examples:
+              _.schemas.number?.include?.examples
+              ?? _.include?.examples
+              ?? defaults.schemas.number.include.examples,
+            description:
+              _.schemas.number?.include?.description
+              ?? _.include?.description
+              ?? defaults.schemas.number.include.description,
+          }
+        },
+        string: {
+          ..._.schemas.string,
+          ...defaults.schemas.string,
+          include: {
+            const:
+              _.schemas.string?.include?.const
+              ?? _.include?.const
+              ?? defaults.schemas.string.include.const,
+            example:
+              _.schemas.string?.include?.example
+              ?? _.include?.example
+              ?? defaults.schemas.string.include.example,
+            examples:
+              _.schemas.string?.include?.examples
+              ?? _.include?.examples
+              ?? defaults.schemas.string.include.examples,
+            description:
+              _.schemas.string?.include?.description
+              ?? _.include?.description
+              ?? defaults.schemas.string.include.description,
+          }
+        },
+
+
+
+        array: {
+          ..._.schemas.array,
+          ...defaults.schemas.array,
+          include: {
+            const:
+              _.schemas.array?.include?.const
+              ?? _.include?.const
+              ?? defaults.schemas.array.include.const,
+            example:
+              _.schemas.array?.include?.example
+              ?? _.include?.example
+              ?? defaults.schemas.array.include.example,
+            examples:
+              _.schemas.array?.include?.examples
+              ?? _.include?.examples
+              ?? defaults.schemas.array.include.examples,
+            description:
+              _.schemas.array?.include?.description
+              ?? _.include?.description
+              ?? defaults.schemas.array.include.description,
+          }
+        },
+
+        object: {
+          ..._.schemas.object,
+          ...defaults.schemas.object,
+          include: {
+            ..._.schemas.object?.include,
+            ...defaults.schemas.object.include,
+            example:
+              _.schemas.object?.include?.example
+              ?? _.include?.example
+              ?? defaults.schemas.object.include.example,
+            examples:
+              _.schemas.object?.include?.examples
+              ?? _.include?.examples
+              ?? defaults.schemas.object.include.examples,
+            description:
+              _.schemas.object?.include?.description
+              ?? _.include?.description
+              ?? defaults.schemas.object.include.description,
+          }
+        },
+        record: {
+          ..._.schemas.record,
+          ...defaults.schemas.record,
+          include: {
+            const:
+              _.schemas.record?.include?.const
+              ?? _.include?.const
+              ?? defaults.schemas.record.include.const,
+            example:
+              _.schemas.record?.include?.example
+              ?? _.include?.example
+              ?? defaults.schemas.record.include.example,
+            examples:
+              _.schemas.record?.include?.examples
+              ?? _.include?.examples
+              ?? defaults.schemas.record.include.examples,
+            description:
+              _.schemas.record?.include?.description
+              ?? _.include?.description
+              ?? defaults.schemas.record.include.description,
+          }
+        },
+        tuple: {
+          ..._.schemas.tuple,
+          ...defaults.schemas.tuple,
+          include: {
+            const:
+              _.schemas.tuple?.include?.const
+              ?? _.include?.const
+              ?? defaults.schemas.tuple.include.const,
+            example:
+              _.schemas.tuple?.include?.example
+              ?? _.include?.example
+              ?? defaults.schemas.tuple.include.example,
+            examples:
+              _.schemas.tuple?.include?.examples
+              ?? _.include?.examples
+              ?? defaults.schemas.tuple.include.examples,
+            description:
+              _.schemas.tuple?.include?.description
+              ?? _.include?.description
+              ?? defaults.schemas.tuple.include.description,
+          }
+        },
+        allOf: {
+          ..._.schemas.allOf,
+          ...defaults.schemas.allOf,
+          include: {
+            const:
+              _.schemas.allOf?.include?.const
+              ?? _.include?.const
+              ?? defaults.schemas.allOf.include.const,
+            example:
+              _.schemas.allOf?.include?.example
+              ?? _.include?.example
+              ?? defaults.schemas.allOf.include.example,
+            examples:
+              _.schemas.allOf?.include?.examples
+              ?? _.include?.examples
+              ?? defaults.schemas.allOf.include.examples,
+            description:
+              _.schemas.allOf?.include?.description
+              ?? _.include?.description
+              ?? defaults.schemas.allOf.include.description,
+          }
+        },
+        anyOf: {
+          ..._.schemas.anyOf,
+          ...defaults.schemas.anyOf,
+          include: {
+            const:
+              _.schemas.anyOf?.include?.const
+              ?? _.include?.const
+              ?? defaults.schemas.anyOf.include.const,
+            example:
+              _.schemas.anyOf?.include?.example
+              ?? _.include?.example
+              ?? defaults.schemas.anyOf.include.example,
+            examples:
+              _.schemas.anyOf?.include?.examples
+              ?? _.include?.examples
+              ?? defaults.schemas.anyOf.include.examples,
+            description:
+              _.schemas.anyOf?.include?.description
+              ?? _.include?.description
+              ?? defaults.schemas.anyOf.include.description,
+          }
+        },
+        oneOf: {
+          ..._.schemas.oneOf,
+          ...defaults.schemas.oneOf,
+          include: {
+            const:
+              _.schemas.oneOf?.include?.const
+              ?? _.include?.const
+              ?? defaults.schemas.oneOf.include.const,
+            example:
+              _.schemas.oneOf?.include?.example
+              ?? _.include?.example
+              ?? defaults.schemas.oneOf.include.example,
+            examples:
+              _.schemas.oneOf?.include?.examples
+              ?? _.include?.examples
+              ?? defaults.schemas.oneOf.include.examples,
+            description:
+              _.schemas.oneOf?.include?.description
+              ?? _.include?.description
+              ?? defaults.schemas.oneOf.include.description,
+          }
+        },
       },
 
       exclude: _.exclude || defaults.exclude,
@@ -394,6 +645,14 @@ const applyConstraints
         maxContentTypeCount: _.responses.maxContentTypeCount ?? defaults.responses.maxContentTypeCount,
         minContentTypeCount: _.responses.minContentTypeCount ?? defaults.responses.minContentTypeCount,
       },
+      // parameters: !_.parameters ? defaults.parameters : {
+      //   ..._.operation,
+      //   ...defaults.parameters,
+      // },
+      // operation: !_.operation ? defaults.operation : {
+      //   ..._.operation.operation,
+      //   ...defaults.operation,
+      // }
   }
 
 export const defaults = {
@@ -691,11 +950,12 @@ export interface Tag {
 
 /** ### {@link tag `openapi.tag`} */
 export function tag(constraints?: arbitrary.Constraints): fc.Arbitrary<Tag>
-export function tag(constraints: arbitrary.Constraints = defaults) {
+export function tag(_: arbitrary.Constraints = defaults) {
+  // const $ = applyConstraints(_)
   return fc.record({
     name: fc.string(),
     description: fc.lorem(),
-    // externalDocs: ExternalDocumentation(constraints),
+    // externalDocs: ExternalDocumentation($),
   }, { requiredKeys: ["name"] })
 }
 
@@ -792,16 +1052,16 @@ const constraintsAdapter
   : (arbitraryConstraints?: arbitrary.Constraints) => Schema.Constraints
   = (_?: arbitrary.Constraints) => {
     return {
+      sortBias: Schema.Constraints.defaults.sortBias,
       base: {
         exclude: _?.exclude ?? Schema.Constraints.defaults.base.exclude,
         include: !_?.include ? Schema.Constraints.defaults.base.include : {
           const: _?.include.const ?? Schema.Constraints.defaults.base.include.const,
           description: _?.include.description ?? Schema.Constraints.defaults.base.include.description,
-          example: _?.include.const ?? Schema.Constraints.defaults.base.include.example,
-          examples: _?.include.const ?? Schema.Constraints.defaults.base.include.examples,
+          example: _?.include.example ?? Schema.Constraints.defaults.base.include.example,
+          examples: _?.include.examples ?? Schema.Constraints.defaults.base.include.examples,
         }
       },
-      sortBias: Schema.Constraints.defaults.sortBias,
     }
   }
 
@@ -827,17 +1087,17 @@ export interface mediatypes extends Partial<{ [K in http.MediaType]: mediatype }
  */
 export function mediatypes(constraints?: mediatypes.Constraints): fc.Arbitrary<mediatypes>
 export function mediatypes(_: mediatypes.Constraints = {}): fc.Arbitrary<mediatypes> {
-  const constraints = applyConstraints(_)
+  const $ = applyConstraints(_)
   return fc
     .uniqueArray(
       fc.tuple(
         fc.constantFrom(http.MediaType.enum.applicationJSON, ...http.MediaType.all.slice(1)),
-        mediatype(constraints),
+        mediatype($),
       ),
       {
         selector: ([key]) => key,
         minLength: 1,
-        maxLength: constraints?.responses?.maxContentTypeCount ?? defaults.responses.maxContentTypeCount,
+        maxLength: $?.responses?.maxContentTypeCount ?? defaults.responses.maxContentTypeCount,
       },
     )
     .map(globalThis.Object.fromEntries)
@@ -886,12 +1146,14 @@ export namespace Header {
 /** ### {@link response `openapi.Response`} */
 export interface response extends fc.Arbitrary.infer<ReturnType<typeof response>> {}
 /** ### {@link response `openapi.Response`} */
-export function response(constraints?: arbitrary.Constraints) {
+export function response(_?: arbitrary.Constraints) {
+  const $ = applyConstraints(_)
+  const schemaConstraints = constraintsAdapter($)
   return fc.record({
     description: fc.lorem(),
     content: mediatypes({
-      ...constraints,
-      schema: Schema.any(),
+      ...$,
+      schema: Schema.any(schemaConstraints),
     }),
   })
 }
@@ -922,9 +1184,9 @@ export function request(_?: arbitrary.Constraints) {
 
 export function requestBody(constraints?: arbitrary.Constraints): fc.Arbitrary<openapi.requestBody>
 export function requestBody(_?: arbitrary.Constraints): fc.Arbitrary<openapi.request> {
-  const constraints = applyConstraints(_)
+  const $ = applyConstraints(_)
   return fc.oneof(
-    request(constraints),
+    request($),
     // Ref(constraints),
   )
 }
@@ -996,11 +1258,12 @@ export declare namespace parameter {
 
 /** ### {@link parameter `openapi.parameter`} */
 export namespace parameter {
-  export function any(constraints?: arbitrary.Constraints) {
+  export function any(_?: arbitrary.Constraints) {
+    const $ = applyConstraints(_)
     return fc.oneof(
-      parameter.query(constraints),
-      parameter.cookie(constraints),
-      parameter.header(constraints),
+      parameter.query($),
+      parameter.cookie($),
+      parameter.header($),
     )
   }
 
@@ -1064,7 +1327,6 @@ export namespace parameter {
     return fc.record({
       in: fc.constant("query"),
       name: fc.identifier(),
-      // HERE
       schema: Schema.any(schemaConstraints),
       required: fc.boolean(),
       style: fc.constantFrom(...style.query),
@@ -1082,13 +1344,14 @@ export namespace parameter {
   /** ### {@link parameter.header `openapi.parameter.header`} */
   export function header(constraints?: arbitrary.Constraints): fc.Arbitrary<openapi.parameter.header>
   export function header(_?: arbitrary.Constraints): fc.Arbitrary<openapi.parameter.header> {
-    const constraints = applyConstraints(_)
+    const $ = applyConstraints(_)
+    const schemaConstraints = constraintsAdapter($)
     return fc.record({
       in: fc.constant("header"),
       name: fc.identifier(),
       style: fc.constant(...parameter.style.header),
       required: fc.boolean(),
-      schema: Schema.string({ ...constraints, ...Schema.Constraints.defaults }),
+      schema: Schema.string(schemaConstraints),
       deprecated: fc.boolean(),
     }, {
       requiredKeys: [
@@ -1144,13 +1407,14 @@ export namespace parameter {
 
 /** ### {@link responses `openapi.responses`} */
 export function responses(constraints?: arbitrary.Constraints): fc.Arbitrary<openapi.responses>
-export function responses(constraints: arbitrary.Constraints = {}): fc.Arbitrary<{}> {
+export function responses(_: arbitrary.Constraints = {}): fc.Arbitrary<{}> {
+  const $ = applyConstraints(_)
   return fc
     .tuple(
-      fc.tuple(StatusCodeNonInfo, response(constraints)),
-      fc.array(fc.tuple(StatusCode, response(constraints)), {
-        minLength: globalThis.Math.max(0, (constraints.responses?.minCount ?? defaults.responses.minCount) - 1),
-        maxLength: globalThis.Math.max(0, (constraints.responses?.maxCount ?? defaults.responses.maxCount) - 1),
+      fc.tuple(StatusCodeNonInfo, response($)),
+      fc.array(fc.tuple(StatusCode, response($)), {
+        minLength: globalThis.Math.max(0, ($.responses?.minCount ?? defaults.responses.minCount) - 1),
+        maxLength: globalThis.Math.max(0, ($.responses?.maxCount ?? defaults.responses.maxCount) - 1),
       }),
     )
     .map(fn.flow(([head, tail]) => [head, ...tail], object.fromEntries))
@@ -1158,18 +1422,22 @@ export function responses(constraints: arbitrary.Constraints = {}): fc.Arbitrary
 
 /** ### {@link parameters `openapi.parameters`} */
 export function parameters(constraints: parameters.Constraints): fc.Arbitrary<readonly openapi.parameter[]>
-export function parameters(constraints: parameters.Constraints): fc.Arbitrary<readonly openapi.parameter[]> {
+export function parameters(_: parameters.Constraints): fc.Arbitrary<readonly openapi.parameter[]> {
+  const $ = {
+    ...applyConstraints(_),
+    params: _.params,
+  }
   return fc
     .tuple(
-      fc.uniqueArray(parameter.any(constraints), { selector: (p) => p.name }),
+      fc.uniqueArray(parameter.any($), { selector: (p) => p.name }),
       fc.array(
-        parameter.path(constraints), {
-          minLength: constraints.params.length,
-          maxLength: constraints.params.length,
+        parameter.path($), {
+          minLength: $.pathParams.minCount,
+          maxLength: $.pathParams.maxCount,
         }
       ).map((ps) =>
         ps.map((p, ix) => ({
-          name: constraints.params[ix],
+          name: $.params[ix],
           ...p,
         })),
       ),
@@ -1187,7 +1455,7 @@ export declare namespace parameters {
 /** ### {@link operation `openapi.operation`} */
 export function operation(constraints: operation.Constraints): fc.Arbitrary<openapi.operation>
 export function operation(_: operation.Constraints) {
-  const constraints = {
+  const $ = {
     ...applyConstraints(_),
     params: _.params,
     method: _.method,
@@ -1195,12 +1463,12 @@ export function operation(_: operation.Constraints) {
   return fc.record({
     // no body on GET, HEAD or DELETE requests
     // see https://datatracker.ietf.org/doc/html/rfc7231#section-4.3
-    responses: responses(constraints),
-    parameters: parameters(constraints),
+    responses: responses($),
+    parameters: parameters($),
     ...!
-      ["get", "delete", "head"].includes(constraints.method.toLowerCase())
-      && { requestBody: requestBody(constraints) },
-    ...constraints.include.description && { description: fc.lorem() },
+      ["get", "delete", "head"].includes($.method.toLowerCase())
+      && { requestBody: requestBody($) },
+    ...$.include.description && { description: fc.lorem() },
   }, {
     requiredKeys: [
       "responses",
@@ -1219,14 +1487,14 @@ export declare namespace operation {
 /** ### {@link pathitem `openapi.pathitem`} */
 export function pathitem(constraints: pathitem.Constraints): fc.Arbitrary<openapi.pathitem>
 export function pathitem(_: pathitem.Constraints): fc.Arbitrary<{}> {
-  const constraints = {
+  const $ = {
     ...applyConstraints(_),
     params: _.params
   }
   return fc.record({
-    get: operation({ ...constraints, method: "get" }),
-    put: operation({ ...constraints, method: "put" }),
-    post: operation({ ...constraints, method: "post" }),
+    get: operation({ ...$, method: "get" }),
+    put: operation({ ...$, method: "put" }),
+    post: operation({ ...$, method: "post" }),
     // delete: operation({ ...constraints, method: "delete" }),
     // options: operation({ ...constraints }),
     // head: operation({ ...constraints }),
@@ -1249,14 +1517,14 @@ export interface pathname extends inline<{
 /** ### {@link pathname `openapi.pathname`} */
 export function pathname(constraints?: arbitrary.Constraints): fc.Arbitrary<pathname>
 export function pathname(_?: arbitrary.Constraints): fc.Arbitrary<pathname> {
-  const constraints = applyConstraints(_)
+  const $ = applyConstraints(_)
   const segments = fc.uniqueArray(fc.alphanumeric(), {
-    maxLength: constraints.pathSegments.maxCount,
-    minLength: constraints.pathSegments.minCount,
+    maxLength: $.pathSegments.maxCount,
+    minLength: $.pathSegments.minCount,
   })
   const params = fc.uniqueArray(fc.alphanumeric(), {
-    maxLength: constraints.pathSegments.maxCount,
-    minLength: constraints.pathSegments.minCount,
+    maxLength: $.pathSegments.maxCount,
+    minLength: $.pathSegments.minCount,
   })
   return fc
     .tuple(segments, params)
@@ -1274,11 +1542,11 @@ export function pathname(_?: arbitrary.Constraints): fc.Arbitrary<pathname> {
 /** ### {@link pathnames `openapi.pathnames`} */
 export function pathnames(constraints?: arbitrary.Constraints): fc.Arbitrary<readonly pathname[]>
 export function pathnames(_?: arbitrary.Constraints): fc.Arbitrary<readonly pathname[]> {
-  const constraints = applyConstraints(_)
+  const $ = applyConstraints(_)
   return fc.uniqueArray(
-    pathname(constraints), {
-      maxLength: constraints.pathParams.maxCount,
-      minLength: constraints.pathParams.minCount,
+    pathname($), {
+      maxLength: $.pathParams.maxCount,
+      minLength: $.pathParams.minCount,
       selector: (c) => c.path,
     }
   )
@@ -1292,10 +1560,10 @@ export function pathnames(_?: arbitrary.Constraints): fc.Arbitrary<readonly path
  */
 export function paths(constraints?: arbitrary.Constraints): fc.Arbitrary<openapi.paths>
 export function paths(_?: arbitrary.Constraints): fc.Arbitrary<openapi.paths> {
-  const constraints = applyConstraints(_)
-  return pathnames(constraints).chain( // TODO: remove this chain, it breaks shrinking
+  const $ = applyConstraints(_)
+  return pathnames($).chain( // TODO: remove this chain, it breaks shrinking
     fn.flow(
-      map(({ path, params }) => [path, pathitem({ ...constraints, params })] as const),
+      map(({ path, params }) => [path, pathitem({ ...$, params })] as const),
       object.fromEntries,
       (ps) => fc.record(ps),
     ),

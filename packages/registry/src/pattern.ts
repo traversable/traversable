@@ -1,7 +1,7 @@
 export const PATTERN = {
   bearer: /^[Bb][Ee][Aa][Rr][Ee][Rr]$/,
   between: /(?<=\{).+?(?=\})/g,
-  commentTerminator: /(\*\/)/g,
+  multilineCommentTerminator: /(\*\/)/g,
   doubleQuoted: /(?<=^").+?(?="$)/,
   forwardSlashPrefixed: /^\/[a-zA-Z0-9_\$]+$/g,
   graveQuoted: /(?<=^`).+?(?=`$)/,

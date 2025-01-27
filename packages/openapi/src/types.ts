@@ -1,7 +1,7 @@
 import { core, fc, tree } from "@traversable/core";
 import type { prop } from "@traversable/data"
 import { object } from "@traversable/data"
-import type { HKT, KeepLast, Mutable, Partial } from "@traversable/registry";
+import type { HKT, KeepLast, Mutable, Partial, autocomplete, integer } from "@traversable/registry";
 import { symbol } from "@traversable/registry";
 import type { any, newtype } from "any-ts"
 
@@ -9,7 +9,6 @@ import type { parameter } from "./parameter.js"
 
 export type inline<T> = T
 export type Scalar = null | undefined | boolean | number | string | symbol
-export type Autocomplete<T> = T | (string & {})
 
 export interface $ref<T extends string = string> { readonly $ref?: T }
 
@@ -171,6 +170,7 @@ export type Schema =
   | Schema_integer
   | Schema_number
   | Schema_string
+  | Schema_const<unknown>
   | Schema_allOf<Schema>
   | Schema_anyOf<Schema>
   | Schema_oneOf<Schema>
@@ -180,9 +180,6 @@ export type Schema =
   | Schema_object<Schema>
   ;
 
-type SchemaType = 
-  | Schema_null["type"]
-
 type F<T> =
   | $ref
   | Schema_null
@@ -190,6 +187,7 @@ type F<T> =
   | Schema_integer
   | Schema_number
   | Schema_string
+  | Schema_const
   | Schema_allOf<T>
   | Schema_anyOf<T>
   | Schema_oneOf<T>
@@ -201,7 +199,6 @@ type F<T> =
 
 export type Schema_Node = F<Schema | $ref>
 
-
 export declare namespace Schema_Node {
   export { Schema_Node as any }
 }
@@ -211,6 +208,7 @@ export const Schema_is
   = core.anyOf$(
     tree.has("type", core.is.literally(...DataTypes)),
     tree.has("$ref", core.is.string),
+    tree.has('const', core.is.any),
     Schema_isAllOf,
     Schema_isAnyOf,
     Schema_isOneOf,
@@ -246,7 +244,14 @@ export const Schema_isNull
     // tree.has("nullable", core.is.literally(true)),
   ) as never
 
-export const Schema_isConst = tree.has("const")
+// export const Schema_isConst = tree.has("const")
+// export function Schema_isConst(u: Schema | $ref): u is Schema_const<Schema>
+export function Schema_isConst<T>(u: unknown): u is Schema_const<T>
+export function Schema_isConst(u: unknown): u is Schema_const<Schema> {
+  return tree.has("const")(u)
+}
+
+export const Schema_isEnum = tree.has("enum")
 
 export const Schema_isBoolean
   : (u: unknown) => u is Schema_boolean
@@ -320,22 +325,22 @@ export const Schema_isScalar: {
 )
 
 export interface Schema_base<T = {}> { nullable?: boolean, example?: T }
-export interface Schema_null<T = {}, Meta extends {} = {}> extends 
+export interface Schema_null<_ = {}, Meta extends {} = {}> extends 
   newtype<Meta>, 
   inline<{ type: DataType.null }>, 
-  Schema_base 
+  Schema_base<null>
   { enum?: { [0]: null }, nullable?: true }
 
-export interface Schema_boolean<T = {}, Meta extends {} = {}> extends 
+export interface Schema_boolean<_ = {}, Meta extends {} = {}> extends 
   newtype<Meta>, 
   inline<{ type: DataType.boolean }>, 
-  Schema_base {}
+  Schema_base<boolean> {}
 
-export interface Schema_integer<T = {}, Meta extends {} = {}> extends 
+export interface Schema_integer<_ = {}, Meta extends {} = {}> extends 
   newtype<Meta>, 
   inline<{ type: DataType.integer }>, 
-  Schema_base {
-    format?: string
+  Schema_base<integer> {
+    format?: autocomplete<format.integer>
     exclusiveMaximum?: boolean
     exclusiveMinimum?: boolean
     multipleOf?: number
@@ -344,13 +349,13 @@ export interface Schema_integer<T = {}, Meta extends {} = {}> extends
   }
 
 export interface Schema_number<
-  T = {}, 
+  _ = {}, 
   Meta extends {} = {}
 > extends 
   newtype<Meta>, 
   inline<{ type: "number" }>, 
-  Schema_base  {
-    format?: Autocomplete<format.number>
+  Schema_base<number>  {
+    format?: autocomplete<format.number>
     minimum?: number
     maximum?: number
     exclusiveMinimum?: boolean
@@ -359,13 +364,13 @@ export interface Schema_number<
   }
 
 export interface Schema_string<
-  T = {}, 
+  _ = {}, 
   Meta extends {} = {}
 > extends 
   newtype<Meta>, 
   inline<{ type: "string" }>, 
-  Schema_base  {
-    pattern?: Autocomplete<format.string>
+  Schema_base<string>  {
+    pattern?: autocomplete<format.string>
     format?: string
     minLength?: number
     maxLength?: number
@@ -379,6 +384,7 @@ export type Schema_scalar<Meta extends {} = {}> =
   | Schema_string<Meta>
   ;
 
+export interface Schema_const<T = unknown, Meta extends {} = {}> extends newtype<Meta> { readonly const: T }
 export interface Schema_allOf<T = unknown, Meta extends {} = {}> extends newtype<Meta> { readonly allOf: readonly T[] }
 export interface Schema_anyOf<T = unknown, Meta extends {} = {}> extends newtype<Meta> { readonly anyOf: readonly T[] }
 export interface Schema_oneOf<T = unknown, Meta extends {} = {}> extends newtype<Meta> { readonly oneOf: readonly T[] }
@@ -429,6 +435,7 @@ export type Schema_F<T> =
   | Schema_integer
   | Schema_number
   | Schema_string
+  | Schema_const<unknown>
   | Schema_anyOf<T>
   | Schema_allOf<T>
   | Schema_oneOf<T>
@@ -438,6 +445,7 @@ export type Schema_F<T> =
   | Schema_record<T>
   ;
 
+export interface Schema_Const<T = unknown> extends newtype<T & {}> { [symbol.tag]: symbol.constant }
 export interface Schema_AllOf<T = unknown> extends newtype<T & {}> { [symbol.tag]: symbol.allOf }
 export interface Schema_AnyOf<T = unknown> extends newtype<T & {}> { [symbol.tag]: symbol.anyOf }
 export interface Schema_OneOf<T = unknown> extends newtype<T & {}> { [symbol.tag]: symbol.oneOf }
@@ -454,19 +462,22 @@ export interface Schema_StringF extends HKT<{}> { [-1]: Schema_String<this[0]> }
 export interface Schema_AnyOfF extends HKT<{}> { [-1]: Schema_AnyOf<this[0]> }
 export interface Schema_OneOfF extends HKT<{}> { [-1]: Schema_OneOf<this[0]> }
 export interface Schema_AllOfF extends HKT<{}> { [-1]: Schema_AllOf<this[0]> }
+export interface Schema_ConstF extends HKT<{}> { [-1]: Schema_Const<this[0]> }
 
 export interface SchemaKind extends HKT<Schema_F<any>> { [-1]: Schema_F<this[0]> }
 
 export type Schema_kinds = typeof Schema_kinds
 export declare const Schema_kinds: {
-  allOf: Schema_AllOfF
-  anyOf: Schema_AnyOfF
+  null: Schema_NullF
   boolean: Schema_BooleanF
   integer: Schema_IntegerF
-  null: Schema_NullF
   number: Schema_NumberF
-  oneOf: Schema_OneOfF
   string: Schema_StringF
+  const: Schema_ConstF
+  record: Schema_Record
+  allOf: Schema_AllOfF
+  anyOf: Schema_AnyOfF
+  oneOf: Schema_OneOfF
 }
 
 export type Schema_tag<T>
@@ -512,6 +523,12 @@ export declare namespace Schema_tag {
   type allOf<T extends Schema_allOf> = never | Schema_AllOf<T> 
   type anyOf<T extends Schema_anyOf> = never | Schema_AnyOf<T> 
   type oneOf<T extends Schema_oneOf> = never | Schema_OneOf<T> 
+  type const_<
+    T extends Schema_const,
+    $ extends 
+    | KeepLast<T, { const: T["const"] }>
+    = KeepLast<T, { const: T["const"] }>
+  > = never | Schema_Const<$>
 }
 
 export interface Predicate<
