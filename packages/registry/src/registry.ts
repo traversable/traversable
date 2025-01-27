@@ -1,6 +1,6 @@
-import { execSync as $ } from "node:child_process"
-import * as fs from "node:fs"
-import * as path from "node:path"
+// import { execSync as $ } from "node:child_process"
+// import * as fs from "node:fs"
+// import * as path from "node:path"
 
 import { FailedToRegisterSymbol } from "./error.js"
 import type { Known, Open } from "./exports.js"
@@ -11,19 +11,19 @@ import { PKG_NAME } from "./version.js"
 const $$_REGISTRY_KEY_$$ = `@${PKG_NAME}` as const
 const SymbolRegistryKey = "SymbolRegistry" as const
 const WeightRegistryKey = "WeightRegistry" as const
-const PATH = {
-  Weight: {
-    read: path.join(path.resolve(), "packages", "registry", "src", "tmp", "node-weight-by-type.json"),
-    write: path.join(
-      path.resolve(),
-      "packages",
-      "registry",
-      "src",
-      "__generated__",
-      "node-weight-by-type.json",
-    ),
-  },
-} as const
+// const PATH = {
+//   Weight: {
+//     read: path.join(path.resolve(), "packages", "registry", "src", "tmp", "node-weight-by-type.json"),
+//     write: path.join(
+//       path.resolve(),
+//       "packages",
+//       "registry",
+//       "src",
+//       "__generated__",
+//       "node-weight-by-type.json",
+//     ),
+//   },
+// } as const
 
 const RegistryKeys = [SymbolRegistryKey, WeightRegistryKey] as const satisfies string[]
 
@@ -202,52 +202,52 @@ declare const WeightAPI: {
   write<K extends keyof WeightRegistry, V extends number>(key: K, value: V): boolean
 }
 
-export function createWeightRegistry<
-  const T extends { [x: string]: { weight: number; predicate(u: unknown): u is unknown } },
->(uriToSymbolMap: T): typeof WeightAPI
-export function createWeightRegistry(weightMap?: {
-  [x: string]: { weight: number; predicate(u: unknown): u is unknown }
-}) {
-  if (globalThis.process.env.NODE_ENV === "development")
-    void globalThis.console.info("Registering node weights...")
-  void registerWeights(weightMap ?? WeightMap)
-  return {
-    map: (globalThis as any)[$$_REGISTRY_KEY_$$][WeightRegistryKey],
-    get(k: string) {
-      return (globalThis as any)[$$_REGISTRY_KEY_$$][WeightRegistryKey].get(k)
-    },
-    write(
-      k: keyof any,
-      next: number,
-      { dryrun = false }: { dryrun?: boolean } = { dryrun: false },
-    ): boolean | { prev: number; next: number } {
-      const prev = (globalThis as any)[$$_REGISTRY_KEY_$$][WeightRegistryKey].get(k)
-      if (prev != null && typeof prev === "object" && typeof prev.weight === "number") {
-        if (prev.weight === next) {
-          console.log("CACHE HIT")
-          return true
-        } else {
-          if (dryrun) {
-            console.log("[DRYRUN]: \n\tweight:" + String(k), "\n\tprev:" + prev.weight, "\n\tto:" + next)
-            return { prev: prev.weight, next }
-          }
-          ;(globalThis as any)[$$_REGISTRY_KEY_$$][WeightRegistryKey]?.set(k, next)
-          let content = fs.readFileSync(PATH.Weight.read).toString("utf8")
-          console.log("content", content)
-          const matcher = new RegExp('"' + String(k) + '"' + ":[\\s?]*[\\d]+[,]?", "g")
-          if (!matcher.test(content)) return false
-          else {
-            fs.writeFileSync(
-              PATH.Weight.write,
-              content.replace(matcher, '"' + String(k) + '": ' + next + ","),
-            )
-          }
-        }
-      }
-      return void 0 as never
-    },
-  }
-}
+// export function createWeightRegistry<
+//   const T extends { [x: string]: { weight: number; predicate(u: unknown): u is unknown } },
+// >(uriToSymbolMap: T): typeof WeightAPI
+// export function createWeightRegistry(weightMap?: {
+//   [x: string]: { weight: number; predicate(u: unknown): u is unknown }
+// }) {
+//   if (globalThis.process.env.NODE_ENV === "development")
+//     void globalThis.console.info("Registering node weights...")
+//   void registerWeights(weightMap ?? WeightMap)
+//   return {
+//     map: (globalThis as any)[$$_REGISTRY_KEY_$$][WeightRegistryKey],
+//     get(k: string) {
+//       return (globalThis as any)[$$_REGISTRY_KEY_$$][WeightRegistryKey].get(k)
+//     },
+//     write(
+//       k: keyof any,
+//       next: number,
+//       { dryrun = false }: { dryrun?: boolean } = { dryrun: false },
+//     ): boolean | { prev: number; next: number } {
+//       const prev = (globalThis as any)[$$_REGISTRY_KEY_$$][WeightRegistryKey].get(k)
+//       if (prev != null && typeof prev === "object" && typeof prev.weight === "number") {
+//         if (prev.weight === next) {
+//           console.log("CACHE HIT")
+//           return true
+//         } else {
+//           if (dryrun) {
+//             console.log("[DRYRUN]: \n\tweight:" + String(k), "\n\tprev:" + prev.weight, "\n\tto:" + next)
+//             return { prev: prev.weight, next }
+//           }
+//           ;(globalThis as any)[$$_REGISTRY_KEY_$$][WeightRegistryKey]?.set(k, next)
+//           let content = fs.readFileSync(PATH.Weight.read).toString("utf8")
+//           console.log("content", content)
+//           const matcher = new RegExp('"' + String(k) + '"' + ":[\\s?]*[\\d]+[,]?", "g")
+//           if (!matcher.test(content)) return false
+//           else {
+//             fs.writeFileSync(
+//               PATH.Weight.write,
+//               content.replace(matcher, '"' + String(k) + '": ' + next + ","),
+//             )
+//           }
+//         }
+//       }
+//       return void 0 as never
+//     },
+//   }
+// }
 
 /**
  * @example

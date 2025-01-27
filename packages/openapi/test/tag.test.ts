@@ -1,6 +1,6 @@
+import { test } from "@fast-check/vitest"
 import * as vi from "vitest"
 
-import { test } from "@traversable/core"
 import { Schema, tag, untag, } from "@traversable/openapi"
 import { symbol } from "@traversable/registry"
 

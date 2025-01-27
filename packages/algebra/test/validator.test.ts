@@ -1,8 +1,9 @@
-import { fc, t, test } from "@traversable/core"
+import { test } from "@fast-check/vitest"
 import { type } from "arktype"
 import * as vi from "vitest"
 
 import { arbitrary as Arbitrary, validator as Validator } from "@traversable/algebra"
+import { fc, t } from "@traversable/core"
 import { fn } from "@traversable/data"
 
 const strict = { 

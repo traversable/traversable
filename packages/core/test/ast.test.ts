@@ -1,6 +1,7 @@
 import * as vi from "vitest"
 
-import { t, test } from "@traversable/core"
+import { test } from "@fast-check/vitest"
+import { t } from "@traversable/core"
 import type { integer } from "@traversable/registry"
 
 import { Arbitrary } from "./util.js"

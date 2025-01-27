@@ -1,12 +1,10 @@
-export { test, test as it } from "@fast-check/vitest"
-
 export * as tree from "./tree.js"
 export * as zip from "./zip.js"
 export * from "./version.js";
 export * from "./guard/index.js"
 export * as show from "./show.js"
 
-export { fc, Property } from "./arbitrary/index.js"
+export { fc } from "./arbitrary/index.js"
 export { JsonPointer } from "./json-pointer.js"
 export { Json } from "./json.js"
 

@@ -18,6 +18,8 @@ export {
   type Schema_Node as Node,
   type Schema_scalar as scalar,
   type Schema_const as const,
+  type Schema_tag as tag,
+  type Schema_kinds as kinds,
   ///
   Schema_is as is,
   Schema_isBoolean as isBoolean,
@@ -40,8 +42,6 @@ export {
   Schema_isConst as isConst,
   Schema_isEnum as isEnum,
   ///
-  Schema_tag as tag,
-  Schema_kinds as kinds,
 } from "../types.js"
 
 /** @internal */

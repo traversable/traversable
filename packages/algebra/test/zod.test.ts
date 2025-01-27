@@ -1,8 +1,9 @@
 import * as fs from "node:fs"
+import { test } from "@fast-check/vitest"
 import * as vi from "vitest"
 import { z } from "zod"
 
-import { type Traversable, fc, test } from "@traversable/core"
+import { type Traversable, fc } from "@traversable/core"
 
 import { zod } from "@traversable/algebra"
 import { _ } from "@traversable/registry"

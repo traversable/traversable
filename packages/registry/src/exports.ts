@@ -35,7 +35,7 @@ export type {
 } from "./registry.js"
 export {
   createSymbolRegistry,
-  createWeightRegistry,
+  // createWeightRegistry,
   registerSymbol,
   registerWeights,
   WeightMap,

@@ -1,6 +1,8 @@
+import { test } from "@fast-check/vitest"
 import * as vi from "vitest"
 
-import { Property, core, fc, test } from "@traversable/core"
+import { core, fc } from "@traversable/core"
+import { Property } from "./Property.js"
 
 const stripTargetChars = (component: string) => component.replace(/[~\/01]/g, "")
 const unescapedChar = fc.constantFrom("/", "~")

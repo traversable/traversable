@@ -481,6 +481,19 @@ export declare const Schema_kinds: {
   oneOf: Schema_OneOfF
 }
 
+export const Tag = {
+  null: "null",
+  boolean: "boolean",
+  integer: "integer",
+  number: "number",
+  string: "string",
+  const: "const",
+  record: "record",
+  allOf: "allOf",
+  anyOf: "anyOf",
+  oneOf: "oneOf",
+} as const
+
 export type Schema_tag<T>
   = T extends Schema_scalar ? Schema_tag.scalar<T>
   : T extends Schema_tuple ? Schema_tag.tuple<T>

@@ -1,4 +1,5 @@
-import { and$, fc, is, or$, t, test, tree } from "@traversable/core"
+import { test } from "@fast-check/vitest"
+import { and$, fc, is, or$, tree } from "@traversable/core"
 import { fn } from "@traversable/data"
 import { openapi } from "@traversable/openapi"
 import * as vi from "vitest"

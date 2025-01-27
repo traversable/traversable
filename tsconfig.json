@@ -2,6 +2,7 @@
   "extends": "./tsconfig.base.json",
   "include": [],
   "references": [
+    { "path": "app/dev" },
     { "path": "packages/bench" },
     { "path": "packages/core" },
     { "path": "packages/data" },

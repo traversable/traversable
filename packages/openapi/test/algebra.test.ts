@@ -1,4 +1,4 @@
-import { test } from "@traversable/core"
+import { test } from "@fast-check/vitest"
 import { openapi } from "@traversable/openapi"
 
 import * as vi from "vitest"

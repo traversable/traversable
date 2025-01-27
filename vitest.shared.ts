@@ -22,6 +22,5 @@ export default defineConfig({
     fakeTimers: { toFake: undefined },
     // printConsoleTrace: true,
     sequence: { concurrent: true },
-    setupFiles: "../../vitest.global.ts",
   },
 })

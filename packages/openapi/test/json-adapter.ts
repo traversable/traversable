@@ -1,5 +1,3 @@
-import { fc, test } from "@traversable/core"
-import { fn } from "@traversable/data"
 import { openapi } from "@traversable/openapi"
 import * as vi from "vitest"
 

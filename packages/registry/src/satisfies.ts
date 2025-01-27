@@ -120,7 +120,11 @@ export type Union<T> = [isUnion<T>] extends [true] ? unknown : never
 export const union: <T extends Union<T>>(x: T) => T = identity
 
 export type Char<T> = [T] extends [`${string}${infer _}`] ? ([_] extends [""] ? string : never) : never
-export declare function char<T extends Char<T>>(x: T): T
+export function char<T extends Char<T>>(x: T): T {
+  return x
+}
 
 export type Equal<S, T> = [Equals<S, T>] extends [true] ? unknown : never
-export declare function equal<const S>(s: S): <const T extends Equal<S, T>>(t: T) => T
+export function equal<const S>(_: S): <const T extends Equal<S, T>>(t: T) => T {
+  return (t) => t
+}

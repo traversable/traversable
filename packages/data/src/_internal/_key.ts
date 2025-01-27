@@ -1,9 +1,10 @@
 import type { newtype } from "any-ts"
 
-import { map } from "@traversable/data"
 import type { HKT, Kind } from "@traversable/registry"
 import { PATTERN } from "@traversable/registry"
+
 import * as fn from "./_function.js"
+import { map } from "./_map.js"
 import { prop } from "./_prop.js"
 import { escape as escapeString, isQuoted } from "./_string.js"
 

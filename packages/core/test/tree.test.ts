@@ -1,11 +1,14 @@
+import { test } from "@fast-check/vitest"
 import * as vi from "vitest"
 
-import { Property, fc, is, test, tree } from "@traversable/core"
+import { fc, tree } from "@traversable/core"
 import type { props } from "@traversable/data"
+import { URI, symbol } from "@traversable/registry"
 
 import fromPaths = tree.fromPaths
-import { has } from "@traversable/core/tree"
-import { URI, symbol } from "@traversable/registry"
+
+import { Property } from "./Property.js"
+
 const { wrap } = fromPaths
 
 const head

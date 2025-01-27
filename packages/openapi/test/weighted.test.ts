@@ -1,5 +1,5 @@
 import { Weight } from "@traversable/openapi"
-import { WeightMap, createWeightRegistry } from "@traversable/registry"
+import { WeightMap } from "@traversable/registry"
 import * as vi from "vitest"
 
 interface CustomNode { _tag: "CustomNode" }
