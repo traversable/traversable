@@ -133,13 +133,16 @@ importers:
 
   packages/algebra:
     dependencies:
+      '@sinclair/typebox':
+        specifier: ^0.34.14
+        version: 0.34.14
       '@traversable/registry':
         specifier: workspace:^
         version: link:../registry/dist
     devDependencies:
       '@faker-js/faker':
-        specifier: ^9.3.0
-        version: 9.3.0
+        specifier: ^9.4.0
+        version: 9.4.0
       '@standard-schema/spec':
         specifier: 1.0.0-rc.0
         version: 1.0.0-rc.0
@@ -829,8 +832,8 @@ packages:
     cpu: [x64]
     os: [win32]
 
-  '@faker-js/faker@9.3.0':
-    resolution: {integrity: sha512-r0tJ3ZOkMd9xsu3VRfqlFR6cz0V/jFYRswAIpC+m/DIfAUXq7g8N7wTAlhSANySXYGKzGryfDXwtwsY8TxEIDw==}
+  '@faker-js/faker@9.4.0':
+    resolution: {integrity: sha512-85+k0AxaZSTowL0gXp8zYWDIrWclTbRPg/pm/V0dSFZ6W6D4lhcG3uuZl4zLsEKfEvs69xDbLN2cHQudwp95JA==}
     engines: {node: '>=18.0.0', npm: '>=9.0.0'}
 
   '@fast-check/vitest@0.1.4':
@@ -1065,6 +1068,9 @@ packages:
     resolution: {integrity: sha512-2x8MO1rm4PGEP0xWbubJW5RtbNLk3puzAMaLQd3B3JHVw4KcHlmXcO+Wewx9zCoo7EUFiMlu/aZbCJ7VjMzAag==}
     cpu: [x64]
     os: [win32]
+
+  '@sinclair/typebox@0.34.14':
+    resolution: {integrity: sha512-TJ7Al17j3+by5y2QkTLcF/oBVMbgXBhILVgi9PuwpxQVZZvGh5BFRzWbJPmZVNKpbRLjuMzFuRwR+tdFPqCkvA==}
 
   '@standard-schema/spec@1.0.0-rc.0':
     resolution: {integrity: sha512-DcY/ICFcZIESNTLTexIT108HOqd1FtxsiLV4ZYGluySWyjF6TZ6troNyXjiqoHU6j0wN3A6SmYnTA5CHQp9blw==}
@@ -3040,7 +3046,7 @@ snapshots:
   '@esbuild/win32-x64@0.24.2':
     optional: true
 
-  '@faker-js/faker@9.3.0': {}
+  '@faker-js/faker@9.4.0': {}
 
   '@fast-check/vitest@0.1.4(vitest@3.0.4(@types/node@22.9.0)(yaml@2.6.0))':
     dependencies:
@@ -3228,6 +3234,8 @@ snapshots:
 
   '@rollup/rollup-win32-x64-msvc@4.26.0':
     optional: true
+
+  '@sinclair/typebox@0.34.14': {}
 
   '@standard-schema/spec@1.0.0-rc.0': {}
 

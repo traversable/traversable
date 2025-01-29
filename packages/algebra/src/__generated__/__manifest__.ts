@@ -42,15 +42,6 @@ export default {
     "@traversable/registry": "workspace:^"
   },
   "peerDependencies": {
-    "@traversable/bench": "workspace:^",
-    "@traversable/core": "workspace:^",
-    "@traversable/data": "workspace:^",
-    "@traversable/http": "workspace:^",
-    "@traversable/openapi": "workspace:^",
-    "@traversable/registry": "workspace:^"
-  },
-  "devDependencies": {
-    "@faker-js/faker": "^9.3.0",
     "@sinclair/typebox": "^0.34.14",
     "@standard-schema/spec": "1.0.0-rc.0",
     "@traversable/bench": "workspace:^",
@@ -59,7 +50,32 @@ export default {
     "@traversable/http": "workspace:^",
     "@traversable/openapi": "workspace:^",
     "@traversable/registry": "workspace:^",
-    "ajv": "^8.17.1",
+    "arktype": "2.0.0-rc.30",
+    "zod": "^3.24.1"
+  },
+  "peerDependenciesMeta": {
+    "arktype": {
+      "optional": true
+    },
+    "@sinclair/typebox": {
+      "optional": true
+    },
+    "@standard-schema/spec": {
+      "optional": true
+    },
+    "zod": {
+      "optional": true
+    }
+  },
+  "devDependencies": {
+    "@faker-js/faker": "^9.4.0",
+    "@standard-schema/spec": "1.0.0-rc.0",
+    "@traversable/bench": "workspace:^",
+    "@traversable/core": "workspace:^",
+    "@traversable/data": "workspace:^",
+    "@traversable/http": "workspace:^",
+    "@traversable/openapi": "workspace:^",
+    "@traversable/registry": "workspace:^",
     "arktype": "2.0.0-rc.30",
     "chokidar": "^4.0.3",
     "zod": "^3.24.1"

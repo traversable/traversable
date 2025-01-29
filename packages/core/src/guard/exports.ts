@@ -76,6 +76,7 @@ export {
   /** @deprecated use {@link t `t`} instead */
   short, 
 } from "./short.js"
+export * as tr from "./toTraversable.js"
 
 // import type { AST, Config, Tag } from "./ast.js"
 // declare module "@traversable/core" {

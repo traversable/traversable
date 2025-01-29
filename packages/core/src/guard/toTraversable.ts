@@ -1,6 +1,5 @@
-import { _, newtype } from "@traversable/registry"
+import { _, type newtype } from "@traversable/registry"
 import * as t from "./ast.js"
-import { Traversable } from "../model/exports.js"
 
 
 //////////////////
@@ -23,7 +22,8 @@ declare namespace null_ {
     { meta: Meta }
 }
 namespace null_ {
-  export function toTraversable<Meta = {}>(meta?: Meta): null_.Traversable<Meta>
+  export function toTraversable<Meta = {}>
+    (meta?: Meta): null_.Traversable<Meta>
   export function toTraversable<Meta = {}>(
     meta: Meta = {} as never
   ): null_.Traversable<Meta> {
@@ -57,7 +57,8 @@ declare namespace boolean_ {
     { meta: Meta }
 }
 namespace boolean_ {
-  export function toTraversable<Meta = {}>(meta?: Meta): boolean_.Traversable<Meta>
+  export function toTraversable<Meta = {}>
+    (meta?: Meta): boolean_.Traversable<Meta>
   export function toTraversable<Meta = {}>(
     meta: Meta = {} as never
   ): boolean_.Traversable<Meta> {
@@ -91,7 +92,8 @@ declare namespace integer_ {
     { meta: Meta }
 }
 namespace integer_ {
-  export function toTraversable<Meta = {}>(meta?: Meta): integer_.Traversable<Meta>
+  export function toTraversable<Meta = {}>
+    (meta?: Meta): integer_.Traversable<Meta>
   export function toTraversable<Meta = {}>(
     meta: Meta = {} as never
   ): integer_.Traversable<Meta> {
@@ -125,7 +127,8 @@ declare namespace number_ {
     { meta: Meta }
 }
 namespace number_ {
-  export function toTraversable<Meta = {}>(meta?: Meta): number_.Traversable<Meta>
+  export function toTraversable<Meta = {}>
+    (meta?: Meta): number_.Traversable<Meta>
   export function toTraversable<Meta = {}>(
     meta: Meta = {} as never
   ): number_.Traversable<Meta> {
@@ -176,10 +179,15 @@ namespace string_ {
 ///////////////////
 ///    CONST    ///
 export { const_ as const }
-function const_<T extends typeof t.const.children, Meta>(value: T, meta?: Meta): const_<T, Meta> { 
+function const_<T extends typeof t.const.children, Meta>(
+  value: T, 
+  meta?: Meta
+): const_<T, Meta> { 
   return {
     ...t.const(value),
-    get toTraversable() { return const_.toTraversable(value, meta) }
+    get toTraversable() { 
+      return const_.toTraversable(value, meta)
+    }
   }
 }
 interface const_<T, Meta = {}> extends t.const<T> {
@@ -213,10 +221,15 @@ namespace const_ {
 //////////////////
 ///    ENUM    ///
 export { enum_ as enum }
-function enum_<T extends typeof t.enum.children, Meta>(value: T, meta?: Meta): enum_<T, Meta> { 
+function enum_<T extends typeof t.enum.children, Meta>(
+  value: T, 
+  meta?: Meta
+): enum_<T, Meta> { 
   return {
     ...t.enum(...value),
-    get toTraversable() { return enum_.toTraversable(value, meta) }
+    get toTraversable() { 
+      return enum_.toTraversable(value, meta) 
+    }
   }
 }
 interface enum_<T extends typeof t.enum.spec, Meta = {}> extends t.enum<T> {
@@ -250,7 +263,10 @@ namespace enum_ {
 //////////////////////
 ///    OPTIONAL    ///
 export { optional_ as optional }
-function optional_<T extends typeof t.optional.children, Meta>(value: T, meta?: Meta): optional_<T, Meta> { 
+function optional_<T extends typeof t.optional.children, Meta>(
+  value: T, 
+  meta?: Meta
+): optional_<T, Meta> { 
   return {
     ...t.optional(value),
     get toTraversable() { return optional_.toTraversable(value, meta) }
@@ -290,10 +306,15 @@ namespace optional_ {
 ///////////////////
 ///    ARRAY    ///
 export { array_ as array }
-function array_<T extends typeof t.array.children, Meta>(value: T, meta?: Meta): array_<T, Meta> { 
+function array_<T extends typeof t.array.children, Meta>(
+  value: T, 
+  meta?: Meta
+): array_<T, Meta> { 
   return {
     ...t.array(value),
-    get toTraversable() { return array_.toTraversable(value, meta) }
+    get toTraversable() { 
+      return array_.toTraversable(value, meta)
+    }
   }
 }
 interface array_<T, Meta = {}> extends t.array<T> {
@@ -326,7 +347,10 @@ namespace array_ {
 ////////////////////
 ///    ALL OF    ///
 export { allOf_ as allOf }
-function allOf_<T extends typeof t.allOf.children, Meta>(value: T, meta?: Meta): allOf_<T, Meta> { 
+function allOf_<T extends typeof t.allOf.children, Meta>(
+  value: T, 
+  meta?: Meta
+): allOf_<T, Meta> { 
   return {
     ...t.allOf(...value),
     get toTraversable() { return allOf_.toTraversable(value, meta) }
@@ -341,7 +365,10 @@ declare namespace allOf_ {
     { type: "allOf", meta: Meta }
 }
 namespace allOf_ {
-  export function toTraversable<T extends typeof t.allOf.spec, Meta = {}>(spec: T, meta?: Meta): allOf_.Traversable<T, Meta>
+  export function toTraversable<T extends typeof t.allOf.spec, Meta = {}>(
+    spec: T, 
+    meta?: Meta
+  ): allOf_.Traversable<T, Meta>
   export function toTraversable<T extends typeof t.allOf.spec, Meta = {}>(
     spec: T, 
     meta: Meta = {} as never
@@ -360,10 +387,15 @@ namespace allOf_ {
 ////////////////////
 ///    ANY OF    ///
 export { anyOf_ as anyOf }
-function anyOf_<T extends typeof t.anyOf.children, Meta>(value: T, meta?: Meta): anyOf_<T, Meta> { 
+function anyOf_<T extends typeof t.anyOf.children, Meta>(
+  value: T, 
+  meta?: Meta
+): anyOf_<T, Meta> { 
   return {
     ...t.anyOf(...value),
-    get toTraversable() { return anyOf_.toTraversable(value, meta) }
+    get toTraversable() { 
+      return anyOf_.toTraversable(value, meta) 
+    }
   }
 }
 interface anyOf_<T extends typeof t.anyOf.spec, Meta = {}> extends t.anyOf<T> {
@@ -375,7 +407,10 @@ declare namespace anyOf_ {
     { type: "anyOf", meta: Meta }
 }
 namespace anyOf_ {
-  export function toTraversable<T extends typeof t.anyOf.spec, Meta = {}>(spec: T, meta?: Meta): anyOf_.Traversable<T, Meta>
+  export function toTraversable<T extends typeof t.anyOf.spec, Meta = {}>(
+    spec: T, 
+    meta?: Meta
+  ): anyOf_.Traversable<T, Meta>
   export function toTraversable<T extends typeof t.anyOf.spec, Meta = {}>(
     spec: T, 
     meta: Meta = {} as never
@@ -394,7 +429,10 @@ namespace anyOf_ {
 ////////////////////
 ///    ONE OF    ///
 export { oneOf_ as oneOf }
-function oneOf_<T extends typeof t.oneOf.children, Meta>(value: T, meta?: Meta): oneOf_<T, Meta> { 
+function oneOf_<T extends typeof t.oneOf.children, Meta>(
+  value: T, 
+  meta?: Meta
+): oneOf_<T, Meta> { 
   return {
     ...t.oneOf(...value),
     get toTraversable() { return oneOf_.toTraversable(value, meta) }
@@ -409,7 +447,10 @@ declare namespace oneOf_ {
     { type: "oneOf", meta: Meta }
 }
 namespace oneOf_ {
-  export function toTraversable<T extends typeof t.oneOf.spec, Meta = {}>(spec: T, meta?: Meta): oneOf_.Traversable<T, Meta>
+  export function toTraversable<T extends typeof t.oneOf.spec, Meta = {}>(
+    spec: T, 
+    meta?: Meta
+  ): oneOf_.Traversable<T, Meta>
   export function toTraversable<T extends typeof t.oneOf.spec, Meta = {}>(
     spec: T, 
     meta: Meta = {} as never
@@ -428,7 +469,10 @@ namespace oneOf_ {
 ////////////////////
 ///    RECORD    ///
 export { record_ as record }
-function record_<T extends typeof t.record.children, Meta>(value: T, meta?: Meta): record_<T, Meta> { 
+function record_<T extends typeof t.record.children, Meta>(
+  value: T, 
+  meta?: Meta
+): record_<T, Meta> { 
   return {
     ...t.record(value),
     get toTraversable() { return record_.toTraversable(value, meta) }
@@ -443,7 +487,10 @@ declare namespace record_ {
     { meta: Meta }
 }
 namespace record_ {
-  export function toTraversable<T extends typeof t.record.spec, Meta = {}>(spec: T, meta?: Meta): record_.Traversable<T, Meta>
+  export function toTraversable<T extends typeof t.record.spec, Meta = {}>(
+    spec: T, 
+    meta?: Meta
+  ): record_.Traversable<T, Meta>
   export function toTraversable<T extends typeof t.record.spec, Meta = {}>(
     spec: T, 
     meta: Meta = {} as never
@@ -461,7 +508,10 @@ namespace record_ {
 ///////////////////
 ///    TUPLE    ///
 export { tuple_ as tuple }
-function tuple_<T extends typeof t.tuple.children, Meta>(value: T, meta?: Meta): tuple_<T, Meta> { 
+function tuple_<T extends typeof t.tuple.children, Meta>(
+  value: T, 
+  meta?: Meta
+): tuple_<T, Meta> { 
   return {
     ...t.tuple(...value),
     get toTraversable() { return tuple_.toTraversable(value, meta) }
@@ -476,7 +526,10 @@ declare namespace tuple_ {
     { meta: Meta }
 }
 namespace tuple_ {
-  export function toTraversable<T extends typeof t.tuple.spec, Meta = {}>(spec: T, meta?: Meta): tuple_.Traversable<T, Meta>
+  export function toTraversable<T extends typeof t.tuple.spec, Meta = {}>(
+    spec: T, 
+    meta?: Meta
+  ): tuple_.Traversable<T, Meta>
   export function toTraversable<T extends typeof t.tuple.spec, Meta = {}>(
     spec: T, 
     meta: Meta = {} as never
@@ -494,7 +547,10 @@ namespace tuple_ {
 ////////////////////
 ///    OBJECT    ///
 export { object_ as object }
-function object_<T extends typeof t.object.children, Meta>(value: T, meta?: Meta): object_<T, Meta> { 
+function object_<T extends typeof t.object.children, Meta>(
+  value: T, 
+  meta?: Meta
+): object_<T, Meta> { 
   return {
     ...t.object(value),
     get toTraversable() { return object_.toTraversable(value, meta) }
@@ -509,7 +565,10 @@ declare namespace object_ {
     { meta: Meta }
 }
 namespace object_ {
-  export function toTraversable<T extends typeof t.object.spec, Meta = {}>(spec: T, meta?: Meta): object_.Traversable<T, Meta>
+  export function toTraversable<T extends typeof t.object.spec, Meta = {}>(
+    spec: T, 
+    meta?: Meta
+  ): object_.Traversable<T, Meta>
   export function toTraversable<T extends typeof t.object.spec, Meta = {}>(
     spec: T, 
     meta: Meta = {} as never
@@ -522,4 +581,3 @@ namespace object_ {
 }
 ///    OBJECT    ///
 ////////////////////
-

@@ -1,5 +1,17 @@
 import type * as Error from "./error.js"
-import type { Equals, isNonUnion, isSingleton, isUnion } from "./types.js"
+import type {
+  Array,
+  Dict,
+  Equals,
+  NonUnion,
+  Omit,
+  Primitive,
+  Union,
+  _,
+  isNonUnion,
+  isSingleton,
+  isUnion,
+} from "./types.js"
 
 /**
  * ## {@link Finite `Finite`}
@@ -110,14 +122,11 @@ export function finite<S extends Finite<S>>(s: S) {
 
 const identity: <T>(x: T) => T = (x) => x
 
-export type NonUnion<T> = [isNonUnion<T>] extends [true] ? unknown : never
 export const nonunion: <T extends NonUnion<T>>(x: T) => T = identity
+export const union: <T extends Union<T>>(x: T) => T = identity
 
 export type Singleton<T> = [isSingleton<T>] extends [true] ? unknown : never
 export const singleton: <T extends Singleton<T>>(x: T) => T = identity
-
-export type Union<T> = [isUnion<T>] extends [true] ? unknown : never
-export const union: <T extends Union<T>>(x: T) => T = identity
 
 export type Char<T> = [T] extends [`${string}${infer _}`] ? ([_] extends [""] ? string : never) : never
 export function char<T extends Char<T>>(x: T): T {
@@ -128,3 +137,5 @@ export type Equal<S, T> = [Equals<S, T>] extends [true] ? unknown : never
 export function equal<const S>(_: S): <const T extends Equal<S, T>>(t: T) => T {
   return (t) => t
 }
+
+// declare function assertType<Expected, const Actual = Expected>(term: Actual): void

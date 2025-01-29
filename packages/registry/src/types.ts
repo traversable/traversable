@@ -1104,3 +1104,37 @@ export type Equals<S, T> = (<F>() => F extends S ? true : false) extends <F>() =
   : false
 
 export type autocomplete<T> = T | (string & {})
+
+export type Union<T, _ = T> = (_ extends _ ? ([T] extends [_] ? never : unknown) : never) extends infer U
+  ? U
+  : never
+
+export type NonUnion<T, _ = T> = (_ extends _ ? ([T] extends [_] ? unknown : never) : never) extends infer U
+  ? U
+  : never
+
+export declare namespace Union {
+  type toIntersection<
+    T,
+    U = (T extends T ? (_: T) => void : never) extends (_: infer U) => void ? U : never,
+  > = U
+  /**
+   * ## {@link enumerate `Union.enumerate`}
+   *
+   * You'll sometimes see this type called "UnionToTuple".
+   */
+  type enumerate<U, _ = Union.toThunk<U> extends () => infer X ? X : never> = Union.enumerate.loop<[], U, _>
+  type is<T, U = T> = (U extends U ? ([T] extends [U] ? false : true) : never) extends infer S
+    ? boolean extends S
+      ? true
+      : S
+    : never
+  namespace enumerate {
+    type loop<Todo extends readonly unknown[], U, _ = Union.toThunk<U> extends () => infer X ? X : never> = [
+      U,
+    ] extends [never]
+      ? Todo
+      : Union.enumerate.loop<[_, ...Todo], Exclude<U, _>>
+  }
+  type toThunk<U> = (U extends U ? (_: () => U) => void : never) extends (_: infer _) => void ? _ : never
+}

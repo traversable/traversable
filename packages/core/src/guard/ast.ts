@@ -6,6 +6,7 @@ import type {
   Functor,
   HKT,
   Intersect,
+  Kind,
   Partial,
   Require,
   _,
@@ -62,7 +63,7 @@ const Object_keys = globalThis.Object.keys
 const NotYetSupported = (...args: Parameters<typeof Invariant.NotYetSupported>) => 
   Invariant.NotYetSupported(...args)("core/src/guard/ast.ts")
 /** @internal */
-const isOptional = <T>(u: _): u is optional_<T> => has("_tag", is$.literally(Tag.optional))(u)
+const isOptional = <S>(u: _): u is optional_<S> => has("_tag", is$.literally(Tag.optional))(u)
 /** @internal */
 // function hasTag(u: _): u is { _tag: string } 
 function hasTag<T extends string>(tag: T): (u: _) => u is { _tag: T } 
@@ -81,7 +82,7 @@ type Schema<S extends [source: any, target: _]> = Type<{ is(src: S[0]): src is S
 interface Type<T extends { is(src: any): src is any }> extends newtype<T & { [symbol.schema]?: symbol.schema }> {
   _type: target<T["is"]>
 }
-type AnyNode<T = _> = 
+type AnyNode<S = _> = 
   | null_
   | boolean_
   | symbol_
@@ -89,16 +90,16 @@ type AnyNode<T = _> =
   | number_
   | string_
   | any_
-  | const_.apply<T>
-  | enum_.apply<T>
-  | optional_.apply<T>
-  | array_.apply<T>
-  | record_.apply<T>
-  | tuple_.apply<T>
-  | allOf_.apply<T>
-  | anyOf_.apply<T>
-  | oneOf_.apply<T>
-  | object_.apply<T>
+  | const_.apply<S>
+  | enum_.apply<S>
+  | optional_.apply<S>
+  | array_.apply<S>
+  | record_.apply<S>
+  | tuple_.apply<S>
+  | allOf_.apply<S>
+  | anyOf_.apply<S>
+  | oneOf_.apply<S>
+  | object_.apply<S>
   ;
 
 export interface Options<I = _, O = _> extends Partial<
@@ -118,21 +119,29 @@ export const Options = {
    * The typical use case for wanting to type a schema's inputs and outputs is
    * when you're rolling your own codecs, and need to support a bidirectional
    * encode/decode pipeline.
+   * 
+   * When you're sticking pre- and post-processors at either end of a pipeline,
+   * you really need feedback that lets you know when the legos "click" into
+   * place -- without that, you're left fumbling around in the dark at every
+   * level at the contravariant end.
+   * 
+   * > tl;dr: If you don't have a way to express where you've been, you can't 
+   *   really get "back" without drawing outside the lines.
    */
   from: void 0 as _
 } as const
 
 declare namespace AST { export { AnyNode as any, typeof_ as typeof } }
 declare namespace AST {
-  interface Leaf<T extends readonly [source: _, target: _] = [source: _, target: _]> {
+  interface Leaf<S extends readonly [source: _, target: _] = [source: _, target: _]> {
     _tag: string
     def: _
-    _type: T[1]
-    is(u: T[0]): u is T[1]
+    _type: S[1]
+    is(u: S[0]): u is S[1]
   }
   interface Node { _type: _, is(u: any): u is _ }
   interface lambda extends HKT { [-1]: F<this[0]> }
-  type F<T> =
+  type F<S> =
     | null_
     | boolean_
     | symbol_
@@ -140,16 +149,16 @@ declare namespace AST {
     | number_
     | string_
     | any_
-    | const_<T>
-    | enum_<readonly T[]>
-    | optional_<T>
-    | array_<T>
-    | record_<T>
-    | allOf_<readonly T[]>
-    | anyOf_<readonly T[]>
-    | oneOf_<readonly T[]>
-    | tuple_<readonly T[]>
-    | object_<{ [x: string]: T }>
+    | const_<S>
+    | enum_<readonly S[]>
+    | optional_<S>
+    | array_<S>
+    | record_<S>
+    | allOf_<readonly S[]>
+    | anyOf_<readonly S[]>
+    | oneOf_<readonly S[]>
+    | tuple_<readonly S[]>
+    | object_<{ [x: string]: S }>
     ;
   namespace F {
     export {
@@ -182,7 +191,7 @@ declare namespace AST {
  */
 function typeof_<S>(s: S): typeof_<S>
 function typeof_<S>(s: S) { return s }
-type typeof_<T> = T["_type" & keyof T]
+type typeof_<S> = S["_type" & keyof S]
 
 /** 
  * ## {@link isAST `AST.is`}
@@ -190,7 +199,7 @@ type typeof_<T> = T["_type" & keyof T]
  * Narrows its input to be a member of {@link AST `AST`}.
  */
 const isAST
-  : <T>(u: _) => u is AST.F<T>
+  : <S>(u: _) => u is AST.F<S>
   = (u): u is never => !!u 
     && typeof u === "object" 
     && "_tag" in u && Object.values<_>(Tag).includes(u._tag)
@@ -245,8 +254,8 @@ AST.unfold = unfold
 AST.Functor = Functor
 AST.is = isAST
 
-function fold<T>(g: Functor.Algebra<AST.lambda, T>) { return fn.cata(Functor)(g) }
-function unfold<T>(g: Functor.Coalgebra<AST.lambda, T>) { return fn.ana(Functor)(g) }
+function fold<S>(g: Functor.Algebra<AST.lambda, S>) { return fn.cata(Functor)(g) }
+function unfold<S>(g: Functor.Coalgebra<AST.lambda, S>) { return fn.ana(Functor)(g) }
 
 type NullaryTag = typeof NullaryTag[keyof typeof NullaryTag]
 const NullaryTag = {
@@ -297,6 +306,7 @@ declare namespace null_ {
     def: typeof null_.spec
     _type: null
   }
+  type toJsonSchema = typeof null_.toJsonSchema
   interface Codec<I> extends null_.def, codec<I, null> {}
 }
 namespace null_ {
@@ -338,6 +348,7 @@ declare namespace boolean_ {
     def: typeof boolean_.spec
     _type: boolean
   }
+  type toJsonSchema = typeof boolean_.toJsonSchema
   interface Codec<I> extends boolean_.def, codec<I, boolean> {}
 }
 namespace boolean_ {
@@ -375,6 +386,7 @@ declare namespace symbol_ {
     def: typeof symbol_.spec
     _type: symbol
   }
+  type toJsonSchema = typeof symbol_.toJsonSchema
   interface Codec<I> extends symbol_.def, codec<I, symbol> {}
 }
 namespace symbol_ {
@@ -413,6 +425,7 @@ declare namespace integer_ {
     def: typeof integer_.spec
     _type: integer
   }
+  type toJsonSchema = typeof integer_.toJsonSchema
   interface Codec<I> extends integer_.def, codec<I, integer> {}
 }
 namespace integer_ {
@@ -433,7 +446,7 @@ namespace integer_ {
 ///    NUMBER    ///
 interface number_ extends number_.def {
   is(u: _): u is number
-  get toJsonSchema(): typeof number_.jsonSchema
+  get toJsonSchema(): typeof number_.toJsonSchema
 }
 function number_(): number_ 
 function number_<I>(options?: Options<I>): number_.Codec<I>
@@ -441,7 +454,7 @@ function number_(): number_ {
   return {
     ...number_.def,
     is: is$.number,
-    get toJsonSchema() { return number_.jsonSchema },
+    get toJsonSchema() { return number_.toJsonSchema },
   }
 }
 declare namespace number_ {
@@ -451,15 +464,16 @@ declare namespace number_ {
     def: typeof number_.spec
     _type: number
   }
+  type toJsonSchema = typeof number_.toJsonSchema
   interface Codec<I> extends number_.def, codec<I, number> {}
 }
 namespace number_ {
-  export const jsonSchema = { type: Tag.number }
   export const def = {
     _tag: Tag.number,
     def: symbol.number as never,
     _type: phantom,
   } as const satisfies number_.def
+  export const toJsonSchema = { type: Tag.number }
   export const is = (u: _): u is number_ => hasTag(Tag.number)(u)
   export const isDef = (u: _): u is number_.def => hasTag(Tag.number)(u)
 }
@@ -489,6 +503,7 @@ declare namespace string_ {
     def: typeof string_.spec
     _type: string
   }
+  type toJsonSchema = typeof string_.toJsonSchema
   interface Codec<I> extends string_.def, codec<I, string> {}
 }
 namespace string_ {
@@ -551,6 +566,7 @@ interface enum_<S extends typeof enum_.spec> extends enum_.def<S> {
 }
 function enum_<S extends typeof enum_.children>(...specs: [...S]): enum_<S>
 function enum_<I, O extends typeof enum_.children>(options: Options<I>, ...specs: [...O]): enum_.Codec<I, O>
+function enum_<S extends typeof enum_.children>(...specs: [...S]): enum_<S>
 function enum_<I, O extends typeof enum_.children>(
   ...args: 
     | [I, ...O]
@@ -583,15 +599,15 @@ namespace enum_ {
       enum: [...value] 
     }
   }
-  export function def<T extends typeof enum_.spec>(v: T): enum_.def<T> {
+  export function def<S extends typeof enum_.spec>(v: S): enum_.def<S> {
     return {
       _tag: Tag.enum,
       def: v,
       _type: phantom,
-    } as const satisfies enum_.def<T>
+    } as const satisfies enum_.def<S>
   }
-  export const is = <T extends typeof enum_.spec>(u: _): u is enum_<T> => hasTag(Tag.enum)(u)
-  export const isDef = <T extends typeof enum_.spec>(u: _): u is enum_.def<T> => hasTag(Tag.enum)(u)
+  export const is = <S extends typeof enum_.spec>(u: _): u is enum_<S> => hasTag(Tag.enum)(u)
+  export const isDef = <S extends typeof enum_.spec>(u: _): u is enum_.def<S> => hasTag(Tag.enum)(u)
 }
 ///    ENUM    ///
 //////////////////
@@ -603,15 +619,15 @@ interface const_<S> extends const_.def<S> {
   is(u: _): u is S
   get toJsonSchema(): const_.toJsonSchema<S>
 }
-function const_<const T>(value: T, options?: const_.Options<T>): const_<T>
+function const_<const S>(value: S, options?: const_.Options<S>): const_<S>
 function const_<I, const O>(value: O, options: const_.Options<I> & { from: I }): const_.Codec<I, O>
-function const_<const T>(v: T, _?: const_.Options<T>): const_<T> {
+function const_<const S>(v: S, _?: const_.Options<S>): const_<S> {
   const eq = _?.eq
   const def = const_.def(v)
   const is 
     = eq === undefined 
-    ? ((u: _): u is T => u === v)
-    : ((u: _): u is never => eq(def.def, u as T))
+    ? ((u: _): u is S => u === v)
+    : ((u: _): u is never => eq(def.def, u as S))
   return {
     ...def,
     is,
@@ -622,15 +638,15 @@ declare namespace const_ { export { options as Options } }
 declare namespace const_ {
   const spec: _
   const children: _
-  interface def<T extends typeof const_.spec> {
+  interface def<S extends typeof const_.spec> {
     _tag: typeof Tag.const
-    def: T
-    _type: T
+    def: S
+    _type: S
   }
   interface Codec<I, O> extends const_.def<O>, codec<I, O> {}
-  type apply<T> = const_<T>
-  type toJsonSchema<T> = never | { "const": T }
-  interface options<T = any, I = any> extends Options<I>, Partial<{
+  type apply<S> = const_<S>
+  type toJsonSchema<S> = never | { "const": S }
+  interface options<S = any, I = any> extends Options<I>, Partial<{
     /**
      * ## {@link defaults.eq `Options.eq`}
      *
@@ -651,22 +667,22 @@ declare namespace const_ {
      * - [MDN: equality comparisons and sameness](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Equality_comparisons_and_sameness)
      * - [TC39 spec: `SameValueZero`](https://tc39.es/ecma262/multipage/abstract-operations.html#sec-samevaluezero)
      */
-    eq?(left: T, right: T): boolean
+    eq?(left: S, right: S): boolean
   }> {}
 }
 namespace const_ {
-  export function def<T extends typeof const_.spec>(v: T): const_.def<T> {
+  export function def<S extends typeof const_.spec>(v: S): const_.def<S> {
     return {
       _tag: Tag.const,
       def: v,
       _type: phantom,
-    } as const satisfies const_.def<T>
+    } as const satisfies const_.def<S>
   }
   export function toJsonSchema<const S>(value: S): const_.toJsonSchema<S> 
   export function toJsonSchema<const S>(value: S) { return { const: value } }
   export const defaults = { eq: globalThis.Object.is } satisfies Require<Options, "eq">
-  export const is = <T>(u: _): u is const_<T> => hasTag(Tag.const)(u)
-  export const isDef = <T>(u: _): u is const_.def<T> => hasTag(Tag.const)(u)
+  export const is = <S>(u: _): u is const_<S> => hasTag(Tag.const)(u)
+  export const isDef = <S>(u: _): u is const_.def<S> => hasTag(Tag.const)(u)
 }
 ///    CONST    ///
 ///////////////////
@@ -696,8 +712,8 @@ declare namespace optional_ {
     _type: S["_type" & keyof S] | undefined
   }
   interface Codec<I, O> extends optional_.def<O>, codec<I, O> {}
-  type apply<T> = optional_<T>
-  type toJsonSchema<T> = T["toJsonSchema" & keyof T]
+  type apply<S> = optional_<S>
+  type toJsonSchema<S> = S["toJsonSchema" & keyof S]
 }
 namespace optional_ {
   export function def<S extends typeof optional_.spec>(s: S): optional_.def<S> {
@@ -710,8 +726,8 @@ namespace optional_ {
   export function toJsonSchema<S extends typeof optional_.spec>(spec: S): optional_.toJsonSchema<S>
   export function toJsonSchema<S extends typeof optional_.spec>(spec: S) 
     { return has("toJsonSchema")(spec) && spec.toJsonSchema }
-  export const is = <T>(u: _): u is optional_<T> => hasTag(Tag.optional)(u)
-  export const isDef = <T>(u: _): u is optional_.def<T> => hasTag(Tag.optional)(u)
+  export const is = <S>(u: _): u is optional_<S> => hasTag(Tag.optional)(u)
+  export const isDef = <S>(u: _): u is optional_.def<S> => hasTag(Tag.optional)(u)
 }
 ///    OPTIONAL    ///
 //////////////////////
@@ -755,9 +771,9 @@ declare namespace allOf_ {
     _type: Intersect<{ [I in keyof S]: S[I]["_type" & keyof S[I]] }>
   }
   interface Codec<I, O extends typeof allOf_.spec> extends allOf_.def<O>, codec<I, O> {}
-  type apply<T> = allOf_<readonly T[]>
-  type toJsonSchema<T extends typeof allOf_.spec> = never | { 
-    allOf: { [I in keyof T]: T[I]["toJsonSchema" & keyof T[I]] } 
+  type apply<S> = allOf_<readonly S[]>
+  type toJsonSchema<S extends typeof allOf_.spec> = never | { 
+    allOf: { [I in keyof S]: S[I]["toJsonSchema" & keyof S[I]] } 
   }
 }
 namespace allOf_ {
@@ -771,8 +787,8 @@ namespace allOf_ {
   export function toJsonSchema<S extends typeof allOf_.spec>(spec: S): allOf_.toJsonSchema<S>
   export function toJsonSchema<S extends typeof allOf_.spec>(spec: S) 
     { return { allOf: spec.filter(has("toJsonSchema")).map((_) => _.toJsonSchema) } }
-  export const is = <T extends typeof allOf_.spec>(u: _): u is allOf_<T> => hasTag(Tag.allOf)(u)
-  export const isDef = <T extends typeof allOf_.spec>(u: _): u is allOf_.def<T> => hasTag(Tag.allOf)(u)
+  export const is = <S extends typeof allOf_.spec>(u: _): u is allOf_<S> => hasTag(Tag.allOf)(u)
+  export const isDef = <S extends typeof allOf_.spec>(u: _): u is allOf_.def<S> => hasTag(Tag.allOf)(u)
 }
 ///    ALL OF    ///
 ////////////////////
@@ -807,9 +823,9 @@ declare namespace anyOf_ {
     _type: S[number]["_type" & keyof S[number]]
   }
   interface Codec<I, O extends typeof allOf_.spec> extends anyOf_.def<O>, codec<I, O> {}
-  type apply<T> = anyOf_<readonly T[]>
-  type toJsonSchema<T extends typeof anyOf_.spec> = never | { 
-    anyOf: { [I in keyof T]: T[I]["toJsonSchema" & keyof T[I]] } 
+  type apply<S> = anyOf_<readonly S[]>
+  type toJsonSchema<S extends typeof anyOf_.spec> = never | { 
+    anyOf: { [I in keyof S]: S[I]["toJsonSchema" & keyof S[I]] } 
   }
 }
 namespace anyOf_ {
@@ -823,8 +839,8 @@ namespace anyOf_ {
   export function toJsonSchema<S extends typeof anyOf_.spec>(specs: S): anyOf_.toJsonSchema<S> 
   export function toJsonSchema<S extends typeof anyOf_.spec>(spec: S) 
     { return { anyOf: spec.filter(has("toJsonSchema")).map((_) => _.toJsonSchema) } }
-  export const is = <T extends typeof anyOf_.spec>(u: _): u is anyOf_<T> => hasTag(Tag.anyOf)(u)
-  export const isDef = <T extends typeof anyOf_.spec>(u: _): u is anyOf_.def<T> => hasTag(Tag.anyOf)(u)
+  export const is = <S extends typeof anyOf_.spec>(u: _): u is anyOf_<S> => hasTag(Tag.anyOf)(u)
+  export const isDef = <S extends typeof anyOf_.spec>(u: _): u is anyOf_.def<S> => hasTag(Tag.anyOf)(u)
 }
 ///    ANY OF    ///
 ////////////////////
@@ -859,9 +875,9 @@ declare namespace oneOf_ {
     _type: S[number]["_type" & keyof S[number]]
   }
   interface Codec<I, O extends typeof oneOf_.spec> extends oneOf_.def<O>, codec<I, O> {}
-  type apply<T> = oneOf_<readonly T[]>
-  type toJsonSchema<T extends typeof oneOf_.spec> = never | { 
-    oneOf: { [I in keyof T]: T[I]["toJsonSchema" & keyof T[I]] } 
+  type apply<S> = oneOf_<readonly S[]>
+  type toJsonSchema<S extends typeof oneOf_.spec> = never | { 
+    oneOf: { [I in keyof S]: S[I]["toJsonSchema" & keyof S[I]] } 
   }
 }
 namespace oneOf_ {
@@ -878,8 +894,8 @@ namespace oneOf_ {
       _type: phantom,
     }
   }
-  export const is = <T extends typeof oneOf_.spec>(u: _): u is oneOf_<T> => hasTag(Tag.oneOf)(u)
-  export const isDef = <T extends typeof oneOf_.spec>(u: _): u is oneOf_.def<T> => hasTag(Tag.oneOf)(u)
+  export const is = <S extends typeof oneOf_.spec>(u: _): u is oneOf_<S> => hasTag(Tag.oneOf)(u)
+  export const isDef = <S extends typeof oneOf_.spec>(u: _): u is oneOf_.def<S> => hasTag(Tag.oneOf)(u)
 }
 ///    ONE OF    ///
 ////////////////////
@@ -911,10 +927,10 @@ declare namespace array_ {
     _type: S["_type" & keyof S][]
   }
   interface Codec<I, O> extends array_.def<O>, codec<I, O> {}
-  type apply<T> = array_<T>
-  type toJsonSchema<T> = never | {
+  type apply<S> = array_<S>
+  type toJsonSchema<S> = never | {
     type: "array"
-    items: T["toJsonSchema" & keyof T]
+    items: S["toJsonSchema" & keyof S]
   }
 }
 namespace array_ {
@@ -933,8 +949,8 @@ namespace array_ {
       ...has("toJsonSchema")(spec) && { items: spec.toJsonSchema },
     }
   }
-  export const is = <T extends typeof array_.spec>(u: _): u is array_<T> => hasTag(Tag.array)(u)
-  export const isDef = <T extends typeof array_.spec>(u: _): u is array_.def<T> => hasTag(Tag.array)(u)
+  export const is = <S extends typeof array_.spec>(u: _): u is array_<S> => hasTag(Tag.array)(u)
+  export const isDef = <S extends typeof array_.spec>(u: _): u is array_.def<S> => hasTag(Tag.array)(u)
 }
 ///    ARRAY    ///
 ///////////////////
@@ -964,10 +980,10 @@ declare namespace record_ {
     _type: globalThis.Record<string, S["_type" & keyof S]>
   }
   interface Codec<I, O> extends record_.def<O>, codec<I, O> {}
-  type apply<T> = record_<T>
-  type toJsonSchema<T> = never | {
+  type apply<S> = record_<S>
+  type toJsonSchema<S> = never | {
     type: "object",
-    additionalProperties: T["toJsonSchema" & keyof T]
+    additionalProperties: S["toJsonSchema" & keyof S]
   }
 }
 namespace record_ {
@@ -985,9 +1001,9 @@ namespace record_ {
       ...has("toJsonSchema")(spec) && { additionalProperties: spec.toJsonSchema as S },
     }
   }
-  export const isDef = <T extends typeof record_.spec>(u: _): u is record_.def<T> => hasTag(Tag.record)(u)
+  export const isDef = <S extends typeof record_.spec>(u: _): u is record_.def<S> => hasTag(Tag.record)(u)
   export const is 
-    : <T>(u: _) => u is record_<T>
+    : <S>(u: _) => u is record_<S>
     = (u): u is never => hasTag(Tag.record)(u)
 }
 ///    RECORD    ///
@@ -1017,7 +1033,15 @@ function tuple_<I, O extends typeof tuple_.children>(
 
 declare namespace tuple_ {
   const spec: readonly _[]
+  interface F extends HKT<typeof tuple_.spec> { [-1]: Tuple<this[0]> }
   const children: readonly AST.Node[]
+  interface generic<
+    S extends typeof tuple_.spec, 
+  > {
+    _tag: typeof Tag.tuple
+    def: S
+    _type: [...S]
+  }
   interface def<
     S extends typeof tuple_.spec, 
     Opt extends tuple_.opt<S> = tuple_.opt<S>
@@ -1028,17 +1052,19 @@ declare namespace tuple_ {
     _opt: Opt
   }
   interface Codec<I, O extends typeof tuple_.spec> extends tuple_.def<O>, codec<I, O> {}
-  type apply<T> = tuple_<readonly T[]>
-  type toJsonSchema<T extends typeof tuple_.spec> = never | {
+  type apply<S> = tuple_<readonly S[]>
+  interface Tuple<T extends typeof tuple_.spec> extends newtype<T> {}
+  type of<T> = Kind<F, readonly T[]>
+  type toJsonSchema<S extends typeof tuple_.spec> = never | {
     type: "array",
-    items: { [I in keyof T]: T[I]["toJsonSchema" & keyof T[I]] }
-    minItems: T["length"]
-    maxItems: T["length"]
+    items: { [I in keyof S]: S[I]["toJsonSchema" & keyof S[I]] }
+    minItems: S["length"]
+    maxItems: S["length"]
   }
-  type opt<T extends readonly _[], Opt extends readonly _[] = []> 
-    = [T] extends [readonly [...infer Todo, optional_<infer S>]] ? tuple_.opt<Todo, [...Opt, S["_type" & keyof S]]>
-    : [Opt] extends [readonly []] ? [{ [I in keyof T]: T[I]["_type" & keyof T[I]] }, []] 
-    : [req: { [I in keyof T]: T[I]["_type" & keyof T[I]] }, opt: withLabels<Opt>]
+  type opt<S extends readonly _[], Opt extends readonly _[] = []> 
+    = [S] extends [readonly [...infer Todo, optional_<infer S>]] ? tuple_.opt<Todo, [...Opt, S["_type" & keyof S]]>
+    : [Opt] extends [readonly []] ? [{ [I in keyof S]: S[I]["_type" & keyof S[I]] }, []] 
+    : [req: { [I in keyof S]: S[I]["_type" & keyof S[I]] }, opt: withLabels<Opt>]
     ;
   type withLabels<
     T extends readonly _[], 
@@ -1080,8 +1106,8 @@ namespace tuple_ {
       maxItems: spec.length,
     } as tuple_.toJsonSchema<S>
   }
-  export const is = <T extends typeof tuple_.spec>(u: _): u is tuple_<T> => hasTag(Tag.tuple)(u)
-  export const isDef = <T extends typeof tuple_.spec>(u: _): u is tuple_.def<T> => hasTag(Tag.tuple)(u)
+  export const is = <S extends typeof tuple_.spec>(u: _): u is tuple_<S> => hasTag(Tag.tuple)(u)
+  export const isDef = <S extends typeof tuple_.spec>(u: _): u is tuple_.def<S> => hasTag(Tag.tuple)(u)
 }
 ///    TUPLE    ///
 ///////////////////
@@ -1125,16 +1151,19 @@ declare namespace object_ {
     _opt: object_.opt<S[0]>[]
   }
   interface Codec<I, O extends typeof object_.spec> extends object_.def<O>, codec<I, O> {}
-  type apply<T> = object_<{ [x: string]: T }>
-  type toJsonSchema<T, Req = Exclude<keyof T, object_.opt<T>>> = never | {
+  type apply<S> = object_<{ [x: string]: S }>
+  interface F extends HKT<typeof object_.spec> { [-1]: Struct<this[0]> }
+  type of<T> = Kind<F, Record<string, T>>
+  interface Struct<T extends typeof object_.spec> extends newtype<T> {}
+  type toJsonSchema<S, Req = Exclude<keyof S, object_.opt<S>>> = never | {
     type: typeof Tag.object,
     required: [Req] extends [never] ? [] : Req[]
-    properties: { [K in keyof T]: T[K]["toJsonSchema" & keyof T[K]] }
+    properties: { [K in keyof S]: S[K]["toJsonSchema" & keyof S[K]] }
   }
-  type $<T> = [keyof T] extends [never] ? _ : T
-  type opt<T, K extends keyof T = keyof T> = K extends K ? T[K] extends optional_.def<any> ? K : never : never
-  type hasQuestionMark<T, K extends string & keyof T = string & keyof T> = K extends `${string}?` ? K : never
-  type noQuestionMark<T, K extends keyof T = keyof T> = K extends `${string}?` ? never : K
+  type $<S> = [keyof S] extends [never] ? _ : S
+  type opt<S, K extends keyof S = keyof S> = K extends K ? S[K] extends optional_.def<any> ? K : never : never
+  type hasQuestionMark<S, K extends string & keyof S = string & keyof S> = K extends `${string}?` ? K : never
+  type noQuestionMark<S, K extends keyof S = keyof S> = K extends `${string}?` ? never : K
 }
 
 namespace object_ {
@@ -1166,8 +1195,8 @@ namespace object_ {
       )
     }
   }
-  export const is = <T extends typeof object_.spec>(u: _): u is object_<T> => hasTag(Tag.allOf)(u)
-  export const isDef = <T extends typeof object_.spec>(u: _): u is object_.def<T> => hasTag(Tag.object)(u)
+  export const is = <S extends typeof object_.spec>(u: _): u is object_<S> => hasTag(Tag.allOf)(u)
+  export const isDef = <S extends typeof object_.spec>(u: _): u is object_.def<S> => hasTag(Tag.object)(u)
 }
 ///    OBJECT    ///
 ////////////////////
