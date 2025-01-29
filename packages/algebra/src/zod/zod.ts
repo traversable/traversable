@@ -67,10 +67,10 @@ const StringSchema = {
 
 const numericConstraints
   : (meta: Meta.Numeric) => string[]
-  = ({ exclusiveMaximum: lt, exclusiveMinimum: gt, maximum: max, minimum: min, multipleOf: factor }) => [
+  = ({ exclusiveMaximum: lt, exclusiveMinimum: gt, maximum: max, minimum: min, multipleOf: mod }) => [
     typeof gt === 'number' ? `.gt(${gt})` : min !== undefined && (gt === true ? `.gt(${min})` : `.min(${min})`),
     typeof lt === 'number' ? `.lt(${lt})` : max !== undefined && (lt === true ? `.lt(${max})` : `.max(${max})`),
-    factor !== undefined && `.multipleOf(${factor})`,
+    mod !== undefined && `.multipleOf(${mod})`,
   ].filter(core.is.string)
 
 const stringConstraints
@@ -301,9 +301,6 @@ const typesOnly = {
  *
  * Given a JSON Schema, OpenAPI document or {@link Traversable} schema, generates the
  * corresponding zod schema as a long, concatenated string.
- *
- * Usually you'd use {@link generate `zod.generate`} over {@link derive `zod.derive`}
- * ahead of time, as part of a build step, rather than on the fly.
  *
  * If you need to derive a schema dynamically, _especially_ if the schema comes from
  * some kind of user input, use {@link derive `zod.derive`} instead.

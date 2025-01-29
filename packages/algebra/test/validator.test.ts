@@ -8,13 +8,6 @@ import { fc, t } from "@traversable/core"
 import { fn } from "@traversable/data"
 import type { Widen } from "@traversable/registry"
 
-type schema = t.typeof<typeof schema>
-const schema = t.object({ 
-  a: t.tuple(t.number(), t.const(10), t.enum(t.const(100))),
-  b: t.array(t.string()),
-  c: t.record(t.number()),
-})
-
 const strict = { 
   flags: { 
     jitCompile: true, 

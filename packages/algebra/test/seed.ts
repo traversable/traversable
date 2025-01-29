@@ -28,6 +28,7 @@ export const PATH = {
     jsdocHack: path.join(DIR, "traversable.gen.json.ts"),
     ark: path.join(DIR, "ark.gen.ts"),
     zod: path.join(DIR, "zod.gen.ts"),
+    typebox: path.join(DIR, "typebox.gen.ts"),
     zodTypesOnly: path.join(DIR, "zodtypesOnly.gen.ts"),
   }
 } as const
@@ -120,8 +121,7 @@ export function seed($: seed.Options = defaults) {
 
   if ($.regenerateSeedFilesOnSave) {
     const newDoc = generateSpec($)
-    // console.log("newDoc", newDoc)
-    // console.log("RE-GENERATING...")
+    console.log("RE-GENERATING...")
     fs.writeFileSync(PATH.spec, newDoc)
   }
 

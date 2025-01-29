@@ -1,10 +1,10 @@
 export { IR } from "./intermediate.js"
-export {
+export { 
   defaults,
   derive,
   derived,
   generate,
   generated,
-  typesOnly,
   typelevel,
+  typesOnly,
 } from "./zod.js"

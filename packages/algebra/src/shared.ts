@@ -154,9 +154,9 @@ export const ESC_MAP = {
   "#": "ꖛ",
   ".": "ⴰ",
   "/": "𛰎",     /* 〳Ⳇ   */ 
-  "{": "𛰧",     /*  𓉘𓉝  */
+  "{": "𛰧",
   "}": "𛰨", 
-  "-": "ㄧ",    /* 𛰃ㄧ   */
+  "-": "ㄧ",
   "~": "ᯈ",    /* ᜑꕀ  */ 
 } as const
 
@@ -206,7 +206,7 @@ const buildIdentInterpreter: BuildPathInterpreter = (lookup) => ($) => (xs) => {
 const trimPath = (xs: (keyof any | null)[]) => fn.pipe(
   xs,
   array.lastIndexOf((_) => is.string(_) && !ZOD_IDENTS.includes(_ as never)),
-  (x) => x = 1,
+  // (x) => x = 1,
   (x) => Math_max(x, 1),
   (x) => xs.slice(0, x),
 )

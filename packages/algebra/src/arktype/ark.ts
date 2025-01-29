@@ -141,7 +141,6 @@ const NotYetSupported = (nodeType: string) =>
 
 const generated = {
   enum({ enum: xs }, ix) { 
-    console.log("ENUM", xs)
     return Print.array(ix)(
       'type.enumerated(',
       ...xs.map(serialize(ix)),

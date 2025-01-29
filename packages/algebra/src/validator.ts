@@ -1,5 +1,5 @@
 import { Traversable, core, tree } from "@traversable/core"
-import { fn, string } from "@traversable/data"
+import { fn } from "@traversable/data"
 import { openapi } from "@traversable/openapi"
 import type { Functor, Partial } from "@traversable/registry"
 
