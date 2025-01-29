@@ -171,6 +171,9 @@ vi.describe("〖️⛳️〗‹‹‹ ❲@traversable/algebra/zod❳", () => {
     vi.assert.isFalse(IR.is.union(examples.null))
   })
 
+  const Z = z.ZodFirstPartyTypeKind
+  
+
   /** 
    * Order of operations:
    * 
@@ -192,25 +195,142 @@ vi.describe("〖️⛳️〗‹‹‹ ❲@traversable/algebra/zod❳", () => {
    * TODO: depending on how coarse this tests proves to be, it might be worth decomposing
    * this test, so we have our cake and eat it too.
    */
+
   test.prop(
-    [IR.arbitrary({ 
-      exclude: [
-        /** 
-         * TODO: __turn on property tests for intersections__
-         * 
-         * These are currently off because I haven't figured out how to 
-         * programmatically generate tests intersections without quickly
-         * running into schemas that are impossible to satisfy.
-         * 
-         * There's probably a clever way to do it, but I'm walking away from
-         * this problem for now.
-         */
-        "intersection",
-      ] 
-  }).tree], {
-    numRuns: 10_000,
+    [
+      IR.arbitrary({ 
+        exclude: [
+          /** 
+           * TODO: __turn on property tests for intersections__
+           * 
+           * These are currently off because I haven't figured out how to 
+           * programmatically generate tests intersections without quickly
+           * running into schemas that are impossible to satisfy.
+           * 
+           * There's probably a clever way to do it, but I'm walking away from
+           * this problem for now.
+           */
+          "intersection",
+        ] 
+      }).tree
+    ], 
+    {
+      // numRuns: 10_000,
+      numRuns: 10,
+      endOnFailure: true,
+      errorWithCause: true,
+      verbose: true,
+      examples: [
+        [
+          {
+            "tag":Z.ZodTuple,"meta": {},"def":[ 
+              {"tag":Z.ZodBoolean,"meta": {}}, 
+              {"tag":Z.ZodNull,"meta": {}}, 
+              {"tag":Z.ZodObject,"meta": {},"def": {"81635595": {
+                "tag":Z.ZodNull,"meta": {}},"1061554849": {
+                "tag":Z.ZodUnion,"meta": {},"def":[ {
+                "tag":Z.ZodOptional,"meta": {},"def": {
+                "tag":Z.ZodString,"meta": {}}}, {
+                "tag":Z.ZodUnion,"meta": {},"def":[ {
+                "tag":Z.ZodNull,"meta": {}}, {
+                "tag":Z.ZodNull,"meta": {}}, {
+                "tag":Z.ZodNull,"meta": {}}, {
+                "tag":Z.ZodBoolean,"meta": {}}, {
+                "tag":Z.ZodNull,"meta": {}}, {
+                "tag":Z.ZodNull,"meta": {}}, {
+                "tag":Z.ZodOptional,"meta": {},"def": {
+                "tag":Z.ZodNull,"meta": {}}}, {
+                "tag":Z.ZodNull,"meta": {}}]}, {
+                "tag":Z.ZodNull,"meta": {}}, {
+                
+                "tag":Z.ZodUnion,"meta": {},"def":[ {
+                "tag":Z.ZodNull,"meta": {}}, {
+                "tag":Z.ZodNull,"meta": {}}, {
+                "tag":Z.ZodNull,"meta":{}}, {
+                "tag":Z.ZodNull,"meta": {}}, {
+                "tag":Z.ZodNull,"meta": {}}, {
+                "tag":Z.ZodString,"meta": {}}]}, {
+                "tag":Z.ZodNull,"meta": {}}, {
+                "tag":Z.ZodNull,"meta": {}}, {
+                "tag":Z.ZodNull,"meta": {}}, {
+                "tag":Z.ZodNull,"meta": {}}, {
+                "tag":Z.ZodNull,"meta": {}}]},"1743851784": {
+                "tag":Z.ZodString,"meta": {}},"Brw$D": {
+                "tag":Z.ZodNull,"meta": {}},"$_0F_": {
+                "tag":Z.ZodNumber,"meta": {}},"_U": {
+                "tag":Z.ZodNull,"meta": {}},"C9_$_72t6x": {
+                "tag":Z.ZodNull,"meta": {}},"R": {
+                "tag":Z.ZodNull,"meta": {}},[Symbol.for("Ww_$")]: {
+                "tag":Z.ZodNumber,"meta": {}},[Symbol.for("_c$$")]: {
+                "tag":Z.ZodString,"meta": {}}}}, {
+                "tag":Z.ZodObject,"meta": {},"def": {"334582093": {
+                "tag":Z.ZodNull,"meta": {}},"_28": {"tag":Z.ZodOptional,"meta": {},"def": {"tag":Z.ZodString,"meta": {}}},"$s": {"tag":Z.ZodObject,"meta": {},"def": {"225474784": {"tag":Z.ZodObject,"meta":{},"def":{"175542874":{"tag":Z.ZodNull,"meta":{}},"531249800":{"tag":Z.ZodNull,"meta":{}},"568717621":{"tag":Z.ZodObject,"meta":{},"def":{"_1B__$g":{"tag":Z.ZodNull,"meta":{}}}},"2019941045":{"tag":Z.ZodNull,"meta":{}},"2128020207":{"tag":Z.ZodNull,"meta":{}},"P$495B_$4":{"tag":Z.ZodNull,"meta":{}},"a_$__YG_x_":{"tag":Z.ZodNull,"meta":{}},[Symbol.for("y_Z")]:{"tag":Z.ZodNull,"meta":{}}}},"334887904":{"tag":Z.ZodNull,"meta":{}},"1427593236":{"tag":Z.ZodNull,"meta":{}},"1936584550":{"tag":Z.ZodNull,"meta":{}},"$_x$$$Z":{"tag":Z.ZodNull,"meta":{}},"Rf_2$$_3":{"tag":Z.ZodNull,"meta":{}},[Symbol.for("$A$TB2")]:{"tag":Z.ZodNull,"meta":{}},[Symbol.for("oG77QG")]:{"tag":Z.ZodNumber,"meta":{}}}},"Ri$":{"tag":Z.ZodNull,"meta":{}},"c$4":{"tag":Z.ZodTuple,"meta":{},"def":[{"tag":Z.ZodOptional,"meta":{},"def":{"tag":Z.ZodNull,"meta":{}}},{"tag":Z.ZodNull,"meta":{}},{"tag":Z.ZodNull,"meta":{}},{"tag":Z.ZodNull,"meta":{}}]},[Symbol.for("_0M12v__c_0")]:{"tag":Z.ZodNull,"meta":{}}}}]}],
+        [
+          {
+          "tag": Z.ZodTuple,
+          "meta": {},
+          "def": [
+            {
+              "tag": Z.ZodArray,
+              "meta": {},
+              "def": {
+                "tag": Z.ZodObject,
+                "meta": {},
+                "def": {},
+              }
+            },
+            {
+              "tag": Z.ZodOptional,
+              "meta": {},
+              "def": {
+                "tag": Z.ZodTuple,
+                "meta": {},
+                "def":[
+                  {
+                    "tag": Z.ZodNull,
+                    "meta": {},
+                  }, 
+                  {
+                    "tag": Z.ZodObject,
+                    "meta": {},
+                    "def": {
+                      "500474855": {
+                        "tag": Z.ZodNull,
+                        "meta": {},
+                      },
+                      "j_": {
+                        "tag": Z.ZodOptional,
+                        "meta": {},
+                        "def": {
+                          "tag": Z.ZodNull,
+                          "meta": {},
+                        }
+                      }
+                    }
+                  }, 
+                  {
+                    "tag": Z.ZodNull,
+                    "meta": {},
+                  },
+                ]
+              }
+            }, 
+            {
+              "tag": Z.ZodBoolean,
+              "meta": {}
+            }, 
+            {
+              "tag": Z.ZodObject,
+              "meta": {},
+              "def": {},
+            }
+          ]
+        }
+      ]
+    ]
   })(
-    "〖️⛳️〗› ❲zod.IntermediateRepresentation❳", (ir) => {
+    "〖️⛳️〗› ❲zod.IntermediateRepresentation❳", 
+    (ir) => {
       const schema = IR.toSchema(ir)
       const arbitrary = IR.toArbitrary(ir)
       const mock = fc.peek(arbitrary)
@@ -225,5 +345,4 @@ vi.describe("〖️⛳️〗‹‹‹ ❲@traversable/algebra/zod❳", () => {
       vi.assert.isTrue(parsed.success)
     }
   )
-
 })

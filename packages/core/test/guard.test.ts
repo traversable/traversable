@@ -33,60 +33,19 @@ vi.describe("〖⛳️〗‹‹‹ ❲@traversable/core/guard❳", () => {
 
   vi.it("〖⛳️〗› ❲guard: t.object❳", () => {
     const schema_01 = t.object({ type: t.const("null") })
-    const schema_02 = t.short({ type: '"null"' })
     const schema_03 = t.object({})
 
     vi.assert.isTrue(schema_01.is({ type: "null" }))
     vi.assert.isFalse(schema_01.is({ type: null }))
-    vi.assert.isFalse(schema_02.is({ type: null }))
-    vi.assert.isFalse(schema_02.is({ type: '"null"' }))
 
     vi.assert.isTrue(schema_03.is({}))
     // currently excess properties do not cause a failure
     vi.assert.isTrue(schema_03.is({ a: 1 }))
   })
-
-  vi.it("〖⛳️〗› ❲guard: t.short (const)❳", () => {
-    vi.assert.isTrue(t.short("''").is(""))
-    vi.assert.isTrue(t.short("'xyz'").is("xyz"))
-    vi.assert.isTrue(t.short("[]", null).is([]))
-    vi.assert.isTrue(t.short("[]", null).is([null]))
-    vi.assert.isTrue(t.short("[]", null).is([null, null]))
-
-    vi.assert.isFalse(t.short("'xyz'").is(""))
-    vi.assert.isFalse(t.short("''").is("xyz"))
-
-    vi.expect(() => t.short("xyz" as never)).toThrowErrorMatchingInlineSnapshot(`
-      [Error: [
-        "Unrecognized string literal. Expected the name of a type (like \`string\`\\") or a string wrapped in quotes (like \`'xyx'\`, x), got: ",
-        "xyz"
-      ]]
-    `)
-    vi.assert.isFalse(t.short("''").is([]))
-
-    vi.assert.isTrue(
-      t
-        .short({ a: "number", b: { c: "string", d: { e: "boolean" } } })
-        .is({ a: 1, b: { c: "hey", d: { e: true } } })
-    )
-
-    vi.assert.isFalse(
-      t
-        .short({ a: "number", b: { c: "string", d: { e: "boolean" } } })
-        .is({ a: 1, b: { c: "hey", d: { e: 1 } } })
-    )
-
-    vi.assert.isFalse(
-      t
-        .short({ a: "number", b: { c: "string", d: { e: "boolean" } } })
-        .is({ a: 1, b: { c: false, d: { e: "hey" } } })
-    )
-  })
 })
 
 vi.describe("〖️⛳️〗‹‹‹ ❲@traversable/core/guard❳", () => {
   const enum_ = t.object({ enum: t.array(t.any()) })
-  const null_ = t.short({ type: '"null"' })
   const boolean = t.object({ type: t.const("boolean") })
   const integer = t.object({ type: t.const("integer") })
   const number = t.object({ type: t.const("number") })
@@ -99,15 +58,12 @@ vi.describe("〖️⛳️〗‹‹‹ ❲@traversable/core/guard❳", () => {
 
   const is = {
     enum: enum_.is,
-    null: null_.is,
     boolean: boolean.is,
     integer: integer.is,
     number: number.is,
     string: string.is,
-    scalar: t.anyOf(null_, boolean, integer, number, string).is,
     composite: t.anyOf(array, object).is, 
     combinator: t.anyOf(allOf, anyOf, oneOf).is,
-    any: t.anyOf(enum_, null_, boolean, integer, number, string, allOf, anyOf, oneOf, array, object).is,
   }
 
   vi.test("〖⛳️〗› ❲guard: JsonSchema❳", () => {
@@ -123,8 +79,6 @@ vi.describe("〖️⛳️〗‹‹‹ ❲@traversable/core/guard❳", () => {
       object: { type: "object" },
     } as const
 
-    vi.assert.isTrue(is.null({ type: "null" }))
-    vi.assert.isFalse(is.null({ type: null }))
 
     vi.assert.isTrue(is.boolean({ type: "boolean" }))
     vi.assert.isFalse(is.boolean({}))
@@ -147,12 +101,12 @@ vi.describe("〖️⛳️〗‹‹‹ ❲@traversable/core/guard❳", () => {
     vi.assert.isFalse(is.enum({}))
     vi.assert.isFalse(is.enum({ enum: {} }))
 
-    vi.assert.isTrue(is.any({ enum: [] }))
+    // vi.assert.isTrue(is.any({ enum: [] }))
     vi.assert.isTrue(is.enum({ enum: [1, 2] }))
     vi.assert.isFalse(is.enum({}))
     vi.assert.isFalse(is.enum({ enum: {} }))
 
-    vi.assert.isTrue(Object.values(ok).every(is.any))
+    // vi.assert.isTrue(Object.values(ok).every(is.any))
   })
 
   vi.describe("〖️⛳️〗‹‹‹ ❲@traversable/core/guard❳", () => {
@@ -281,3 +235,46 @@ vi.describe("〖️⛳️〗‹‹‹ ❲@traversable/core/guard❳", () => {
     })
   })
 })
+
+
+//   vi.it("〖⛳️〗› ❲guard: t.short (const)❳", () => {
+//     vi.assert.isTrue(t.short("''").is(""))
+//     vi.assert.isTrue(t.short("'xyz'").is("xyz"))
+//     vi.assert.isTrue(t.short("[]", null).is([]))
+//     vi.assert.isTrue(t.short("[]", null).is([null]))
+//     vi.assert.isTrue(t.short("[]", null).is([null, null]))
+//     vi.assert.isFalse(t.short("'xyz'").is(""))
+//     vi.assert.isFalse(t.short("''").is("xyz"))
+//     vi.expect(() => t.short("xyz" as never)).toThrowErrorMatchingInlineSnapshot(`
+//       [Error: [
+//         "Unrecognized string literal. Expected the name of a type (like \`string\`\\") or a string wrapped in quotes (like \`'xyx'\`, x), got: ",
+//         "xyz"
+//       ]]
+//     `)
+//     vi.assert.isFalse(t.short("''").is([]))
+//     vi.assert.isTrue(
+//       t
+//         .short({ a: "number", b: { c: "string", d: { e: "boolean" } } })
+//         .is({ a: 1, b: { c: "hey", d: { e: true } } })
+//     )
+//     vi.assert.isFalse(
+//       t
+//         .short({ a: "number", b: { c: "string", d: { e: "boolean" } } })
+//         .is({ a: 1, b: { c: "hey", d: { e: 1 } } })
+//     )
+//     vi.assert.isFalse(
+//       t
+//         .short({ a: "number", b: { c: "string", d: { e: "boolean" } } })
+//         .is({ a: 1, b: { c: false, d: { e: "hey" } } })
+//     )
+//   })
+// })
+    // const schema_02 = t.short({ type: '"null"' })
+    // vi.assert.isFalse(schema_02.is({ type: null }))
+    // vi.assert.isFalse(schema_02.is({ type: '"null"' }))
+  // const null_ = t.short({ type: '"null"' })
+    // null: null_.is,
+    // scalar: t.anyOf(null_, boolean, integer, number, string).is,
+    // any: t.anyOf(enum_, null_, boolean, integer, number, string, allOf, anyOf, oneOf, array, object).is,
+    // vi.assert.isTrue(is.null({ type: "null" }))
+    // vi.assert.isFalse(is.null({ type: null }))

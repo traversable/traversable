@@ -4,12 +4,13 @@ export * from "./version.js";
 export * from "./guard/index.js"
 export * as show from "./show.js"
 
-export { fc } from "./arbitrary/index.js"
-export { JsonPointer } from "./json-pointer.js"
-export { Json } from "./json.js"
-
 export type * from "./model/index.js"
 export { JsonSchema, Traversable /* , Extension */ } from "./model/index.js"
+
+export { fc, Symbol_optional } from "./arbitrary/index.js"
+export { JsonPointer } from "./json-pointer.js"
+export { Json } from "./json.js"
+export { typeOf } from "./typeof.js"
 
 export type {
   BuiltIns,

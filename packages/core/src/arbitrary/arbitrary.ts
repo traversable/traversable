@@ -12,15 +12,18 @@ export * from "fast-check"
 import { array, fn, map, object } from "@traversable/data"
 import * as fc from "fast-check"
 
-import { is } from "../guard/predicates.js"
+import { array$, is } from "../guard/predicates.js"
 import { std } from "./data.js"
 import Country = std.Country
 import Currency = std.Currency
 import Digit = std.Digit
 import State = std.UnitedStateOfAmerica
+import { has } from "@traversable/core/tree"
 import type { Force, HKT } from "@traversable/registry"
 import { symbol } from "@traversable/registry"
 export { symbol } from "@traversable/registry"
+
+import symbol_optional = symbol.optional
 
 /** @internal */
 const PATTERN = {
@@ -58,11 +61,17 @@ export function alphanumeric(constraints?: fc.StringMatchingConstraints) { retur
 
 export type {
   /** 
-   * ### {@link fc_infer `fc.infer`} 
+   * ### {@link fc_typeof `fc.typeof`} 
    * 
    * Infer the type of a {@link fc.Arbitrary `fc.Arbitrary`}'s target.
    */
-  fc_infer as infer,
+  fc_typeof as typeof,
+  /** 
+   * ### {@link fc_typeof `fc.infer`} 
+   * 
+   * Alias for {@link fc_typeof `fc.typeof`}.
+   */
+  fc_typeof as infer,
   /** 
    * ### {@link fc_any `fc.any`} 
    * 
@@ -74,13 +83,13 @@ export type {
    * ### {@link fc_unwrap `fc.unwrap`} 
    * 
    * Type-level operation that, given a "shape" (an object whose properties 
-   * are all {@link fc.Arbitrary `fc.Arbitraries`}), applies {@link fc_infer `fc.infer`} 
+   * are all {@link fc.Arbitrary `fc.Arbitraries`}), applies {@link fc_typeof `fc.infer`} 
    * to each property to infer the type of the shape overall.
    * 
    * Dual of {@link fc_wrap `fc.wrap`}.
    * 
    * See also: 
-   * - {@link fc_infer `fc.infer`}
+   * - {@link fc_typeof `fc.typeof`}
    * - {@link fc_wrap `fc.wrap`}
    */
   fc_unwrap as unwrap,
@@ -93,7 +102,7 @@ export type {
    * Dual of {@link fc_unwrap `fc.unwrap`}.
    * 
    * See also: 
-   * - {@link fc_infer `fc.infer`}
+   * - {@link fc_typeof `fc.typeof`}
    * - {@link fc_unwrap `fc.unwrap`}
    */
   fc_wrap as wrap,
@@ -106,6 +115,7 @@ export type {
 }
 
 export {
+  symbol_optional as Symbol_optional,
   /**
    * ### {@link fc_null `fc.null`}
    *
@@ -144,13 +154,13 @@ export {
 
 
 // documentation appended to exported node (above)
-type fc_infer<T> = T extends fc.Arbitrary<infer U> ? U : never
+type fc_typeof<T> = T extends fc.Arbitrary<infer U> ? U : never
 // documentation appended to exported node (above)
 type fc_any = fc.Arbitrary<unknown>
 // documentation appended to exported node (above)
 type fc_wrap<T> = { [K in keyof T]: fc.Arbitrary<T[K]> }
 // documentation appended to exported node (above)
-type fc_unwrap<T extends globalThis.Record<string, fc_any>> = { [K in keyof T]: fc_infer<T[K]> }
+type fc_unwrap<T extends globalThis.Record<string, fc_any>> = { [K in keyof T]: fc_typeof<T[K]> }
 // documentation appended to exported node (above)
 const fc_null
   : () => fc.Arbitrary<null>
@@ -407,8 +417,25 @@ export function part<Req extends keyof any, Opt extends keyof any>(
   return fc.record(xyz, constraints)
 }
 
+export function record<
+  const T extends Record<string, fc.Arbitrary<unknown>>, 
+  _K extends keyof T = keyof T, 
+  Opt extends 
+  | _K extends _K ? T[_K] extends { [symbol_optional]: any } ? _K : never : never
+  = _K extends _K ? T[_K] extends { [symbol_optional]: any } ? _K : never : never,
+  Req extends Exclude<_K, Opt> = Exclude<_K, Opt>
+>(model: T): fc.Arbitrary<Force<
+  & { [K in Opt]+?: fc_typeof<T[K]> }
+  & { [K in Req]-?: fc_typeof<T[K]> }
+>>
 
 export function record<T>(model: { [K in keyof T]: fc.Arbitrary<T[K]> }): fc.Arbitrary<T>
+
+export function record<T, K extends never>(
+  model: { [K in keyof T]: fc.Arbitrary<T[K]> }, 
+  constraints: { requiredKeys?: readonly [] }
+): fc.Arbitrary<{ [K in keyof T]+?: T[K] }>
+
 export function record<T, K extends keyof T>(
   model: { [K in keyof T]: fc.Arbitrary<T[K]> }, 
   constraints: { requiredKeys?: K[] }
@@ -432,7 +459,17 @@ export function record<T, K extends keyof T>(
 export function record(
   model: { [x: string]: fc.Arbitrary<unknown> }, 
   constraints = {}
-) { return fc.record(model, constraints) }
+) { 
+  const keys = Object_keys(model)
+  const opt = keys.filter((k) => (symbol_optional in model[k]))
+  const requiredKeys = has("requiredKeys", array$(is.string))(constraints) 
+    ? keys
+      .filter((k) => constraints.requiredKeys.includes(k)) 
+      .filter((k) => !opt.includes(k))
+    : keys
+      .filter((k) => !opt.includes(k))
+  return fc.record(model, { ...constraints, requiredKeys }) 
+}
 
 export declare namespace key {
   /** 
@@ -520,7 +557,7 @@ export declare namespace key {
  *  console.log(fc.peek(ex_01)) // => {}
  *  console.log(fc.peek(ex_01)) // => { z: 1, y: 9001 }
  */
-export function partial<T extends { [x: string]: fc_any }>(arbitraries: T): fc.Arbitrary<{ [K in keyof T]?: fc_infer<T[K]> }>
+export function partial<T extends { [x: string]: fc_any }>(arbitraries: T): fc.Arbitrary<{ [K in keyof T]?: fc_typeof<T[K]> }>
 export function partial<T extends { [x: string]: fc_any }>(arbitraries: T) {
   return fc.record(arbitraries, { requiredKeys: [] })
 }
@@ -565,8 +602,8 @@ export declare namespace shape {
 
   /** @internal */
   type apply<T extends { [x: string]: unknown }> = shape.fold<
-    & { [K in keyof T as K extends `${infer Opt}?` ? Opt : never]+?: fc_infer<T[K]> }
-    & { [K in keyof T as K extends `${string}?` ? never : K]-?: fc_infer<T[K]> }
+    & { [K in keyof T as K extends `${infer Opt}?` ? Opt : never]+?: fc_typeof<T[K]> }
+    & { [K in keyof T as K extends `${string}?` ? never : K]-?: fc_typeof<T[K]> }
   >
 }
 export namespace shape {
@@ -894,10 +931,10 @@ export function pathnameEZ(constraints?: fc.StringMatchingConstraints) {
  * @example
  * console.log(fc.sample(fc.optional(fc.nat()), 5)) // => [89, null, 4, 1190, null]
  */
-export function optional<T>(arbitrary: fc.Arbitrary<T>, constraints?: fc.OneOfConstraints): fc.Arbitrary<T | undefined> & { readonly [symbol.optional]: true }
+export function optional<T>(arbitrary: fc.Arbitrary<T>, constraints?: fc.OneOfConstraints): fc.Arbitrary<T | undefined> & { readonly [symbol_optional]: true }
 export function optional<T>(arbitrary: fc.Arbitrary<T>, constraints: fc.OneOfConstraints = {}): fc.Arbitrary<T | undefined> {
   const model = fc.oneof(constraints, arbitrary, fc.constant(undefined));
-  (model as any)[symbol.optional] = true;
+  (model as any)[symbol_optional] = true;
   return model
 }
 

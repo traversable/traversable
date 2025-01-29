@@ -1,4 +1,5 @@
 import type { newtype } from "any-ts"
+import type { integer } from "./newtypes.js"
 import type { URI, symbol } from "./symbol.js"
 
 export type { newtype } from "any-ts"
@@ -21,6 +22,22 @@ export type Consumes<T> = T extends (_: infer I) => unknown ? I : never
 export type Produces<T> = T extends (_: never) => infer O ? O : never
 export type Returns<T> = T extends (..._: any) => infer O ? O : T
 export type Partial<T> = never | { [K in keyof T]+?: T[K] }
+
+export type WidenPrimitive<T> = T extends { valueOf(): infer W } ? W : T
+export type WidenObject<T> = { [K in keyof T]: WidenPrimitive<T[K]> }
+/**
+ * ## {@link Widen `Widen`}
+ *
+ * If {@link T `T`} is a primitive literal, {@link Widen `Widen`} will "forget"
+ * the literal and return its non-literal form. If `T` is a branded type that
+ * was created with {@link newtype `newtype`} (such as {@link integer `integer`}),
+ * the brand will also be stripped.
+ *
+ * If {@link T `T`} is an object, {@link Widen `Widen`} performs a shallow map of
+ * the object, "forgetting" any literals or branded types that it encounters
+ * among its properties.
+ */
+export type Widen<T> = T extends Primitive ? WidenPrimitive<T> : WidenObject<T>
 
 export type isNonUnion<T, U = T, S = U extends U ? ([T] extends [U] ? true : false) : never> = [S] extends [
   true,

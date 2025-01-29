@@ -108,9 +108,9 @@ export namespace Arbitrary {
     ["number", symbol.number],
     ["string", symbol.string],
     ["optional", symbol.optional],
-    /** TODO: turn these back on */
+    ["const", symbol.constant],
+    /** TODO: turn back on */
     // ["allOf", symbol.allOf],
-    // ["const", symbol.const],
   ] as const satisfies ([keyof TagTree, symbol])[]
   export type NodeTypeEntries = typeof NodeTypeEntries
 
@@ -189,10 +189,8 @@ export namespace Arbitrary {
   //     switch (tag[0]) {
   //       case symbol.boolean: return fc.constant(TagTree_.byName.boolean())
   //       case symbol.null: return fc.constant(TagTree_.byName.null())
-
   //     }
   //   }
-
 
   export const TagTree = createTagTree({ 
     depthIdentifier: Arbitrary.defaults.depthIdentifier,
@@ -203,28 +201,27 @@ export namespace Arbitrary {
     sortBias: Arbitrary.defaults.sortBias,
   })
 
-  export const terminal
-    : fc.Arbitrary<t.Terminal>
-    = fc.constantFrom(...t.Terminals)
-  
-  export type LetrecShort = (
-    & { tree: t.AST.Short }
-    & {
-      booleans: "boolean" | "boolean[]" | "boolean{}";
-      symbols: "symbol" | "symbol[]" | "symbol{}";
-      integers: "integer" | "integer[]" | "integer{}";
-      numbers: "number" | "number[]" | "number{}";
-      strings: "string" | "string[]" | "string{}";
-    }
-    & {
-      allOf: readonly ["&", t.AST.Short[]]
-      anyOf: readonly ["|", t.AST.Short[]]
-      array: readonly ["[]", t.AST.Short]
-      record: readonly ["{}", t.AST.Short]
-      tuple: readonly t.AST.Short[]
-      object: Record<string, t.AST.Short>
-    } 
-  )
+  // export const terminal
+  //   : fc.Arbitrary<t.Terminal>
+  //   = fc.constantFrom(...t.Terminals)
+  // export type LetrecShort = (
+  //   & { tree: t.AST.Short }
+  //   & {
+  //     booleans: "boolean" | "boolean[]" | "boolean{}";
+  //     symbols: "symbol" | "symbol[]" | "symbol{}";
+  //     integers: "integer" | "integer[]" | "integer{}";
+  //     numbers: "number" | "number[]" | "number{}";
+  //     strings: "string" | "string[]" | "string{}";
+  //   }
+  //   & {
+  //     allOf: readonly ["&", t.AST.Short[]]
+  //     anyOf: readonly ["|", t.AST.Short[]]
+  //     array: readonly ["[]", t.AST.Short]
+  //     record: readonly ["{}", t.AST.Short]
+  //     tuple: readonly t.AST.Short[]
+  //     object: Record<string, t.AST.Short>
+  //   } 
+  // )
 
   export const maybeOptionalProperty = fc
     .tuple(fc.identifier(), fc.boolean())
@@ -233,49 +230,49 @@ export namespace Arbitrary {
   export const optionalsDictionary = <T>(model: fc.Arbitrary<T>) => 
     fc.dictionary(maybeOptionalProperty, model)
 
-  export const letrecShort
-    : (options?: Arbitrary.Options) => fc.LetrecValue<LetrecShort>
-    = ($ = Arbitrary.defaults) => fc.letrec(
-      (loop) => ({
-        booleans: fc.constantFrom("boolean", "boolean[]", "boolean{}"),
-        symbols: fc.constantFrom("symbol", "symbol[]", "symbol{}"),
-        integers: fc.constantFrom("integer", "integer[]", "integer{}"),
-        numbers: fc.constantFrom("number", "number[]", "number{}"),
-        strings: fc.constantFrom("string", "string[]", "string{}"),
-        allOf: fc.tuple(fc.constant("&"), fc.array(loop("tree"))),
-        anyOf: fc.tuple(fc.constant("|"), fc.array(loop("tree"))),
-        array: fc.tuple(fc.constant("[]"), loop("tree")),
-        record: fc.tuple(fc.constant("{}"), loop("tree")),
-        tuple: fc.array(loop("tree")),
-        object: optionalsDictionary(loop("tree")),
-        tree: fc.oneof(
-          $,
-          loop("booleans"),
-          loop("symbols"),
-          loop("integers"),
-          loop("numbers"),
-          loop("strings"),
-          loop("allOf"),
-          loop("anyOf"),
-          loop("array"),
-          loop("record"),
-          loop("tuple"),
-          loop("object"),
-        ),
-      })
-    )
+  // export const letrecShort
+  //   : (options?: Arbitrary.Options) => fc.LetrecValue<LetrecShort>
+  //   = ($ = Arbitrary.defaults) => fc.letrec(
+  //     (loop) => ({
+  //       booleans: fc.constantFrom("boolean", "boolean[]", "boolean{}"),
+  //       symbols: fc.constantFrom("symbol", "symbol[]", "symbol{}"),
+  //       integers: fc.constantFrom("integer", "integer[]", "integer{}"),
+  //       numbers: fc.constantFrom("number", "number[]", "number{}"),
+  //       strings: fc.constantFrom("string", "string[]", "string{}"),
+  //       allOf: fc.tuple(fc.constant("&"), fc.array(loop("tree"))),
+  //       anyOf: fc.tuple(fc.constant("|"), fc.array(loop("tree"))),
+  //       array: fc.tuple(fc.constant("[]"), loop("tree")),
+  //       record: fc.tuple(fc.constant("{}"), loop("tree")),
+  //       tuple: fc.array(loop("tree")),
+  //       object: optionalsDictionary(loop("tree")),
+  //       tree: fc.oneof(
+  //         $,
+  //         loop("booleans"),
+  //         loop("symbols"),
+  //         loop("integers"),
+  //         loop("numbers"),
+  //         loop("strings"),
+  //         loop("allOf"),
+  //         loop("anyOf"),
+  //         loop("array"),
+  //         loop("record"),
+  //         loop("tuple"),
+  //         loop("object"),
+  //       ),
+  //     })
+  //   )
 
-  export const makeAstNode = fn.flow(
-    Arbitrary.letrecShort,
-    (xs) => xs.tree.map(t.fromSeed),
-  )
+  // export const makeAstNode = fn.flow(
+  //   Arbitrary.letrecShort,
+  //   (xs) => xs.tree.map(t.fromSeed),
+  // )
 
-  export const node = makeAstNode({ 
-    depthIdentifier: Arbitrary.defaults.depthIdentifier,
-    depthSize: "xsmall",
-    maxDepth: 3,
-    withCrossShrink: Arbitrary.defaults.withCrossShrink,
-    exclude: Arbitrary.defaults.exclude,
-    sortBias: Arbitrary.defaults.sortBias,
-  })
+  // export const node = makeAstNode({ 
+  //   depthIdentifier: Arbitrary.defaults.depthIdentifier,
+  //   depthSize: "xsmall",
+  //   maxDepth: 3,
+  //   withCrossShrink: Arbitrary.defaults.withCrossShrink,
+  //   exclude: Arbitrary.defaults.exclude,
+  //   sortBias: Arbitrary.defaults.sortBias,
+  // })
 }

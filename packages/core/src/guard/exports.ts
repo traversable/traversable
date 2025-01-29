@@ -17,8 +17,39 @@ export {
 
 export * as t from "./ast.js"
 import * as t from "./ast.js"
+
 /** 
  * # {@link t `core.t`} 
+ * 
+ * The {@link t `t`} module contains a small set of schema
+ * combinators designed for seamless interop with JSON
+ * Schema documents and OpenAPI specifications.
+ * 
+ * Kinda like `zod`, if `zod` was rebuilt from scratch to support
+ * reflection, DSLs, and arbitraries.
+ *
+ * Priorities, in order:
+ * 
+ * 1. Extensibility
+ * 
+ *   To that end, great care has been taken to expose a core API 
+ *   that is powerful _because_ it does _strictly less_ than others
+ *   like it.
+ *   
+ * 2. Legibility
+ *
+ *   We believe in specified behavior. 
+ * 
+ *   But a spec that's hard to read... is a spec that nobody reads.
+ * 
+ *   Our target users are developers who create great DX for their
+ *   users, _other developers_: that includes platform engineers, 
+ *   SREs/DevOps, but also libraries authors, and anyone who's
+ *   been tasked with getting two systems to play nice together.
+ * 
+ *   To support these use cases like these, we needed to be
+ *   uncompromising when it comes to legibility. And we think you'll
+ *   notice the difference almost immediately.
  * 
  * @example
  * import { t } from "@traversable/core"
@@ -41,6 +72,10 @@ export { toJSON } from "./toJSON.js"
 export { toString } from "./toString.js"
 export type { TagTreeMap } from "./fromSeed.js"
 export { fromSeed, TagTree } from "./fromSeed.js"
+export { 
+  /** @deprecated use {@link t `t`} instead */
+  short, 
+} from "./short.js"
 
 // import type { AST, Config, Tag } from "./ast.js"
 // declare module "@traversable/core" {

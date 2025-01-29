@@ -10,7 +10,10 @@ import type {
   _,
   newtype, 
 } from "@traversable/registry"
-import { PATTERN, symbol } from "@traversable/registry"
+import { 
+  PATTERN, 
+  symbol 
+} from "@traversable/registry"
 
 export {
   /// namespaces
@@ -35,16 +38,16 @@ export {
 /** @internal */
 const pre = (x: string) => x.startsWith("<??>") ? x.slice("<??>".length) : x
 
-/**
- * TODO: move this to `@traversable/core/arbitrary`
- */
-interface fc_optional<T> extends fc.Arbitrary<T | undefined> { readonly [symbol.optional]: true }
-function fc_optional<T>(arbitrary: fc.Arbitrary<T>, constraints?: fc.OneOfConstraints): fc_optional<T>
-function fc_optional<T>(arbitrary: fc.Arbitrary<T>, constraints: fc.OneOfConstraints = {}): fc.Arbitrary<T | undefined> {
-  const model = fc.oneof(constraints, arbitrary, fc.constant(undefined));
-  (model as typeof model & { [symbol.optional]: boolean })[symbol.optional] = true;
-  return model
-}
+// /**
+//  * TODO: move this to `@traversable/core/arbitrary`
+//  */
+// interface fc_optional<T> extends fc.Arbitrary<T | undefined> { readonly [symbol.optional]: true }
+// function fc_optional<T>(arbitrary: fc.Arbitrary<T>, constraints?: fc.OneOfConstraints): fc_optional<T>
+// function fc_optional<T>(arbitrary: fc.Arbitrary<T>, constraints: fc.OneOfConstraints = {}): fc.Arbitrary<T | undefined> {
+//   const model = fc.oneof(constraints, arbitrary, fc.constant(undefined));
+//   (model as typeof model & { [symbol.optional]: boolean })[symbol.optional] = true;
+//   return model
+// }
 
 type IR_Null<M extends Meta.Base = never> = { tag: z.ZodFirstPartyTypeKind.ZodNull, meta: meta<M> }
 type IR_Boolean<M extends Meta.Base = never> = { tag: z.ZodFirstPartyTypeKind.ZodBoolean, meta: meta<M> }
@@ -340,14 +343,13 @@ namespace Algebra {
     number: () => fc.oneof(fc.integer(), fc.float({ noNaN: true })),
     string: () => fc.string(),
     literal: (x) => fc.constant(x.meta.literal),
-    optional: (x) => fc_optional(x.def),
+    optional: (x) => fc.optional(x.def),
     array: (x) => fc.array(x.def),
     record: (x) => fc.dictionary(x.def),
     tuple: (x) => fc.tuple(...x.def),
     union: (x) => fc.oneof(...x.def),
     object: (x) => fc.record(x.def, { requiredKeys: requiredKeys(x.def) }),
     intersection: (x) => fc.tuple(x.def[0], x.def[1]).map(([l, r]) => Object.assign(Object.create(null), l, r)),
-    // intersection: (x) => fc.tuple(x.def[0], x.def[1]).map(([l, r]) => Object.assign(Object.create(null), l, r)),
   } as const satisfies toArbitrary.Handlers
 
   export const toSchema: Functor_.Algebra<lambda, z.ZodTypeAny> = (x) => {
