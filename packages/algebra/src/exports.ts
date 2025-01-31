@@ -11,10 +11,10 @@ export {
   ESC_MAP, 
   escapePathSegment, 
   unescapePathSegment, 
-  multiline,
   defineOptions, 
   createTarget,
 } from "./shared.js"
+export * as Format from './formatters.js'
 
 /// interpreters
 export { ark } from "./arktype/exports.js"

@@ -6,6 +6,7 @@ import { fn, object } from "@traversable/data"
 import type { _ } from "@traversable/registry"
 import { Invariant, KnownFormat } from "@traversable/registry"
 
+import * as Format from '../formatters.js'
 import * as Print from "../print.js"
 import type { Index, Matchers, Options } from "../shared.js"
 import {
@@ -16,7 +17,6 @@ import {
   createZodIdent,
   defaults as defaults_,
   escapePathSegment,
-  jsdocTag,
 } from "../shared.js"
 
 export {
@@ -223,7 +223,7 @@ function example(k: string, $: Index): string | null {
   const CHILD = tree.get($.document, ...$.absolutePath, "properties", k, "meta", "example")
   return typeof CHILD === "symbol" 
     ? null 
-    : jsdocTag("example")(CHILD, { leftOffset: $.indent + 2 })
+    : Format.jsdocTag("example")(CHILD, { leftOffset: $.indent + 2 })
 }
 
 function generateEntry(
