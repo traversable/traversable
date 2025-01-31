@@ -11,7 +11,9 @@ import IR = zod.IR
 
 import { PATH, seed, typeNameFromPath } from "./seed.js"
 
-seed()
+seed({
+  include: { example: true }
+})
 
 vi.describe("〖️⛳️〗‹‹‹ ❲@traversable/algebra/zod❳", () => {
   vi.it("〖️⛳️〗› ❲zod.derive❳", async () => {

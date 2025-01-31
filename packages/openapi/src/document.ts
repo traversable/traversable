@@ -676,7 +676,7 @@ export const defaults = {
   include: {
     const: false,
     description: false,
-    example: false,
+    example: true,
     examples: false,
   },
   paths: {

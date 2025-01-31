@@ -23,7 +23,7 @@ export type JsonLike =
   | readonly JsonLike.Shallow[]
   | { [x: string]: JsonLike.Shallow }
 export declare namespace JsonLike {
-  type Scalar = 
+  type Scalar =
     | undefined
     | null
     | boolean
@@ -37,7 +37,7 @@ export declare namespace JsonLike {
 export const JsonLike = {
   is: (u: unknown): u is JsonLike => {
     return (
-      core.is.scalar(u) 
+      core.is.scalar(u)
       || core.is.array(u) && u.every(JsonLike.is)
       || core.is.object(u) && Object_values(u).every(JsonLike.is)
     )
@@ -150,14 +150,14 @@ const sub
     return out
   }
 
-export const ESC_MAP = { 
+export const ESC_MAP = {
   "#": "ꖛ",
   ".": "ⴰ",
-  "/": "𛰎",     /* 〳Ⳇ   */ 
+  "/": "𛰎",     /* 〳Ⳇ   */
   "{": "𛰧",
-  "}": "𛰨", 
+  "}": "𛰨",
   "-": "ㄧ",
-  "~": "ᯈ",    /* ᜑꕀ  */ 
+  "~": "ᯈ",    /* ᜑꕀ  */
 } as const
 
 export const escapePathSegment = sub(ESC_MAP)
@@ -356,46 +356,128 @@ const pad
     return out
   }
 
-export const multilineComment = (u: unknown, options?: { indentBy?: number, wrap?: boolean }) => {
-  const indentBy = options?.indentBy ?? 2
-  const loop = fn.loopN<[node: {} | null | undefined, indent: number], string>(
-    (node, indent, loop) => {
-      switch(true) {
-        default: return Invariant.ParseError(JSON.stringify(node))("multilineComment")
-        case is.string(node): return '"' + string.escape(node) + '"'
-        case is.symbol(node): return globalThis.String(node)
-        case is.showable(node): return node + ""
-        case is.array(node): return node.length === 0 ? "[]" : fn.pipe(
-          node,
-          map((xs) => loop(xs, indent + indentBy)),
-          array.join(",\n * " + pad(indent)),
-          string.between(
-            "\n * " + pad(indent),
-            "\n * " + pad(indent - indentBy)
-          ),
-          string.between("[", "]"),
-        )
-        case is.object(node): {
-          const entries = Object.entries(node)
-          return entries.length === 0 ? "{}" : fn.pipe(
-            entries,
-            map(
-              fn.flow(
-                ([k, v]) => [k, loop(v, indent + indentBy)] satisfies [any, any],
-                object.parseEntry,
-              )
-            ),
-            array.join(",\n * " + pad(indent)),
-            string.between("{\n * " + pad(indent), "\n * " + pad(indent - indentBy) + "}"),
-          )
-        }
-      }
-    })
+export const jsdocTag = (jsdocTag: string) => 
+  (...[u, options]: Parameters<typeof multiline>) => 
+    multiline(u, { ...options, wrapWith: [' * @' + jsdocTag + '\n', ''] })
 
-  return fn.pipe(
-    loop(u, indentBy),
-    // fn.tap("multi"),
-    (comment) => comment.replace(PATTERN.multilineCommentClose, "\\*/"),
-    (indented) => options?.wrap ? string.between("/**\n * ", "\n */")(indented) : indented,
+export function multiline(u: {} | null | undefined, options?: multiline.Options): string
+export function multiline(
+  u: {} | null | undefined, {
+    indent: _indent = multiline.defaults.indent,
+    leftOffset: _left = multiline.defaults.leftOffset,
+    rightOffset: _right = multiline.defaults.rightOffset,
+    maxWidth: _maxWidth = multiline.defaults.maxWidth,
+    bracesSeparator: BRACE = multiline.defaults.bracesSeparator,
+    bracketsSeparator: BRACK = multiline.defaults.bracesSeparator,
+    keyValueSeparator: KV = multiline.defaults.keyValueSeparator,
+    whitespaceUnit: __ = multiline.defaults.whitespaceUnit,
+    wrapWith = multiline.defaults.wrapWith,
+  }: multiline.Options = multiline.defaults
+) {
+  const indent = Math.max(_indent, 0)
+  const lhsOffset = Math.max(_left, 0)
+  const rhsOffset = Math.max(_right, 0)
+  const maxWidth = Math.max(_maxWidth, 10)
+  const loop = fn.loopN<[x: {} | null | undefined, offset: number], string>(
+    (x, offset, loop) => {
+      switch (true) {
+        default: return fn.exhaustive(x)
+        case is.null(x):
+        case is.undefined(x):
+        case is.boolean(x):
+        case is.number(x): return `${x}`
+        case is.string(x): return `"${x}"`
+        case is.array(x): return (
+          x.length === 0 ? '[]' : 
+          fn.pipe(
+            x.map((u) => loop(u, offset + indent)),
+            (xs) => xs.join(
+              notTooLong(xs) 
+              ? `, ` 
+              : `,\n${__.repeat(lhsOffset)} * ${__.repeat(offset)}`
+            ),
+            (s) => notTooLong(s) ? s 
+            : string.between(
+              `\n${__.repeat(lhsOffset)} * ${__.repeat(offset)}`,
+              `\n${__.repeat(rhsOffset)} * ${__.repeat(offset - indent)}`
+            )(s),
+            (s) => fn.pipe(
+              s,
+              string.between(''
+                + '['
+                +  ( notTooLong(s) ? BRACK : '' )
+                ,  ( notTooLong(s) ? BRACK : '' )
+                + ']',
+              )
+            )
+          )
+        )
+        case is.object(x): return fn.pipe(
+          globalThis.Object.entries(x),
+          (xs) => xs.length === 0 ? '{}' : 
+          fn.pipe(
+            xs,
+            map(([k, v]) => object.parseKey(k) + ':' + KV + loop(v, offset + indent)),
+            (xs) => xs.join(
+              notTooLong(xs) 
+              ? ', ' 
+              : `,\n${__.repeat(lhsOffset)} * ${__.repeat(offset)}`
+            ),
+            (s) => notTooLong(s) ? s 
+            : string.between(
+              `\n${__.repeat(lhsOffset)} * ${__.repeat(offset)}`,
+              `\n${__.repeat(lhsOffset)} * ${__.repeat(offset - indent)}`,
+            )(s),
+            (s) => string.between(''
+              + '{'
+              +  ( notTooLong(s) ? BRACE : '' )
+              ,  ( notTooLong(s) ? BRACE : '' )
+              + '}',
+            )(s)
+          )
+        )
+        case is.nonnullable(x): return ''
+      }
+      function notTooLong(ss: string | string[]): boolean {
+        return maxWidth 
+          > 0
+          + ' * '.length 
+          + offset 
+          + (typeof ss === 'string' ? ss : ss.join()).length
+      }
+    }
   )
+
+  return ''
+    + wrapWith[0]
+    + `${__.repeat(lhsOffset)} * ${__.repeat(rhsOffset)}`
+    + loop(u, rhsOffset + indent)
+    + wrapWith[1]
+}
+
+export declare namespace multiline {
+  type Options = {
+    indent?: number
+    leftOffset?: number
+    rightOffset?: number
+    bracesSeparator?: string
+    bracketsSeparator?: string
+    keyValueSeparator?: string
+    whitespaceUnit?: string
+    wrapWith?: [before: string, after: string]
+    maxWidth?: number
+  }
+}
+export namespace multiline {
+  export const defaults = {
+    indent: 2,
+    leftOffset: 0,
+    rightOffset: 0,
+    wrapWith: ['', ''],
+    whitespaceUnit: ' ',
+    bracesSeparator: ' ',
+    bracketsSeparator: ' ',
+    keyValueSeparator: ' ',
+    maxWidth: 100,
+  } satisfies Required<multiline.Options>
 }

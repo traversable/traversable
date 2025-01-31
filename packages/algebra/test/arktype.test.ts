@@ -12,7 +12,7 @@ seed({
   regenerateSeedFilesOnSave: true,
   exclude: [],
   include: {
-    example: false,
+    example: true,
   }
 })
 
@@ -25,7 +25,7 @@ vi.describe("〖️⛳️〗‹‹‹ ❲@traversable/algebra/ark❳", () => {
       `import $doc from "./traversable.gen.json.js"`,
     ]
 
-    console.log(JSON.stringify(document, null, 2))
+    // console.log(JSON.stringify(document, null, 2))
 
     for (const k in schemas) {
       const schema = schemas[k]

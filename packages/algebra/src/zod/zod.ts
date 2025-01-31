@@ -1,9 +1,10 @@
+import { z } from "zod"
+
 import type { Meta } from "@traversable/core"
-import { type Traversable, core, is, keyOf$, tree } from "@traversable/core"
+import { type Traversable, core, keyOf$, tree } from "@traversable/core"
 import { fn, object } from "@traversable/data"
 import type { _ } from "@traversable/registry"
-import { Invariant, KnownFormat, PATTERN } from "@traversable/registry"
-import { z } from "zod"
+import { Invariant, KnownFormat } from "@traversable/registry"
 
 import * as Print from "../print.js"
 import type { Index, Matchers, Options } from "../shared.js"
@@ -14,9 +15,8 @@ import {
   createTarget,
   createZodIdent,
   defaults as defaults_,
-  defineOptions,
   escapePathSegment,
-  multilineComment,
+  jsdocTag,
 } from "../shared.js"
 
 export {
@@ -89,226 +89,43 @@ const Constrain = {
   string: stringConstraints,
 } as const
 
-const detectIllegalState = (_: string) => _.includes("@example") && _.includes("@link")
-const handleIllegalState = (_: string) => Invariant.IllegalState(
-  "algebra/zod.generateEntry", 
-  "JSDocs for an entry should never have both an example and a JSDoc link.",
-  _,
-)
-
-const serialize
-  : (ix: Index) => (x: unknown) => string
-  = (ix) => {
-    const loop = (indent: number) => (x: JsonLike): string => {
-      switch (true) {
-        default: return fn.exhaustive(x)
-        case x === null:
-        case x === undefined:
-        case typeof x === 'boolean':
-        case typeof x === 'number': return 'z.literal(' + String(x) + ')'
-        case typeof x === 'string': return 'z.literal("' + x + '")'
-        case JsonLike.isArray(x): {
-          return x.length === 0
-            ? 'z.tuple([])'
-            : Print.array({ indent })(
-              'z.tuple([', 
-              ...x.map(loop(indent + 2)), 
-              '])'
-            )
-        }
-        case !!x && typeof x === 'object': {
-          const entries = Object
-            .entries(x)
-            .map(([k, v]) => [JSON.stringify(k), loop(indent + 2)(v)] satisfies [any, any])
-          return entries.length === 0 
-            ? 'z.object({})' 
-            : Print.array({ indent })(
-              'z.object({',
-              ...entries.map(([k, v]) => k + ': ' + v),
-              '})'
-            )
-        }
-      }
-    }
-    return (x: unknown) => !JsonLike.is(x) 
-      ? Invariant.NonSerializableInput("zod.serialize", x)
-      : loop(ix.indent)(x)
-  }
-
-const serializeType
-  : (ix: Index) => (x: unknown) => string
-  = (ix) => {
-    const loop = (indent: number) => (x: JsonLike): string => {
-      switch (true) {
-        default: return fn.exhaustive(x)
-        case x === null:
-        case x === undefined:
-        case typeof x === 'boolean':
-        case typeof x === 'number': return 'z.ZodLiteral<' + String(x) + '>'
-        case typeof x === 'string': return 'z.ZodLiteral<"' + x + '">'
-        case JsonLike.isArray(x): {
-          return x.length === 0
-            ? 'z.ZodTuple<[]>'
-            : Print.array({ indent })(
-              'z.ZodTuple<[', 
-              ...x.map(loop(indent + 2)), 
-              ']>'
-            )
-        }
-        case !!x && typeof x === 'object': {
-          const entries = Object
-            .entries(x)
-            .map(([k, v]) => [JSON.stringify(k), loop(indent + 2)(v)] satisfies [any, any])
-          return entries.length === 0 
-            ? 'z.ZodObject<{}>' 
-            : Print.array({ indent })(
-              'z.ZodObject<{',
-              ...entries.map(([k, v]) => k + ': ' + v),
-              '}>'
-            )
-        }
-      }
-    }
-    return (x: unknown) => !JsonLike.is(x) 
-      ? Invariant.NonSerializableInput("zod.serializeType", x)
-      : loop(ix.indent)(x)
-  }
-
-const jsdocs = ($: Index) => (_: string) => 
-  !tree.has("example")($) ? _ 
-  : [
-    `/** `,
-    `${" ".repeat($.indent)} * @example`,
-    `${" ".repeat($.indent)} * ${multilineComment($.example, { indentBy: $.indent })}`,
-    `${" ".repeat($.indent)} */`,
-    `${" ".repeat($.indent)}${_}`,
-  ].join("\n")
-
-const bubbleExample = (child: string, __debugPath: string[]) => {
-  const start = child.indexOf("/**")
-  const end = child.indexOf("*/")
-  const docs = child.slice(start, end + "*/".length)
-  const body = " " + docs.slice("/**".length, -"*/".length).trim()
-  const rest = child.slice(end + "*/".length).trim()
-
-  console.log()
-  console.log()
-  console.log()
-  console.log()
-  console.log()
-  console.log("  =======================")
-  console.group("   -+- bubbleExample -+- ")
-  console.log("=======================")
-  console.log("path:", __debugPath.join("."))
-  console.log()
-  console.log("-+--> docs\n", docs.trim())
-  console.log()
-  console.log("-+--> body\n", body.trim())
-  console.groupEnd()
-
-  if (start === -1 || !body.includes("@example")) 
-    return [child, null] satisfies [any, any]
-  else if (detectIllegalState(body)) 
-    return (console.log("\n\n\n\n\n\n\n\n\n***********************\n     ILLEGAL STATE\n***********************\n", "\npath:\n", __debugPath.join("/"), "\n\ndocs:\n", docs, "\n\n\n\n\n"), [child, null] satisfies [any, any])
-  else 
-    return [rest, body] satisfies [any, any]
-}
-
-const generateEntry
-  : (
-    ss: core.Traversable.objectF<string>,
-    $: Index,
-    optionalTemplate: readonly [before: string, after: string]
-  ) => (entry: [string, string]) => string
-  = ({ required = [] }, $, [beforeOpt, afterOpt]) => ([k, v]) => {
-    // console.log("\n\ntoplevel generateEntry\n", $.absolutePath.join("/"))
-
-    const IDENT = createZodIdent($)([...$.path, 'shape', k]).join('')
-    const MASK = createMask($)([...$.path, k]).join('')
-    const [VALUE, EXAMPLE] = bubbleExample(v, $.absolutePath)
-    const JSDOC_IDENTIFIER = !$.flags.includeJsdocLinks ? null : ' * ## {@link ' + IDENT + ` \`${MASK}\`}`
-    const OPENAPI_LINK = $.flags.includeLinkToOpenApiNode === undefined ? null : fn.pipe(
-      createOpenApiNodePath($)(['properties', k]).join(''),
-      (_) => ` * #### {@link $doc.${_} \`Link to OpenAPI node\`}`
-    )
-
-    return ([
-      '',
-      '/**',
-      JSDOC_IDENTIFIER,
-      OPENAPI_LINK,
-      EXAMPLE,
-      ' */',
-      `${object.parseKey(k)}: ${!required.includes(k) ? (beforeOpt + VALUE + afterOpt) : VALUE}`,
-    ])
-    .filter((_) => _ !== null)
-    .join(Print.newline($))
-  }
-
-
 const generated = {
-  null(_, $) { return jsdocs($)('z.null()') },
-  // null(_, $) { return 'z.null()' },
-  boolean(_, $) { return jsdocs($)('z.boolean()') },
-  // boolean(_, $) { return 'z.boolean()' },
-  integer({ meta = {} }, $) { return jsdocs($)(`z.number().int()${Constrain.integer(meta).join('')}`) },
-  // integer({ meta = {} }, $) { return `z.number().int()${Constrain.integer(meta).join('')}` },
-  number({ meta = {} }, $) { return jsdocs($)(`z.number()${Constrain.number(meta).join('')}`) },
-  // number({ meta = {} }, $) { return `z.number()${Constrain.number(meta).join('')}` },
-  string({ meta = {} }, $) { return jsdocs($)(`z.string()${Constrain.string(meta).join('')}`) },
-  // string({ meta = {} }, $) { return `z.string()${Constrain.string(meta).join('')}` },
-  const({ const: xs }, $) { return jsdocs($)(serialize($)(xs)) },
-  // const({ const: xs }, $) { return serialize($)(xs) },
+  null(_, $) { return 'z.null()' },
+  boolean(_, $) { return 'z.boolean()' },
+  integer({ meta = {} }, $) { return `z.number().int()${Constrain.integer(meta).join('')}` },
+  number({ meta = {} }, $) { return `z.number()${Constrain.number(meta).join('')}` },
+  string({ meta = {} }, $) { return `z.string()${Constrain.string(meta).join('')}` },
+  const({ const: xs }, $) { return serialize($)(xs) },
   enum({ enum: xs }, $) {
-    if (xs.length === 0) return jsdocs($)('z.never()')
-    else if (xs.every(core.is.string)) return jsdocs($)('z.enum([' + xs.join(', ') + '])')
+    if (xs.length === 0) return 'z.never()'
+    else if (xs.every(core.is.string)) return 'z.enum([' + xs.join(', ') + '])'
     else {
       const ss = xs.filter(core.is.primitive).map((v) => 'z.literal(' + typeof v === 'string' ? JSON_stringify(v) : String(v) + ')')
-      return ss.length === 1 ? jsdocs($)(ss[0]) : jsdocs($)(Print.array($)('z.union([', ...ss, '])'))
+      return ss.length === 1 ? ss[0] : Print.array($)('z.union([', ...ss, '])')
     }
   },
-  // enum({ enum: xs }, $) {
-  //   if (xs.length === 0) return 'z.never()'
-  //   else if (xs.every(core.is.string)) return 'z.enum([' + xs.join(', ') + '])'
-  //   else {
-  //     const ss = xs.filter(core.is.primitive).map((v) => 'z.literal(' + typeof v === 'string' ? JSON_stringify(v) : String(v) + ')')
-  //     return ss.length === 1 ? ss[0] : Print.array($)('z.union([', ...ss, '])')
-  //   }
-  // },
-  array({ items: s }, $) { return jsdocs($)(Print.array($)('z.array(', s, ')')) },
-  // array({ items: s }, $) { return Print.array($)('z.array(', s, ')') },
-  record({ additionalProperties: s }, $) { return jsdocs($)(Print.array($)('z.record(', s, ')')) },
-  // record({ additionalProperties: s }, $) { return Print.array($)('z.record(', s, ')') },
-  tuple({ items: ss }, $) { return jsdocs($)(Print.array($)('z.tuple([', ...ss, '])')) },
-  // tuple({ items: ss }, $) { return Print.array($)('z.tuple([', ...ss, '])') },
-  anyOf({ anyOf: [s0 = 'z.never()', s1 = 'z.never()', ...ss] }, $) { return jsdocs($)(Print.array($)('z.union([', s0, s1, ...ss, '])')) },
-  // anyOf({ anyOf: [s0 = 'z.never()', s1 = 'z.never()', ...ss] }, $) { return Print.array($)('z.union([', s0, s1, ...ss, '])') },
-  oneOf({ oneOf: [s0 = 'z.never()', s1 = 'z.never()', ...ss] }, $) { return jsdocs($)(Print.array($)('z.union([', s0, s1, ...ss, '])')) },
-  // oneOf({ oneOf: [s0 = 'z.never()', s1 = 'z.never()', ...ss] }, $) { return Print.array($)('z.union([', s0, s1, ...ss, '])') },
+  array({ items: s }, $) { return Print.array($)('z.array(', s, ')') },
+  record({ additionalProperties: s }, $) { return Print.array($)('z.record(', s, ')') },
+  tuple({ items: ss }, $) { return Print.array($)('z.tuple([', ...ss, '])') },
+  anyOf({ anyOf: [s0 = 'z.never()', s1 = 'z.never()', ...ss] }, $) { return Print.array($)('z.union([', s0, s1, ...ss, '])') },
+  oneOf({ oneOf: [s0 = 'z.never()', s1 = 'z.never()', ...ss] }, $) { return Print.array($)('z.union([', s0, s1, ...ss, '])') },
   allOf({ allOf: [s0, s1 = 'z.unknown()', ...ss] }, $) {
     switch (true) {
-      case s0 === undefined: return jsdocs($)('z.unknown()')
-      case ss.length === 0: return jsdocs($)(Print.array($)('z.intersection(', s0, s1, ')'))
-      default: return jsdocs($)(Print.array($)('', [s1, ...ss].reduce((acc, x) => acc === '' ? x : `${acc}.and(${x})`, s0), ''))
+      case s0 === undefined: return 'z.unknown()'
+      case ss.length === 0: return Print.array($)('z.intersection(', s0, s1, ')')
+      default: return Print.array($)('', [s1, ...ss].reduce((acc, x) => acc === '' ? x : `${acc}.and(${x})`, s0), '')
     }
   },
-  // allOf({ allOf: [s0, s1 = 'z.unknown()', ...ss] }, $) {
-  //   switch (true) {
-  //     case s0 === undefined: return 'z.unknown()'
-  //     case ss.length === 0: return Print.array($)('z.intersection(', s0, s1, ')')
-  //     default: return Print.array($)('', [s1, ...ss].reduce((acc, x) => acc === '' ? x : `${acc}.and(${x})`, s0), '')
-  //   }
-  // },
   object(ss, $) {
-    const _ = Object_entries(ss.properties).map(generateEntry(ss, $, ['z.optional(', ')'])).join(',')
-    const gen = `z.object({${_ + '\n' + ' '.repeat($.indent)}})`
-    return jsdocs($)(gen)
-    // return gen
+    const xs = Object_entries(ss.properties)
+    return xs.length === 0 
+      ? 'z.object({})' 
+      : 'z.object({'
+        + xs.map(generateEntry(ss, $, ['z.optional(', ')'])).join(',') 
+        + '\n' 
+        + ' '.repeat($.indent)
+        + '})'
   },
-  // object(ss, $) {
-  //   const _ = Object_entries(ss.properties).map(generateEntry(ss, $, ['z.optional(', ')'])).join(',')
-  //   return `z.object({${_ + '\n' + ' '.repeat($.indent)}})`
-  // },
 } as const satisfies Matchers<string>
 
 /**
@@ -334,7 +151,6 @@ const generate
       'export const ' + $.typeName + ' = ' + target,
     ].join('\n')
   )
-
 
 const derived = {
   null() { return z.null() },
@@ -384,6 +200,94 @@ const derive
     createTarget(derived),
     ([target]) => target,
   )
+
+
+function linkToOpenAPIDocument(k: string, $: Index): string | null {
+  return $.flags.includeLinkToOpenApiNode === undefined 
+    ? null 
+    : ''
+    + ' * #### {@link $doc.' 
+    + createOpenApiNodePath($)(['properties', k]).join('') 
+    +  '`Link to OpenAPI node`}'
+}
+
+function linkToNode(k: string, $: Index): string | null {
+  const IDENT = createZodIdent($)([...$.path, 'shape', k]).join('')
+  const MASK = createMask($)([...$.path, k]).join('')
+  return !$.flags.includeJsdocLinks 
+    ? null 
+    : ' * ## {@link ' + IDENT + ` \`${MASK}\`}`
+}
+
+function example(k: string, $: Index): string | null {
+  const CHILD = tree.get($.document, ...$.absolutePath, "properties", k, "meta", "example")
+  return typeof CHILD === "symbol" 
+    ? null 
+    : jsdocTag("example")(CHILD, { leftOffset: $.indent + 2 })
+}
+
+function generateEntry(
+    { required = [] }: core.Traversable.objectF<string>,
+    $: Index,
+    [BEFORE_OPT, AFTER_OPT]: readonly [before: string, after: string]
+): (entry: [string, string]) => string {
+  return ([k, v]) => {
+    const EXAMPLE = example (k , $)
+    const LINK_HERE = linkToNode(k, $)
+    const LINK_TO_DOC = linkToOpenAPIDocument(k, $)
+    return ([
+      '',
+      '/**',
+      LINK_HERE,
+      LINK_TO_DOC,
+      EXAMPLE,
+      ' */',
+      `${object.parseKey(k)}: ${
+        !required.includes(k) ? (BEFORE_OPT + v + AFTER_OPT) : v
+      }`,
+    ])
+    .filter((_) => _ !== null)
+    .join(Print.newline($))
+  }
+}
+
+function serialize(ix: Index): (x: unknown) => string {
+  const loop = (indent: number) => (x: JsonLike): string => {
+    switch (true) {
+      default: return fn.exhaustive(x)
+      case x === null:
+      case x === undefined:
+      case typeof x === 'boolean':
+      case typeof x === 'number': return 'z.literal(' + String(x) + ')'
+      case typeof x === 'string': return 'z.literal("' + x + '")'
+      case JsonLike.isArray(x): {
+        return x.length === 0
+          ? 'z.tuple([])'
+          : Print.array({ indent })(
+            'z.tuple([', 
+            ...x.map(loop(indent + 2)), 
+            '])'
+          )
+      }
+      case !!x && typeof x === 'object': {
+        const entries = Object
+          .entries(x)
+          .map(([k, v]) => [JSON.stringify(k), loop(indent + 2)(v)] satisfies [any, any])
+        return entries.length === 0 
+          ? 'z.object({})' 
+          : Print.array({ indent })(
+            'z.object({',
+            ...entries.map(([k, v]) => k + ': ' + v),
+            '})'
+          )
+      }
+    }
+  }
+  return (x: unknown) => !JsonLike.is(x) 
+    ? Invariant.NonSerializableInput("zod.serialize", x)
+    : loop(ix.indent)(x)
+}
+
 
 // const typesOnly = {
 //   null() { return 'z.ZodNull' },
@@ -499,3 +403,42 @@ const derive
 //     encoder: 'z.date().pipe(z.coerce.string())',
 //   },
 // }
+
+// const serializeType
+//   : (ix: Index) => (x: unknown) => string
+//   = (ix) => {
+//     const loop = (indent: number) => (x: JsonLike): string => {
+//       switch (true) {
+//         default: return fn.exhaustive(x)
+//         case x === null:
+//         case x === undefined:
+//         case typeof x === 'boolean':
+//         case typeof x === 'number': return 'z.ZodLiteral<' + String(x) + '>'
+//         case typeof x === 'string': return 'z.ZodLiteral<"' + x + '">'
+//         case JsonLike.isArray(x): {
+//           return x.length === 0
+//             ? 'z.ZodTuple<[]>'
+//             : Print.array({ indent })(
+//               'z.ZodTuple<[', 
+//               ...x.map(loop(indent + 2)), 
+//               ']>'
+//             )
+//         }
+//         case !!x && typeof x === 'object': {
+//           const entries = Object
+//             .entries(x)
+//             .map(([k, v]) => [JSON.stringify(k), loop(indent + 2)(v)] satisfies [any, any])
+//           return entries.length === 0 
+//             ? 'z.ZodObject<{}>' 
+//             : Print.array({ indent })(
+//               'z.ZodObject<{',
+//               ...entries.map(([k, v]) => k + ': ' + v),
+//               '}>'
+//             )
+//         }
+//       }
+//     }
+//     return (x: unknown) => !JsonLike.is(x) 
+//       ? Invariant.NonSerializableInput("zod.serializeType", x)
+//       : loop(ix.indent)(x)
+//   }

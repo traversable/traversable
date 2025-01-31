@@ -70,13 +70,13 @@ const pathify = fn.flow(
 
 const allOf = (LOOP: fc.Arbitrary<unknown>, $: Schema.Constraints.Config) => Schema.allOf.base(fc.dictionary(LOOP), $)
 
-const generateSpec = (options: seed.Options) => fn.pipe(
+const generateSpec = (options?: seed.Options) => fn.pipe(
   OpenAPI.generate({
-    include: options.include, 
+    include: options?.include ?? defaults.include,
     schemas: {
-      ...options.schemas,
+      ...options?.schemas,
       allOf: {
-        arbitrary: options.schemas?.allOf?.arbitrary || allOf,
+        arbitrary: options?.schemas?.allOf?.arbitrary || allOf,
       }
     }
   }),
@@ -110,6 +110,7 @@ let firstRun = !fs.existsSync(PATH.spec)
 
 export function seed(options?: seed.Options): void
 export function seed($: seed.Options = defaults) {
+  console.log($)
   if (firstRun) {
     if (!fs.existsSync(PATH.generated)) fs.mkdirSync(PATH.generated, { recursive: true })
     if (!fs.existsSync(PATH.targets.ark)) fs.writeFileSync(PATH.targets.ark, "")
