@@ -6,17 +6,18 @@ import { fn, object } from "@traversable/data"
 import type { _ } from "@traversable/registry"
 import { Invariant, KnownFormat } from "@traversable/registry"
 
-import * as Format from '../formatters.js'
 import * as Print from "../print.js"
+import * as Format from "../formatters.js"
+
 import type { Index, Matchers, Options } from "../shared.js"
 import {
   JsonLike,
   createMask,
-  createOpenApiNodePath,
   createTarget,
   createZodIdent,
   defaults as defaults_,
   escapePathSegment,
+  linkToOpenAPIDocument,
 } from "../shared.js"
 
 export {
@@ -201,16 +202,6 @@ const derive
     ([target]) => target,
   )
 
-
-function linkToOpenAPIDocument(k: string, $: Index): string | null {
-  return $.flags.includeLinkToOpenApiNode === undefined 
-    ? null 
-    : ''
-    + ' * #### {@link $doc.' 
-    + createOpenApiNodePath($)(['properties', k]).join('') 
-    +  '`Link to OpenAPI node`}'
-}
-
 function linkToNode(k: string, $: Index): string | null {
   const IDENT = createZodIdent($)([...$.path, 'shape', k]).join('')
   const MASK = createMask($)([...$.path, k]).join('')
@@ -219,20 +210,13 @@ function linkToNode(k: string, $: Index): string | null {
     : ' * ## {@link ' + IDENT + ` \`${MASK}\`}`
 }
 
-function example(k: string, $: Index): string | null {
-  const CHILD = tree.get($.document, ...$.absolutePath, "properties", k, "meta", "example")
-  return typeof CHILD === "symbol" 
-    ? null 
-    : Format.jsdocTag("example")(CHILD, { leftOffset: $.indent + 2 })
-}
-
 function generateEntry(
     { required = [] }: core.Traversable.objectF<string>,
     $: Index,
     [BEFORE_OPT, AFTER_OPT]: readonly [before: string, after: string]
 ): (entry: [string, string]) => string {
   return ([k, v]) => {
-    const EXAMPLE = example (k , $)
+    const EXAMPLE = Format.example(k , $)
     const LINK_HERE = linkToNode(k, $)
     const LINK_TO_DOC = linkToOpenAPIDocument(k, $)
     return ([

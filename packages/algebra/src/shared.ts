@@ -1,7 +1,7 @@
 import * as path from "node:path"
 
 import type { Context } from "@traversable/core"
-import { Extension, Traversable, core, is, keyOf$, t } from "@traversable/core"
+import { Extension, Traversable, core, is, keyOf$, t, tree } from "@traversable/core"
 import { array, fn, object } from "@traversable/data"
 import { deref, openapi } from "@traversable/openapi"
 import type { Partial, Requiring, newtype } from "@traversable/registry"
@@ -43,6 +43,7 @@ export const JsonLike = {
   },
   isArray: globalThis.Array.isArray as (u: unknown) => u is readonly JsonLike.Shallow[],
 }
+
 
 export interface Flags extends t.typeof<typeof Flags> {}
 export const Flags = t.object({
@@ -252,6 +253,16 @@ const buildOpenApiNodePathInterpreter: BuildPathInterpreter = ()  => ($) => (xs)
 export const createMask: PathInterpreter = buildMaskInterpreter(MASK_MAP)
 export const createZodIdent: PathInterpreter = buildIdentInterpreter(ZOD_IDENT_MAP)
 export const createOpenApiNodePath: PathInterpreter = buildOpenApiNodePathInterpreter({})
+
+export function linkToOpenAPIDocument(k: string, $: Index): string | null {
+  return $.flags.includeLinkToOpenApiNode === undefined 
+    ? null 
+    : ''
+    + ' * #### {@link $doc.' 
+    + createOpenApiNodePath($)(['properties', k]).join('') 
+    +  '`Link to OpenAPI node`}'
+}
+
 
 export function createTarget<T, Ix>(matchers: Extension.Handlers<T, Ix>): (schema: Traversable.any, options: Options<T>) => [target: T, config: Options.Config<T>]
 export function createTarget<T, Ix>(matchers: Extension.Handlers<T, Ix>): (schema: Traversable.any, options: Options<T>) => [target: T, config: Options.Config<T>]

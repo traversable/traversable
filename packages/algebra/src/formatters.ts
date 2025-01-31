@@ -1,5 +1,7 @@
-import { is } from "@traversable/core"
+import { is, tree } from "@traversable/core"
 import { fn, map, object, string } from "@traversable/data"
+
+import type { Index } from "./shared.js"
 
 /** 
  * ## {@link jsdocTag `Format.jsdocTag`}
@@ -8,9 +10,23 @@ import { fn, map, object, string } from "@traversable/data"
  * 
  * If you need something more flexible, see {@link multiline `Format.multiline`}.
  */
-export const jsdocTag = (jsdocTag: string) => 
-  (...[u, options]: Parameters<typeof multiline>) => 
+export function jsdocTag(jsdocTag: string) {
+  return (...[u, options]: Parameters<typeof multiline>) => 
     multiline(u, { ...options, wrapWith: [' * @' + jsdocTag + '\n', ''] })
+}
+
+/** 
+ * ## {@link example `Format.example`}
+ * 
+ * Generates a JSDoc '@example' tag for a property node. 
+ */
+export function example(k: string, $: Index): string | null {
+  const CHILD = tree.get($.document, ...$.absolutePath, "properties", k, "meta", "example")
+  return typeof CHILD === "symbol" 
+    ? null 
+    : jsdocTag("example")(CHILD, { leftOffset: $.indent + 2 })
+}
+
 
 /** 
  * ## {@link multiline `Format.multiline`}
