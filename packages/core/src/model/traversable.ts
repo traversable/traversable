@@ -10,7 +10,7 @@ import type {
 
 import { t } from "../guard/index.js"
 import { is } from "../guard/predicates.js"
-import { has } from "../tree.js"
+import * as tree from "../tree.js"
 import * as JsonSchema from "./json-schema.js"
 import type { Context } from "./meta.js"
 import { Meta } from "./meta.js"
@@ -478,18 +478,20 @@ const PathPrefixMap = {
   tuple: "items",
 } as const satisfies Record<Traversable["type"], string | null>
 
+const hasExample = tree.has("meta", "example", is.nonnullable)
+
 const IxFunctor: IndexedFunctor<Context, Traversable_lambda, Traversable_any> = {
   map: Traversable_Functor.map,
   mapWithIndex(g) {
     return ($, xs) => {
-      const h = (next?: keyof any) => (path: (keyof any)[], overrides?: {}) => ({
-        ...$,
-        depth: $.depth + 1,
-        indent: $.indent + 2,
+      const h = (next?: keyof any) => (path: (keyof any)[], overrides?: {}) => (prev: Context) => ({
+        ...prev,
+        depth: prev.depth + 1,
+        indent: prev.indent + 2,
         // `next` is already applied to the path, bc sometimes `next`
         // isn't actually last (as is the case with `symbol.optional`)
         path,
-        absolutePath: [...$.absolutePath, PathPrefixMap[xs.type], ...next === undefined ? [] : [String(next)]].filter((_) => _ !== null),
+        absolutePath: [...prev.absolutePath, PathPrefixMap[xs.type], ...next === undefined ? [] : [String(next)]].filter((_) => _ !== null),
         ...overrides,
       } satisfies Context)
 
@@ -502,18 +504,24 @@ const IxFunctor: IndexedFunctor<Context, Traversable_lambda, Traversable_any> = 
         case Traversable_is.integer(xs): return xs
         case Traversable_is.number(xs): return xs
         case Traversable_is.string(xs): return xs
-        case Traversable_is.array(xs): return { ...xs, items: g(h()([...$.path, symbol.array]), xs.items) }
-        case Traversable_is.allOf(xs): return { ...xs, allOf: xs.allOf.map((x, i) => g(h(i)([...$.path, symbol.allOf, i]), x)) }
-        case Traversable_is.anyOf(xs): return { ...xs, anyOf: xs.anyOf.map((x, i) => g(h(i)([...$.path, symbol.anyOf, i]), x)) }
-        case Traversable_is.oneOf(xs): return { ...xs, oneOf: xs.oneOf.map((x, i) => g(h(i)([...$.path, symbol.oneOf, i]), x)) }
-        case Traversable_is.tuple(xs): return { ...xs, items: xs.items.map((x, i) => g(h(i)([...$.path, symbol.tuple, i]), x)) }
-        case Traversable_is.record(xs): return { ...xs, additionalProperties: g(h()([...$.path, symbol.record]), xs.additionalProperties) }
+        case Traversable_is.array(xs): return { ...xs, items: g(h()([...$.path, symbol.array])($), xs.items) }
+        case Traversable_is.allOf(xs): return { ...xs, allOf: xs.allOf.map((x, i) => g(h(i)([...$.path, symbol.allOf, i])($), x)) }
+        case Traversable_is.anyOf(xs): return { ...xs, anyOf: xs.anyOf.map((x, i) => g(h(i)([...$.path, symbol.anyOf, i])($), x)) }
+        case Traversable_is.oneOf(xs): return { ...xs, oneOf: xs.oneOf.map((x, i) => g(h(i)([...$.path, symbol.oneOf, i])($), x)) }
+        case Traversable_is.tuple(xs): return { ...xs, items: xs.items.map((x, i) => g(h(i)([...$.path, symbol.tuple, i])($), x)) }
+        case Traversable_is.record(xs): return { ...xs, additionalProperties: g(h()([...$.path, symbol.record])($), xs.additionalProperties) }
         case Traversable_is.object(xs): {
           const { additionalProperties: a, properties: p, ...y } = xs
           const entries = Object_entries(p).map(([k, v]) => {
+            // console.log(v)
+
+
             const isOptional = !xs.required?.includes(k)
             const path = [ ...$.path, symbol.object, k, ...(isOptional ? [symbol.optional] : [])]
-            return [k, g(h(k)(path), v)] satisfies [any, any]
+            const next = { ...h(k)(path)($), ...(hasExample(v) && { example: v.meta.example }) }
+            // const example = !!v && typeof v === "object" && "example" in v ? v.example : null
+            // if (hasExample(v)) { console.log("EXAMPLE IN NEXT", next.example) }
+            return [k, g(next, v)] satisfies [any, any]
           })
 
           return {
@@ -543,8 +551,8 @@ function Traversable_foldIx<T>(algebra: Functor.IxAlgebra<Context, Traversable_l
 /** @internal */
 const fromJsonSchema = (expr: JsonSchema.any) => {
   const meta = {
-    ...has("originalIndex", t.number().is)(expr) && { originalIndex: expr.originalIndex },
-    ...has("required", t.array(t.string()).is)(expr) && { required: expr.required },
+    ...tree.has("originalIndex", t.number().is)(expr) && { originalIndex: expr.originalIndex },
+    ...tree.has("required", t.array(t.string()).is)(expr) && { required: expr.required },
   }
   const { type: __yeet, ...x } = { ...expr, type: null }
   switch (true) {

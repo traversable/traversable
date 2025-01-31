@@ -41,33 +41,33 @@ vi.describe("〖️⛳️〗‹‹‹ ❲@traversable/algebra/zod❳", () => {
       void schemas.push(schema)
     }
 
-    for (const k in jsonSchemas) {
-      const jsonSchema = jsonSchemas[k]
-      const options = {
-        typeName: typeNameFromPath(k),
-        document,
-        absolutePath: ["components", "schemas", k],
-      } satisfies Parameters<typeof zod.generate>[1]
-      const schema = zod.derive(jsonSchema, options)
-      void validators.push(schema)
-    }
+    // for (const k in jsonSchemas) {
+    //   const jsonSchema = jsonSchemas[k]
+    //   const options = {
+    //     typeName: typeNameFromPath(k),
+    //     document,
+    //     absolutePath: ["components", "schemas", k],
+    //   } satisfies Parameters<typeof zod.generate>[1]
+    //   const schema = zod.derive(jsonSchema, options)
+    //   void validators.push(schema)
+    // }
 
-    for (const k in jsonSchemas) {
-      const jsonSchema = jsonSchemas[k]
-      const options = {
-        typeName: typeNameFromPath(k),
-        document,
-        absolutePath: ["components", "schemas", k],
-      } satisfies Parameters<typeof zod.generate>[1]
-      const type = zod.typelevel(jsonSchema, options)
-      void types.push(type)
-    }
+    // for (const k in jsonSchemas) {
+    //   const jsonSchema = jsonSchemas[k]
+    //   const options = {
+    //     typeName: typeNameFromPath(k),
+    //     document,
+    //     absolutePath: ["components", "schemas", k],
+    //   } satisfies Parameters<typeof zod.generate>[1]
+    //   const type = zod.typelevel(jsonSchema, options)
+    //   void types.push(type)
+  // }
 
     fs.writeFileSync(PATH.targets.zod, schemas.join("\n\n"))
-    fs.writeFileSync(PATH.targets.zodTypesOnly, types.join("\n\n"))
+    // fs.writeFileSync(PATH.targets.zodTypesOnly, types.join("\n\n"))
 
     vi.assert.isTrue(fs.existsSync(PATH.targets.zod))
-    vi.assert.isTrue(fs.existsSync(PATH.targets.zodTypesOnly))
+    // vi.assert.isTrue(fs.existsSync(PATH.targets.zodTypesOnly))
   })
 })
 

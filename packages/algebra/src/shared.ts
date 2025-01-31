@@ -394,7 +394,8 @@ export const multilineComment = (u: unknown, options?: { indentBy?: number, wrap
 
   return fn.pipe(
     loop(u, indentBy),
+    // fn.tap("multi"),
+    (comment) => comment.replace(PATTERN.multilineCommentClose, "\\*/"),
     (indented) => options?.wrap ? string.between("/**\n * ", "\n */")(indented) : indented,
-    (comment) => comment.replace(PATTERN.multilineCommentTerminator, "")
   )
 }

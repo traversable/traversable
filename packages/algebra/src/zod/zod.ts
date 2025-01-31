@@ -1,8 +1,8 @@
 import type { Meta } from "@traversable/core"
-import { type Traversable, core, keyOf$ } from "@traversable/core"
+import { type Traversable, core, is, keyOf$, tree } from "@traversable/core"
 import { fn, object } from "@traversable/data"
 import type { _ } from "@traversable/registry"
-import { Invariant, KnownFormat } from "@traversable/registry"
+import { Invariant, KnownFormat, PATTERN } from "@traversable/registry"
 import { z } from "zod"
 
 import * as Print from "../print.js"
@@ -16,6 +16,7 @@ import {
   defaults as defaults_,
   defineOptions,
   escapePathSegment,
+  multilineComment,
 } from "../shared.js"
 
 export {
@@ -24,8 +25,8 @@ export {
   derived,
   generate,
   generated,
-  typelevel,
-  typesOnly,
+  // typelevel,
+  // typesOnly,
 }
 
 /** @internal */
@@ -88,39 +89,12 @@ const Constrain = {
   string: stringConstraints,
 } as const
 
-const generateEntry
-  : (
-    ss: core.Traversable.objectF<string>,
-    $: Index,
-    optionalTemplate: readonly [before: string, after: string]
-  ) => (entry: [string, string]) => string
-  = ({ required = [] }, $, [beforeOpt, afterOpt]) => ([k, v]) => {
-    const IDENT = createZodIdent($)([...$.path, 'shape', k]).join('')
-    const MASK = createMask($)([...$.path, k]).join('')
-    const JSDOC_IDENTIFIER = !$.flags.includeJsdocLinks ? null : ' * ## {@link ' + IDENT + ` \`${MASK}\`}`
-    const OPENAPI_LINK = $.flags.includeLinkToOpenApiNode === undefined ? null : fn.pipe(
-      createOpenApiNodePath($)(['properties', k]).join(''),
-      (_) => ` * #### {@link $doc.${_} \`Link to OpenAPI node\`}`
-    )
-    return ([
-      '',
-      '/**',
-      JSDOC_IDENTIFIER,
-      OPENAPI_LINK,
-      ' */',
-      object.parseKey(k) + ': '
-      + (
-        !required.includes(k)
-        ? v.includes('\n')
-          ? beforeOpt + Print.newline($, 1) + v + afterOpt
-          : beforeOpt + v + afterOpt
-        :
-        v
-      )
-    ])
-    .filter((_) => _ !== null)
-    .join(Print.newline($))
-  }
+const detectIllegalState = (_: string) => _.includes("@example") && _.includes("@link")
+const handleIllegalState = (_: string) => Invariant.IllegalState(
+  "algebra/zod.generateEntry", 
+  "JSDocs for an entry should never have both an example and a JSDoc link.",
+  _,
+)
 
 const serialize
   : (ix: Index) => (x: unknown) => string
@@ -200,41 +174,167 @@ const serializeType
       : loop(ix.indent)(x)
   }
 
+const jsdocs = ($: Index) => (_: string) => 
+  !tree.has("example")($) ? _ 
+  : [
+    `/** `,
+    `${" ".repeat($.indent)} * @example`,
+    `${" ".repeat($.indent)} * ${multilineComment($.example, { indentBy: $.indent })}`,
+    `${" ".repeat($.indent)} */`,
+    `${" ".repeat($.indent)}${_}`,
+  ].join("\n")
+
+const bubbleExample = (child: string, __debugPath: string[]) => {
+  const start = child.indexOf("/**")
+  const end = child.indexOf("*/")
+  const docs = child.slice(start, end + "*/".length)
+  const body = " " + docs.slice("/**".length, -"*/".length).trim()
+  const rest = child.slice(end + "*/".length).trim()
+
+  console.log()
+  console.log()
+  console.log()
+  console.log()
+  console.log()
+  console.log("  =======================")
+  console.group("   -+- bubbleExample -+- ")
+  console.log("=======================")
+  console.log("path:", __debugPath.join("."))
+  console.log()
+  console.log("-+--> docs\n", docs.trim())
+  console.log()
+  console.log("-+--> body\n", body.trim())
+  console.groupEnd()
+
+  if (start === -1 || !body.includes("@example")) 
+    return [child, null] satisfies [any, any]
+  else if (detectIllegalState(body)) 
+    return (console.log("\n\n\n\n\n\n\n\n\n***********************\n     ILLEGAL STATE\n***********************\n", "\npath:\n", __debugPath.join("/"), "\n\ndocs:\n", docs, "\n\n\n\n\n"), [child, null] satisfies [any, any])
+  else 
+    return [rest, body] satisfies [any, any]
+}
+
+const generateEntry
+  : (
+    ss: core.Traversable.objectF<string>,
+    $: Index,
+    optionalTemplate: readonly [before: string, after: string]
+  ) => (entry: [string, string]) => string
+  = ({ required = [] }, $, [beforeOpt, afterOpt]) => ([k, v]) => {
+    // console.log("\n\ntoplevel generateEntry\n", $.absolutePath.join("/"))
+
+    const IDENT = createZodIdent($)([...$.path, 'shape', k]).join('')
+    const MASK = createMask($)([...$.path, k]).join('')
+    const [VALUE, EXAMPLE] = bubbleExample(v, $.absolutePath)
+    const JSDOC_IDENTIFIER = !$.flags.includeJsdocLinks ? null : ' * ## {@link ' + IDENT + ` \`${MASK}\`}`
+    const OPENAPI_LINK = $.flags.includeLinkToOpenApiNode === undefined ? null : fn.pipe(
+      createOpenApiNodePath($)(['properties', k]).join(''),
+      (_) => ` * #### {@link $doc.${_} \`Link to OpenAPI node\`}`
+    )
+
+    return ([
+      '',
+      '/**',
+      JSDOC_IDENTIFIER,
+      OPENAPI_LINK,
+      EXAMPLE,
+      ' */',
+      `${object.parseKey(k)}: ${!required.includes(k) ? (beforeOpt + VALUE + afterOpt) : VALUE}`,
+    ])
+    .filter((_) => _ !== null)
+    .join(Print.newline($))
+  }
+
 
 const generated = {
-  null() { return 'z.null()' as const },
-  boolean() { return 'z.boolean()' as const },
-  integer({ meta = {} }) { return `z.number().int()${Constrain.integer(meta).join('')}` as const },
-  number({ meta = {} }) { return `z.number()${Constrain.number(meta).join('')}` as const },
-  string({ meta = {} }) { return `z.string()${Constrain.string(meta).join('')}` as const },
-  const({ const: xs }, ix) { return serialize(ix)(xs) },
+  null(_, $) { return jsdocs($)('z.null()') },
+  // null(_, $) { return 'z.null()' },
+  boolean(_, $) { return jsdocs($)('z.boolean()') },
+  // boolean(_, $) { return 'z.boolean()' },
+  integer({ meta = {} }, $) { return jsdocs($)(`z.number().int()${Constrain.integer(meta).join('')}`) },
+  // integer({ meta = {} }, $) { return `z.number().int()${Constrain.integer(meta).join('')}` },
+  number({ meta = {} }, $) { return jsdocs($)(`z.number()${Constrain.number(meta).join('')}`) },
+  // number({ meta = {} }, $) { return `z.number()${Constrain.number(meta).join('')}` },
+  string({ meta = {} }, $) { return jsdocs($)(`z.string()${Constrain.string(meta).join('')}`) },
+  // string({ meta = {} }, $) { return `z.string()${Constrain.string(meta).join('')}` },
+  const({ const: xs }, $) { return jsdocs($)(serialize($)(xs)) },
+  // const({ const: xs }, $) { return serialize($)(xs) },
   enum({ enum: xs }, $) {
-    if (xs.length === 0) return 'z.never()'
-    else if (xs.every(core.is.string)) return 'z.enum([' + xs.join(', ') + '])'
+    if (xs.length === 0) return jsdocs($)('z.never()')
+    else if (xs.every(core.is.string)) return jsdocs($)('z.enum([' + xs.join(', ') + '])')
     else {
       const ss = xs.filter(core.is.primitive).map((v) => 'z.literal(' + typeof v === 'string' ? JSON_stringify(v) : String(v) + ')')
-      return ss.length === 1 ? ss[0] : Print.array($)('z.union([', ...ss, '])')
+      return ss.length === 1 ? jsdocs($)(ss[0]) : jsdocs($)(Print.array($)('z.union([', ...ss, '])'))
     }
   },
-  array({ items: s }, $) { return Print.array($)('z.array(', s, ')') },
-  record({ additionalProperties: s }, $) { return Print.array($)('z.record(', s, ')') },
-  tuple({ items: ss }, $) { return Print.array($)('z.tuple([', ...ss, '])') },
-  anyOf({ anyOf: [s0 = 'z.never()', s1 = 'z.never()', ...ss] }, $) { return Print.array($)('z.union([', s0, s1, ...ss, '])') },
-  oneOf({ oneOf: [s0 = 'z.never()', s1 = 'z.never()', ...ss] }, $) { return Print.array($)('z.union([', s0, s1, ...ss, '])') },
+  // enum({ enum: xs }, $) {
+  //   if (xs.length === 0) return 'z.never()'
+  //   else if (xs.every(core.is.string)) return 'z.enum([' + xs.join(', ') + '])'
+  //   else {
+  //     const ss = xs.filter(core.is.primitive).map((v) => 'z.literal(' + typeof v === 'string' ? JSON_stringify(v) : String(v) + ')')
+  //     return ss.length === 1 ? ss[0] : Print.array($)('z.union([', ...ss, '])')
+  //   }
+  // },
+  array({ items: s }, $) { return jsdocs($)(Print.array($)('z.array(', s, ')')) },
+  // array({ items: s }, $) { return Print.array($)('z.array(', s, ')') },
+  record({ additionalProperties: s }, $) { return jsdocs($)(Print.array($)('z.record(', s, ')')) },
+  // record({ additionalProperties: s }, $) { return Print.array($)('z.record(', s, ')') },
+  tuple({ items: ss }, $) { return jsdocs($)(Print.array($)('z.tuple([', ...ss, '])')) },
+  // tuple({ items: ss }, $) { return Print.array($)('z.tuple([', ...ss, '])') },
+  anyOf({ anyOf: [s0 = 'z.never()', s1 = 'z.never()', ...ss] }, $) { return jsdocs($)(Print.array($)('z.union([', s0, s1, ...ss, '])')) },
+  // anyOf({ anyOf: [s0 = 'z.never()', s1 = 'z.never()', ...ss] }, $) { return Print.array($)('z.union([', s0, s1, ...ss, '])') },
+  oneOf({ oneOf: [s0 = 'z.never()', s1 = 'z.never()', ...ss] }, $) { return jsdocs($)(Print.array($)('z.union([', s0, s1, ...ss, '])')) },
+  // oneOf({ oneOf: [s0 = 'z.never()', s1 = 'z.never()', ...ss] }, $) { return Print.array($)('z.union([', s0, s1, ...ss, '])') },
   allOf({ allOf: [s0, s1 = 'z.unknown()', ...ss] }, $) {
     switch (true) {
-      case s0 === undefined: return 'z.unknown()'
-      case ss.length === 0: return Print.array($)('z.intersection(', s0, s1, ')')
-      default: return Print.array($)('', [s1, ...ss].reduce((acc, x) => acc === '' ? x : `${acc}.and(${x})`, s0), '')
+      case s0 === undefined: return jsdocs($)('z.unknown()')
+      case ss.length === 0: return jsdocs($)(Print.array($)('z.intersection(', s0, s1, ')'))
+      default: return jsdocs($)(Print.array($)('', [s1, ...ss].reduce((acc, x) => acc === '' ? x : `${acc}.and(${x})`, s0), ''))
     }
   },
+  // allOf({ allOf: [s0, s1 = 'z.unknown()', ...ss] }, $) {
+  //   switch (true) {
+  //     case s0 === undefined: return 'z.unknown()'
+  //     case ss.length === 0: return Print.array($)('z.intersection(', s0, s1, ')')
+  //     default: return Print.array($)('', [s1, ...ss].reduce((acc, x) => acc === '' ? x : `${acc}.and(${x})`, s0), '')
+  //   }
+  // },
   object(ss, $) {
-    return ''
-    + 'z.object({'
-    + Object_entries(ss.properties).map(generateEntry(ss, $, ['z.optional(', ')'])).join(',')
-    + '\n' + ' '.repeat($.indent) + '})'
-  }
+    const _ = Object_entries(ss.properties).map(generateEntry(ss, $, ['z.optional(', ')'])).join(',')
+    const gen = `z.object({${_ + '\n' + ' '.repeat($.indent)}})`
+    return jsdocs($)(gen)
+    // return gen
+  },
+  // object(ss, $) {
+  //   const _ = Object_entries(ss.properties).map(generateEntry(ss, $, ['z.optional(', ')'])).join(',')
+  //   return `z.object({${_ + '\n' + ' '.repeat($.indent)}})`
+  // },
 } as const satisfies Matchers<string>
+
+/**
+ * ## {@link generate `zod.generate`}
+ *
+ * Given a JSON Schema, OpenAPI document or {@link Traversable} schema, generates the
+ * corresponding zod schema as a long, concatenated string.
+ *
+ * If you need to derive a schema dynamically, _especially_ if the schema comes from
+ * some kind of user input, use {@link derive `zod.derive`} instead.
+ */
+const generate
+  : (schema: core.Traversable.any, options: Options<string>) => string
+  = fn.flow(
+    createTarget(generated),
+    ([target, $]) => [
+      '/**',
+      ` * # {@link ${$.typeName} \`${$.typeName}\`}`,
+      ` * - Visit: {@link $doc.${$.absolutePath.map(escapePathSegment).join('.')} OpenAPI definition}`,
+      ' */',
+      'export type ' + $.typeName + ' = z.infer<typeof ' + $.typeName + '>',
+      '//          ^?',
+      'export const ' + $.typeName + ' = ' + target,
+    ].join('\n')
+  )
+
 
 const derived = {
   null() { return z.null() },
@@ -265,61 +365,6 @@ const derived = {
   }
 } as const satisfies Matchers<z.ZodTypeAny>
 
-const typesOnly = {
-  null() { return 'z.ZodNull' },
-  boolean() { return 'z.ZodBoolean' },
-  integer() { return 'z.ZodNumber' },
-  number() { return 'z.ZodNumber' },
-  string() { return 'z.ZodString' },
-  enum({ enum: xs }) {
-    return xs.length === 0 ? 'z.ZodNever'
-      : xs.every(core.is.string) ? 'z.ZodEnum<[' + xs.map(JSON_stringify).join(', ') + ']>'
-      : 'z.ZodUnion<[' + xs.map((s) => `z.ZodLiteral<${typeof s === 'string' ? JSON_stringify : String(s)}>`) + ']>'
-  },
-  // const() {},
-  const({ const: x }, ix) { return serializeType(ix)(x) },
-  array({ items: s }, $) { return Print.array($)('z.ZodArray<', s, '>') },
-  record({ additionalProperties: s }, $) { return Print.array($)('z.ZodRecord<z.ZodString, ', s, '>') },
-  tuple({ items: ss }, $) { return Print.array($)('z.ZodTuple<[', ...ss, ']>') },
-  anyOf({ anyOf: [s0 = 'z.ZodNever', ...ss] }, $) { return Print.array($)('z.ZodUnion<[', s0, ...ss, ']>') },
-  oneOf({ oneOf: [s0 = 'z.ZodNever', ...ss] }, $) { return Print.array($)('z.ZodUnion<[', s0, ...ss, ']>') },
-  allOf({ allOf: [s0, s1 = 'z.ZodUnknown', ...ss] }, $) {
-    return s0 === undefined ? s1
-      : ss.length === 0 ? s1
-      : Print.array($)('', [s1, ...ss].reduce((acc, x) => acc === '' ? x : `z.ZodIntersection<${acc}, ${x}>`, s0), '')
-  },
-  object(ss, $) {
-    return ''
-    + 'z.ZodObject<{'
-    + Object_entries(ss.properties).map(generateEntry(ss, $, ['z.ZodOptional<', '>'])).join(',')
-    + '\n' + ' '.repeat($.indent) + '}>'
-  }
-} as const satisfies Matchers<string>
-
-/**
- * ## {@link generate `zod.generate`}
- *
- * Given a JSON Schema, OpenAPI document or {@link Traversable} schema, generates the
- * corresponding zod schema as a long, concatenated string.
- *
- * If you need to derive a schema dynamically, _especially_ if the schema comes from
- * some kind of user input, use {@link derive `zod.derive`} instead.
- */
-const generate
-  : (schema: core.Traversable.any, options: Options<string>) => string
-  = fn.flow(
-    createTarget(generated),
-    ([target, $]) => [
-      '/**',
-      ` * # {@link ${$.typeName} \`${$.typeName}\`}`,
-      ` * - Visit: {@link $doc.${$.absolutePath.map(escapePathSegment).join('.')} OpenAPI definition}`,
-      ' */',
-      'export type ' + $.typeName + ' = z.infer<typeof ' + $.typeName + '>',
-      '//          ^?',
-      'export const ' + $.typeName + ' = ' + target,
-    ].join('\n')
-  )
-
 /**
  * ## {@link derive `zod.derive`}
  *
@@ -339,6 +384,37 @@ const derive
     createTarget(derived),
     ([target]) => target,
   )
+
+// const typesOnly = {
+//   null() { return 'z.ZodNull' },
+//   boolean() { return 'z.ZodBoolean' },
+//   integer() { return 'z.ZodNumber' },
+//   number() { return 'z.ZodNumber' },
+//   string() { return 'z.ZodString' },
+//   enum({ enum: xs }) {
+//     return xs.length === 0 ? 'z.ZodNever'
+//       : xs.every(core.is.string) ? 'z.ZodEnum<[' + xs.map(JSON_stringify).join(', ') + ']>'
+//       : 'z.ZodUnion<[' + xs.map((s) => `z.ZodLiteral<${typeof s === 'string' ? JSON_stringify : String(s)}>`) + ']>'
+//   },
+//   // const() {},
+//   const({ const: x }, ix) { return serializeType(ix)(x) },
+//   array({ items: s }, $) { return Print.array($)('z.ZodArray<', s, '>') },
+//   record({ additionalProperties: s }, $) { return Print.array($)('z.ZodRecord<z.ZodString, ', s, '>') },
+//   tuple({ items: ss }, $) { return Print.array($)('z.ZodTuple<[', ...ss, ']>') },
+//   anyOf({ anyOf: [s0 = 'z.ZodNever', ...ss] }, $) { return Print.array($)('z.ZodUnion<[', s0, ...ss, ']>') },
+//   oneOf({ oneOf: [s0 = 'z.ZodNever', ...ss] }, $) { return Print.array($)('z.ZodUnion<[', s0, ...ss, ']>') },
+//   allOf({ allOf: [s0, s1 = 'z.ZodUnknown', ...ss] }, $) {
+//     return s0 === undefined ? s1
+//       : ss.length === 0 ? s1
+//       : Print.array($)('', [s1, ...ss].reduce((acc, x) => acc === '' ? x : `z.ZodIntersection<${acc}, ${x}>`, s0), '')
+//   },
+//   object(ss, $) {
+//     return ''
+//     + 'z.ZodObject<{'
+//     + Object_entries(ss.properties).map(generateEntry(ss, $, ['z.ZodOptional<', '>'])).join(',')
+//     + '\n' + ' '.repeat($.indent) + '}>'
+//   }
+// } as const satisfies Matchers<string>
 
 /**
  * ## {@link typelevel `zod.typelevel`}
@@ -389,21 +465,20 @@ const derive
  * const ex_04 = identity(ex_02).a
  * // If you hover over `a` here 𐋇 you'll see that the JSDoc link works 🥳
  */
-const typelevel
-  : (schema: core.Traversable.any, options: Options<string>) => string
-  = fn.flow(
-    createTarget(typesOnly),
-    ([target, $]) => [
-      '/**',
-      ` * # {@link ${$.typeName} \`${$.typeName}\`}`,
-      ` * - Visit: {@link $doc.${$.absolutePath.map(escapePathSegment).join('.')} OpenAPI definition}`,
-      ' */',
-
-      'export type ' + $.typeName + ' = z.infer<typeof ' + $.typeName + '>',
-      '//          ^?',
-      'export declare const ' + $.typeName + ': ' + target,
-    ].join('\n')
-  )
+// const typelevel
+//   : (schema: core.Traversable.any, options: Options<string>) => string
+//   = fn.flow(
+//     createTarget(typesOnly),
+//     ([target, $]) => [
+//       '/**',
+//       ` * # {@link ${$.typeName} \`${$.typeName}\`}`,
+//       ` * - Visit: {@link $doc.${$.absolutePath.map(escapePathSegment).join('.')} OpenAPI definition}`,
+//       ' */',
+//       'export type ' + $.typeName + ' = z.infer<typeof ' + $.typeName + '>',
+//       '//          ^?',
+//       'export declare const ' + $.typeName + ': ' + target,
+//     ].join('\n')
+//   )
 
 /**
  * TODO: add lightweight infrastructure to support deriving/generating codecs
