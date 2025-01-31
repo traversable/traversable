@@ -1,5 +1,5 @@
-import * as vi from "vitest"
 import { multiline } from "@traversable/algebra"
+import * as vi from "vitest"
 
 vi.describe("〖️⛳️〗‹‹‹ ❲@traversable/algebra/multiline❳", () => {
   vi.it("〖️⛳️〗› ❲multiline❳", () => {
