@@ -4,11 +4,11 @@ import { fn, map } from "@traversable/data"
 import type { _ } from "@traversable/registry"
 import { Invariant } from "@traversable/registry"
 
+import * as Gen from "../generator.js"
 import * as Print from "../print.js"
 import type { Index, Matchers, Options } from "../shared.js"
 import {
   JsonLike,
-  createTarget,
   defaults as defaults_,
   escapePathSegment,
 } from "../shared.js"
@@ -16,14 +16,17 @@ import {
 export {
   defaults,
   derive,
+  deriveAll,
   derived,
   generate,
+  generateAll,
   generated,
 }
 
 const defaults = {
   ...defaults_,
   typeName: defaults_.typeName + 'TypeBox',
+  header: ['import * as T from "@sinclair/typebox"'],
 } satisfies Omit<Options.Config<unknown>, 'handlers'>
 
 const serialize
@@ -134,7 +137,7 @@ const generated = {
 const generate
   : (schema: core.Traversable.orJsonSchema, options: Options<string>) => string
   = fn.flow(
-    createTarget(generated),
+    Gen.fromMatchers(generated),
     ([target, $]) => [
       '/**',
       ` * # {@link ${$.typeName} \`${$.typeName}\`}`,
@@ -145,6 +148,10 @@ const generate
       'export const ' + $.typeName + ' = ' + target,
     ].join('\n')
   )
+
+const generateAll
+  : (options: Options<string>) => string[]
+  = (options) => Gen.many({ ...defaults, ...options, generate })
 
 /**
  * ## {@link derive `zod.derive`}
@@ -162,6 +169,10 @@ const generate
 const derive
   : (schema: Traversable.orJsonSchema, options: Options<T.TAnySchema>) => T.TAnySchema
   = fn.flow(
-    createTarget(derived),
+    Gen.fromMatchers(derived),
     ([target]) => target,
   )
+
+const deriveAll
+  : (options: Options<T.TAnySchema>) => T.TAnySchema[]
+  = (options) => Gen.many({ ...defaults, ...options, generate: derive })

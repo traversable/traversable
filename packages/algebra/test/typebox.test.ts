@@ -1,9 +1,9 @@
 import * as fs from "node:fs"
 import * as vi from "vitest"
 
-import { seed, typeNameFromPath, typebox } from "@traversable/algebra"
+import { seed, typebox } from "@traversable/algebra"
 import type { JsonSchema } from "@traversable/core"
-import type { openapi } from "@traversable/openapi"
+import type { OpenAPI } from "@traversable/openapi"
 import type { _ } from "@traversable/registry"
 
 seed({ 
@@ -16,26 +16,18 @@ seed({
 
 vi.describe("〖️⛳️〗‹‹‹ ❲@traversable/algebra/typebox❳", () => {
   vi.it("〖️⛳️〗› ❲typebox.generate❳", async () => {
-    const document: openapi.doc = JSON.parse(fs.readFileSync(seed.PATH.spec).toString("utf8"))
-    const schemas = document.components?.schemas ?? {}
-    let generatedSchemas = [
-      'import * as T from "@sinclair/typebox"',
-      'import $doc from "./traversable.gen.json.js"',
-    ]
+    const document
+      : OpenAPI.doc<JsonSchema.any> 
+      = JSON.parse(fs.readFileSync(seed.PATH.specs.arbitrary).toString("utf8"))
+    const schemas = typebox.generateAll({ 
+      document, 
+      header: [
+        ...typebox.defaults.header, 
+        `import $doc from "../__specs__/arbitrary.hack.js"`
+      ]
+    })
 
-    for (const k in schemas) {
-      const schema = schemas[k]
-      const options = {
-        typeName: typeNameFromPath(k),
-        document,
-        absolutePath: ["components", "schemas", k],
-      } satisfies Parameters<typeof typebox.generate>[1]
-
-      // TODO: fix this type assertion
-      void generatedSchemas.push(typebox.generate(schema as JsonSchema, options))
-    }
-
-    fs.writeFileSync(seed.PATH.targets.typebox, generatedSchemas.join("\n\n") + "\n")
+    fs.writeFileSync(seed.PATH.targets.typebox, schemas.join("\n\n") + "\n")
     vi.assert.isTrue(fs.existsSync(seed.PATH.targets.typebox))
   })
 })

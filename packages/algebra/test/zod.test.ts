@@ -3,11 +3,12 @@ import { test } from "@fast-check/vitest"
 import * as vi from "vitest"
 import { z } from "zod"
 
-import { type Traversable, fc } from "@traversable/core"
+import { type JsonSchema, fc } from "@traversable/core"
 
-import { seed, typeNameFromPath, zod } from "@traversable/algebra"
+import { seed, zod } from "@traversable/algebra"
 import { _ } from "@traversable/registry"
 import IR = zod.IR
+import type { OpenAPI } from "@traversable/openapi"
 
 seed({
   include: { description: true, example: true }
@@ -15,66 +16,82 @@ seed({
 
 vi.describe("〖️⛳️〗‹‹‹ ❲@traversable/algebra/zod❳", () => {
   vi.it("〖️⛳️〗› ❲zod.derive❳", async () => {
-    const document = JSON.parse(fs.readFileSync(seed.PATH.spec).toString("utf8"))
-    // const document = JSON.parse(fs.readFileSync(seed.PATH.specs.octokit).toString("utf8"))
-    const jsonSchemas
-      : Record<string, Traversable.orJsonSchema>
-      = document.components?.schemas ?? {}
-    let validators: z.ZodTypeAny[] = []
-    let types = [
-      `import type { z } from "zod"`, 
-      `import $doc from "./traversable.gen.json.js"`,
+    const document
+    : OpenAPI.doc<JsonSchema.any> 
+    = JSON.parse(fs.readFileSync(seed.PATH.specs.arbitrary).toString("utf8"))
+     
+  const schemas = zod.generateAll({ 
+    document, 
+    header: [
+      ...zod.defaults.header, 
+      `import $doc from "../__specs__/arbitrary.hack.js"`
     ]
-    let schemas = [
-      `import { z } from "zod"`, 
-      `import $doc from "./traversable.gen.json.js"`,
-    ]
-    // let schemas = [
-    //   `import { z } from "zod"`, 
-    //   `import $doc from "../__specs__/octokit.json.js"`,
-    // ]
+  })
 
-    for (const k in jsonSchemas) {
-      const jsonSchema = jsonSchemas[k]
-      const options = {
-        typeName: typeNameFromPath(k),
-        document,
-        absolutePath: ["components", "schemas", k],
-      } satisfies Parameters<typeof zod.generate>[1]
-      const schema = zod.generate(jsonSchema, options)
+  fs.writeFileSync(seed.PATH.targets.zod, schemas.join("\n\n") + "\n")
+  vi.assert.isTrue(fs.existsSync(seed.PATH.targets.zod))
 
-      void schemas.push(schema)
-    }
+  //   const document = JSON.parse(fs.readFileSync(seed.PATH.specs.arbitrary).toString("utf8"))
+  //   // const document = JSON.parse(fs.readFileSync(seed.PATH.specs.octokit).toString("utf8"))
+  //   const jsonSchemas
+  //     : Record<string, Traversable.orJsonSchema>
+  //     = document.components?.schemas ?? {}
+  //   let validators: z.ZodTypeAny[] = []
+  //   let types = [
+  //     `import type { z } from "zod"`, 
+  //     `import $doc from "./traversable.gen.json.js"`,
+  //   ]
+  //   let schemas = [
+  //     `import { z } from "zod"`, 
+  //     `import $doc from "./traversable.gen.json.js"`,
+  //   ]
+  //   // let schemas = [
+  //   //   `import { z } from "zod"`, 
+  //   //   `import $doc from "../__specs__/octokit.json.js"`,
+  //   // ]
 
-    // for (const k in jsonSchemas) {
-    //   const jsonSchema = jsonSchemas[k]
-    //   const options = {
-    //     typeName: typeNameFromPath(k),
-    //     document,
-    //     absolutePath: ["components", "schemas", k],
-    //   } satisfies Parameters<typeof zod.generate>[1]
-    //   const schema = zod.derive(jsonSchema, options)
-    //   void validators.push(schema)
-    // }
+  //   for (const k in jsonSchemas) {
+  //     const jsonSchema = jsonSchemas[k]
+  //     const options = {
+  //       typeName: typeNameFromPath(k),
+  //       document,
+  //       absolutePath: ["components", "schemas", k],
+  //     } satisfies Parameters<typeof zod.generate>[1]
+  //     const schema = zod.generate(jsonSchema, options)
 
-    // for (const k in jsonSchemas) {
-    //   const jsonSchema = jsonSchemas[k]
-    //   const options = {
-    //     typeName: typeNameFromPath(k),
-    //     document,
-    //     absolutePath: ["components", "schemas", k],
-    //   } satisfies Parameters<typeof zod.generate>[1]
-    //   const type = zod.typelevel(jsonSchema, options)
-    //   void types.push(type)
-  // }
+  //     void schemas.push(schema)
+  //   }
 
-    // fs.writeFileSync(seed.PATH.targets.octokit, schemas.join("\n\n"))
-    fs.writeFileSync(seed.PATH.targets.zod, schemas.join("\n\n"))
-    // fs.writeFileSync(seed.PATH.targets.zodTypesOnly, types.join("\n\n"))
+  //   // for (const k in jsonSchemas) {
+  //   //   const jsonSchema = jsonSchemas[k]
+  //   //   const options = {
+  //   //     typeName: typeNameFromPath(k),
+  //   //     document,
+  //   //     absolutePath: ["components", "schemas", k],
+  //   //   } satisfies Parameters<typeof zod.generate>[1]
+  //   //   const schema = zod.derive(jsonSchema, options)
+  //   //   void validators.push(schema)
+  //   // }
 
-    // vi.assert.isTrue(fs.existsSync(seed.PATH.targets.octokit))
-    vi.assert.isTrue(fs.existsSync(seed.PATH.targets.zod))
-    // vi.assert.isTrue(fs.existsSync(seed.PATH.targets.zodTypesOnly))
+  //   // for (const k in jsonSchemas) {
+  //   //   const jsonSchema = jsonSchemas[k]
+  //   //   const options = {
+  //   //     typeName: typeNameFromPath(k),
+  //   //     document,
+  //   //     absolutePath: ["components", "schemas", k],
+  //   //   } satisfies Parameters<typeof zod.generate>[1]
+  //   //   const type = zod.typelevel(jsonSchema, options)
+  //   //   void types.push(type)
+  // // }
+
+  //   // fs.writeFileSync(seed.PATH.targets.octokit, schemas.join("\n\n"))
+  //   fs.writeFileSync(seed.PATH.targets.zod, schemas.join("\n\n"))
+  //   // fs.writeFileSync(seed.PATH.targets.zodTypesOnly, types.join("\n\n"))
+
+  //   // vi.assert.isTrue(fs.existsSync(seed.PATH.targets.octokit))
+  //   vi.assert.isTrue(fs.existsSync(seed.PATH.targets.zod))
+  //   // vi.assert.isTrue(fs.existsSync(seed.PATH.targets.zodTypesOnly))
+
   })
 })
 

@@ -1,14 +1,14 @@
-import type { Meta, Traversable } from "@traversable/core"
+import type { Meta } from "@traversable/core"
 import { core, keyOf$ } from "@traversable/core"
 import { fn } from "@traversable/data"
 import type { _ } from "@traversable/registry"
 import { Invariant, KnownFormat } from "@traversable/registry"
 
+import * as Gen from "../generator.js"
 import * as Print from "../print.js"
 import type { Index, Matchers, Options } from "../shared.js"
 import {
   JsonLike,
-  createTarget,
   defaults as defaults_,
   escapePathSegment,
 } from "../shared.js"
@@ -61,10 +61,12 @@ const serialize
 /** @internal */
 const Object_entries = globalThis.Object.entries
 
+const header = [`import { type } from "arktype"`] as const satisfies string[]
 const defaults = {
   ...defaults_,
+  header,
   typeName: defaults_.typeName + 'ArkTypeSchema',
-} satisfies Omit<Options.Config<unknown>, 'handlers'>
+} as const satisfies Omit<Options.Config<unknown>, 'handlers'>
 
 type StringFormat = typeof StringFormat
 const StringFormat = {
@@ -219,9 +221,9 @@ const generated = {
 } as const satisfies Matchers<string>
 
 export const generate
-  : (schema: Traversable.orJsonSchema, options: Options<string>) => string
+  : Gen.Generator<string>
   = fn.flow(
-    createTarget(generated),
+    Gen.fromMatchers(generated),
     ([target, $]) => [
       '/**',
       ` * # {@link ${$.typeName} \`${$.typeName}\`}`,
@@ -236,5 +238,9 @@ export const generate
           `export const ${$.typeName}`,
           `  = ${target.startsWith('type') ? target : `type(${target})`}`,
         ]
-    ].join('\n')
+    ].join('\n'),
   )
+
+export const generateAll
+  : (options: Options<string>) => string[]
+  = (options) => Gen.many({ ...defaults, ...options, generate })

@@ -3,7 +3,7 @@ import * as path from "node:path"
 import type { Context } from "@traversable/core"
 import { Extension, Traversable, core, is, keyOf$, t } from "@traversable/core"
 import { array, fn, object, string } from "@traversable/data"
-import { deref, openapi } from "@traversable/openapi"
+import { OpenAPI, deref, type openapi } from "@traversable/openapi"
 import type { Partial, Requiring, newtype } from "@traversable/registry"
 import { symbol } from "@traversable/registry"
 
@@ -75,7 +75,8 @@ export declare namespace Options {
     absolutePath: Context["absolutePath"]
     flags: Flags
     typeName: string
-    document: openapi.doc
+    document: OpenAPI.doc<Traversable.orJsonSchema>
+    header: string | string[]
   }
   interface Config<T> extends Options.Base, Context {
     handlers: Extension.Handlers<T, Index>
@@ -86,11 +87,12 @@ export function fold<T>($: Options.Config<T>) {
   return Traversable.foldIx(Extension.match($))
 }
 
-export function defineOptions<T, Ix>(handlers: Extension.Handlers<T, Index>): (options?: Options<T>) => Options.Config<T> {
+export function optionsFromMatchers<T, Ix>(handlers: Extension.Handlers<T, Index>): (options?: Options<T>) => Options.Config<T> {
   return ($?: Options<T>) => ({
     handlers,
     typeName: $?.typeName ?? defaults.typeName,
     document: $?.document ?? defaults.document,
+    header: $?.header || defaults.header,
     flags: !$?.flags ? defaults.flags : {
       nominalTypes: $.flags.nominalTypes ?? defaults.flags.nominalTypes,
       preferInterfaces: $.flags.preferInterfaces ?? defaults.flags.preferInterfaces,
@@ -106,10 +108,29 @@ export function defineOptions<T, Ix>(handlers: Extension.Handlers<T, Index>): (o
   })
 }
 
+export function parseOptions<T>(_: Options<T>) {
+  return {
+    handlers: _.handlers,
+    absolutePath: _.absolutePath || defaults.absolutePath,
+    document: _.document || defaults.document,
+    ..._.header && { header: _.header },
+    // header: _.header ?? defaults.header,
+    typeName: _.typeName ?? defaults.typeName,
+    flags: !_.flags ? defaults.flags : {
+      nominalTypes: _.flags?.nominalTypes ?? defaults.flags.nominalTypes,
+      preferInterfaces: _.flags?.preferInterfaces ?? defaults.flags.preferInterfaces,
+      includeExamples: _.flags?.includeExamples ?? defaults.flags.includeExamples,
+      includeJsdocLinks: _.flags?.includeJsdocLinks ?? defaults.flags.includeJsdocLinks,
+      includeLinkToOpenApiNode: _.flags?.includeLinkToOpenApiNode ?? defaults.flags.includeLinkToOpenApiNode,
+    },
+  }
+}
+
 export const defaults = {
   typeName: "Anonymous",
   absolutePath: ["components", "schemas"],
-  document: openapi.doc({}),
+  document:  OpenAPI.new({}),
+  header: [],
   flags: {
     nominalTypes: true,
     preferInterfaces: true,
@@ -121,7 +142,7 @@ export const defaults = {
   path: [],
   depth: 0,
   siblingCount: 0,
-} satisfies Omit<Options.Config<unknown>, "handlers">
+} as const satisfies Omit<Options.Config<unknown>, "handlers">
 
 
 const ZOD_IDENT_MAP = {
@@ -234,6 +255,7 @@ const buildMaskInterpreter: BuildPathInterpreter = (lookup) => ({ typeName }) =>
 /** @internal */
 const buildOpenApiNodePathInterpreter: BuildPathInterpreter = ()  => ($) => (xs) => {
   const path = [...$.absolutePath.map(escapePathSegment), ...xs]
+  console.log(object.omit($, "handlers")) 
   let out: string[] = []
   for (let ix = 0, len = path.length; ix < len; ix++) {
     const x = String(path[ix])
@@ -256,19 +278,6 @@ export function linkToOpenAPIDocument(k: string, $: Index): string | null {
     +  ' `Link to OpenAPI node`}'
 }
 
-
-export function createTarget<T, Ix>(matchers: Extension.Handlers<T, Ix>): (schema: Traversable.orJsonSchema, options: Options<T>) => [target: T, config: Options.Config<T>]
-export function createTarget<T, Ix>(matchers: Extension.Handlers<T, Ix>): (schema: Traversable.orJsonSchema, options: Options<T>) => [target: T, config: Options.Config<T>]
-export function createTarget<T>(matchers: Handlers<T>) {
-  return (schema: Traversable.orJsonSchema, options: Options<T>) => {
-    const $ = defineOptions(matchers)(options)
-    return fn.pipe(
-      fold($),
-      fn.applyN($, schema),
-      (target) => [target, $] satisfies [any, any],
-    )
-  }
-}
 
 
 const pad

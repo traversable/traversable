@@ -6,6 +6,7 @@ import { fn, object } from "@traversable/data"
 import type { _ } from "@traversable/registry"
 import { Invariant, KnownFormat } from "@traversable/registry"
 
+import * as Gen from "../generator.js"
 import * as JSDoc from "../jsdoc.js"
 import * as Print from "../print.js"
 
@@ -13,7 +14,6 @@ import type { Index, Matchers, Options } from "../shared.js"
 import {
   JsonLike,
   createMask,
-  createTarget,
   createZodIdent,
   defaults as defaults_,
   escapePathSegment,
@@ -23,8 +23,10 @@ import {
 export {
   defaults,
   derive,
+  deriveAll,
   derived,
   generate,
+  generateAll,
   generated,
   // typelevel,
   // typesOnly,
@@ -40,6 +42,7 @@ const JSON_stringify = (u: unknown) => JSON.stringify(u, null, 2)
 const defaults = {
   ...defaults_,
   typeName: defaults_.typeName + 'ZodSchema',
+  header: ['import { z } from "zod"'],
 } satisfies Omit<Options.Config<unknown>, 'handlers'>
 
 type StringFormat = typeof StringFormat
@@ -140,9 +143,9 @@ const generated = {
  * some kind of user input, use {@link derive `zod.derive`} instead.
  */
 const generate
-  : (schema: core.Traversable.orJsonSchema, options: Options<string>) => string
+  : Gen.Generator<string>
   = fn.flow(
-    createTarget(generated),
+    Gen.fromMatchers(generated),
     ([target, $]) => [
       '/**',
       ` * # {@link ${$.typeName} \`${$.typeName}\`}`,
@@ -153,6 +156,11 @@ const generate
       'export const ' + $.typeName + ' = ' + target,
     ].join('\n')
   )
+
+const generateAll
+  : (options: Options<string>) => string[]
+  = (options) => Gen.many({ ...defaults, ...options, generate })
+
 
 const derived = {
   any(_) { return z.unknown() },
@@ -198,11 +206,15 @@ const derived = {
  * more efficient.
  */
 const derive
-  : (schema: Traversable.orJsonSchema, options: Options<z.ZodTypeAny>) => z.ZodTypeAny
+  : Gen.Generator<z.ZodTypeAny>
   = fn.flow(
-    createTarget(derived),
+    Gen.fromMatchers(derived),
     ([target]) => target,
   )
+
+const deriveAll
+  : (options: Options<z.ZodTypeAny>) => z.ZodTypeAny[]
+  = (options) => Gen.many({ ...defaults, ...options, generate: derive })
 
 function linkToNode(k: string, $: Index): string | null {
   const IDENT = createZodIdent($)([...$.path, 'shape', k]).join('')
@@ -218,6 +230,7 @@ function generateEntry(
     [BEFORE_OPT, AFTER_OPT]: readonly [before: string, after: string]
 ): (entry: [string, string]) => string {
   return ([k, v]) => {
+    // console.log("$", $)
     const EXAMPLE_TAG = JSDoc.example(k , $)
     const DESCRIPTION_TAG = JSDoc.description(k, $)
     const LINK_HERE = linkToNode(k, $)

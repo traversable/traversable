@@ -6,6 +6,7 @@ export * as arbitrary from "./arbitrary.js"
 export * as validator from "./validator.js"
 export * as Print from "./print.js"
 export * as JSDoc from './jsdoc.js'
+export * as Generator from './generator.js'
 
 /// interpreters
 export { ark } from "./arktype/exports.js"
@@ -19,7 +20,7 @@ export {
   ESC_MAP, 
   escapePathSegment, 
   unescapePathSegment, 
-  defineOptions, 
-  createTarget,
+  optionsFromMatchers, 
+  fold,
 } from "./shared.js"
 export { seed, typeNameFromPath } from "./seed.js"

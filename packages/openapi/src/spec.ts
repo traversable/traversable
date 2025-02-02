@@ -1,3 +1,4 @@
+import type { JsonSchema, fc } from "@traversable/core"
 import { fn, map } from "@traversable/data"
 import type {
   _,
@@ -5,7 +6,6 @@ import type {
   newtype,
 } from "@traversable/registry"
 import type { HKT } from "@traversable/registry"
-import type * as fc from "fast-check"
 
 import { arbitrary, defaults, type doc as document, type parameter } from "./document.js"
 import type { Schema as Schema_ } from "./schema/exports.js"
@@ -57,15 +57,23 @@ declare namespace OpenAPI {
     }
   }
 
+  /**
+   * ### {@link EtcEtc}
+   * "Example" keys are stripped and replaced with a string index signature.
+   * Used only to give the reader a visual hint, show showing the sort of keys
+   * the API expects (without actually enforcing them).
+   */
+  type Etc<T> = never | { [x: string]: T[keyof T] }
+
   type doc<𐠀 = unknown> = document.meta & {
     openapi: autocomplete<"3.1.0">
     components: {
-      schemas: {
-        [schemaName: label.key<'UserSchema' | 'OrderSchema'>]: 𐠀
-      }
+      schemas: Etc<{
+        [schemaName in 'UserSchema' | 'OrderSchema' | 'Etc...']: 𐠀
+      }>
     }
-    paths: {
-      [K in label.key<'/store/order' | '/store/order/{id}'>]: {
+    paths: Etc<{
+      [path in '/store/order' | '/store/order/{id}' | '/etc/etc...']: {
         [K in "get" | "post" | "put" | "delete" | "trace"]+?: {
           parameters?: readonly (
             | param.cookie<𐠀>
@@ -84,21 +92,21 @@ declare namespace OpenAPI {
           responses?: {
             [status𛰃code: string]: {
               description: string
-              content?: {
-                [media𛰃type: label.key<'text/html' | 'application/json'>]: {
+              content?: Etc<{
+                [media𛰃type in 'text/html' | 'application/json' | 'etc/etc...']: {
                   schema?: 𐠀
                 }
-              }
-              headers?: {
-                [Header: label.key<'Content-Type' | 'Authorization'>]: {
+              }>
+              headers?: Etc<{
+                [Header in 'Content-Type' | 'Authorization' | 'Etc...']: {
                   schema?: 𐠀
                 }
-              }
+              }>
             }
           }
         }
       }
-    }
+    }>
   }
 
   namespace label {
@@ -170,7 +178,7 @@ const defaultInfo = {
   version: "0.0.0",
 } satisfies OpenAPI.doc["info"]
 
-function OpenAPI_new<T extends OpenAPI.doc<Schema>>(spec: Partial<T>): T
+function OpenAPI_new<T extends OpenAPI.doc<JsonSchema>>(spec: Partial<T>): T
 function OpenAPI_new<S>(): <T extends OpenAPI.F<S>>(spec: T) => T 
 function OpenAPI_new(spec?: Partial<OpenAPI.F<any>>) { 
   return spec === undefined 
@@ -190,94 +198,105 @@ function OpenAPI_new(spec?: Partial<OpenAPI.F<any>>) {
     } satisfies OpenAPI.doc<any>
 }
 
-function OpenAPI_map<S, T>(doc: OpenAPI.doc<S>, f: (s: S) => T): OpenAPI.doc<T> {
-  return {
-    ...doc,
-    components: {
-      ...doc.components,
-      schemas: fn.pipe(
-        doc.components.schemas,
-        map(f),
-      )
-    },
-    paths: fn.pipe(
-      doc.paths,
-      map(
-        (pathitem) => fn.pipe(
-          pathitem,
-          map(
-            (operation) => !operation ? void 0 : fn.pipe(
-              operation,
-              ({ parameters, requestBody, responses, ...operation }) => ({
-                ...operation,
-                ////////////////////////////////
-                ///    begin: parameters     ///
-                ...parameters && ({
-                parameters: map(
-                  parameters,
-                  (parameter) => ({
-                    ...parameter,
-                    schema: f(parameter.schema),
-                  })
-                )}),
-                ///      end: parameters     ///
-                ////////////////////////////////
-                ///    begin: requestBody    ///
-                ...requestBody && ({
-                requestBody: fn.pipe(
-                  requestBody,
-                  ({ content, ...requestBody }) => ({
-                    ...requestBody,
-                    ...content && ({
-                    content: map(
-                      content,
-                      ({ schema, ...mediatype }) => ({
-                        ...mediatype,
-                        schema: schema ? f(schema) : void 0
-                      })
-                    )})
-                  })
-                )}),
-                ///      end: requestBody    ///
-                ////////////////////////////////
-                ///    begin: responses      ///
-                ...responses && ({
-                responses: map(
-                  responses,
-                  ({ content, headers, ...response }) => ({
-                    ...response,
-                    ...content && ({
-                    content: fn.pipe(
-                      content,
-                      (content) => !content ? void 0 : fn.pipe(
+function OpenAPI_map<S, T>(doc: OpenAPI.doc<S>, f: (s: S) => T): OpenAPI.doc<T>
+function OpenAPI_map<S, T>(f: (s: S) => T): (doc: OpenAPI.doc<S>) => OpenAPI.doc<T>
+function OpenAPI_map<S, T>(
+  ...args: 
+    | [f: (s: S) => T]
+    | [doc: OpenAPI.doc<S>, f: (s: S) => T]
+): OpenAPI.doc<T> | ((doc: OpenAPI.doc<S>) => OpenAPI.doc<T>) {
+  if (args.length === 1) 
+    return (doc: OpenAPI.doc<S>) => OpenAPI_map(doc, ...args)
+  else {
+    const [doc, f] = args
+    return {
+      ...doc,
+      components: {
+        ...doc.components,
+        schemas: fn.pipe(
+          doc.components.schemas,
+          map(f),
+        )
+      },
+      paths: fn.pipe(
+        doc.paths,
+        map(
+          (pathitem) => fn.pipe(
+            pathitem,
+            map(
+              (operation) => !operation ? void 0 : fn.pipe(
+                operation,
+                ({ parameters, requestBody, responses, ...operation }) => ({
+                  ...operation,
+                  ////////////////////////////////
+                  ///    begin: parameters     ///
+                  ...parameters && ({
+                  parameters: map(
+                    parameters,
+                    (parameter) => ({
+                      ...parameter,
+                      schema: f(parameter.schema),
+                    })
+                  )}),
+                  ///      end: parameters     ///
+                  ////////////////////////////////
+                  ///    begin: requestBody    ///
+                  ...requestBody && ({
+                  requestBody: fn.pipe(
+                    requestBody,
+                    ({ content, ...requestBody }) => ({
+                      ...requestBody,
+                      ...content && ({
+                      content: map(
                         content,
+                        ({ schema, ...mediatype }) => ({
+                          ...mediatype,
+                          schema: schema ? f(schema) : void 0
+                        })
+                      )})
+                    })
+                  )}),
+                  ///      end: requestBody    ///
+                  ////////////////////////////////
+                  ///    begin: responses      ///
+                  ...responses && ({
+                  responses: map(
+                    responses,
+                    ({ content, headers, ...response }) => ({
+                      ...response,
+                      ...content && ({
+                      content: fn.pipe(
+                        content,
+                        (content) => !content ? void 0 : fn.pipe(
+                          content,
+                          map(
+                            ({ schema, ...mediatype }) => ({
+                              ...mediatype,
+                              schema: schema ? f(schema) : void 0
+                            })
+                          ),
+                        )
+                      )}),
+                      ...headers && ({
+                      headers: fn.pipe(
+                        headers,
                         map(
-                          ({ schema, ...mediatype }) => ({
-                            ...mediatype,
+                          ({ schema, ...header }) => ({
+                            ...header,
                             schema: schema ? f(schema) : void 0
                           })
                         ),
-                      )
-                    )}),
-                    ...headers && ({
-                    headers: fn.pipe(
-                      headers,
-                      map(
-                        ({ schema, ...header }) => ({
-                          ...header,
-                          schema: schema ? f(schema) : void 0
-                        })
-                      ),
-                    )})
-                  })
-                )})
-                ///     end: responses      ///
-                ///////////////////////////////
-              })
+                      )})
+                    })
+                  )})
+                  ///     end: responses      ///
+                  ///////////////////////////////
+                })
+              )
             )
           )
         )
       )
-    )
+    }
   }
 }

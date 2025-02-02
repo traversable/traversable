@@ -1,4 +1,4 @@
-import { createTarget } from "@traversable/algebra"
+import { Generator } from "@traversable/algebra"
 import { Extension, registry } from "@traversable/core"
 import * as vi from "vitest"
 
@@ -27,7 +27,7 @@ vi.describe("〖️⛳️〗‹‹‹ ❲@traversable/algebra/augmentation❳", 
   })
 
   vi.it("〖️⛳️〗› ❲algebra/augmentation❳: matchers are applied during evaluation", async () => {
-    const za = createTarget({
+    const za = Generator.fromMatchers({
       Bro(x, _) { return x.type  },
       Brr(x, _) { return x.type + 1 },
       Bun(x, _) { return x.type },

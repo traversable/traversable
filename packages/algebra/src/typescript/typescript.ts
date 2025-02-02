@@ -1,13 +1,12 @@
 import * as path from "node:path"
 
-import { Extension, Traversable } from "@traversable/core"
+import { Extension, type Traversable } from "@traversable/core"
 import { fn, object } from "@traversable/data"
-import { openapi } from "@traversable/openapi"
+import { OpenAPI } from "@traversable/openapi"
 import { KnownFormat, symbol } from "@traversable/registry"
 
-
-import type { Index, Matchers, Options } from "../shared.js"
-import { createMask, createZodIdent } from "../shared.js"
+import * as Gen from "../generator.js"
+import type { Matchers, Options } from "../shared.js"
 import * as zod from "../zod/exports.js"
 
 //////////////////
@@ -31,17 +30,6 @@ import * as zod from "../zod/exports.js"
 ///  USERLAND  ///
 //////////////////
 
-export { 
-  generate 
-}
-
-// type Index = Options_.Base & Context
-// type Options<S> = Options_<Index, S>
-// declare namespace Options {
-//   interface Config<S> extends Options_.Config<S, Index> {}
-// }
-// type Matchers<S> = Extension.BuiltIns<S, Options_.Base & Context>
-
 /** @internal */
 const JSON_stringify = (u: unknown) => JSON.stringify(u, null, 2)
 /** @internal */
@@ -51,27 +39,11 @@ const isKeyOf = <T extends Record<string, string>>(dictionary: T) =>
   (k: keyof any | undefined): k is keyof T =>
     k !== undefined && k in dictionary
 
-///////////////////////////////////
-///    CANDIDATES FOR SHARED    ///
-function fold<T>($: Options.Config<T>) { 
-  return Traversable.foldIx(Extension.match($)) 
-}
-
-const createTarget 
-  : <T>(matchers: Matchers<T>) => (schema: Traversable.orJsonSchema, options: Options<T>) => [target: T, config: Options.Config<T>]
-  = (matchers) => (schema, options) => {
-    const $ = defineOptions(matchers)(options)
-    return fn.pipe(
-      fold($),
-      fn.applyN($, schema),
-      (target) => [target, $] satisfies [any, any],
-    )
-  }
-
 const defaults = {
   typeName: 'AnonymousTypeScriptType',
   absolutePath: ['components', 'schemas'],
-  document: openapi.doc({}),
+  header: [],
+  document: OpenAPI.new({}),
   flags: {
     nominalTypes: true,
     preferInterfaces: true,
@@ -84,29 +56,6 @@ const defaults = {
   depth: 0,
   siblingCount: 0,
 } satisfies Omit<Options.Config<unknown>, 'handlers'>
-
-function defineOptions<S>(handlers: Extension.Handlers<S, Index>): (options?: Options<S>) => Options.Config<S> {
-  return ($?: Omit<Options<S>, 'handlers'>) => ({
-    handlers,
-    typeName: $?.typeName ?? defaults.typeName,
-    document: $?.document ?? defaults.document,
-    flags: !$?.flags ? defaults.flags : {
-      nominalTypes: $.flags.nominalTypes ?? defaults.flags.nominalTypes,
-      preferInterfaces: $.flags.preferInterfaces ?? defaults.flags.preferInterfaces,
-      includeExamples: $.flags.includeExamples ?? defaults.flags.includeExamples,
-      includeJsdocLinks: $.flags.includeJsdocLinks ?? defaults.flags.includeJsdocLinks,
-      includeLinkToOpenApiNode: $.flags.includeLinkToOpenApiNode ?? defaults.flags.includeLinkToOpenApiNode,
-    },
-    absolutePath: $?.absolutePath ?? defaults.absolutePath,
-    indent: defaults.indent,
-    path: defaults.path,
-    depth: defaults.depth,
-    siblingCount: defaults.siblingCount,
-  })
-}
-///    CANDIDATES FOR SHARED    ///
-///////////////////////////////////
-
 
 const KnownStringFormats = {
   [KnownFormat.string.email]: 'string.email',
@@ -199,15 +148,24 @@ const extendedHandlers = {
   ...baseHandlers,
 } satisfies Matchers<string>
 
-const generate
+export const generate
   : (schema: Traversable.orJsonSchema, options: Options<string>) => string
   = fn.flow(
-    createTarget(pathHandlers),
+    Gen.fromMatchers(pathHandlers),
     ([target, $]) => [
       'export type ' + $.typeName + ' = typeof ' + $.typeName,
       'export declare const ' + $.typeName + ': ' + target,
     ].join('\n')
   )
+ 
+export const generateAll
+  : (options: Options<string>) => string[]
+  = (options) => Gen.many({ 
+    ...defaults, 
+    ...options, 
+    generate, 
+  })
+
 
 // function generate<Meta>(schema: Traversable.orJsonSchema, options: ts.Options<string, Context, Meta>): string
 // function generate<Meta>(schema: Traversable.orJsonSchema, options: ts.Options.withHandlers<string, Context, Meta>): string

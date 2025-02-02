@@ -520,7 +520,12 @@ const IxFunctor: IndexedFunctor<Context, Traversable_lambda, Traversable_orJsonS
         // `next` is already applied to the path, bc sometimes `next`
         // isn't actually last (as is the case with `symbol.optional`)
         path,
-        absolutePath: [...prev.absolutePath, PathPrefixMap[xs.type], ...next === undefined ? [] : [String(next)]].filter((_) => _ !== null),
+        absolutePath: [
+          ...prev.absolutePath, 
+          PathPrefixMap[xs.type], 
+          (next == null ? null : String(next)),
+          // ...next === undefined ? [] : [String(next)]
+        ].filter((_) => _ !== null),
         ...overrides,
       } satisfies Context)
 
