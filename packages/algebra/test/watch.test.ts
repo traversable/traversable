@@ -1,6 +1,6 @@
 import * as vi from "vitest"
 
-import { type Handlers, type Options as Options_, defineOptions, zod } from "@traversable/algebra"
+import { Generator, type Handlers, type Options as Options_ } from "@traversable/algebra"
 
 import type { Finite } from "@traversable/registry"
 
@@ -30,19 +30,19 @@ export function watch(options: watch.Options): Promise<void> {
   return null as never
 }
 
-watch.configure = ({ handlers, ...options }: watch.Options): watch.Config => {
-  const matchers = { 
-    ...zod.generated,  
-    Bro() { return "" },
-    Brr() { return "" },
-    Bun() { return "" },
-  } satisfies Handlers<string>
+// watch.configure = ({ handlers, ...options }: watch.Options): watch.Config => {
+//   const matchers = { 
+//     ...zod.generated,  
+//     Bro() { return "" },
+//     Brr() { return "" },
+//     Bun() { return "" },
+//   } satisfies Handlers<string>
 
-  return {
-    ...defineOptions(matchers)(options),
-    ...options,
-  }
-}
+//   return {
+//     ...Generator.fromMatchers(matchers)(options),
+//     ...options,
+//   }
+// }
 
 vi.describe("〖️⛳️〗‹‹‹ ❲@traversable/algebra❳", () => {
   vi.it("〖️⛳️〗› ❲watch❳", () => {

@@ -87,6 +87,15 @@ const pathify = fn.flow(
 
 const allOf = (LOOP: fc.Arbitrary<unknown>, $: Schema.Constraints.Config) => Schema.allOf.base(fc.dictionary(LOOP), $)
 
+const preprocess = fn.flow(
+  OpenAPI.map(Traversable.fromJsonSchema),
+  (trav) => tree.modify(
+    trav, 
+    ["paths"], 
+    map((v, k) => ({ $unref: unescapePathSegment(k), ...(v as {}) })),
+  ),
+)
+
 const generateSpec = (options?: seed.Options) => fn.pipe(
   OpenAPI.generate({
     include: options?.include ?? defaults.include,
@@ -98,9 +107,7 @@ const generateSpec = (options?: seed.Options) => fn.pipe(
     }
   }),
   fc.peek,
-  // TODO: fix this type assertion
-  (x) => OpenAPI.map(x, (_) => Traversable.fromJsonSchema(_ as Traversable.orJsonSchema)),
-  (x) => tree.modify(x, ['paths'], map((v, k) => ({ $unref: unescapePathSegment(k), ...(v as {}) }))),
+  preprocess,
   JSON_stringify,
 )
 
@@ -169,6 +176,8 @@ export function seed($: seed.Options = defaults) {
 }
 
 void (seed.PATH = PATH)
+void (seed.preprocess = preprocess)
+void (seed.pathify = pathify)
 
       /////////
       // if (!fs.existsSync(PATH.targets.ark)) fs.writeFileSync(PATH.targets.ark, '')

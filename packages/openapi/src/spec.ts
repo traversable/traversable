@@ -166,9 +166,10 @@ namespace OpenAPI {
   OpenAPI.new = OpenAPI_new
   OpenAPI.defaults = defaults
 
-  export function generate(constraints?: arbitrary.Constraints): fc.Arbitrary<OpenAPI.doc<Schema>> 
+  export function generate(constraints?: arbitrary.Constraints): fc.Arbitrary<OpenAPI.doc<JsonSchema>> 
   export function generate(constraints?: arbitrary.Constraints) {
-    return arbitrary(constraints)
+    // TODO:                      ↆↆ fix this type assertion
+    return arbitrary(constraints) as fc.Arbitrary<OpenAPI.doc<JsonSchema>>
   }
 }
 
@@ -178,8 +179,8 @@ const defaultInfo = {
   version: "0.0.0",
 } satisfies OpenAPI.doc["info"]
 
-function OpenAPI_new<T extends OpenAPI.doc<JsonSchema>>(spec: Partial<T>): T
-function OpenAPI_new<S>(): <T extends OpenAPI.F<S>>(spec: T) => T 
+function OpenAPI_new<T extends OpenAPI.doc>(spec: Partial<T>): T
+// function OpenAPI_new<S>(): <T extends OpenAPI.F<S>>(spec: T) => T 
 function OpenAPI_new(spec?: Partial<OpenAPI.F<any>>) { 
   return spec === undefined 
     ? (spec: Partial<OpenAPI.F<any>>) => OpenAPI_new(spec)

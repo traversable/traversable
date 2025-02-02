@@ -1,5 +1,6 @@
 import * as vi from "vitest"
 
+import { Traversable } from "@traversable/core"
 import { OpenAPI, Schema } from "@traversable/openapi"
 
 const doc = OpenAPI.new({
