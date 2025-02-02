@@ -6,8 +6,8 @@ import { fn, object } from "@traversable/data"
 import type { _ } from "@traversable/registry"
 import { Invariant, KnownFormat } from "@traversable/registry"
 
+import * as JSDoc from "../jsdoc.js"
 import * as Print from "../print.js"
-import * as Format from "../formatters.js"
 
 import type { Index, Matchers, Options } from "../shared.js"
 import {
@@ -91,6 +91,7 @@ const Constrain = {
 } as const
 
 const generated = {
+  any(_, $) { return 'z.unknown()'},
   null(_, $) { return 'z.null()' },
   boolean(_, $) { return 'z.boolean()' },
   integer({ meta = {} }, $) { return `z.number().int()${Constrain.integer(meta).join('')}` },
@@ -139,7 +140,7 @@ const generated = {
  * some kind of user input, use {@link derive `zod.derive`} instead.
  */
 const generate
-  : (schema: core.Traversable.any, options: Options<string>) => string
+  : (schema: core.Traversable.orJsonSchema, options: Options<string>) => string
   = fn.flow(
     createTarget(generated),
     ([target, $]) => [
@@ -154,12 +155,13 @@ const generate
   )
 
 const derived = {
-  null() { return z.null() },
-  boolean() { return z.boolean() },
-  integer() { return z.number().int() },
-  number() { return z.number() },
+  any(_) { return z.unknown() },
+  null(_) { return z.null() },
+  boolean(_) { return z.boolean() },
+  integer(_) { return z.number().int() },
+  number(_) { return z.number() },
   string({ meta }) { return (StringSchema[(meta?.format ?? '') as never] ?? z.string()) },
-  const() { return z.never() },
+  const(_) { return z.never() },
   enum({ enum: ss }) {
     const [s0, s1, ...sn] = ss.filter(core.is.primitive).map((v) => z.literal(v))
     return z.union([s0, s1, ...sn])
@@ -196,7 +198,7 @@ const derived = {
  * more efficient.
  */
 const derive
-  : (schema: Traversable.any, options: Options<z.ZodTypeAny>) => z.ZodTypeAny
+  : (schema: Traversable.orJsonSchema, options: Options<z.ZodTypeAny>) => z.ZodTypeAny
   = fn.flow(
     createTarget(derived),
     ([target]) => target,
@@ -216,7 +218,8 @@ function generateEntry(
     [BEFORE_OPT, AFTER_OPT]: readonly [before: string, after: string]
 ): (entry: [string, string]) => string {
   return ([k, v]) => {
-    const EXAMPLE = Format.example(k , $)
+    const EXAMPLE_TAG = JSDoc.example(k , $)
+    const DESCRIPTION_TAG = JSDoc.description(k, $)
     const LINK_HERE = linkToNode(k, $)
     const LINK_TO_DOC = linkToOpenAPIDocument(k, $)
     return ([
@@ -224,7 +227,8 @@ function generateEntry(
       '/**',
       LINK_HERE,
       LINK_TO_DOC,
-      EXAMPLE,
+      DESCRIPTION_TAG,
+      EXAMPLE_TAG,
       ' */',
       `${object.parseKey(k)}: ${
         !required.includes(k) ? (BEFORE_OPT + v + AFTER_OPT) : v
@@ -254,14 +258,12 @@ function serialize(ix: Index): (x: unknown) => string {
           )
       }
       case !!x && typeof x === 'object': {
-        const entries = Object
-          .entries(x)
-          .map(([k, v]) => [JSON.stringify(k), loop(indent + 2)(v)] satisfies [any, any])
-        return entries.length === 0 
+        const xs = Object.entries(x)
+        return xs.length === 0 
           ? 'z.object({})' 
           : Print.array({ indent })(
             'z.object({',
-            ...entries.map(([k, v]) => k + ': ' + v),
+            ...xs.map(([k, v]) => object.parseKey(k) + ': ' + loop(indent + 2)(v)),
             '})'
           )
       }
@@ -354,7 +356,7 @@ function serialize(ix: Index): (x: unknown) => string {
  * // If you hover over `a` here 𐋇 you'll see that the JSDoc link works 🥳
  */
 // const typelevel
-//   : (schema: core.Traversable.any, options: Options<string>) => string
+//   : (schema: core.Traversable.orJsonSchema, options: Options<string>) => string
 //   = fn.flow(
 //     createTarget(typesOnly),
 //     ([target, $]) => [

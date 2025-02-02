@@ -19,6 +19,7 @@ export namespace Algebra {
         case Traversable.is.enum(n): return n.enum.join(" | ")
         case Traversable.is.const(n): return JSON.stringify(n.const)
         case Traversable.is.null(n): return "null"
+        case Traversable.is.any(n): return "unknown"
         case Traversable.is.boolean(n): return "boolean"
         case Traversable.is.integer(n): return "number"
         case Traversable.is.number(n): return "number"
@@ -63,9 +64,9 @@ const deriveType_defaults = {
   minify: false as boolean,
 } satisfies deriveType._Internal.Options
 
-function deriveType(schema: Traversable.any, options?: deriveType.Options): string
+function deriveType(schema: Traversable.orJsonSchema, options?: deriveType.Options): string
 function deriveType(
-  schema: Traversable.any, {
+  schema: Traversable.orJsonSchema, {
     compare = deriveType.defaults.compare,
     typeName = deriveType.defaults.typeName,
     minify = deriveType.defaults.minify,

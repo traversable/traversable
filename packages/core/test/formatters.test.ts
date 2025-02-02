@@ -1,4 +1,4 @@
-import { Format } from "@traversable/algebra"
+import { Format } from "@traversable/core"
 import * as vi from "vitest"
 
 vi.describe("〖️⛳️〗‹‹‹ ❲@traversable/algebra/Format❳", () => {
@@ -16,11 +16,11 @@ vi.describe("〖️⛳️〗‹‹‹ ❲@traversable/algebra/Format❳", () => 
     vi.expect(Format.multiline([[1], [2]])).toMatchInlineSnapshot(`" * [ [ 1 ], [ 2 ] ]"`)
     vi.expect(Format.multiline({ a: 1 })).toMatchInlineSnapshot(`" * { a: 1 }"`)
     vi
-      .expect(Format.multiline([1, [2, [3]]], { indent: 4 }))
+      .expect(Format.multiline([1, [2, [3]]]))
       .toMatchInlineSnapshot(`" * [ 1, [ 2, [ 3 ] ] ]"`)
     vi
-      .expect(Format.multiline([1, [2, [3]]], { indent: 4, leftOffset: 8 }))
-      .toMatchInlineSnapshot(`"         * [ 1, [ 2, [ 3 ] ] ]"`)
+      .expect(Format.multiline([1, [2, [3]]], { indent: 1, leftOffset: 2, bracketsSeparator: '' }))
+      .toMatchInlineSnapshot(`"   * [1, [2, [3]]]"`)
     vi
       .expect(Format.multiline([1, [2, [3]]], { indent: 6, leftOffset: 4, rightOffset: 2 }))
       .toMatchInlineSnapshot(`"     *   [ 1, [ 2, [ 3 ] ] ]"`)
@@ -69,9 +69,8 @@ vi.describe("〖️⛳️〗‹‹‹ ❲@traversable/algebra/Format❳", () => 
           { a: 1, b: [{}, { c: { d: 2 }, e: 3 }], f: 4 }, 
           { 
             maxWidth: 40, 
-            indent: 2, 
+            indent: 1, 
             wrapWith: ["/**\n * @example\n", "\n */"], 
-            leftOffset: 0,
             bracesSeparator: '  '
           }
         )
@@ -80,9 +79,9 @@ vi.describe("〖️⛳️〗‹‹‹ ❲@traversable/algebra/Format❳", () => 
         "/**
          * @example
          * {
-         *   a: 1,
-         *   b: [ {}, {  c: {  d: 2  }, e: 3  } ],
-         *   f: 4
+         *  a: 1,
+         *  b: [ {}, {  c: {  d: 2  }, e: 3  } ],
+         *  f: 4
          * }
          */"
       `)
@@ -90,25 +89,31 @@ vi.describe("〖️⛳️〗‹‹‹ ❲@traversable/algebra/Format❳", () => 
     vi
       .expect(
         Format.multiline(
-          { a: 1, b: [{}, { c: { d: 2 }, e: 3 }], f: 4 }, 
-          { indent: -1, maxWidth: 10, wrapWith: ["/**\n * @example\n", "\n */"], leftOffset: 0 },
+          { a: 1, b: [{}, { c: { d: 2 }, e: 3 }], f: 4 }, { 
+            indent: -1, 
+            maxWidth: 10, 
+            leftOffset: 0,
+            bracesSeparator: '',
+            keyValueSeparator: '',
+          },
         )
       )
       .toMatchInlineSnapshot(`
-        "/**
-         * @example
-         * {
-         * a: 1,
-         * b: [
+        " * {
+         * a:1,
+         * b:[
          * {},
          * {
-         * c: { d: 2 },
-         * e: 3
+         * c:{d:2},
+         * e:3
          * }
          * ],
-         * f: 4
-         * }
-         */"
+         * f:4
+         * }"
       `)
+
+    vi.expect(Format.multiline({ DEF: { GHI: { JKL: 456 } } }, { indent: 2, whitespaceUnit: "\t" }))
+      .toMatchInlineSnapshot(`" * { DEF: { GHI: { JKL: 456 } } }"`)
+
   })
 })

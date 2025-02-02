@@ -124,6 +124,10 @@ namespace URI {
   export type schema = typeof URI.schema
   export const phantom = `${ns}::Phantom` as const
   export type phantom = typeof phantom
+  export const meta = `${ns}::Meta` as const
+  export type meta = typeof meta
+  export const children = `${ns}::Children` as const
+  export type children = typeof children
   /// URIs that __do__ have an associated symbol
   /////////////////////////////////////////////////////
 }
@@ -214,6 +218,10 @@ namespace symbol_ {
   export type typeclass = typeof typeclass
   export const phantom = Symbol.for(URI.phantom)
   export type phantom = typeof symbol_.phantom
+  export const meta = Symbol.for(URI.meta)
+  export type meta = typeof symbol_.meta
+  export const children = Symbol.for(URI.children)
+  export type children = typeof symbol_.children
 }
 
 declare namespace symbol_ {

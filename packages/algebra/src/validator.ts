@@ -312,6 +312,7 @@ namespace RAlgebra {
     return (n) => {
       switch (true) {
         default: return fn.exhaustive(n)
+        case Traversable.is.any(n): return { GO: () => '' }
         case Traversable.is.enum(n): return { GO: () => '' }
         case Traversable.is.const(n): return { GO: () => '' }
         case Traversable.is.null(n): return { 
@@ -733,9 +734,9 @@ deriveValidator.fold = ({
  * All this function does is return true/false depending on whether the input
  * object satisfies the spec.
  */
-function deriveValidator(schema: Traversable.any, options?: Options): string
+function deriveValidator(schema: Traversable.orJsonSchema, options?: Options): string
 function deriveValidator(
-  schema: Traversable.any,
+  schema: Traversable.orJsonSchema,
   {
     functionName = defaults.functionName,
     compare = defaults.compare,

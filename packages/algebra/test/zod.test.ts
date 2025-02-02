@@ -5,31 +5,34 @@ import { z } from "zod"
 
 import { type Traversable, fc } from "@traversable/core"
 
-import { zod } from "@traversable/algebra"
+import { seed, typeNameFromPath, zod } from "@traversable/algebra"
 import { _ } from "@traversable/registry"
 import IR = zod.IR
 
-import { PATH, seed, typeNameFromPath } from "./seed.js"
-
 seed({
-  include: { example: true }
+  include: { description: true, example: true }
 })
 
 vi.describe("〖️⛳️〗‹‹‹ ❲@traversable/algebra/zod❳", () => {
   vi.it("〖️⛳️〗› ❲zod.derive❳", async () => {
-    const document = JSON.parse(fs.readFileSync(PATH.spec).toString("utf8"))
+    const document = JSON.parse(fs.readFileSync(seed.PATH.spec).toString("utf8"))
+    // const document = JSON.parse(fs.readFileSync(seed.PATH.specs.octokit).toString("utf8"))
     const jsonSchemas
-      : Record<string, Traversable.any>
+      : Record<string, Traversable.orJsonSchema>
       = document.components?.schemas ?? {}
-    let schemas = [
-      `import { z } from "zod"`, 
-      `import type $doc from "./traversable.gen.json.js"`,
-    ]
     let validators: z.ZodTypeAny[] = []
     let types = [
       `import type { z } from "zod"`, 
-      `import type $doc from "./traversable.gen.json.js"`,
+      `import $doc from "./traversable.gen.json.js"`,
     ]
+    let schemas = [
+      `import { z } from "zod"`, 
+      `import $doc from "./traversable.gen.json.js"`,
+    ]
+    // let schemas = [
+    //   `import { z } from "zod"`, 
+    //   `import $doc from "../__specs__/octokit.json.js"`,
+    // ]
 
     for (const k in jsonSchemas) {
       const jsonSchema = jsonSchemas[k]
@@ -65,11 +68,13 @@ vi.describe("〖️⛳️〗‹‹‹ ❲@traversable/algebra/zod❳", () => {
     //   void types.push(type)
   // }
 
-    fs.writeFileSync(PATH.targets.zod, schemas.join("\n\n"))
-    // fs.writeFileSync(PATH.targets.zodTypesOnly, types.join("\n\n"))
+    // fs.writeFileSync(seed.PATH.targets.octokit, schemas.join("\n\n"))
+    fs.writeFileSync(seed.PATH.targets.zod, schemas.join("\n\n"))
+    // fs.writeFileSync(seed.PATH.targets.zodTypesOnly, types.join("\n\n"))
 
-    vi.assert.isTrue(fs.existsSync(PATH.targets.zod))
-    // vi.assert.isTrue(fs.existsSync(PATH.targets.zodTypesOnly))
+    // vi.assert.isTrue(fs.existsSync(seed.PATH.targets.octokit))
+    vi.assert.isTrue(fs.existsSync(seed.PATH.targets.zod))
+    // vi.assert.isTrue(fs.existsSync(seed.PATH.targets.zodTypesOnly))
   })
 })
 
@@ -217,7 +222,7 @@ vi.describe("〖️⛳️〗‹‹‹ ❲@traversable/algebra/zod❳", () => {
       }).tree
     ], 
     {
-      // numRuns: 10_000,
+      // numRuns: 100_000,
       numRuns: 10,
       endOnFailure: true,
       errorWithCause: true,

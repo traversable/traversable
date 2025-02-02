@@ -140,6 +140,7 @@ const NotYetSupported = (nodeType: string) =>
   Invariant.NotYetSupported('arktype.derive.' + nodeType, 'arktype.derive')('algebra/src/arktype/ark.ts')
 
 const generated = {
+  any() { return 'type.unknown()' },
   enum({ enum: xs }, ix) { 
     return Print.array(ix)(
       'type.enumerated(',
@@ -218,7 +219,7 @@ const generated = {
 } as const satisfies Matchers<string>
 
 export const generate
-  : (schema: Traversable.any, options: Options<string>) => string
+  : (schema: Traversable.orJsonSchema, options: Options<string>) => string
   = fn.flow(
     createTarget(generated),
     ([target, $]) => [

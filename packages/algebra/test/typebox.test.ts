@@ -1,12 +1,10 @@
 import * as fs from "node:fs"
 import * as vi from "vitest"
 
-import { typebox } from "@traversable/algebra"
+import { seed, typeNameFromPath, typebox } from "@traversable/algebra"
 import type { JsonSchema } from "@traversable/core"
 import type { openapi } from "@traversable/openapi"
 import type { _ } from "@traversable/registry"
-
-import { PATH, seed, typeNameFromPath } from "./seed.js"
 
 seed({ 
   regenerateSeedFilesOnSave: false,
@@ -18,7 +16,7 @@ seed({
 
 vi.describe("〖️⛳️〗‹‹‹ ❲@traversable/algebra/typebox❳", () => {
   vi.it("〖️⛳️〗› ❲typebox.generate❳", async () => {
-    const document: openapi.doc = JSON.parse(fs.readFileSync(PATH.spec).toString("utf8"))
+    const document: openapi.doc = JSON.parse(fs.readFileSync(seed.PATH.spec).toString("utf8"))
     const schemas = document.components?.schemas ?? {}
     let generatedSchemas = [
       'import * as T from "@sinclair/typebox"',
@@ -37,8 +35,8 @@ vi.describe("〖️⛳️〗‹‹‹ ❲@traversable/algebra/typebox❳", () =>
       void generatedSchemas.push(typebox.generate(schema as JsonSchema, options))
     }
 
-    fs.writeFileSync(PATH.targets.typebox, generatedSchemas.join("\n\n") + "\n")
-    vi.assert.isTrue(fs.existsSync(PATH.targets.typebox))
+    fs.writeFileSync(seed.PATH.targets.typebox, generatedSchemas.join("\n\n") + "\n")
+    vi.assert.isTrue(fs.existsSync(seed.PATH.targets.typebox))
   })
 })
 

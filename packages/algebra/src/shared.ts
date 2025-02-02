@@ -1,8 +1,8 @@
 import * as path from "node:path"
 
 import type { Context } from "@traversable/core"
-import { Extension, Traversable, core, is, keyOf$, t, tree } from "@traversable/core"
-import { array, fn, object } from "@traversable/data"
+import { Extension, Traversable, core, is, keyOf$, t } from "@traversable/core"
+import { array, fn, object, string } from "@traversable/data"
 import { deref, openapi } from "@traversable/openapi"
 import type { Partial, Requiring, newtype } from "@traversable/registry"
 import { symbol } from "@traversable/registry"
@@ -233,21 +233,14 @@ const buildMaskInterpreter: BuildPathInterpreter = (lookup) => ({ typeName }) =>
 
 /** @internal */
 const buildOpenApiNodePathInterpreter: BuildPathInterpreter = ()  => ($) => (xs) => {
-  const path = $.absolutePath.map(escapePathSegment)
-  switch (true) {
-    case path.includes("anyOf"): {
-      const ix = path.indexOf("anyOf")
-      return [path[0], ...path.slice(1, ix).map((_) => "." + _)]
-    }
-    case path.includes("allOf"): {
-      const ix = path.indexOf("allOf")
-      return [path[0], ...path.slice(1, ix).map((_) => "." + _)]
-    }
-    default: {
-      const tail = [...path.slice(1), ...xs].map((_) => "." + String(_))
-      return [path[0], ...tail]
-    }
+  const path = [...$.absolutePath.map(escapePathSegment), ...xs]
+  let out: string[] = []
+  for (let ix = 0, len = path.length; ix < len; ix++) {
+    const x = String(path[ix])
+    if (!string.isValidIdentifier(x)) return out
+    else out.push(ix === 0 ? x : '.' + x)
   }
+  return out
 }
 
 export const createMask: PathInterpreter = buildMaskInterpreter(MASK_MAP)
@@ -260,14 +253,14 @@ export function linkToOpenAPIDocument(k: string, $: Index): string | null {
     : ''
     + ' * #### {@link $doc.' 
     + createOpenApiNodePath($)(['properties', k]).join('') 
-    +  '`Link to OpenAPI node`}'
+    +  ' `Link to OpenAPI node`}'
 }
 
 
-export function createTarget<T, Ix>(matchers: Extension.Handlers<T, Ix>): (schema: Traversable.any, options: Options<T>) => [target: T, config: Options.Config<T>]
-export function createTarget<T, Ix>(matchers: Extension.Handlers<T, Ix>): (schema: Traversable.any, options: Options<T>) => [target: T, config: Options.Config<T>]
+export function createTarget<T, Ix>(matchers: Extension.Handlers<T, Ix>): (schema: Traversable.orJsonSchema, options: Options<T>) => [target: T, config: Options.Config<T>]
+export function createTarget<T, Ix>(matchers: Extension.Handlers<T, Ix>): (schema: Traversable.orJsonSchema, options: Options<T>) => [target: T, config: Options.Config<T>]
 export function createTarget<T>(matchers: Handlers<T>) {
-  return (schema: Traversable.any, options: Options<T>) => {
+  return (schema: Traversable.orJsonSchema, options: Options<T>) => {
     const $ = defineOptions(matchers)(options)
     return fn.pipe(
       fold($),

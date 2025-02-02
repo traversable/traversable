@@ -138,6 +138,11 @@ const Json_Functor: Functor<Json.lambda, Json> = {
 }
 
 /**
+ * ## {@link Json_map `Json.map`}
+ */
+const Json_map = Json_Functor.map
+
+/**
  * ## {@link Json_fold `Json.fold`}
  * 
  * Given an algebra, {@link Json_fold `Json.fold`} returns a function
@@ -147,6 +152,8 @@ const Json_Functor: Functor<Json.lambda, Json> = {
  * Think of it like a recursive "reduce" function.
  */
 const Json_fold = fn.cata(Json_Functor)
+const Json_unfold = fn.ana(Json_Functor)
+const Json_refold = fn.hylo(Json_Functor)
 
 type Json = 
   | Json_leaf
@@ -171,6 +178,8 @@ declare namespace Json {
 function Json() {}
 void (Json.Functor = Json_Functor)
 void (Json.fold = Json_fold)
+void (Json.unfold = Json_unfold)
+void (Json.map = Json_Functor.map)
 void (Json.is = Json_is)
 
 

@@ -5,7 +5,7 @@ import type { URI, symbol } from "./symbol.js"
 export type { newtype } from "any-ts"
 
 export type inline<T> = T
-export type _ = unknown
+export type _ = never | unknown
 export type defined<T> = never | globalThis.Exclude<T, undefined>
 
 export type Showable = null | undefined | boolean | number | bigint | string
@@ -215,11 +215,33 @@ export declare namespace Position {
  *   - {@link globalThis.Symbol `Symbols`} intentionally avoided
  *   to keep API surface area small, and to keep the API "spec-able"
  */
-export interface HKT<I = unknown, O = unknown> extends newtype<{ [0]: I; [-1]: O }> {}
+export interface HKT<I = unknown, O = unknown> extends newtype<{ [0]: I; [-1]: O }> {
+  _applied?: _
+}
 export type Kind<F extends HKT, T extends F[0] = F[0]> = (F & { [0]: T })[-1]
 export declare namespace Kind {
   export { bind as new }
   export type of<F extends HKT> = [F] extends [infer T extends F] ? T : never
+  /**
+   * ## {@link Kind.infer `Kind.infer`}
+   *
+   * Given a type constructor that was defined with {@link Kind.new}, infers the
+   * type constructor.
+   *
+   * @example
+   * import type { Kind } from "@traversable/registry"
+   *
+   *  interface ArrayFunctor extends HKT { [-1]: globalThis.Array<this[0]> }
+   *  type ArrayKind = Kind.new<ArrayFunctor>
+   *  type Test = Kind.infer<ArrayKind>
+   *  //   ^? type Test = ArrayFunctor
+   */
+  export type infer<T> = T extends {
+    0: T[0 & keyof T]
+    _applied: T["_applied" & keyof T]
+  } & (infer F extends HKT)
+    ? F
+    : never
 }
 
 /**
@@ -252,7 +274,7 @@ export const define: <F extends { [0]: unknown; [-1]: unknown }>(
 ) => (fn: (i: F[0]) => F[-1]) => <const I extends F[0]>(i: I) => Kind<F, I> = () => (fn) => fn
 
 export declare function apply$<F>(F: F): <T>(t: T) => HKT.apply$<F, T>
-export type bind<F extends HKT, T = unknown> = F & { [0]: T }
+export type bind<F extends HKT, T = unknown> = F & { [0]: T; _applied: true }
 /** @deprecated use {@link Kind `Kind`} instead */
 export type apply<F extends HKT, T extends F[0]> = Kind<F, T>
 export type apply$<F, T> = never | (F & { [0]: T; [-1]: unknown })[-1]
@@ -271,6 +293,33 @@ export declare namespace HKT {
   export interface Function<F extends { [0]: unknown; [-1]: unknown }> extends HKT<F[0], F[-1]> {
     <T extends this[0]>(x: T): Kind<F, T>
     [-1]: Kind<F, this[0]>
+  }
+}
+
+export declare namespace Kinds {
+  interface identity extends HKT {
+    [-1]: this[0]
+  }
+  interface keyof extends HKT<HKT> {
+    [-1]: keyof this[0]
+  }
+  interface duplicate extends HKT {
+    [-1]: [this[0], this[0]]
+  }
+  interface left extends HKT<readonly [_, _]> {
+    [-1]: this[0][0]
+  }
+  interface right extends HKT<readonly [_, _]> {
+    [-1]: this[0][1]
+  }
+  interface Record<K extends keyof any = string> extends HKT {
+    [-1]: globalThis.Record<K, this[0]>
+  }
+  interface ReadonlyArray extends HKT {
+    [-1]: globalThis.ReadonlyArray<this[0]>
+  }
+  interface Array extends HKT {
+    [-1]: globalThis.Array<this[0]>
   }
 }
 
@@ -358,6 +407,7 @@ type RAlgebra<F extends HKT, T> = never | { (term: HKT.product<F, T>): T }
 type RCoalgebra<F extends HKT, T> = never | { (expr: T): HKT.sum<F, T> }
 type CVAlgebra<F extends HKT, T> = (F: Kind<F, Attr<F, T>>) => T
 type IxAlgebra<Ix, F extends HKT, T> = never | { (ix: Ix, term: Kind<F, T>): T }
+interface Fix<F extends HKT> extends newtype<Kind<F, Fix<F>> & {}> {}
 
 export declare namespace Functor {
   export { Algebra, Coalgebra, RAlgebra, RCoalgebra, CVAlgebra, IxAlgebra }
@@ -571,6 +621,13 @@ export interface Enumerable<T = unknown> extends Spreadable<T> {
 interface Fix<F extends HKT> {
   fix(): Fix<F>
 }
+
+/**
+ * alternative (feels hacky) definition of Fix that uses
+ * the `newtype` trick I've been exploiting elsewhere
+ */
+interface Fix2<F extends HKT> extends newtype<Kind<F, Fix<F>> & {}> {}
+
 class Fix<F extends HKT> {
   constructor(public readonly unfix: Kind.new<F, Fix<F>>) {}
   static in<F extends HKT>(ff: Kind.new<F, Fix<F>>): Fix<F> {

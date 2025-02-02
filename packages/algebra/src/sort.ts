@@ -102,6 +102,7 @@ export namespace Coalgebra {
         default: return fn.softExhaustiveCheck(n)
         case Traversable.is.enum(n): return n
         case Traversable.is.const(n): return n
+        case Traversable.is.any(n): return n
         case Traversable.is.scalar(n): return n
         case Traversable.is.array(n): return n
         case Traversable.is.record(n): return n
@@ -190,7 +191,7 @@ export namespace Coalgebra {
  *  // ⛳️ 1 passed
  *  // 😌
  */
-function deriveSort(options?: Options): <const T extends Traversable.any>(schema: T) => T
+function deriveSort(options?: Options): <const T extends Traversable.orJsonSchema>(schema: T) => T
 function deriveSort({ 
   compare,
   weightMap,

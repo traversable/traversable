@@ -4,14 +4,16 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
+    "build": "tsc && vite build",
     "clean": "pnpm run \"/^clean:.*/\"",
     "clean:build": "rm -rf .tsbuildinfo dist build",
     "clean:deps": "rm -rf node_modules",
     "dev": "vite",
-    "build": "tsc && vite build",
+    "gen": "./bin/gen.ts",
     "preview": "vite preview"
   },
   "dependencies": {
+    "@traversable/algebra": "workspace:^",
     "@traversable/data": "workspace:^",
     "@traversable/openapi": "workspace:^",
     "@traversable/registry": "workspace:^",
@@ -23,6 +25,8 @@
     "@types/react": "^19.0.8",
     "@types/react-dom": "^19.0.3",
     "@vitejs/plugin-react": "^4.3.4",
-    "vite": "^6.0.11"
+    "vite": "^6.0.11",
+    "vite-plugin-inspect": "^10.1.0",
+    "vite-plugin-watch-and-run": "^1.7.3"
   }
 }

@@ -1,8 +1,8 @@
-import type { key, prop } from "@traversable/data"
-import { fn } from "@traversable/data"
+import type { StandardSchemaV1 } from "@standard-schema/spec"
+
+import { fn, type key, type prop } from "@traversable/data"
 import type { newtype } from "@traversable/registry"
 
-import type { StandardSchemaV1 } from "@standard-schema/spec"
 import * as Traversable from "./traversable.js"
 
 export { Extension }
@@ -152,7 +152,7 @@ interface Config<S, Ix> { handlers: Partial<Handlers<S, Ix>> }
 
 function Extension_product<S, Ix>(config: Config<S, Ix>)
   : [keyof UserDefs<S, Ix>] extends [never] 
-  ? [Record<string, UserDef<unknown, S>>, BuiltIns<S, Ix>]
+  ? [Record<string, UserDef<unknown, S>>, BuiltIns<S, Ix>] 
   : [UserDefs<S, Ix>, BuiltIns<S, Ix>]
 
 function Extension_product<S, Ix>(config: Config<S, Ix>) {
@@ -161,9 +161,9 @@ function Extension_product<S, Ix>(config: Config<S, Ix>) {
       builtIns: Record<string, unknown> = {}
   for (let ix = 0, len = ks.length; ix < len; ix++) {
     const k = ks[ix]
-    if (Traversable.Known.includes(k)) 
+    if (Traversable.Known.includes(k as Traversable.Known[number])) 
       void (builtIns[k] = config.handlers[k])
-    else 
+    else
       void (userDefs[k] = config.handlers[k])
   }
   return [userDefs, builtIns]
@@ -195,6 +195,7 @@ export function Extension_match3<
         default: return fn.softExhaustiveCheck(n)
         case Traversable.is.enum(n): return $.enum(n, ix)
         case Traversable.is.const(n): return $.const(n, ix)
+        case Traversable.is.any(n): return $.any(n, ix)
         case Traversable.is.null(n): return $.null(n, ix)
         case Traversable.is.boolean(n): return $.boolean(n, ix)
         case Traversable.is.integer(n): return $.integer(n, ix)
@@ -315,6 +316,7 @@ function Extension_match<S, Ix>(config: Config<S, Ix>): (ix: Ix, n: Traversable.
       default: return fn.softExhaustiveCheck(n)
       case Traversable.is.enum(n): return $.enum(n, ix)
       case Traversable.is.const(n): return $.const(n, ix)
+      case Traversable.is.any(n): return $.any(n, ix)
       case Traversable.is.null(n): return $.null(n, ix)
       case Traversable.is.boolean(n): return $.boolean(n, ix)
       case Traversable.is.integer(n): return $.integer(n, ix)

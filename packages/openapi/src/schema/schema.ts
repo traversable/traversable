@@ -1,4 +1,4 @@
-import { type JsonSchema, Traversable, core, fc, tree } from "@traversable/core"
+import { type JsonSchema, core, fc, tree } from "@traversable/core"
 import type { record as Record, keys } from "@traversable/data"
 import { fn, integer } from "@traversable/data"
 import type { Require, inline } from "@traversable/registry"
@@ -1412,6 +1412,10 @@ export function loop(constraints: Constraints = Constraints.defaults): fc.Letrec
       integer: Schema_integer(constraints),
       number: Schema_number(constraints),
       string: Schema_string(constraints),
+      object: Schema_object({
+        properties: LOOP("any"),
+        additionalProperties: LOOP("any")
+      }, constraints),
       enum: Schema_enum(constraints),
       const: Schema_const(constraints),
       array: Schema_array(LOOP("any"), constraints),
@@ -1420,10 +1424,6 @@ export function loop(constraints: Constraints = Constraints.defaults): fc.Letrec
       anyOf: Schema_anyOf(LOOP("any"), constraints),
       oneOf: Schema_oneOf(LOOP("any"), constraints),
       tuple: Schema_tuple(LOOP("any"), constraints),
-      object: Schema_object({
-        properties: LOOP("any"),
-        additionalProperties: LOOP("any")
-      }, constraints),
       any: fc.oneof(
         { depthIdentifier },
         ...loops,

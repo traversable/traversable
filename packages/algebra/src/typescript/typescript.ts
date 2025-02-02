@@ -1,6 +1,6 @@
 import * as path from "node:path"
 
-import { Extension, Traversable, is } from "@traversable/core"
+import { Extension, Traversable } from "@traversable/core"
 import { fn, object } from "@traversable/data"
 import { openapi } from "@traversable/openapi"
 import { KnownFormat, symbol } from "@traversable/registry"
@@ -58,7 +58,7 @@ function fold<T>($: Options.Config<T>) {
 }
 
 const createTarget 
-  : <T>(matchers: Matchers<T>) => (schema: Traversable.any, options: Options<T>) => [target: T, config: Options.Config<T>]
+  : <T>(matchers: Matchers<T>) => (schema: Traversable.orJsonSchema, options: Options<T>) => [target: T, config: Options.Config<T>]
   = (matchers) => (schema, options) => {
     const $ = defineOptions(matchers)(options)
     return fn.pipe(
@@ -117,6 +117,7 @@ const KnownStringFormats = {
 const isKnownStringFormat = isKeyOf(KnownStringFormats)
 
 const baseHandlers = {
+  any(_) { return 'unknown' },
   null(_) { return 'null' },
   boolean(_) { return 'boolean' },
   integer(_) { return 'number' },
@@ -144,6 +145,7 @@ const baseHandlers = {
 } satisfies Matchers<string>
 
 const pathHandlers = {
+  any(_) { return 'unknown' },
   null(_) { return 'null' },
   boolean(_) { return 'boolean' },
   integer(_) { return 'number.integer' },
@@ -165,7 +167,6 @@ const pathHandlers = {
           const isOptional = !(_.required ?? []).includes(k)
           const keys = [...isOptional ? [symbol.optional, k] : [k]]
           // const symbolicName = createZodIdent($)(...path.docs)(_, $)(...isOptional ? [symbol.optional, k] : [k])
-          // console.log('symbolicName', symbolicName)
           //path.interpreter(path.docs, [$.typeName, ...$.path, k, { leaf: _ } ]).join('')
           return ''
             + '/**\n'
@@ -199,7 +200,7 @@ const extendedHandlers = {
 } satisfies Matchers<string>
 
 const generate
-  : (schema: Traversable.any, options: Options<string>) => string
+  : (schema: Traversable.orJsonSchema, options: Options<string>) => string
   = fn.flow(
     createTarget(pathHandlers),
     ([target, $]) => [
@@ -208,11 +209,11 @@ const generate
     ].join('\n')
   )
 
-// function generate<Meta>(schema: Traversable.any, options: ts.Options<string, Context, Meta>): string
-// function generate<Meta>(schema: Traversable.any, options: ts.Options.withHandlers<string, Context, Meta>): string
-// function generate<Meta>(schema: Traversable.any, options: ts.Options | ts.Options.withHandlers): string {
+// function generate<Meta>(schema: Traversable.orJsonSchema, options: ts.Options<string, Context, Meta>): string
+// function generate<Meta>(schema: Traversable.orJsonSchema, options: ts.Options.withHandlers<string, Context, Meta>): string
+// function generate<Meta>(schema: Traversable.orJsonSchema, options: ts.Options | ts.Options.withHandlers): string {
 // // function generate(
-// //   schema: Traversable.any, options: ts.Options.withHandlers<string, Context> = ts.defaults as never
+// //   schema: Traversable.orJsonSchema, options: ts.Options.withHandlers<string, Context> = ts.defaults as never
 // // ): string {
 //   const typeName = options?.typeName ?? ts.defaults.typeName.concat('TypeScriptType')
 //   const document = openapi.doc({})
@@ -254,9 +255,9 @@ const generate
 //   )
 // }
 
-// function deriveType(schema: Traversable.any, options?: Options): string
+// function deriveType(schema: Traversable.orJsonSchema, options?: Options): string
 // function deriveType(
-//   schema: Traversable.any, {
+//   schema: Traversable.orJsonSchema, {
 //     typeName = defaults.typeName,
 //     flags: {
 //       nominalTypes = defaults.flags.nominalTypes,

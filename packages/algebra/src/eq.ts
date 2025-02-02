@@ -1,6 +1,6 @@
-import { Traversable } from "@traversable/core"
-import { fn } from "@traversable/data"
 import type { Functor } from "@traversable/registry"
+import { fn } from "@traversable/data"
+import { Traversable } from "@traversable/core"
 
 namespace Algebra {
   export const equal: Functor.RAlgebra<Traversable.lambda, derive.Stream> = (n) => {
@@ -58,11 +58,12 @@ namespace Algebra {
         },
       }
       ///
+      case Traversable.is.any(n): return fn.throw("UNIMPLEMENTED")
       case Traversable.is.array(n): return fn.throw("UNIMPLEMENTED")
-      case Traversable.is.record(n): return fn.throw("UNIMPLEMENTED")
       case Traversable.is.allOf(n): return fn.throw("UNIMPLEMENETED")
       case Traversable.is.anyOf(n): return fn.throw("UNIMPLEMENETED")
       case Traversable.is.oneOf(n): return fn.throw("UNIMPLEMENETED")
+      case Traversable.is.record(n): return fn.throw("UNIMPLEMENTED")
     }
   }
 }
@@ -72,11 +73,11 @@ derive.fold = fn.flow(
   fn.para(Traversable.Functor)(Algebra.equal),
 )
 
-export function derive(options?: derive.Options): (schema: Traversable.any) => string
+export function derive(options?: derive.Options): (schema: Traversable.orJsonSchema) => string
 export function derive({ 
   functionName = derive.defaults.functionName 
 }: derive.Options = derive.defaults) { 
-  return (schema: Traversable.any) => ""
+  return (schema: Traversable.orJsonSchema) => ""
   + "function " 
   + functionName 
   + "($){" 

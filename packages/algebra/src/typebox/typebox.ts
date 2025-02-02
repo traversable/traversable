@@ -61,6 +61,7 @@ T.Null().static
 T.Object({a: T.Null()}).static
 
 const derived = {
+  any(_) { return T.Unknown(_) },
   null(_) { return T.Null(_) },
   boolean(_) { return T.Boolean(_) },
   integer(_) { return T.Integer(_) },
@@ -87,11 +88,12 @@ const derived = {
 } as const satisfies Matchers<T.TAnySchema>
 
 const generated = {
-  null() { return 'T.Null()' as const },
-  boolean() { return 'T.Boolean()' as const },
-  integer() { return 'T.Integer()' as const },
-  number() { return 'T.Number()' as const },
-  string() { return 'T.String()' as const },
+  any(_) { return 'T.Unknown()' },
+  null(_) { return 'T.Null()' as const },
+  boolean(_) { return 'T.Boolean()' as const },
+  integer(_) { return 'T.Integer()' as const },
+  number(_) { return 'T.Number()' as const },
+  string(_) { return 'T.String()' as const },
   anyOf(_, $) { return Print.array($)('T.Union([', _.anyOf.join(', '), '])') },
   oneOf(_, $) { return Print.array($)('T.Union([', _.oneOf.join(', '), '])') },
   allOf(_, $) { return Print.array($)('T.Intersect([', _.allOf.join(', '), '])') },
@@ -130,7 +132,7 @@ const generated = {
  * some kind of user input, use {@link derive `typebox.derive`} instead.
  */
 const generate
-  : (schema: core.Traversable.any, options: Options<string>) => string
+  : (schema: core.Traversable.orJsonSchema, options: Options<string>) => string
   = fn.flow(
     createTarget(generated),
     ([target, $]) => [
@@ -158,7 +160,7 @@ const generate
  * more efficient.
  */
 const derive
-  : (schema: Traversable.any, options: Options<T.TAnySchema>) => T.TAnySchema
+  : (schema: Traversable.orJsonSchema, options: Options<T.TAnySchema>) => T.TAnySchema
   = fn.flow(
     createTarget(derived),
     ([target]) => target,

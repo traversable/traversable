@@ -1,11 +1,12 @@
 import * as fs from "node:fs"
 import * as path from "node:path"
 
-import { escapePathSegment, unescapePathSegment } from "@traversable/algebra"
 import { Traversable, fc, is, tree } from "@traversable/core"
 import { fn, keys, map } from "@traversable/data"
 import { OpenAPI, Schema } from "@traversable/openapi"
 import type { _, autocomplete } from "@traversable/registry"
+
+import { escapePathSegment, unescapePathSegment } from "./shared.js"
 
 /** @internal */
 type Any = {} | null | undefined
@@ -20,11 +21,19 @@ const PATTERN = {
   CleanPathName: /(\/|~|-|{|})/g
 } as const
 const DIR = path.join(path.resolve(), "packages", "algebra", "test", "__generated__")
+const SPECS = path.join(path.resolve(), "packages", "algebra", "test", "__specs__")
 
 export const PATH = {
   generated: DIR,
   spec: path.join(DIR, "traversable.gen.json"),
+  specs: {
+    octokit: path.join(SPECS, "octokit.json"),
+    octokitHack: path.join(SPECS, "octokit.json.ts"),
+  },
   targets: {
+    // TODO: create `PATH.specs`, move this and `PATH.spec` there
+    ////
+    octokit: path.join(DIR, `octokit.gen.ts`),
     jsdocHack: path.join(DIR, "traversable.gen.json.ts"),
     ark: path.join(DIR, "ark.gen.ts"),
     zod: path.join(DIR, "zod.gen.ts"),
@@ -82,7 +91,7 @@ const generateSpec = (options?: seed.Options) => fn.pipe(
   }),
   fc.peek,
   // TODO: fix this type assertion
-  (x) => OpenAPI.map(x, (_) => Traversable.fromJsonSchema(_ as Traversable.any)),
+  (x) => OpenAPI.map(x, (_) => Traversable.fromJsonSchema(_ as Traversable.orJsonSchema)),
   (x) => tree.modify(x, ["paths"], map((v, k) => ({ $unref: unescapePathSegment(k), ...(v as {}) }))),
   JSON_stringify,
 )
@@ -114,7 +123,13 @@ export function seed($: seed.Options = defaults) {
   if (firstRun) {
     if (!fs.existsSync(PATH.generated)) fs.mkdirSync(PATH.generated, { recursive: true })
     if (!fs.existsSync(PATH.targets.ark)) fs.writeFileSync(PATH.targets.ark, "")
-    if (!fs.existsSync(PATH.targets.zod)) fs.writeFileSync(PATH.targets.ark, "")
+    if (!fs.existsSync(PATH.targets.zod)) fs.writeFileSync(PATH.targets.zod, "")
+
+    /////////
+    if (!fs.existsSync(PATH.targets.octokit)) fs.writeFileSync(PATH.targets.octokit, "")
+    if (!fs.existsSync(PATH.targets.octokit)) fs.writeFileSync(PATH.specs.octokitHack, "")
+    /////////
+
     if (!fs.existsSync(PATH.spec)) fs.writeFileSync(PATH.spec, generateSpec($))
     if (!fs.existsSync(PATH.targets.jsdocHack)) fs.writeFileSync(PATH.targets.jsdocHack, "")
     firstRun = false
@@ -138,4 +153,19 @@ export function seed($: seed.Options = defaults) {
     PATH.targets.jsdocHack, 
     pathify(document),
   )
+
+  const octokit
+    : OpenAPI.doc
+    = JSON_parse(fs.readFileSync(PATH.specs.octokit).toString("utf8"))
+
+  fs.writeFileSync(
+    PATH.specs.octokitHack,
+    fn.pipe(
+      octokit,
+      (x) => OpenAPI.map(x, (_) => Traversable.fromJsonSchema(_ as Traversable.orJsonSchema)),
+      pathify,
+    )
+  )
 }
+
+void (seed.PATH = PATH)

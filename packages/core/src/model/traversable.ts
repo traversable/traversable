@@ -28,7 +28,7 @@ import type {
 export type {
   Traversable,
   Traversables,
-  Traversable_any as any,
+  Traversable_orJsonSchema as orJsonSchema,
   Traversable_lambda as lambda,
   Traversable_Map as Map,
   Context,
@@ -38,6 +38,7 @@ export type {
   Traversable_Composite as Composite,
   Traversable_Special as Special,
   ///
+  Traversable_any as any,
   Traversable_null as null,
   Traversable_boolean as boolean,
   Traversable_integer as integer,
@@ -108,7 +109,7 @@ type Traversables = [
   Traversable_object,
 ]
 
-type Traversable_any =
+type Traversable_orJsonSchema =
   | JsonSchema.any
   | Traversable
   ;
@@ -122,6 +123,7 @@ type Traversable_Scalar =
 type Traversable_Special =
   | Traversable_enum
   | Traversable_const
+  | Traversable_any
   ;
 type Traversable_Combinator =
   | Traversable_allOf
@@ -137,6 +139,7 @@ type Traversable_Composite =
   ;
 
 type Traversable_Map<F> = {
+  any: Traversable_any
   null: Traversable_null
   boolean: Traversable_boolean
   integer: Traversable_integer
@@ -152,6 +155,24 @@ type Traversable_Map<F> = {
   record: Traversable_recordF<F>
   object: Traversable_objectF<F>
 }
+
+const Traversable_map = {
+  any: <Traversable_any>{ type: "any" } satisfies Traversable_any,
+  null: <Traversable_null>{ type: "null" } satisfies Traversable_null,
+  boolean: <Traversable_boolean>{ type: "boolean" } satisfies Traversable_boolean,
+  integer: <Traversable_integer>{ type: "integer" } satisfies Traversable_integer,
+  number: <Traversable_number>{ type: "number" } satisfies Traversable_number,
+  string: <Traversable_string>{ type: "string" } satisfies Traversable_string,
+  enum: <Traversable_enum>{ type: "enum", enum: [] } satisfies Traversable_enum,
+  const: <Traversable_const>{ type: "const", "const": {} } satisfies Traversable_const,
+  allOf: <Traversable_allOfF<Traversable>>{ type: "allOf", allOf: [] } satisfies Traversable_allOfF<Traversable>,
+  anyOf: <Traversable_anyOfF<Traversable>>{ type: "anyOf", anyOf: [] } satisfies Traversable_anyOfF<Traversable>,
+  oneOf: <Traversable_oneOfF<Traversable>>{ type: "oneOf", oneOf: [] } satisfies Traversable_oneOfF<Traversable>,
+  array: <Traversable_arrayF<Traversable>>{ type: "array", items: { type: "any" } } satisfies Traversable_arrayF<Traversable>,
+  tuple: <Traversable_tupleF<Traversable>>{ type: "tuple", items: [] } satisfies Traversable_tupleF<Traversable>,
+  record: <Traversable_recordF<Traversable>>{ type: "record", additionalProperties: { type: "any" } } satisfies Traversable_recordF<Traversable>,
+  object: <Traversable_objectF<Traversable>>{ type: "object", properties: {} } satisfies Traversable_objectF<Traversable>,
+} as const satisfies Record<Traversable_Known[number], Traversable>
 
 const Traversable_Meta = t.object({ meta: Meta.Base })
 interface Traversable_Meta extends Meta.has<Meta.Base> {}
@@ -280,22 +301,23 @@ declare namespace Traversable_toType {
   type loop<S>
     = S extends JsonSchema.Scalar ? ScalarType[S["type"]]
     : S extends { allOf: infer T extends readonly {}[] } ? intersect<T>
-    : S extends { anyOf: infer T extends Traversable_any } ? loop<T>
-    : S extends { oneOf: infer T extends Traversable_any } ? loop<T>
-    : S extends { items: infer T extends readonly Traversable_any[] } ? { -readonly [I in keyof T]: loop<T[I]> }
-    : S extends { items: infer T extends Traversable_any } ? readonly loop<T>[]
-    : S extends { properties: infer T extends { [x: string]: Traversable_any }, required: readonly (infer Req extends string)[] }
+    : S extends { anyOf: infer T extends Traversable_orJsonSchema } ? loop<T>
+    : S extends { oneOf: infer T extends Traversable_orJsonSchema } ? loop<T>
+    : S extends { items: infer T extends readonly Traversable_orJsonSchema[] } ? { -readonly [I in keyof T]: loop<T[I]> }
+    : S extends { items: infer T extends Traversable_orJsonSchema } ? readonly loop<T>[]
+    : S extends { properties: infer T extends { [x: string]: Traversable_orJsonSchema }, required: readonly (infer Req extends string)[] }
     ? Merge<
       { -readonly [K in Req & keyof T]: Traversable_toType.loop<T[K]> },
       { -readonly [K in Exclude<keyof T, Req>]+?: Traversable_toType.loop<T[K]> }
     >
-    : S extends { additionalProperties: infer T extends Traversable_any }
+    : S extends { additionalProperties: infer T extends Traversable_orJsonSchema }
     ? globalThis.Record<string, Traversable_toType.loop<T>>
     : never
 }
 
 type Traversable_Known = typeof Traversable_Known
 const Traversable_Known = [
+  "any",
   "null",
   "boolean",
   "integer",
@@ -331,6 +353,10 @@ const Traversable_isNumber = Traversable_number.is as (u: unknown) => u is Trave
 interface Traversable_string extends JsonSchema.string, Meta.has<Meta.string> {}
 const Traversable_string = JsonSchema.string
 const Traversable_isString = Traversable_string.is as (u: unknown) => u is Traversable_string
+
+interface Traversable_any extends Traversable_Meta { type: 'any' }
+const Traversable_any = t.object({ type: t.const("any") })
+const Traversable_isAny: (u: unknown) => u is Traversable_any = Traversable_any.is
 
 interface Traversable_enum extends Enum<{ type: "enum" }>, Traversable_Meta {}
 const Traversable_enum = t.object({ type: t.const("enum"), enum: t.array(t.any()) })
@@ -385,6 +411,7 @@ const is_ = {
   integer: Traversable_isInteger,
   number: Traversable_isNumber,
   string: Traversable_isString,
+  any: Traversable_isAny,
   const: Traversable_isConst,
   enum: Traversable_isEnum,
   allOf: Traversable_isAllOf,
@@ -440,6 +467,7 @@ const Traversable_Functor: Functor<Traversable_lambda, Traversable> = {
         case Traversable_is.integer(x): return x
         case Traversable_is.number(x): return x
         case Traversable_is.string(x): return x
+        case Traversable_is.any(x): return x
         case Traversable_is.array(x): return { ...x, items: f(x.items) }
         case Traversable_is.allOf(x): return { ...x, allOf: x.allOf.map(f) }
         case Traversable_is.anyOf(x): return { ...x, anyOf: x.anyOf.map(f) }
@@ -466,6 +494,7 @@ const PathPrefixMap = {
   null: null,
   number: null,
   string: null,
+  any: null,
   ///
   const: "const",
   enum: "enum",
@@ -480,7 +509,7 @@ const PathPrefixMap = {
 
 const hasExample = tree.has("meta", "example", is.nonnullable)
 
-const IxFunctor: IndexedFunctor<Context, Traversable_lambda, Traversable_any> = {
+const IxFunctor: IndexedFunctor<Context, Traversable_lambda, Traversable_orJsonSchema> = {
   map: Traversable_Functor.map,
   mapWithIndex(g) {
     return ($, xs) => {
@@ -504,6 +533,7 @@ const IxFunctor: IndexedFunctor<Context, Traversable_lambda, Traversable_any> = 
         case Traversable_is.integer(xs): return xs
         case Traversable_is.number(xs): return xs
         case Traversable_is.string(xs): return xs
+        case Traversable_is.any(xs): return xs
         case Traversable_is.array(xs): return { ...xs, items: g(h()([...$.path, symbol.array])($), xs.items) }
         case Traversable_is.allOf(xs): return { ...xs, allOf: xs.allOf.map((x, i) => g(h(i)([...$.path, symbol.allOf, i])($), x)) }
         case Traversable_is.anyOf(xs): return { ...xs, anyOf: xs.anyOf.map((x, i) => g(h(i)([...$.path, symbol.anyOf, i])($), x)) }
@@ -513,14 +543,9 @@ const IxFunctor: IndexedFunctor<Context, Traversable_lambda, Traversable_any> = 
         case Traversable_is.object(xs): {
           const { additionalProperties: a, properties: p, ...y } = xs
           const entries = Object_entries(p).map(([k, v]) => {
-            // console.log(v)
-
-
             const isOptional = !xs.required?.includes(k)
             const path = [ ...$.path, symbol.object, k, ...(isOptional ? [symbol.optional] : [])]
             const next = { ...h(k)(path)($), ...(hasExample(v) && { example: v.meta.example }) }
-            // const example = !!v && typeof v === "object" && "example" in v ? v.example : null
-            // if (hasExample(v)) { console.log("EXAMPLE IN NEXT", next.example) }
             return [k, g(next, v)] satisfies [any, any]
           })
 
@@ -546,11 +571,12 @@ function Traversable_fold<T>(g: Functor.Algebra<Traversable_lambda, T>)
 
 function Traversable_foldIx<Ix, T>(algebra: Functor.IxAlgebra<Ix, Traversable_lambda, T>): <S>(ix: Ix, term: S) => T
 function Traversable_foldIx<T>(algebra: Functor.IxAlgebra<Context, Traversable_lambda, T>)
-  { return fn.cataIx<Context, Traversable_lambda, Traversable_any>(IxFunctor)(algebra) }
+  { return fn.cataIx<Context, Traversable_lambda, Traversable_orJsonSchema>(IxFunctor)(algebra) }
 
 /** @internal */
 const fromJsonSchema = (expr: JsonSchema.any) => {
   const meta = {
+    ...expr,
     ...tree.has("originalIndex", t.number().is)(expr) && { originalIndex: expr.originalIndex },
     ...tree.has("required", t.array(t.string()).is)(expr) && { required: expr.required },
   }

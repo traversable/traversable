@@ -5,6 +5,14 @@ export * as type from "./type.js"
 export * as arbitrary from "./arbitrary.js"
 export * as validator from "./validator.js"
 export * as Print from "./print.js"
+export * as JSDoc from './jsdoc.js'
+
+/// interpreters
+export { ark } from "./arktype/exports.js"
+export { typebox } from "./typebox/exports.js"
+export { typescript } from "./typescript/exports.js"
+export { zod } from "./zod/index.js"
+
 export type { Handlers, Matchers, Options, Index } from "./shared.js"
 export { 
   Flags, 
@@ -14,10 +22,4 @@ export {
   defineOptions, 
   createTarget,
 } from "./shared.js"
-export * as Format from './formatters.js'
-
-/// interpreters
-export { ark } from "./arktype/exports.js"
-export { typebox } from "./typebox/exports.js"
-export { typescript } from "./typescript/exports.js"
-export { zod } from "./zod/index.js"
+export { seed, typeNameFromPath } from "./seed.js"
