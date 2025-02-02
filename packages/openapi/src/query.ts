@@ -162,22 +162,19 @@ export declare namespace accessors {
 }
 
 accessors.loop = fn.loopN<accessors.Deps, void>((cursor, ks, access, qs, root, loop): void => {
-  for (const q of qs) if (q(cursor, ks)) {
+  for (const q of qs) if (q(cursor, ks))
     access[JsonPointer.fromPath(ks) || "/"] = tree.accessor(...ks)(root)
-    // console.log("cursor", cursor)
-    // console.log("ks", ks)
-  }
-    switch (true) {
-      case is.nullable(cursor): break
-      case is.primitive(cursor): break
-      case is.array(cursor): 
-        return cursor.forEach((x, ix) => loop(x, [...ks, ix], access, qs, root))
-      case is.object(cursor): 
-        return Object_keys(cursor).forEach((k) => loop(cursor[k], [...ks, k], access, qs, root))
-      default: 
-        return Invariant.IllegalState(`${SCOPE}/openapi/accessors`, cursor)
-    }
 
+  switch (true) {
+    case is.nullable(cursor): break
+    case is.primitive(cursor): break
+    case is.array(cursor): 
+      return cursor.forEach((x, ix) => loop(x, [...ks, ix], access, qs, root))
+    case is.object(cursor): 
+      return Object_keys(cursor).forEach((k) => loop(cursor[k], [...ks, k], access, qs, root))
+    default: 
+      return Invariant.IllegalState(`${SCOPE}/openapi/accessors`, cursor)
+  }
 })
 
 const qualifier = "/components/schemas"

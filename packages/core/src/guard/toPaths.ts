@@ -108,7 +108,6 @@ export const prepend = (k: key.any, y?: key.any) => (xs: Pathspec): Pathspec => 
 
 export namespace Recursive {
   export const toPaths: Functor.Algebra<AST.lambda, Array<Pathspec>> = (n) => {
-    console.log(JSON.stringify(n, null, 2))
     switch (true) {
       default: return (console.error(n), fn.exhaustive(n))
       case n._tag === "null":

@@ -9,7 +9,7 @@ const [interpreter, _refs] = openapi.Interpreter.define({
   integer: '{ "type": "integer" }',
   number: '{ "type": "number" }',
   string: '{ "type": "string" }',
-  const: { after(_) { return (console.log("const.after"), '{ "const": ' + _ + ' }') } },
+  const: { after(_) { return '{ "const": ' + _ + ' }' } },
   allOf: { afterAll(_) { return '{ "allOf": [' + _ + '] }' } },
   oneOf: { afterAll(_) { return '{ "oneOf": [' + _ + '] }' } },
   anyOf: { afterAll(_) { return '{ "anyOf": [' + _ + '] }' } },

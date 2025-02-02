@@ -46,6 +46,7 @@ vi.describe(`〖⛳️〗‹‹‹ ❲@traverable/registry❳`, () => {
     // console.log("prev", prev)
     // vi.assert.isTrue(false)
 
+    // TODO: re-implement this test
     vi.assert.isTrue(true)
     // vi.assert.equal(prev, prev)
     // vi.assert.equal(Registry.weight.write("allOf", prev + 1),  { prev, next: prev })

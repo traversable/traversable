@@ -230,7 +230,6 @@ function generateEntry(
     [BEFORE_OPT, AFTER_OPT]: readonly [before: string, after: string]
 ): (entry: [string, string]) => string {
   return ([k, v]) => {
-    // console.log("$", $)
     const EXAMPLE_TAG = JSDoc.example(k , $)
     const DESCRIPTION_TAG = JSDoc.description(k, $)
     const LINK_HERE = linkToNode(k, $)

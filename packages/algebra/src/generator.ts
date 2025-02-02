@@ -37,16 +37,7 @@ function many<T>(options: Options<T> & { generate: Generator<T> }): T[] {
       { 
         ...$, 
         absolutePath: [...$.absolutePath, k],
-        typeName: 
-
-        (
-          console.log("typeNameFromPath(`${" + k + "}`", typeNameFromPath(`${k}`)), 
-          console.log("$.absolutePath", $.absolutePath),
-
-          typeNameFromPath(`${k}`)
-
-        ) 
-
+        typeName: typeNameFromPath(`${k}`),
       },
     )
   )

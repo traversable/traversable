@@ -255,7 +255,6 @@ const buildMaskInterpreter: BuildPathInterpreter = (lookup) => ({ typeName }) =>
 /** @internal */
 const buildOpenApiNodePathInterpreter: BuildPathInterpreter = ()  => ($) => (xs) => {
   const path = [...$.absolutePath.map(escapePathSegment), ...xs]
-  console.log(object.omit($, "handlers")) 
   let out: string[] = []
   for (let ix = 0, len = path.length; ix < len; ix++) {
     const x = String(path[ix])

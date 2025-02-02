@@ -2,6 +2,8 @@ import { HKT, _ } from "@traversable/registry/src/types"
 import type { newtype } from "any-ts"
 import { symbol } from "./symbol.js"
 
+// TODO: delete this module?
+
 interface InvalidJson<_> {
   [symbol.TypeError]?: _
   [symbol.unit]: never
