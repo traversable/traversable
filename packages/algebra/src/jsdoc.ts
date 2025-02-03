@@ -1,8 +1,8 @@
 import type { Json } from '@traversable/core'
 import { Format, tree } from '@traversable/core'
 
-import type { Index } from './shared.js'
 import { fn } from '@traversable/data'
+import type { Index } from './shared.js'
 
 /** 
  * ## {@link tag `JSDoc.tag`}

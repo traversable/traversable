@@ -14,6 +14,8 @@ packages/*/bench/__reports__/*
 packages/*/test/__generated__/*
 packages/registry/src/__generated__/*
 !packages/*/test/*
+packages/algebra/test/__specs__/*
+!packages/algebra/test/__specs__/octokit.spec.json
 
 packages/*/build/*
 packages/*/dist/*

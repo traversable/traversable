@@ -1,7 +1,7 @@
 import { fn, map, object, string } from "@traversable/data"
 
-import { Json } from "./json.js"
 import { is } from "./guard/exports.js"
+import type { Json } from "./json.js"
 
 /** @internal */
 const wrapWith: [before: string, after: string] = ['', '']
