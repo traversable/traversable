@@ -71,6 +71,9 @@ importers:
       '@traversable/algebra':
         specifier: workspace:^
         version: link:../../packages/algebra/dist
+      '@traversable/core':
+        specifier: workspace:^
+        version: link:../../packages/core/dist
       '@traversable/data':
         specifier: workspace:^
         version: link:../../packages/data/dist

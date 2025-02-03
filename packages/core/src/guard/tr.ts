@@ -1,16 +1,28 @@
-import type { Force, HKT, Kind, _, newtype, symbol } from "@traversable/registry"
-import * as t from "./ast.js"
+import { type Functor, Invariant, type _, type newtype, type symbol } from "@traversable/registry"
+
+import type * as Traversable from "../model/traversable.js"
 export type {
   typeof,
   Schema,
 } from "./ast.js"
+import { fn } from "@traversable/data"
+import * as t from "./ast.js"
 
 export type { meta as Meta }
 interface meta<$> { [symbol.meta]?: $, get meta(): $ }
+
+/** @internal */
+const Object_values = globalThis.Object.values
+/** @internal */
 type decorate<T, $ = T[symbol.meta & keyof T], _ 
   = { meta: [$] extends [never] ? {} : $ & {} }> = never | _
+/** @internal */
 function decorate<$>(meta: $): <T>(x: T) => decorate<T, $> 
   { return <T>(x: T) => ({ get meta() { return !!meta ? meta : meta as never }, ...x }) }
+
+/** @internal */
+const NotSupported = (...args: Parameters<typeof Invariant.NotYetSupported>) => 
+  Invariant.NotYetSupported(...args)("core/src/guard/tr.ts")
 
 //////////////////
 ///    NULL    ///
@@ -548,7 +560,7 @@ namespace oneOf_ {
 ////////////////////
 ///    RECORD    ///
 export { record_ as record }
-function record_<T extends typeof t.record.children, Meta>(
+function record_<T extends typeof t.record.children, Meta extends {}>(
   value: T, 
   meta?: Meta
 ): record_<T, Meta> { 
@@ -562,22 +574,24 @@ interface record_<T, Meta = {}> extends t.record<T>, meta<Meta> {
   get toTraversable(): record_.Traversable<T, Meta>
 }
 declare namespace record_ {
-  interface Traversable<T extends typeof t.record.spec, Meta = {}> extends t.record.toJsonSchema<T> { 
+  interface Traversable<T extends typeof t.record.spec, Meta = {}> extends Omit<t.record.toJsonSchema<T>, "type"> { 
+    type: typeof t.Tag.record
     meta: Meta 
     additionalProperties: T["toJsonSchema" & keyof T] & decorate<T>
   }
 }
 namespace record_ {
-  export function toTraversable<T extends typeof t.record.spec, Meta = {}>(
+  export function toTraversable<T extends typeof t.record.spec, Meta extends {} = {}>(
     spec: T, 
     meta?: Meta
   ): record_.Traversable<T, Meta>
-  export function toTraversable<T extends typeof t.record.spec, Meta = {}>(
+  export function toTraversable<T extends typeof t.record.spec, Meta extends {} = {}>(
     spec: T, 
     meta: Meta = {} as never
   ) {
     return {
       ...t.record.toJsonSchema(spec),
+      type: t.Tag.record,
       meta,
     }
   }
@@ -669,3 +683,33 @@ namespace object_ {
 }
 ///    OBJECT    ///
 ////////////////////
+
+namespace Recursive {
+export const toTraversable
+  : Functor.Algebra<t.AST.lambda, Traversable.F<_>>
+  = (ast) => {
+    switch (ast._tag) {
+      default: return fn.exhaustive(ast)
+      case "symbol": return NotSupported("symbol", "Recursive.toTraversable")
+      case "any": return any_.toTraversable()
+      case "null": return null_.toTraversable()
+      case "boolean": return boolean_.toTraversable()
+      case "integer": return integer_.toTraversable()
+      case "number": return number_.toTraversable()
+      case "string": return string_.toTraversable()
+      case "enum": return enum_.toTraversable(ast.def)
+      case "const": return const_.toTraversable(ast.def)
+      case "array": return array_.toTraversable(ast.def)
+      case "allOf": return allOf_.toTraversable(ast.def)
+      case "anyOf": return anyOf_.toTraversable(ast.def)
+      case "oneOf": return oneOf_.toTraversable(ast.def)
+      case "optional": return optional_.toTraversable(ast.def)
+      case "record": return record_.toTraversable(ast.def)
+      case "tuple": return tuple_.toTraversable(ast.def)
+      case "object": return object_.toTraversable(ast.def)
+    }
+  }
+}
+
+export function fold<S>(g: Functor.Algebra<t.AST.lambda, S>) { return fn.cata(t.Functor)(g) }
+export const toTraversable = fold(Recursive.toTraversable)

@@ -16,7 +16,6 @@ import type {
 } from "@traversable/registry"
 import { Invariant, symbol } from "@traversable/registry"
 
-import type * as Traversable from "../model/traversable.js"
 import { has } from "../tree.js"
 import { allOf$, anyOf$, array$, object$, optional$, record$, tuple$ } from "./combinators.js"
 import { is as is$ } from "./predicates.js"
@@ -25,6 +24,7 @@ export {
   type schema as Schema,
   type Type as type,
   type target,
+  parseArgs,
   typeof_ as typeof,
   AST,
   isAST as is,
@@ -33,7 +33,10 @@ export {
   Functor,
   fold,
   unfold,
-  key,
+  toJsonSchema,
+  toStandardSchema,
+  fromGuard,
+  //
   null_ as null,
   boolean_ as boolean,
   symbol_ as symbol,
@@ -51,9 +54,6 @@ export {
   anyOf_ as anyOf,
   oneOf_ as oneOf,
   object_ as object,
-  toJsonSchema,
-  toTraversable,
-  toStandardSchema,
 }
 
 /** @internal */
@@ -61,7 +61,7 @@ const phantom: never = symbol.phantom as never
 /** @internal */
 const Object_keys = globalThis.Object.keys
 /** @internal */
-const NotYetSupported = (...args: Parameters<typeof Invariant.NotYetSupported>) => 
+const NotSupported = (...args: Parameters<typeof Invariant.NotYetSupported>) => 
   Invariant.NotYetSupported(...args)("core/src/guard/ast.ts")
 /** @internal */
 const isOptional = <S>(u: _): u is optional_<S> => has("_tag", is$.literally(Tag.optional))(u)
@@ -77,9 +77,13 @@ function hasTag(tag: string) {
 
 type codec<I, O> = never | Codec<[source: I, target: O]>
 interface Codec<T extends [from: _, to: _]> { is(src: T[0]): src is T[1] }
-type schema<O = _, I = _> = never | Schema<[I, O]>
 type target<S> = S extends (_: any) => _ is infer T ? T : never
 type Schema<S extends [source: any, target: _]> = never | Type<{ is(src: S[0]): src is S[1] }>
+
+type schema<O = _, I = _> = never | Schema<[I, O]>
+
+declare namespace schema { export { schema_any as any }}
+declare namespace schema { type schema_any = schema<any, any> }
 
 type orUnknown<T, _ = [T] extends [never] ? unknown : T> = _
 
@@ -562,7 +566,11 @@ declare namespace any_ {
   interface Codec<I> extends any_.def, codec<I, _> {}
 }
 namespace any_ {
-  export const toJsonSchema = { type: Tag.object, properties: {} }
+  export const toJsonSchema = { 
+    type: Tag.object, 
+    properties: {}, 
+    nullable: true as true,
+  }
   export const def = {
     _tag: Tag.any,
     def: symbol.any as never,
@@ -582,9 +590,10 @@ interface enum_<S extends typeof enum_.spec> extends enum_.def<S> {
   is(u: _): u is S[number]['_type' & keyof S[number]]
   get toJsonSchema(): enum_.toJsonSchema<S>
 }
-function enum_<S extends typeof enum_.children>(...specs: [...S]): enum_<S>
-function enum_<I, O extends typeof enum_.children>(...args: [...O, Options<I>]): enum_.Codec<I, O>
-function enum_<S extends typeof enum_.children>(...specs: [...S]): enum_<S>
+function enum_<const S extends typeof enum_.children>(...specs: [...S]): enum_<S>
+function enum_<I, const O extends typeof enum_.children>(...args: [...O, Options<I>]): enum_.Codec<I, O>
+function enum_<const S extends typeof enum_.children>(...specs: [...S]): enum_<S>
+function enum_<const S extends readonly _[]>(...specs: [...S]): enum_<S>
 function enum_<I, O extends typeof enum_.children>(
   ...args: 
     | [I, ...O]
@@ -640,6 +649,7 @@ interface const_<S> extends const_.def<S> {
 }
 function const_<const S>(value: S, options?: const_.Options<S>): const_<S>
 function const_<I, const O>(value: O, options: const_.Options<I> & { from: I }): const_.Codec<I, O>
+function const_<const S>(value: S): const_<S>
 function const_<const S>(v: S, _?: const_.Options<S>): const_<S> {
   const eq = _?.eq
   const def = const_.def(v)
@@ -716,6 +726,7 @@ interface optional_<S extends typeof optional_.spec> extends optional_.def<S> {
 }
 function optional_<S extends typeof optional_.children>(spec: S): optional_<S>
 function optional_<I, O extends typeof optional_.children>(spec: O, options: Options<I>): optional_.Codec<I, O>
+function optional_<S>(spec: S): optional_<S>
 function optional_<S extends typeof optional_.children>(s: S): optional_<S> {
   return {
     ...optional_.def(s),
@@ -761,6 +772,7 @@ interface allOf_<S extends readonly _[]> extends allOf_.def<S> {
 }
 function allOf_<S extends typeof allOf_.children>(...specs: S): allOf_<S>
 function allOf_<I, O extends typeof allOf_.children>(...args: [...O, Options<I>]): allOf_.Codec<I, O>
+function allOf_<S extends readonly _[]>(...specs: S): allOf_<S>
 function allOf_<I, O extends typeof allOf_.children>(
   ...args:
     | [...O, I]
@@ -812,6 +824,7 @@ interface anyOf_<S extends typeof anyOf_.spec> extends anyOf_.def<S> {
 }
 function anyOf_<S extends typeof anyOf_.children>(...specs: S): anyOf_<S>
 function anyOf_<I, O extends typeof allOf_.children>(...args: [...O, Options<I>]): anyOf_.Codec<I, O>
+function anyOf_<S extends readonly _[]>(...specs: S): anyOf_<S>
 function anyOf_<I, O extends typeof anyOf_.children>(
   ...args:
     | [...O, I]
@@ -863,6 +876,7 @@ interface oneOf_<S extends typeof oneOf_.spec> extends oneOf_.def<S> {
 }
 function oneOf_<S extends typeof oneOf_.children>(...specs: S): oneOf_<S>
 function oneOf_<I, O extends typeof oneOf_.children>(...args: [...O, Options<I>]): oneOf_.Codec<I, O>
+function oneOf_<S extends readonly _[]>(...specs: S): oneOf_<S>
 function oneOf_<I, O extends typeof oneOf_.children>(
   ...args:
   | [...O, I]
@@ -918,6 +932,7 @@ interface array_<S extends typeof array_.spec> extends array_.def<S> {
 
 function array_<S extends typeof array_.children>(spec: S): array_<S>
 function array_<I, O extends typeof array_.children>(spec: O, options: Options<I>): array_.Codec<I, O>
+function array_<S>(spec: S): array_<S>
 function array_<S extends typeof array_.children>(x: S) {
   return {
     ...array_.def(x),
@@ -969,7 +984,7 @@ interface record_<S extends typeof record_.spec> extends record_.def<S> {
   get toJsonSchema(): record_.toJsonSchema<S>
 }
 function record_<S extends typeof record_.children>(spec: S): record_<S>
-function record_<I, O extends typeof record_.children>(spec: O, options: Options<I>): record_.Codec<I, O>
+// function record_<I, O extends typeof record_.children>(spec: O, options: Options<I>): record_.Codec<I, O>
 function record_<S extends typeof record_.children>(x: S): record_<S> {
   return {
     ...record_.def(x),
@@ -987,7 +1002,7 @@ declare namespace record_ {
   }
   interface Codec<I, O> extends record_.def<O>, codec<I, O> {}
   type apply<S> = record_<S>
-  type toJsonSchema<S> = never | { type: "object", additionalProperties: S["toJsonSchema" & keyof S] }
+  type toJsonSchema<S> = never | { type: typeof Tag.object, additionalProperties: S["toJsonSchema" & keyof S] }
   interface JsonSchemaF extends Kinds.identity { [-1]: toJsonSchema<this[0]> }
 }
 namespace record_ {
@@ -1001,7 +1016,7 @@ namespace record_ {
   export function toJsonSchema<S extends typeof record_.spec>(spec: S): record_.toJsonSchema<S>
   export function toJsonSchema<S extends typeof record_.spec>(spec: S) {
     return {
-      type: "object",
+      type: Tag.object,
       ...has("toJsonSchema")(spec) && { additionalProperties: spec.toJsonSchema as S },
     }
   }
@@ -1022,6 +1037,7 @@ interface tuple_<S extends typeof tuple_.spec> extends tuple_.def<S, tuple_.opt<
 }
 function tuple_<S extends typeof tuple_.children>(...s: S): tuple_<S>
 function tuple_<I, O extends typeof tuple_.children>(...args: [...O, Options<I>]): tuple_.Codec<I, O>
+function tuple_<S extends readonly _[]>(...s: S): tuple_<S>
 function tuple_<I, O extends typeof tuple_.children>(
   ...args:
     | [...O, I]
@@ -1118,7 +1134,7 @@ namespace tuple_ {
 
 ////////////////////
 ///    OBJECT    ///
-interface object_<S extends typeof object_.spec> extends object_.def<S> {
+interface object_<S> extends object_.def<S> {
   is(src: _): src is this["_type"]
   get toJsonSchema(): object_.toJsonSchema<S>
   as<T extends this["_type"]>(): schema<T>
@@ -1128,6 +1144,7 @@ interface object_<S extends typeof object_.spec> extends object_.def<S> {
  */
 function object_<S extends typeof object_.children>(spec: S): object_<S>
 function object_<I, O extends typeof object_.children>(spec: O, options: Options<I>): object_.Codec<I, O>
+function object_<S>(spec: S): object_<S>
 function object_<S extends typeof object_.children>(xs: S) {
   const self = {
     _tag: Tag.object,
@@ -1147,7 +1164,7 @@ declare namespace object_ {
   const spec: never | { [x: string]: _ }
   const children: never | { [x: string]: AST.Node }
   interface def<
-    S extends typeof object_.spec,
+    S,
     Opt extends object_.opt<S> = object_.opt<S>,
     Req extends Exclude<keyof S, Opt> = Exclude<keyof S, Opt>
   > {
@@ -1157,15 +1174,14 @@ declare namespace object_ {
       & $<{ [K in Opt]+?: S[K]["_type" & keyof S[K]] }>
       & $<{ [K in Req]-?: S[K]["_type" & keyof S[K]] }>
     >
-    _opt: object_.opt<S[0]>[]
+    _opt: object_.opt<S[0 & keyof S]>[]
   }
-
   interface Codec<I, O extends typeof object_.spec> extends object_.def<O>, codec<I, O> {}
   type apply<S> = object_<{ [x: string]: S }>
   interface F extends HKT<typeof object_.spec> { [-1]: Struct<this[0]> }
   type of<T> = Kind<F, Record<string, T>>
   interface Struct<T extends typeof object_.spec> extends newtype<T> {}
-  type toJsonSchema<S, Req = Exclude<keyof S, object_.opt<S>>> = never | {
+  type toJsonSchema<S, Req = Exclude<keyof S & string, object_.opt<S>>> = never | {
     type: typeof Tag.object,
     required: [Req] extends [never] ? [] : Req[]
     properties: { [K in keyof S]: S[K]["toJsonSchema" & keyof S[K]] }
@@ -1212,67 +1228,33 @@ namespace object_ {
 ///    OBJECT    ///
 ////////////////////
 
-const key = anyOf_(string_(), number_(), symbol_())
-
 namespace Recursive {
   export const toJsonSchema: Functor.Algebra<AST.lambda, JsonSchema.F<_>> = (ast) => {
-      switch (ast._tag) {
-        default: return fn.exhaustive(ast)
-        case "any": return NotYetSupported("any", "Recursive.toJsonSchema")
-        case "symbol": return NotYetSupported("symbol", "Recursive.toJsonSchema")
-        case "null": return { type: "null" } satisfies JsonSchema.null
-        case "boolean": return { type: "boolean" } satisfies JsonSchema.boolean
-        case "integer": return { type: "integer" } satisfies JsonSchema.integer
-        case "number": return { type: "number" } satisfies JsonSchema.number
-        case "string": return { type: "string" } satisfies JsonSchema.string
-        case "enum": return { enum: ast.def } satisfies JsonSchema.enum
-        case "const": return { const: ast.def } satisfies JsonSchema.const
-        case "array": return { type: "array", items: ast.def } satisfies JsonSchema.arrayF<_>
-        case "allOf": return { allOf: ast.def } satisfies JsonSchema.allOfF<_>
-        case "anyOf": return { anyOf: ast.def } satisfies JsonSchema.anyOfF<_>
-        case "oneOf": return { oneOf: ast.def } satisfies JsonSchema.oneOfF<_>
-        case "optional": return { type: "anyOf", anyOf: [ast.def, { type: "enum"}], meta: { optional: true } }
-        case "record": return { type: "object", additionalProperties: ast.def, properties: {} } satisfies JsonSchema.objectF<_>
-        case "tuple": return { type: "array", items: ast.def } satisfies JsonSchema.arrayF<_>
-        case "object": return {
-          type: "object",
-          // required: Object.values(ast.def).filter((_) => _.meta?.optional !== true).map((_) => _.type),
-          properties: ast.def,
-        } satisfies JsonSchema.objectF<_>
-      }
+    switch (ast._tag) {
+      default: return fn.exhaustive(ast)
+      case "symbol": return NotSupported("symbol", "Recursive.toJsonSchema")
+      case "any": return any_.toJsonSchema
+      case "null": return null_.toJsonSchema
+      case "boolean": return boolean_.toJsonSchema
+      case "integer": return integer_.toJsonSchema
+      case "number": return number_.toJsonSchema
+      case "string": return string_.toJsonSchema
+      case "enum": return enum_.toJsonSchema(ast.def)
+      case "const": return const_.toJsonSchema(ast.def)
+      case "array": return array_.toJsonSchema(ast.def)
+      case "allOf": return allOf_.toJsonSchema(ast.def)
+      case "anyOf": return anyOf_.toJsonSchema(ast.def)
+      case "oneOf": return oneOf_.toJsonSchema(ast.def)
+      case "optional": return optional_.toJsonSchema(ast.def)
+      case "record": return { ...record_.toJsonSchema(ast.def), properties: {} }
+      case "tuple": return tuple_.toJsonSchema(ast.def)
+      case "object": return object_.toJsonSchema(ast.def)
     }
-  export const toTraversable
-    : Functor.Algebra<AST.lambda, Traversable.F<_>>
-    = (ast) => {
-      switch (ast._tag) {
-        default: return fn.exhaustive(ast)
-        case "symbol": return NotYetSupported("symbol", "Recursive.toTraversable")
-        case "any": return { type: "any" } satisfies Traversable.any
-        case "null": return { type: "null" } satisfies Traversable.null
-        case "boolean": return { type: "boolean" } satisfies Traversable.boolean
-        case "integer": return { type: "integer" } satisfies Traversable.integer
-        case "number": return { type: "number" } satisfies Traversable.number
-        case "string": return { type: "string" } satisfies Traversable.string
-        case "enum": return { type: "enum", enum: ast.def } satisfies Traversable.enum
-        case "const": return { type: "const", const: ast.def } satisfies Traversable.const
-        case "array": return { type: "array", items: ast.def } satisfies Traversable.arrayF<_>
-        case "allOf": return { type: "allOf", allOf: ast.def } satisfies Traversable.allOfF<_>
-        case "anyOf": return { type: "anyOf", anyOf: ast.def } satisfies Traversable.anyOfF<_>
-        case "oneOf": return { type: "oneOf", oneOf: ast.def } satisfies Traversable.oneOfF<_>
-        case "optional": return { type: "anyOf", anyOf: [ast.def, { type: "enum"}], meta: { optional: true } }
-        case "record": return { type: "record", additionalProperties: ast.def } satisfies Traversable.recordF<_>
-        case "tuple": return { type: "tuple", items: ast.def } satisfies Traversable.tupleF<_>
-        case "object": return {
-          type: "object",
-          required: Object.values(ast.def).filter((_) => _.meta?.optional !== true).map((_) => _.type),
-          properties: ast.def,
-        } satisfies Traversable.objectF<_>
-      }
-    }
+  }
+
 }
 
 const toJsonSchema = fold(Recursive.toJsonSchema)
-const toTraversable = fold(Recursive.toTraversable)
 
 function toStandardSchema<T extends S, S = _>(schema: { is(src: S): src is T }): StandardSchemaV1<S, T>
 function toStandardSchema<T extends S, S = _>(schema: { is(src: S): src is T }): StandardSchemaV1<S, T> {
@@ -1294,8 +1276,8 @@ function toStandardSchema<T extends S, S = _>(schema: { is(src: S): src is T }):
   } satisfies StandardSchemaV1<S, T>
 }
 
-export function parseArgs<I, O extends readonly _[]>(...args: [...O, I] | O): [O, I]
-export function parseArgs<I, O extends readonly [] | readonly unknown[]>(
+function parseArgs<I, O extends readonly _[]>(...args: [...O, I] | O): [O, I | undefined]
+function parseArgs<I, O extends readonly [] | readonly unknown[]>(
   ...args: 
     | [...O, I]
     | [...s: O]
@@ -1310,4 +1292,8 @@ type fromJsonSchema<T extends Record<string, unknown>> = never | {
   properties: { 
     [K in keyof T]: T[K]["toJsonSchema" & keyof T[K]] 
   } 
+}
+
+function fromGuard<S, T extends S>(guard: (src: S) => src is T): Type<{ is: typeof guard }> {
+  return { is: guard, _type: phantom, toJsonSchema: {} }
 }

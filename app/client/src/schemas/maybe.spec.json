@@ -1,0 +1,14 @@
+{
+  "openapi": "3.0.1",
+  "components": {
+    "schemas": {
+      "Some": {
+        "type": "object",
+        "properties": {
+          "tag": { "type": "string" },
+          "value": { "type": "object", "properties": {} }
+        }
+      }
+    }
+  }
+}

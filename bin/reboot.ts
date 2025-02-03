@@ -1,5 +1,5 @@
 #!/usr/bin/env pnpm dlx tsx
-import { flow, identity, pipe } from "effect"
+import { pipe } from "effect"
 import { $ } from "./process.js"
 import type { ShellCommand, SideEffect } from "./types.js"
 import { Print, diff } from "./util.js"
@@ -52,11 +52,9 @@ const withLogging
 
 const sequence
   : (sequenceName: string) => (cmds: ShellCommand[]) => SideEffect
-  = (sequenceName) => (cmds) => {
-    return time(sequenceName)(
-      () => cmds.forEach(([name, run]) => void time(name)(run)())
-    )
-  }
+  = (sequenceName) => (cmds) => time(sequenceName)(
+    () => cmds.forEach(([name, run]) => void time(name)(run)())
+  )
   
 function reboot(stdins: StdIn[]): SideEffect {
   return () => void pipe(
