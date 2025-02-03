@@ -148,6 +148,7 @@ export const defaults = {
 const ZOD_IDENT_MAP = {
   [symbol.optional]: "._def.innerType",
   [symbol.object]: ".shape",
+  [symbol.record]: ".element",
   [symbol.required]: null,
   [symbol.array]: ".element"
 } as const
@@ -164,10 +165,10 @@ const MASK_MAP = {
 
 interface Invertible { [x: keyof any]: keyof any }
 const sub
-  : <const D extends Invertible>(dict: D) => (text: string) => string
+  : <const T extends Invertible>(dict: T) => (text: string) => string
   = (dict) => (text) => {
-    let ks = [...text], out = "", k: string | undefined
-    while ((k = ks.shift()) !== undefined) out += k in dict ? String(dict[k]) : k
+    let chars = [...text], out = "", char: string | undefined
+    while ((char = chars.shift()) !== undefined) out += char in dict ? String(dict[char]) : char
     return out
   }
 
@@ -232,7 +233,7 @@ const trimPath = (xs: (keyof any | null)[]) => fn.pipe(
 )
 
 /** @internal */
-const buildMaskInterpreter: BuildPathInterpreter = (lookup) => ({ typeName }) => (xs) => {
+const buildMaskInterpreter: BuildPathInterpreter = (lookup) => ({ typeName, path }) => (xs) => {
   let out: (keyof any | null)[] = [typeName]
   let ks = [...xs]
   let k: keyof any | null | undefined
