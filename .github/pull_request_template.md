@@ -8,7 +8,7 @@
 
 **Checklist** —
 
-- [ ] My PR's title follows [gitmoji](https://gitmoji.dev/) specification
+- [ ] My PR's title follows the [gitmoji](https://gitmoji.dev/) specification
 - [ ] My PR references any related issues
   - [ ] Any new feature or breaking change must come with an associated Issue or Discussion
   - [ ] Any added dependency must include an associated Issue or Discussion
