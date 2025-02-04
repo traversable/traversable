@@ -1,9 +1,9 @@
 import * as fs from "node:fs"
 import * as path from 'node:path'
-import * as vi from "vitest"
 import * as fc from 'fast-check'
+import * as vi from "vitest"
 
-import { seed, ark, typebox, zod, fastcheck } from "@traversable/algebra"
+import { ark, fastcheck, seed, typebox, zod } from "@traversable/algebra"
 import type { JsonSchema } from "@traversable/core"
 import type { OpenAPI } from "@traversable/openapi"
 import type { _ } from "@traversable/registry"

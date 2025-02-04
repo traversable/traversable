@@ -2,8 +2,8 @@ import { test } from "@fast-check/vitest"
 import * as vi from "vitest"
 import { z } from "zod"
 
-import { fc } from "@traversable/core"
 import { zod } from "@traversable/algebra"
+import { fc } from "@traversable/core"
 import { _ } from "@traversable/registry"
 import IR = zod.IR
 

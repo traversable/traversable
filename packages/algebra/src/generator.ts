@@ -1,6 +1,6 @@
 import type { Traversable } from "@traversable/core"
-import type { _ } from "@traversable/registry"
 import { fn, map } from "@traversable/data"
+import type { _ } from "@traversable/registry"
 
 import { typeNameFromPath } from "./seed.js"
 import type { Handlers, Options } from "./shared.js"

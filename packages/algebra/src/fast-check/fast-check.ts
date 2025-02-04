@@ -1,8 +1,8 @@
-import * as fc from 'fast-check'
-import { type Traversable } from '@traversable/core'
+import type { Traversable } from '@traversable/core'
 import { fn, object } from '@traversable/data'
 import type { _ } from '@traversable/registry'
-import { Invariant, type Intersect } from '@traversable/registry'
+import { type Intersect, Invariant } from '@traversable/registry'
+import * as fc from 'fast-check'
 
 import * as Gen from '../generator.js'
 import * as Print from '../print.js'
