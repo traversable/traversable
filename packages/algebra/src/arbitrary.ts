@@ -124,10 +124,8 @@ export namespace Algebra {
         case Traversable.is.array(x): return fc.array(x.items)
         case Traversable.is.record(x): return fc.dictionary(x.additionalProperties)
         case Traversable.is.tuple(x): return fc.tuple(...x.items)
-        case Traversable.is.object(x): return fc.record(
-          { ...x.properties }, 
-          { requiredKeys: [...(x.required || [])] }
-        )
+        case Traversable.is.object(x): 
+          return fc.record({ ...x.properties }, { requiredKeys: [...(x.required || [])] })
       }
     }
 

@@ -6,7 +6,7 @@ import { Invariant } from "@traversable/registry"
 
 import * as Gen from "../generator.js"
 import * as Print from "../print.js"
-import type { Index, Matchers, Options } from "../shared.js"
+import type { Index, Matchers, Options, TargetTemplate } from "../shared.js"
 import {
   JsonLike,
   defaults as defaults_,
@@ -14,22 +14,54 @@ import {
 } from "../shared.js"
 
 export {
+  NS,
+  TypeName,
   defaults,
+  dependencies,
+  headers,
+  template,
+  serializer,
+  //
+  derivatives,
   derive,
   deriveAll,
-  derived,
+  generators,
   generate,
   generateAll,
-  generated,
 }
+
+type NS = typeof NS
+const NS = 'T' as const
+
+type TypeName = typeof TypeName
+const TypeName = 'TypeBox' as const
+
+const dependencies = [] as const satisfies string[]
+const headers = [
+  `import * as ${NS} from "@sinclair/typebox"`,
+  ...dependencies,
+] as const satisfies string[]
+
+const template = (
+  (target: string, $: Options.Config<string>) => [
+    '/**',
+    ` * # {@link ${$.typeName} \`${$.typeName}\`}`,
+    ` * - Visit: {@link $doc.${$.absolutePath.map(escapePathSegment).join('.')} OpenAPI definition}`,
+    ' */',
+    'export type ' + $.typeName + ' = typeof ' + $.typeName + '.static',
+    '//          ^?',
+    'export const ' + $.typeName + ' = ' + target,
+  ] as const
+) satisfies TargetTemplate
 
 const defaults = {
   ...defaults_,
-  typeName: defaults_.typeName + 'TypeBox',
-  header: ['import * as T from "@sinclair/typebox"'],
+  typeName: defaults_.typeName + TypeName,
+  header: headers,
+  template,
 } satisfies Omit<Options.Config<unknown>, 'handlers'>
 
-const serialize
+const serializer
   : (ix: Index) => (x: unknown) => string
   = (ix) => {
     const loop = (indent: number) => (x: JsonLike): string => {
@@ -60,10 +92,7 @@ const serialize
       : loop(ix.indent)(x)
   }
 
-T.Null().static
-T.Object({a: T.Null()}).static
-
-const derived = {
+const derivatives = {
   any(_) { return T.Unknown(_) },
   null(_) { return T.Null(_) },
   boolean(_) { return T.Boolean(_) },
@@ -90,37 +119,61 @@ const derived = {
   },
 } as const satisfies Matchers<T.TAnySchema>
 
-const generated = {
-  any(_) { return 'T.Unknown()' },
-  null(_) { return 'T.Null()' as const },
-  boolean(_) { return 'T.Boolean()' as const },
-  integer(_) { return 'T.Integer()' as const },
-  number(_) { return 'T.Number()' as const },
-  string(_) { return 'T.String()' as const },
-  anyOf(_, $) { return Print.array($)('T.Union([', _.anyOf.join(', '), '])') },
-  oneOf(_, $) { return Print.array($)('T.Union([', _.oneOf.join(', '), '])') },
-  allOf(_, $) { return Print.array($)('T.Intersect([', _.allOf.join(', '), '])') },
-  const(_, $) { return 'T.Const(' + serialize($)(_.const) + ')' },
-  array(_, $) { return Print.array($)('T.Array(', _.items, ')') },
-  enum(_, $) { return 'T.Enum([' + _.enum.map(serialize($)).join(', ') + '])' },
+/**
+ * ## {@link derive `typebox.derive`}
+ *
+ * Given a JSON Schema, OpenAPI document or {@link Traversable} schema, generates the
+ * corresponding TypeBox schema in-memory.
+ *
+ * Usually you'd use {@link derive `typebox.derive`} over {@link generate `typebox.generate`}
+ * when you don't have control over the schema, and you don't know the schema ahead of
+ * time (i.e., the schema is dynamic in some way).
+ *
+ * If you do know the schema at compile time, using {@link generate `typebox.generate`} is
+ * more efficient.
+ */
+const derive
+  : (schema: Traversable.orJsonSchema, options: Options<T.TAnySchema>) => T.TAnySchema
+  = fn.flow(
+    Gen.fromMatchers(derivatives),
+    ([target]) => target,
+  )
+
+const deriveAll
+  : (options: Options<T.TAnySchema>) => Gen.Many<T.TAnySchema>
+  = (options) => Gen.many({ ...defaults, ...options, generate: derive })
+
+const generators = {
+  any(_) { return `${NS}.Unknown()` },
+  null(_) { return `${NS}.Null()` as const },
+  boolean(_) { return `${NS}.Boolean()` as const },
+  integer(_) { return `${NS}.Integer()` as const },
+  number(_) { return `${NS}.Number()` as const },
+  string(_) { return `${NS}.String()` as const },
+  anyOf(_, $) { return Print.array($)(`${NS}.Union([`, _.anyOf.join(`, `), `])`) },
+  oneOf(_, $) { return Print.array($)(`${NS}.Union([`, _.oneOf.join(`, `), `])`) },
+  allOf(_, $) { return Print.array($)(`${NS}.Intersect([`, _.allOf.join(`, `), `])`) },
+  const(_, $) { return `${NS}.Const(` + serializer($)(_.const) + `)` },
+  array(_, $) { return Print.array($)(`${NS}.Array(`, _.items, `)`) },
+  enum(_, $) { return `${NS}.Enum([` + _.enum.map(serializer($)).join(`, `) + `])` },
   tuple(_, $) { 
     return _.items.length === 0 
-      ? 'T.Tuple([])' : 'T.Tuple([\n' 
-      + ' '.repeat($.indent + 2) 
-      +  _.items.join(',\n' 
-      + ' '.repeat($.indent + 2)) 
-      + '\n' + ' '.repeat($.indent) 
-      + '])' 
+      ? `${NS}.Tuple([])` : `${NS}.Tuple([\n` 
+      + ` `.repeat($.indent + 2) 
+      +  _.items.join(`,\n` 
+      + ` `.repeat($.indent + 2)) 
+      + `\n` + ` `.repeat($.indent) 
+      + `])` 
   },
   record(_, $) 
-    { return Print.array($)('T.Record(T.String(), ', _.additionalProperties, ')') },
+    { return Print.array($)(`${NS}.Record(T.String(), `, _.additionalProperties, `)`) },
   object(_, $) { 
     const xs = globalThis.Object.entries(_.properties)
-    return xs.length === 0 ? 'T.Object({})' : fn.pipe(
+    return xs.length === 0 ? `${NS}.Object({})` : fn.pipe(
       xs.map(
-        ([k, v]) => JSON.stringify(k) + ': ' + v + ',' + '\n' + ' '.repeat($.indent + 2)
-      ).join(''),
-      (xs) => 'T.Object({\n' + ' '.repeat($.indent + 2) + xs + '\n' + ' '.repeat($.indent) + '})',
+        ([k, v]) => JSON.stringify(k) + `: ` + v + `,` + `\n` + ` `.repeat($.indent + 2)
+      ).join(``),
+      (xs) => `${NS}.Object({\n` + ` `.repeat($.indent + 2) + xs + `\n` + ` `.repeat($.indent) + `})`,
     )
   }
 } as const satisfies Matchers<string>
@@ -136,43 +189,8 @@ const generated = {
  */
 const generate
   : (schema: core.Traversable.orJsonSchema, options: Options<string>) => string
-  = fn.flow(
-    Gen.fromMatchers(generated),
-    ([target, $]) => [
-      '/**',
-      ` * # {@link ${$.typeName} \`${$.typeName}\`}`,
-      ` * - Visit: {@link $doc.${$.absolutePath.map(escapePathSegment).join('.')} OpenAPI definition}`,
-      ' */',
-      'export type ' + $.typeName + ' = typeof ' + $.typeName + '.static',
-      '//          ^?',
-      'export const ' + $.typeName + ' = ' + target,
-    ].join('\n')
-  )
+  = Gen.generatorFromMatchers(generators, defaults)
 
 const generateAll
-  : (options: Options<string>) => string[]
+  : (options: Options<string>) => Gen.Many<string>
   = (options) => Gen.many({ ...defaults, ...options, generate })
-
-/**
- * ## {@link derive `zod.derive`}
- *
- * Given a JSON Schema, OpenAPI document or {@link Traversable} schema, generates the
- * corresponding zod schema in-memory.
- *
- * Usually you'd use {@link derive `typebox.derive`} over {@link generate `typebox.generate`}
- * when you don't have control over the schema, and you don't know the schema ahead of
- * time (i.e., the schema is dynamic in some way).
- *
- * If you do know the schema at compile time, using {@link generate `typebox.generate`} is
- * more efficient.
- */
-const derive
-  : (schema: Traversable.orJsonSchema, options: Options<T.TAnySchema>) => T.TAnySchema
-  = fn.flow(
-    Gen.fromMatchers(derived),
-    ([target]) => target,
-  )
-
-const deriveAll
-  : (options: Options<T.TAnySchema>) => T.TAnySchema[]
-  = (options) => Gen.many({ ...defaults, ...options, generate: derive })

@@ -105,3 +105,5 @@ export const PrettyPrintError = (input: string, filepath?: string) =>
 export const CircularReferenceError = () => Error("\nUnexpected circular reference:\n")
 
 export const NonSerializableInput = Error("Expected input to be valid JSON, got :")
+
+export const UnexpectedEmptyString = Error("Expected input string to be non-empty")

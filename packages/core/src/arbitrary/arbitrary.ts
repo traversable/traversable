@@ -20,7 +20,7 @@ import Digit = std.Digit
 import State = std.UnitedStateOfAmerica
 import { has } from "@traversable/core/tree"
 import type { Force, HKT } from "@traversable/registry"
-import { symbol } from "@traversable/registry"
+import { Invariant, symbol } from "@traversable/registry"
 export { symbol } from "@traversable/registry"
 
 import symbol_optional = symbol.optional
@@ -972,7 +972,6 @@ export namespace digit {
   } satisfies digit.Constraints
 }
 
-
 export const percent = () => fc.nat(100)
 export const percentage = () => percent().map((x) => `${x}%`)
 
@@ -1218,7 +1217,7 @@ export declare namespace dictionary {
 /**
  * ### {@link fix `fc.fix`}
  * 
- * Returns a string representing a number in "fixed-point" notation.
+ * Arbitrary representing a string numeric that has been converted to "fixed-point" notation.
  * 
  * See also: 
  * - {@link globalThis.Number.prototype.toFixed `Number.prototype.toFixed`}
@@ -1229,7 +1228,165 @@ export declare namespace dictionary {
  * console.log(fc.peek(fc.fix(3)))                     // => 404.923
  * console.log(fc.peek(fc.fix(2, { min: 0, max: 1 }))) // => 0.98
  */
-export const fix = (n: number, constraints?: fc.IntegerConstraints) => fc.tuple(
- fc.integer(constraints), 
- fc.nat(10 ** n),
-).map(([base, dec]) => +((base + (dec === 0 ? dec : dec / (10 ** n))).toFixed(n)))
+export const fix 
+  : (n: number, constraints?: fc.IntegerConstraints) => fc.Arbitrary<number>
+  = (n, constraints) => fc.tuple(
+    fc.integer(constraints), 
+    fc.nat(10 ** n),
+  ).map(([base, dec]) => +((base + (dec === 0 ? dec : dec / (10 ** n))).toFixed(n)))
+
+
+namespace char {
+
+}
+
+type Token =
+  | Token.Char
+  | Token.Repetition
+  | Token.Quantifier
+  | Token.Alternative
+  | Token.CharacterClass
+  | Token.ClassRange
+  | Token.Group
+  | Token.Disjunction
+  | Token.Assertion
+  | Token.Backreference
+
+declare namespace Token {
+  type Char = {
+    type: 'Char'
+    kind: 'meta' | 'simple' | 'decimal' | 'hex' | 'unicode'
+    symbol: string | undefined
+    value: string
+    codePoint: number
+    escaped?: true
+  }
+  type Repetition = {
+    type: 'Repetition'
+    expression: Token
+    quantifier: Token.Quantifier
+  }
+  type Quantifier = 
+    | {
+      type: 'Quantifier'
+      kind: '+' | '*' | '?'
+      greedy: boolean
+    } 
+    | {
+      type: 'Quantifier'
+      kind: 'Range'
+      greedy: boolean
+      from: number
+      to: number | undefined
+    }
+  type Alternative = {
+    type: 'Alternative'
+    expressions: Token[]
+  }
+
+  type CharacterClass = {
+    type: 'CharacterClass'
+    expressions: Token[]
+    negative?: true
+  }
+
+  type Group =
+    | {
+      type: 'Group'
+      capturing: true
+      number: number
+      expression: Token
+    }
+    | {
+      type: 'Group'
+      capturing: true
+      nameRaw: string
+      name: string
+      number: number
+      expression: Token
+    }
+    | {
+      type: 'Group'
+      capturing: false
+      expression: Token
+    }
+  type Disjunction = {
+    type: 'Disjunction'
+    left: Token | null
+    right: Token | null
+  }
+  type Assertion =
+    | {
+        type: 'Assertion'
+        kind: '^' | '$'
+        negative?: true
+      }
+    | {
+      type: 'Assertion'
+      kind: 'Lookahead' | 'Lookbehind'
+      negative?: true
+      assertion: Token
+    }
+  type Backreference =
+    | {
+      type: 'Backreference'
+      kind: 'number'
+      number: number
+      reference: number
+    }
+    | {
+      type: 'Backreference'
+      kind: 'name'
+      number: number
+      referenceRaw: string
+      reference: string
+    }
+    type ClassRange = {
+      type: 'ClassRange'
+      from: Token.Char
+      to: Token.Char
+    }
+  }
+namespace Token {
+  export const char 
+    : <K extends Token.Char['kind']>(kind: K, char: string, escaped?: true) => Token.Char
+    = <K extends Token.Char['kind']>(kind: K, char: string, escaped?: true) => ({
+      type: 'Char',
+      kind,
+      value: char,
+      symbol: char,
+      codePoint: char.codePointAt(0) ?? -1,
+      escaped,
+    } satisfies Token.Char)
+}
+
+const TOKEN_MAP = {
+  '\\w': 'METACHAR_WORD',
+  '\\W': '!METACHAR_WORD',
+  '\\d': 'METACHAR_DIGIT',
+  '\\D': '!METACHAR_DIGIT',
+  '\\s': 'METACHAR_SPACE',
+  '\\S': '!METACHAR_SPACE',
+  '\\b': 'METACHAR_BREAK',
+  '\\B': '!METACHAR_BREAK',
+  '.': 'METACHAR'
+}
+
+/** 
+ * ## {@link pattern `pattern`}
+ * 
+ * Generates a seed that can be parsed by {@link fc.stringMatching `fc.stringMatching`}
+ * to produce an arbitrary string matching the pattern.
+ * 
+ * The use case for {@link pattern} is when you're generating an arbitrary
+ * Arbitrary. Given that use case, you can't know or care _what_ arbitrary will be
+ * generated, but need to know that the spec that you're generating is sound, and
+ * that the arbitrary generator is capable of generating arbitraries capable of satisfying
+ * their own spec.
+ */
+// export const pattern
+//   : () => { }
+//   = () => {
+//   }
+// export declare namespace pattern {
+// }

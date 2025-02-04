@@ -10,6 +10,7 @@ export * as Generator from './generator.js'
 
 /// interpreters
 export { ark } from "./arktype/exports.js"
+export { fastcheck } from "./fast-check/exports.js"
 export { typebox } from "./typebox/exports.js"
 export { typescript } from "./typescript/exports.js"
 export { zod } from "./zod/index.js"

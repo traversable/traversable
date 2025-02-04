@@ -509,12 +509,30 @@ const PathPrefixMap = {
 
 const hasExample = tree.has("meta", "example", is.nonnullable)
 
+type Keyword = typeof keywords[number]
+const keywords = [
+  'type', 
+  'allOf', 
+  'anyOf', 
+  'oneOf', 
+  'properties',
+  'additionalProperties',
+  'items',
+  'const',
+  'enum',
+] as const satisfies string[]
+
+function omitKeywords<T extends {}>(x: T): Omit<T, Keyword> 
+function omitKeywords<T extends {}>(x: T) {
+  return object.omit(x, ...keywords)
+}
+
 const IxFunctor: IndexedFunctor<Context, Traversable_lambda, Traversable_orJsonSchema> = {
   map: Traversable_Functor.map,
   mapWithIndex(g) {
     return ($, xs) => {
       const h = (next?: keyof any) => (path: (keyof any)[], overrides?: {}) => (prev: Context) => ({
-        ...prev,
+        ...omitKeywords(prev),
         depth: prev.depth + 1,
         indent: prev.indent + 2,
         // `next` is already applied to the path, bc sometimes `next`
@@ -581,7 +599,7 @@ function Traversable_foldIx<T>(algebra: Functor.IxAlgebra<Context, Traversable_l
 /** @internal */
 const fromJsonSchema = (expr: JsonSchema.any) => {
   const meta = {
-    ...expr,
+    ...omitKeywords(expr),
     ...tree.has("originalIndex", t.number().is)(expr) && { originalIndex: expr.originalIndex },
     ...tree.has("required", t.array(t.string()).is)(expr) && { required: expr.required },
   }

@@ -1,12 +1,12 @@
 import type { Meta } from "@traversable/core"
 import { core, keyOf$ } from "@traversable/core"
-import { fn } from "@traversable/data"
+import { fn, object } from "@traversable/data"
 import type { _ } from "@traversable/registry"
 import { Invariant, KnownFormat } from "@traversable/registry"
 
 import * as Gen from "../generator.js"
 import * as Print from "../print.js"
-import type { Index, Matchers, Options } from "../shared.js"
+import type { Index, Matchers, Options, TargetTemplate } from "../shared.js"
 import {
   JsonLike,
   defaults as defaults_,
@@ -14,58 +14,57 @@ import {
 } from "../shared.js"
 
 export {
+  NS,
+  TypeName,
   defaults,
-  generated,
+  dependencies,
+  headers,
+  template,
+  //
+  generators,
+  generate,
+  generateAll,
 }
 
-const serialize
-  : (ix: Index) => (x: unknown) => string
-  = (ix) => {
-    const loop = (indent: number) => (x: JsonLike): string => {
-      switch (true) {
-        default: return fn.exhaustive(x)
-        case x === null:
-        case x === undefined: return '"null"'
-        case typeof x === 'boolean': return '"' + String(x) + '"'
-        case typeof x === 'number': return '"' + String(x) + '"'
-        case typeof x === 'string': return `'` + JSON.stringify(x) + `'`
-        case JsonLike.isArray(x): {
-          return x.length === 0 
-            ? '[]' 
-            : Print.array({ indent })(
-              '[',
-              ...x.map(loop(indent + 2)),
-              ']'
-            )
-        }
-        case !!x && typeof x === 'object': {
-          const entries = Object
-            .entries(x)
-            .map(([k, v]) => [JSON.stringify(k), loop(indent + 2)(v)] satisfies [any, any])
-          return entries.length === 0 
-            ? 'type({}).as<{}>()' 
-            : Print.array({ indent })(
-              '{', 
-              ...entries.map(([k, v]) => k + ': ' + v), 
-              '}',
-            )
-        }
-      }
-    }
+type NS = typeof NS
+const NS = 'type' as const
 
-    return (x: unknown) => !JsonLike.is(x) 
-      ? Invariant.NonSerializableInput("ark.serialize", x)
-      : loop(ix.indent)(x)
-  }
+type TypeName = typeof TypeName
+const TypeName = 'ArkType' as const
 
 /** @internal */
 const Object_entries = globalThis.Object.entries
 
-const header = [`import { type } from "arktype"`] as const satisfies string[]
+const dependencies = [] as const satisfies string[]
+
+const headers = [
+  `import { ${NS} } from "arktype"`,
+  ...dependencies,
+] as const satisfies string[]
+
+const template = (
+  (target, $) => [
+    '/**',
+    ` * # {@link ${$.typeName} \`${$.typeName}\`}`,
+    ` * - Visit: {@link $doc.${$.absolutePath.map(escapePathSegment).join('.')} OpenAPI definition}`,
+    ' */',
+    `export ${NS} ${$.typeName}`,
+    '  //        ^?',
+    `  = typeof ${$.typeName}.infer`,
+    ...target.length < 0x20 
+      ? [`export const ${$.typeName} = ${target.startsWith(NS) ? target : `${NS}(${target})`}`] 
+      : [
+        `export const ${$.typeName}`,
+        `  = ${target.startsWith(NS) ? target : `${NS}(${target})`}`,
+      ]
+  ]
+) satisfies TargetTemplate
+
 const defaults = {
   ...defaults_,
-  header,
-  typeName: defaults_.typeName + 'ArkTypeSchema',
+  header: headers,
+  typeName: defaults_.typeName + TypeName,
+  template,
 } as const satisfies Omit<Options.Config<unknown>, 'handlers'>
 
 type StringFormat = typeof StringFormat
@@ -102,11 +101,11 @@ const numericConstraints
   .filter(core.is.string)
   .join("")
 
-const integerConstraints = numericConstraints
-const numberConstraints = numericConstraints
 
 const getStringFormat = (meta: Meta.string) => isStringFormat(meta.format) ? StringFormat[meta.format] : null
 
+const integerConstraints = numericConstraints
+const numberConstraints = numericConstraints
 const stringConstraints
   : (meta: Meta.string) => string
   = ({ minLength: min, maxLength: max, ...meta }) => {
@@ -141,106 +140,132 @@ const startsWithScalar = (x: string) =>
 const NotYetSupported = (nodeType: string) =>
   Invariant.NotYetSupported('arktype.derive.' + nodeType, 'arktype.derive')('algebra/src/arktype/ark.ts')
 
-const generated = {
-  any() { return 'type.unknown()' },
+const generators = {
+  any() { return `${NS}.unknown()` },
   enum({ enum: xs }, ix) { 
     return Print.array(ix)(
-      'type.enumerated(',
-      ...xs.map(serialize(ix)),
+      `${NS}.enumerated(`,
+      ...xs.map(serializer(ix)),
       ')',
     )
   },
-  null() { return 'type.null' },
-  boolean() { return 'type.boolean' },
-  integer({ meta = {} }) { return 'type.keywords.number.integer' + Constrain.integer(meta) },
-  number({ meta = {} }) { return 'type.number' + Constrain.number(meta) },
+  null() { return `${NS}.null` },
+  boolean() { return `${NS}.boolean` },
+  integer({ meta = {} }) { return `${NS}.keywords.number.integer` + Constrain.integer(meta) },
+  number({ meta = {} }) { return `${NS}.number` + Constrain.number(meta) },
   string({ meta = {} }) {
-    const base = getStringFormat(meta) === null ? 'type.string' : 'type.keywords.string'
-    return typeof meta.pattern === 'string' 
-      ? meta.pattern 
+    const base = getStringFormat(meta) === null ? `${NS}.string` : `${NS}.keywords.string`
+    return typeof meta.pattern === `string` 
+      ? meta.pattern
       : base + Constrain.string(meta)
   },
   allOf({ allOf: [x, ...xs] }, ix) {
-    return Print.rows({ separator: '\n', indent: ix.indent })(
-      x.startsWith('type') ? x : 'type(' + x + ')',
-      xs.reduce((acc, cur) => `${acc}.and(${cur})`, ''),
+    return Print.rows({ separator: `\n`, indent: ix.indent })(
+      x.startsWith(NS) ? x : `${NS}(` + x + `)`,
+      xs.reduce((acc, cur) => `${acc}.and(${cur})`, ``),
     )
   },
   anyOf({ anyOf: [x, ...xs] }, ix) {
-    return Print.rows({ separator: '\n', indent: ix.indent })(
-      x.startsWith('type') ? x : 'type(' + x + ')',
-      xs.reduce((acc, cur) => `${acc}.or(${cur})`, '')
+    return Print.rows({ separator: `\n`, indent: ix.indent })(
+      x.startsWith(NS) ? x : `${NS}(` + x + `)`,
+      xs.reduce((acc, cur) => `${acc}.or(${cur})`, ``)
     )
   },
   oneOf({ oneOf: [x, ...xs] }, ix) { 
     return [
-      x.startsWith('type') ? x : 'type(' + x + ')',
-      xs.reduce((acc, cur) => `${acc + Print.newline(ix)}.or(${cur})`, '')
-    ].join('')
+      x.startsWith(NS) ? x : `${NS}(` + x + `)`,
+      xs.reduce((acc, cur) => `${acc + Print.newline(ix)}.or(${cur})`, ``)
+    ].join(``)
   },
-  const({ const: xs }, ix) { return serialize(ix)(xs) },
+  const({ const: xs }, ix) { return serializer(ix)(xs) },
   array({ items: xs }) {
     return (
-      xs.startsWith('[') ? 'type(' + xs +').array()'
-      : xs.startsWith('type(') ? (xs + '.array()')
-      : ['type.null', 'type.boolean', 'type.number', 'type.string'].includes(xs)
-        ? ('"' + xs.slice('type.'.length) + '[]' + '"')
-      : startsWithScalar(xs) ? ('"' + xs.slice(1, -1) + '[]' + '"')
-      : xs.startsWith('type.') ? (xs + '.array()')
-      : 'type(' + xs + ', "[]")'
+      xs.startsWith(`[`) ? `${NS}(` + xs +`).array()`
+      : xs.startsWith(`${NS}(`) ? (xs + `.array()`)
+      : [`${NS}.null`, `${NS}.boolean`, `${NS}.number`, `${NS}.string`].includes(xs)
+        ? (`"` + xs.slice(`${NS}.`.length) + `[]` + `"`)
+      : startsWithScalar(xs) ? (`"` + xs.slice(1, -1) + `[]` + `"`)
+      : xs.startsWith(`${NS}.`) ? (xs + `.array()`)
+      : `${NS}(` + xs + `, "[]")`
     )
   },
   tuple({ items: xs }, ix) { 
     return (
-      xs.length === 0 ? '[]'
+      xs.length === 0 ? `[]`
       : Print.array(ix)(
-        '[',
+        `[`,
         ...xs,
-        ']',
+        `]`,
       )
     )
   },
   record({ additionalProperties }, ix) { 
     return Print.array({ indent: ix.indent + 2 })(
-      'type.Record(', 
-      '"string"', 
+      `${NS}.Record(`, 
+      `"string"`, 
       additionalProperties, 
-      ')'
+      `)`
     )
   },
   object({ properties: p, required: req = [] }, $) {
    const xs = Object_entries(p)
-     .map(([k, v]) => req.includes(k) ? `${k}: ${v}` : `${JSON.stringify(k + '?')}: ${v}`)
-    return xs.length === 0 ? '{}' 
+     .map(([k, v]) => req.includes(k) ? `${k}: ${v}` : `${JSON.stringify(k + `?`)}: ${v}`)
+    return xs.length === 0 ? `{}` 
       : Print.array($)(
-        '{',
+        `{`,
         ...xs,
-        '}'
+        `}`
       )
   },
 } as const satisfies Matchers<string>
 
-export const generate
+const generate
   : Gen.Generator<string>
-  = fn.flow(
-    Gen.fromMatchers(generated),
-    ([target, $]) => [
-      '/**',
-      ` * # {@link ${$.typeName} \`${$.typeName}\`}`,
-      ` * - Visit: {@link $doc.${$.absolutePath.map(escapePathSegment).join('.')} OpenAPI definition}`,
-      ' */',
-      `export type ${$.typeName}`,
-      '  //        ^?',
-      `  = typeof ${$.typeName}.infer`,
-      ...target.length < 0x20 
-        ? [`export const ${$.typeName} = ${target.startsWith('type') ? target : `type(${target})`}`] 
-        : [
-          `export const ${$.typeName}`,
-          `  = ${target.startsWith('type') ? target : `type(${target})`}`,
-        ]
-    ].join('\n'),
-  )
+  = Gen.generatorFromMatchers(generators)
 
-export const generateAll
-  : (options: Options<string>) => string[]
+const generateAll
+  : (options: Options<string>) => Gen.Many<string>
   = (options) => Gen.many({ ...defaults, ...options, generate })
+
+const NEGATIVE_INFINITY = globalThis.Number.NEGATIVE_INFINITY
+
+const serializer
+  : (ix: Index) => (x: unknown) => string
+  = (ix) => {
+    const loop = (indent: number) => (x: JsonLike): string => {
+      switch (true) {
+        default: return fn.exhaustive(x)
+        case x === null:
+        case x === undefined: return '"null"'
+        case typeof x === 'boolean': return '"' + String(x) + '"'
+        case typeof x === 'number': return '"' + String(x) + '"'
+        case typeof x === 'string': return `'` + JSON.stringify(x) + `'`
+        case JsonLike.isArray(x): {
+          return x.length === 0 
+            ? `[]` 
+            : Print.array({ indent })(
+              `[`,
+              ...x.map(loop(indent + 2)),
+              `]`
+            )
+        }
+        case !!x && typeof x === 'object': {
+          const entries = Object
+            .entries(x)
+            .map(([k, v]) => [object.parseKey(k), loop(indent + 2)(v)] satisfies [any, any])
+          return entries.length === 0 
+            ? `${NS}({}).as<{}>()` 
+            : Print.array({ indent })(
+              '{', 
+              ...entries.map(([k, v]) => k + ': ' + v), 
+              '}',
+            )
+        }
+      }
+    }
+
+    return (x: unknown) => !JsonLike.is(x) 
+      ? Invariant.NonSerializableInput("ark.serialize", x)
+      : loop(2)(x)
+  }
+

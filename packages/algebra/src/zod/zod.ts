@@ -10,7 +10,7 @@ import * as Gen from "../generator.js"
 import * as JSDoc from "../jsdoc.js"
 import * as Print from "../print.js"
 
-import type { Index, Matchers, Options } from "../shared.js"
+import type { Index, Matchers, Options, TargetTemplate } from "../shared.js"
 import {
   JsonLike,
   createMask,
@@ -39,10 +39,36 @@ const Object_fromEntries = globalThis.Object.fromEntries
 /** @internal */
 const JSON_stringify = (u: unknown) => JSON.stringify(u, null, 2)
 
+
+type NS = typeof NS
+const NS = 'z' as const
+
+type TypeName = typeof TypeName
+const TypeName = 'zod' as const
+
+const dependencies = [] as const satisfies string[]
+const headers = [
+  `import { ${NS} } from "zod"`,
+  ...dependencies,
+] as const satisfies string[]
+
+const template = (
+  (target, $) => [
+    '/**',
+    ` * # {@link ${$.typeName} \`${$.typeName}\`}`,
+    ` * - Visit: {@link $doc.${$.absolutePath.map(escapePathSegment).join('.')} OpenAPI definition}`,
+    ' */',
+    'export type ' + $.typeName + ' = z.infer<typeof ' + $.typeName + '>',
+    '//          ^?',
+    'export const ' + $.typeName + ' = ' + target,
+  ] as const satisfies string[]
+)  satisfies TargetTemplate
+
 const defaults = {
   ...defaults_,
-  typeName: defaults_.typeName + 'ZodSchema',
-  header: ['import { z } from "zod"'],
+  typeName: defaults_.typeName + TypeName,
+  header: headers,
+  template,
 } satisfies Omit<Options.Config<unknown>, 'handlers'>
 
 type StringFormat = typeof StringFormat
@@ -100,7 +126,7 @@ const generated = {
   integer({ meta = {} }, $) { return `z.number().int()${Constrain.integer(meta).join('')}` },
   number({ meta = {} }, $) { return `z.number()${Constrain.number(meta).join('')}` },
   string({ meta = {} }, $) { return `z.string()${Constrain.string(meta).join('')}` },
-  const({ const: xs }, $) { return serialize($)(xs) },
+  const({ const: xs }, $) { return serializer($)(xs) },
   enum({ enum: xs }, $) {
     if (xs.length === 0) return 'z.never()'
     else if (xs.every(core.is.string)) return 'z.enum([' + xs.join(', ') + '])'
@@ -144,21 +170,10 @@ const generated = {
  */
 const generate
   : Gen.Generator<string>
-  = fn.flow(
-    Gen.fromMatchers(generated),
-    ([target, $]) => [
-      '/**',
-      ` * # {@link ${$.typeName} \`${$.typeName}\`}`,
-      ` * - Visit: {@link $doc.${$.absolutePath.map(escapePathSegment).join('.')} OpenAPI definition}`,
-      ' */',
-      'export type ' + $.typeName + ' = z.infer<typeof ' + $.typeName + '>',
-      '//          ^?',
-      'export const ' + $.typeName + ' = ' + target,
-    ].join('\n')
-  )
+  = Gen.generatorFromMatchers(generated, defaults)
 
 const generateAll
-  : (options: Options<string>) => string[]
+  : (options: Options<string>) => Gen.Many<string>
   = (options) => Gen.many({ ...defaults, ...options, generate })
 
 
@@ -213,7 +228,7 @@ const derive
   )
 
 const deriveAll
-  : (options: Options<z.ZodTypeAny>) => z.ZodTypeAny[]
+  : (options: Options<z.ZodTypeAny>) => Gen.Many<z.ZodTypeAny>
   = (options) => Gen.many({ ...defaults, ...options, generate: derive })
 
 function linkToNode(k: string, $: Index): string | null {
@@ -251,7 +266,7 @@ function generateEntry(
   }
 }
 
-function serialize(ix: Index): (x: unknown) => string {
+function serializer(ix: Index): (x: unknown) => string {
   const loop = (indent: number) => (x: JsonLike): string => {
     switch (true) {
       default: return fn.exhaustive(x)

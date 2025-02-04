@@ -3,8 +3,8 @@ import * as path from "node:path"
 import type { Context } from "@traversable/core"
 import { Extension, Traversable, core, is, keyOf$, t } from "@traversable/core"
 import { array, fn, object, string } from "@traversable/data"
-import { OpenAPI, deref, type openapi } from "@traversable/openapi"
-import type { Partial, Requiring, newtype } from "@traversable/registry"
+import { OpenAPI, deref } from "@traversable/openapi"
+import type { Partial } from "@traversable/registry"
 import { symbol } from "@traversable/registry"
 
 /** @internal */
@@ -44,7 +44,6 @@ export const JsonLike = {
   isArray: globalThis.Array.isArray as (u: unknown) => u is readonly JsonLike.Shallow[],
 }
 
-
 export interface Flags extends t.typeof<typeof Flags> {}
 export const Flags = t.object({
   nominalTypes: t.boolean(),
@@ -63,6 +62,11 @@ export type BuildPathInterpreter
   = <T extends Record<keyof any, keyof any | null>>(lookup: T)
   => PathInterpreter
 
+export type TargetTemplate = (target: string, $: Options.Config<string>) => string[]
+export const defaultTemplate = (
+  (target) => [target]
+) satisfies TargetTemplate
+
 export type Index = Options.Base & Context
 export type Matchers<T> = Extension.BuiltIns<T, Index>
 export type Handlers<T> = Extension.Handlers<T, Index>
@@ -77,6 +81,7 @@ export declare namespace Options {
     typeName: string
     document: OpenAPI.doc<Traversable.orJsonSchema>
     header: string | string[]
+    template: TargetTemplate
   }
   interface Config<T> extends Options.Base, Context {
     handlers: Extension.Handlers<T, Index>
@@ -87,12 +92,51 @@ export function fold<T>($: Options.Config<T>) {
   return Traversable.foldIx(Extension.match($))
 }
 
-export function optionsFromMatchers<T, Ix>(handlers: Extension.Handlers<T, Index>): (options?: Options<T>) => Options.Config<T> {
+export const defaults = {
+  typeName: "Anonymous",
+  absolutePath: ["components", "schemas"],
+  document:  OpenAPI.new({}),
+  header: [],
+  template: defaultTemplate,
+  flags: {
+    nominalTypes: true,
+    preferInterfaces: true,
+    includeJsdocLinks: true,
+    includeExamples: true,
+    includeLinkToOpenApiNode: path.resolve(),
+  },
+  indent: 0,
+  path: [],
+  depth: 0,
+  siblingCount: 0,
+} as const satisfies Omit<Options.Config<unknown>, "handlers">
+
+export function parseOptions<T>(_: Options<T>) {
+  return {
+    handlers: _.handlers,
+    absolutePath: _.absolutePath || defaults.absolutePath,
+    document: _.document || defaults.document,
+    template: _.template || defaults.template,
+    header: _.header || defaults.header,
+    typeName: _.typeName ?? defaults.typeName,
+    flags: !_.flags ? defaults.flags : {
+      nominalTypes: _.flags?.nominalTypes ?? defaults.flags.nominalTypes,
+      preferInterfaces: _.flags?.preferInterfaces ?? defaults.flags.preferInterfaces,
+      includeExamples: _.flags?.includeExamples ?? defaults.flags.includeExamples,
+      includeJsdocLinks: _.flags?.includeJsdocLinks ?? defaults.flags.includeJsdocLinks,
+      includeLinkToOpenApiNode: _.flags?.includeLinkToOpenApiNode ?? defaults.flags.includeLinkToOpenApiNode,
+    },
+  } satisfies Required<Omit<Options<T>, 'handlers'>> & { handlers?: Options<T>['handlers']}
+}
+
+// TODO: implement `optionsFromMatchers` in terms of `parseOptions`
+export function optionsFromMatchers<T>(handlers: Extension.Handlers<T, Index>): (options?: Options<T>) => Options.Config<T> {
   return ($?: Options<T>) => ({
     handlers,
     typeName: $?.typeName ?? defaults.typeName,
-    document: $?.document ?? defaults.document,
+    document: $?.document || defaults.document,
     header: $?.header || defaults.header,
+    template: $?.template || defaults.template,
     flags: !$?.flags ? defaults.flags : {
       nominalTypes: $.flags.nominalTypes ?? defaults.flags.nominalTypes,
       preferInterfaces: $.flags.preferInterfaces ?? defaults.flags.preferInterfaces,
@@ -107,43 +151,6 @@ export function optionsFromMatchers<T, Ix>(handlers: Extension.Handlers<T, Index
     siblingCount: defaults.siblingCount,
   })
 }
-
-export function parseOptions<T>(_: Options<T>) {
-  return {
-    handlers: _.handlers,
-    absolutePath: _.absolutePath || defaults.absolutePath,
-    document: _.document || defaults.document,
-    ..._.header && { header: _.header },
-    // header: _.header ?? defaults.header,
-    typeName: _.typeName ?? defaults.typeName,
-    flags: !_.flags ? defaults.flags : {
-      nominalTypes: _.flags?.nominalTypes ?? defaults.flags.nominalTypes,
-      preferInterfaces: _.flags?.preferInterfaces ?? defaults.flags.preferInterfaces,
-      includeExamples: _.flags?.includeExamples ?? defaults.flags.includeExamples,
-      includeJsdocLinks: _.flags?.includeJsdocLinks ?? defaults.flags.includeJsdocLinks,
-      includeLinkToOpenApiNode: _.flags?.includeLinkToOpenApiNode ?? defaults.flags.includeLinkToOpenApiNode,
-    },
-  }
-}
-
-export const defaults = {
-  typeName: "Anonymous",
-  absolutePath: ["components", "schemas"],
-  document:  OpenAPI.new({}),
-  header: [],
-  flags: {
-    nominalTypes: true,
-    preferInterfaces: true,
-    includeJsdocLinks: true,
-    includeExamples: true,
-    includeLinkToOpenApiNode: path.resolve(),
-  },
-  indent: 0,
-  path: [],
-  depth: 0,
-  siblingCount: 0,
-} as const satisfies Omit<Options.Config<unknown>, "handlers">
-
 
 const ZOD_IDENT_MAP = {
   [symbol.optional]: "._def.innerType",
@@ -277,93 +284,3 @@ export function linkToOpenAPIDocument(k: string, $: Index): string | null {
     + createOpenApiNodePath($)(['properties', k]).join('') 
     +  ' `Link to OpenAPI node`}'
 }
-
-
-
-const pad
-  : (indent: number, fill?: string) => string
-  = (indent, fill = " ") => {
-    if (indent <= 0) return ""
-    let todo = indent
-    let out = ""
-    while ((todo--) > 0) out += fill
-    return out
-  }
-
-
-////////////////////////////////
-///    ☠️ ☠️ ☠️ LEGACY ☠️ ☠️ ☠️    ///
-////////////////////////////////
-////////////////////////////////
-
-/** TODO: delete this namespace */
-export declare namespace typescript {
-  export type { handlers as Handlers }
-  type handlers<Ix, T = unknown> = never | Handlers<
-    & Extension.BuiltIns<T, Ix>
-    & Partial<Extension.UserDefs<T, Ix>>
-  >
-  /** @internal */
-  interface Handlers<T extends {}> extends newtype<T> {}
-}
-
-export namespace typescript {
-  export type Options<T = unknown, Ix = {}, Meta = {}> = Requiring<Config<T, Ix, Meta>, "absolutePath">
-  export declare namespace Options {
-    interface withHandlers<T = unknown, Ix = {}, Meta = {}> extends
-      typescript.Options<T, Ix, Meta> { handlers: Extension.Handlers<T, Ix> }
-  }
-
-  export const flags: typescript.Flags = {
-    nominalTypes: true,
-    preferInterfaces: true,
-  }
-
-  export const defaults = {
-    flags,
-    typeName: "Anonymous",
-    rootMeta: {} as Metadata.Root,
-  }
-
-  export interface Config<T = unknown, Ix = unknown, Meta = unknown> {
-    absolutePath: Context["absolutePath"]
-    typeName: string
-    flags: Flags
-    rootMeta: Metadata.Root<Meta>
-    document: openapi.doc
-  }
-
-  export declare namespace Config{
-    interface withHandlers<T = unknown, Ix = unknown> extends Config<T, Ix> { handlers: Extension.Handlers<T, Ix> }
-  }
-
-  export declare namespace Metadata {
-    interface Root<T = {}> {
-      data: T
-      serializer?(x: T): string
-    }
-  }
-
-  export type Flags = t.typeof<typeof typescript.Flags>
-  export const Flags = t.object({
-    nominalTypes: t.boolean(),
-    preferInterfaces: t.boolean(),
-  })
-  export const rootContext = { path: [], depth: 0 }
-}
-
-// const flags: Flags = {
-//   nominalTypes: true,
-//   preferInterfaces: true,
-// }
-
-// interface Handlers<T extends {}> extends newtype<T> {}
-// type handlers<T = unknown> = never | Handlers<
-//   & Extension.BuiltIns<T>
-//   & Partial<Extension.UserDefinitions<T>>
-// >
-
-// type handlersWithContext<S = unknown, Ix = any> = never | Handlers<
-//   & Extension.BuiltInsWithContext<S, Ix>
-//   & Partial<Extension.UserDefinitionsWithContext<S, Ix>>
-// >

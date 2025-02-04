@@ -578,15 +578,69 @@ Schema_string.format = ($: Constraints.Config) => fc.oneof(
   fc.record(uri($), { requiredKeys: [] }),
 )
 
-Schema_string.static = {
-  minLength: fc.nat(0x100),
-  maxLength: fc.nat(0x100),
-  pattern: fc.string({ minLength: 1, maxLength: 0x10 }).map(escapeRegularExpression),
-}
+const pattern = fc.string({ minLength: 1, maxLength: 0x10 }).map(escapeRegularExpression)
+const toConstant = {
+  lowercaseAlpha: { num: 26, build: (x: number) => String.fromCharCode(x + 0x61) },
+  uppercaseAlpha: { num: 26, build: (x: number) => String.fromCharCode(x + 0x41) },
+  digit: { num: 10, build: (x: number) => String.fromCharCode(x + 0x30) },
+} as const
+
+const lowercaseAlphaChar = fc.mapToConstant(toConstant.lowercaseAlpha)
+const uppercaseAlphaChar = fc.mapToConstant(toConstant.uppercaseAlpha)
+const alphaChar = fc.mapToConstant(
+  toConstant.lowercaseAlpha,
+  toConstant.uppercaseAlpha,
+)
+const digitChar = fc.mapToConstant(toConstant.digit)
+const alphaNumericChar = fc.mapToConstant(
+  toConstant.lowercaseAlpha,
+  toConstant.uppercaseAlpha,
+  toConstant.digit,
+)
+
+const range = fc.oneof(
+  fc.tuple(lowercaseAlphaChar, lowercaseAlphaChar),
+  fc.tuple(uppercaseAlphaChar, uppercaseAlphaChar),
+  fc.tuple(digitChar, digitChar),
+).map((pair) => pair.sort())
+
+const alphaNumericChars = fc.array(alphaNumericChar)
+const matchSingleChar = alphaNumericChars.map((chars) => `[${chars.join('')}]` as `[${string}]`)
+const matchSingleCharExcept = alphaNumericChars.map((chars) => `[^${chars.join('')}]` as `[^${string}]`)
+const charInRange = range.map((pair) => `[${pair.join(`-`)}]` as `[${string}-${string}]`)
+const charNotInRange = range.map((pair) => `[^${pair.join(`-`)}]` as `[^${string}-${string}]`)
+const quantifier = fc.constantFrom('?', '*', '+')
+const alt2 = fc.tuple(alphaNumericChar, alphaNumericChar)
+  .map(([l, r]) => `${l}|${r}` as `${string}|${string}`)
+const altN = fc.array(alphaNumericChar, { minLength: 2, maxLength: 5 })
+  .map((chars) => chars.join('|') as `${string}|${string}` | `${string}|${string}|${string}`)
+const WS = [...' \t\r\n\v\f'].map(escapeRegularExpression)
+const whitespaceChar = fc.constantFrom(...WS)
+const block = fc.oneof(
+  charInRange,
+  charNotInRange,
+  quantifier,
+  matchSingleChar,
+  matchSingleCharExcept,
+  whitespaceChar,
+  alt2,
+  altN,
+)
+const blockWithChars = fc.tuple(block, fc.string({ minLength: 1, maxLength: 1 }))
+const blocksWithChars = fc.array(blockWithChars, { minLength: 1, maxLength: 5 })
+
+const regularExpression = blocksWithChars.map((blocks) => blocks.map(([l, r]) => '/' + l + r).join('') + '/').map(escapeRegularExpression)
 
 function escapeRegularExpression(pattern: string) {
   return new RegExp(pattern.replace(PATTERN.escapeRegExp, `\\${REPLACER.Match}`)).toString()
 }
+
+Schema_string.static = {
+  minLength: fc.nat(0x100),
+  maxLength: fc.nat(0x100),
+  pattern: regularExpression,
+}
+
 
 Schema_string.base = ($: Constraints.Config): fc.Arbitrary<Schema_string> => {
   return fc.tuple(
@@ -625,7 +679,16 @@ Schema_string.base = ($: Constraints.Config): fc.Arbitrary<Schema_string> => {
       ...!format && pattern && { pattern },
       ...optionally({ example: format?.example ?? example }),
     }
-  })
+  }).chain(
+    ({ pattern, example, ...base }) => fc.record({ 
+      ...pattern && { pattern: fc.constant(pattern) },
+      ...example && ({ 
+        example: typeof pattern === 'string' 
+          ? fc.stringMatching(new RegExp(escapeRegularExpression(pattern))) 
+          : fc.constant(example) 
+      }) 
+    }).map((_) => ({ ...base, ..._ }))
+  )
 }
 
 interface Schema_string<T = unknown, M extends {} = {}> extends t.Schema_string<T, M> {}

@@ -50,9 +50,9 @@ const defaultHandlers = {
   boolean(_) { return (node: boolean, _) => `${node}` },
   number(_) { return (node: number, _) => `${node}` },
   string(_) { return (node: string, _) => `"${node}"` },
-  array(loop) { 
-    return (x: readonly Json.of<string>[], $) => 
-      x.length === 0 ? '[]' 
+  array(loop) {
+    return (x: readonly Json.of<string>[], $) =>
+      x.length === 0 ? '[]'
       : fn.pipe(
         x.map((u) => loop(u, $.offset + $.indent)),
         (xs) => xs.join(
@@ -76,7 +76,7 @@ const defaultHandlers = {
         )
       )
   },
-  object(loop) { 
+  object(loop) {
     return (x: { [x: string]: Json.of<string> }, $) => fn.pipe(
       globalThis.Object.entries(x),
       (xs) => xs.length === 0 ? '{}' :
@@ -246,13 +246,13 @@ const defaults = {
 /**
  * ## {@link multiline `Format.multiline`}
  *
- * Given some arbitrary JSON value, generates a well-formatted multiline-comment 
+ * Given some arbitrary JSON value, generates a well-formatted multiline-comment
  * (a comment spanning zero or more lines).
- * 
+ *
  * By default, formatting is optimized for readability and stable diffs.
- * 
+ *
  * At its core, {@link multiline `multiline`} is unopinionated about how formatting should happen.
- * 
+ *
  * If you choose not to write your own handlers, {@link multiline `multiline`} will apply an
  * opinonated set of defaults that have been tailored to `@traversable`'s primary
  * use case: generating `@example` tags in JSDoc annotations.
@@ -329,15 +329,17 @@ function notTooLong(maxWidth: number, offset: number): (ss: string | string[]) =
 }
 
 void (multiline.defaults = defaults)
-export declare namespace multiline { 
-  type Options = 
+export declare namespace multiline {
+  type Options =
     & { handlers?: Handlers }
-    & Partial<typeof defaults> 
-  type Config = 
+    & Partial<typeof defaults>
+  type Config =
     & { handlers: { [K in keyof typeof defaultHandlers]: ReturnType<typeof defaultHandlers[K]> } }
     & { offset: number }
     & typeof defaults
 }
+
+
 
 // import { Functor, HKT, inline, Kind, Widen } from "@traversable/registry"
 // import { Json } from "./json.js"
