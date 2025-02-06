@@ -63,7 +63,7 @@ const defaultHandlers = {
         (s) => notTooLong($.maxWidth, $.offset)(s) ? s
         : string.between(
           `\n${$.whitespaceUnit.repeat($.leftOffset)} * ${$.whitespaceUnit.repeat($.offset)}`,
-          `\n${$.whitespaceUnit.repeat($.rightOffset)} * ${$.whitespaceUnit.repeat($.offset - $.indent)}`
+          `\n${$.whitespaceUnit.repeat($.leftOffset)} * ${$.whitespaceUnit.repeat($.offset - $.indent)}`
         )(s),
         (s) => fn.pipe(
           s,

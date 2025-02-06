@@ -5,6 +5,7 @@ export * as tree from "./tree.js"
 export * as zip from "./zip.js"
 export * as Format from "./formatters.js"
 export * as show from "./show.js"
+export { merge } from "./merge.js"
 
 export type JsonSchema = import("./model/json-schema.js").any
 export type Traversable = import("./model/traversable.js").Traversable

@@ -82,5 +82,6 @@ namespace Meta {
     nullable: t.optional(t.boolean()),
     optional: t.optional(t.boolean()),
     path: t.optional(t.array(key)),
+    example: t.optional(t.any()),
   })
 }

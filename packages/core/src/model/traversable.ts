@@ -1,4 +1,4 @@
-import { fn, map, type nonempty, object } from "@traversable/data"
+import { fn, type nonempty, object } from "@traversable/data"
 import { Invariant, symbol } from "@traversable/registry"
 import type {
   Functor,
@@ -550,8 +550,11 @@ const makeH = <S>(xs: Traversable_F<S>) => (next?: keyof any) => (path: (keyof a
 } satisfies Context)
 
 const mapIxObject 
-  : <S, T>(g: (ix: Context, x: S) => T) => ($: Context) => (xs: Traversable_objectF<S>, i?: number) => Traversable_objectF<T>
-  = <S, T>(g: (ix: Context, x: S) => T) => ($: Context) => (xs: Traversable_objectF<S>, i?: number) => {
+  : <S, T>(g: (ix: Context, x: S) => T) 
+    => ($: Context) 
+    => (xs: Traversable_objectF<S>, i?: number) 
+    => Traversable_objectF<T>
+  = (g) => ($) => (xs, i) => {
     const h = makeH(xs)
     const { additionalProperties: a, properties: p, ...y } = xs
     const entries = Object_entries(p).map(([k, v]) => {

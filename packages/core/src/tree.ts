@@ -1,7 +1,7 @@
 import type { inline, newtype, some } from "any-ts";
 
 import type { any, array, key, nonempty, prop, unicode } from "@traversable/data"
-import { Option, fn, keys, map, object, props } from "@traversable/data"
+import { fn, keys, map, object, props } from "@traversable/data"
 
 import { Invariant, URI, _, symbol,   } from "@traversable/registry";
 import type { Force, Omit } from "@traversable/registry"
