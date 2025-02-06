@@ -1,6 +1,6 @@
 import { type JsonSchema, core, fc, tree } from "@traversable/core"
 import type { record as Record, keys } from "@traversable/data"
-import { fn, integer } from "@traversable/data"
+import { Option, fn, integer, object } from "@traversable/data"
 import type { Require, inline } from "@traversable/registry"
 import { PATTERN, REPLACER, symbol } from "@traversable/registry"
 
@@ -266,6 +266,9 @@ const ConstantValue
     })
   )
 
+
+type ExampleArbitrary<T, Constraints = never> = [Constraints] extends [never] ? () => fc.Arbitrary<T> : ($: Constraints) => fc.Arbitrary<T>
+
 const defaultInclude = {
   const: false as boolean,
   example: false as boolean,
@@ -298,23 +301,14 @@ Schema_null.base = ($: Constraints.Config): fc.Arbitrary<Schema_null> =>
     }
   )
 
-interface Notched<T, Tag> extends fc.Arbitrary<T> {
-  [symbol.unit]: Tag
-}
-function notch<Tag>(tag: Tag): <T>(arbitrary: fc.Arbitrary<T>) => Notched<T, Tag>
-function notch<Tag>(tag: Tag) {
-  return <T>(arbitrary: fc.Arbitrary<T>): Notched<T, Tag> => globalThis.Object.assign(
-    arbitrary,
-    { [symbol.unit]: tag }
-  )
-} 
-
 interface Schema_null<T = unknown, M extends {} = {}> extends t.Schema_null<T, M> {}
 declare namespace Schema_null {
   interface Constraints<T = unknown> extends
     Partial<Constraints.Base<T>> {
       arbitrary: typeof Schema_null.base
+      exampleArbitrary?: ExampleArbitrary<null>
     }
+  interface Config<T = unknown> extends Required<Constraints<T>> {}
 }
 
 /**
@@ -325,11 +319,11 @@ declare namespace Schema_null {
 // function Schema_null(constraints?: Constraints): fc.Arbitrary<Schema_null>
 // function Schema_null(_?: Constraints): fc.Arbitrary<Schema_null> {
 
-function Schema_null(constraints?: Constraints): Notched<Schema_null, null>
+function Schema_null(constraints?: Constraints): fc.Arbitrary<JsonSchema.null>
 function Schema_null(_?: Constraints) {
   const $ = Constraints.configure(_)
   const generator = $.null.arbitrary($) satisfies fc.Arbitrary<JsonSchema.null>
-  return notch(fc.peek(fc.constant(null)))(generator) 
+  return generator
 }
 ///    NULL    ///
 //////////////////
@@ -346,7 +340,9 @@ Schema_boolean.defaults = {
 Schema_boolean.requiredKeys = [
   "type",
 ] as const satisfies string[]
-Schema_boolean.static = {}
+Schema_boolean.static = {
+
+}
 
 Schema_boolean.base = ($: Constraints.Config): fc.Arbitrary<Schema_boolean> =>
   fc.record(
@@ -363,6 +359,7 @@ declare namespace Schema_boolean {
   interface Constraints<T = unknown> extends
     Partial<Constraints.Base<T>> {
       arbitrary: typeof Schema_boolean.base
+      exampleArbitrary?: ExampleArbitrary<boolean>
     }
 }
 
@@ -427,6 +424,7 @@ declare namespace Schema_integer {
   interface Constraints<T = unknown> extends
     Partial<Constraints.Base<T>> {
       arbitrary: typeof Schema_integer.base
+      exampleArbitrary?: ExampleArbitrary<number>
     }
 }
 
@@ -453,10 +451,11 @@ function Schema_integer(_?: Constraints) {
       : undefined
     )
 
-  return !$.base.include.example && !$.base.include.examples
+  // return !$.base.include.example && !$.base.include.examples
+  return !$.base.include.example
     ? generator
     : generator.chain(({ minimum: min, maximum: max, multipleOf: mod, ..._ }) => {
-      return fc.record({
+      const record = {
         type: fc.constant(_.type),
         ...mod && { multipleOf: fc.constant(mod) },
         ...min && { minimum: fc.constant(min) },
@@ -466,7 +465,12 @@ function Schema_integer(_?: Constraints) {
         ..._.format && { format: fc.constant(_.format) },
         ..._.exclusiveMaximum && { exclusiveMaximum: fc.constant(_.exclusiveMaximum) },
         ..._.exclusiveMinimum && { exclusiveMinimum: fc.constant(_.exclusiveMinimum) },
-      })
+      } as const
+      return fc.record(record, { 
+        requiredKeys: [
+          ...Schema_number.requiredKeys, 
+          ...object.keys(record),
+        ]})
     }).map(compact)
 }
 ///    INTEGER    ///
@@ -506,9 +510,7 @@ Schema_number.base = ($: Constraints.Config): fc.Arbitrary<Schema_number> =>
         ...Schema_number.static,
         ...$.number.include?.example && { example: Schema_number.static.minimum },
       }
-    ), {
-      requiredKeys: Schema_number.requiredKeys
-    },
+    ), { requiredKeys: Schema_number.requiredKeys }
   ).map(({ type, format, ..._ }) => ({
     type,
     format,
@@ -521,6 +523,7 @@ declare namespace Schema_number {
   interface Constraints<T = unknown> extends
     Partial<Constraints.Base<T>> {
       arbitrary: typeof Schema_number.base
+      exampleArbitrary?: ExampleArbitrary<number>
     }
 }
 
@@ -566,6 +569,7 @@ export { Schema_string as string }
 
 Schema_string.defaults = {
   arbitrary: Schema_string.base,
+  exampleArbitrary: () => fc.lorem(),
   include: defaultInclude,
 } satisfies Schema_string.Constraints
 Schema_string.requiredKeys = [
@@ -640,57 +644,80 @@ function escapeRegularExpression(pattern: string) {
 Schema_string.static = {
   minLength: fc.nat(0x100),
   maxLength: fc.nat(0x100),
-  // pattern: regularExpression,
+  pattern: regularExpression,
 }
 
 
 Schema_string.base = ($: Constraints.Config): fc.Arbitrary<Schema_string> => {
+  const requiredKeys = [
+    ...Schema_string.requiredKeys,
+    // ...($.base.include.example || $.string.include?.example ? ['example'] as const : []),
+    // ...($.base.include.description || $.string.include?.description ? ['description'] as const : []),
+  ]
   return fc.tuple(
     fc.option(Schema_string.format($), { nil: void 0 }),
     fc.record({
       type: fc.constant(DataType.string),
       ...Schema_string.static,
-      ...$.base.include?.example && { example: fc.lorem() },
       ...$.base.include?.description && { description: fc.lorem() },
+      // ...$.base.include.example && $.string.exampleArbitrary && { example: $.string.exampleArbitrary() },
     },
-    { requiredKeys: ["type"] }),
-  )
-  .map(([format, { example, minLength: _min, maxLength: _max /* , pattern */ , ...body }]) => {
-    const min = Bounded.minimumOf(_min, _max)
-    const max = Bounded.maximumOf(_min, _max)
-    const { minLength } = Bounded.absorbNaN(
-      "minLength",
-      ( ["date", "date-time"].includes(format?.format ?? "") ? Number.NaN
-      : ["email", "ulid", "uuid", "uri"].includes(format?.format ?? "") ? min % 0
-      : min
+    { requiredKeys }),
+  ).map(([
+    format, { 
+      // example: ex, 
+      minLength: _min, 
+      maxLength: _max, 
+      pattern,
+      ...body
+    }]) => {
+      const min = Bounded.minimumOf(_min, _max)
+      const max = Bounded.maximumOf(_min, _max)
+      const { minLength } = Bounded.absorbNaN(
+        "minLength",
+        ( ["date", "date-time"].includes(format?.format ?? "") ? Number.NaN
+        : ["email", "ulid", "uuid", "uri"].includes(format?.format ?? "") ? min % 0
+        : min
+        )
       )
-    )
-    const { maxLength } = Bounded.absorbNaN(
-      "maxLength",
-      ( ["date", "date-time"].includes(format?.format ?? "") ? Number.NaN
-      : ["email", "ulid", "uuid", "uri"].includes(format?.format ?? "") ? max % 0
-      : max )
-    )
-    return {
-      ...format,
-      ...!["date", "date-time"].includes(format?.format ?? "") && {
-        minLength,
-        maxLength,
-      },
-      ...body,
-      // ...!format && pattern && { pattern },
-      ...optionally({ example: format?.example ?? example }),
+      const { maxLength } = Bounded.absorbNaN(
+        "maxLength",
+        ( ["date", "date-time"].includes(format?.format ?? "") ? Number.NaN
+        : ["email", "ulid", "uuid", "uri"].includes(format?.format ?? "") ? max % 0
+        : max )
+      )
+      return {
+        format,
+        pattern,
+        ...!["date", "date-time"].includes(format?.format ?? "") && {
+          minLength,
+          maxLength,
+        },
+        ...body,
+      }
+  }
+).chain(
+  ({ minLength, maxLength, format, pattern, ..._ }) => {
+    const example = !$.base.include.example ? void 0 
+      : typeof format?.example === 'string' ? fc.constant(format.example)
+      // : typeof pattern === 'string' ? fc.stringMatching(new RegExp(escapeRegularExpression(pattern)))
+      : $.string.exampleArbitrary?.({minLength, maxLength})
+      ;
+    const record = {
+      // ..._,
+      type: fc.constant(_.type),
+      ...typeof minLength === 'number' && { minLength: fc.constant(minLength) },
+      ...typeof maxLength === 'number' && { maxLength: fc.constant(maxLength) },
+      ...typeof format === 'string' && { format: fc.constant(format) },
+      ...typeof _.description === 'string' && { description: fc.constant(_.description) },
+      ...example && { example },
+      // ...typeof pattern === 'string' && { pattern: fc.constant(pattern) },
     }
-  }).chain(
-    ({ /* pattern, */ example, ...base }) => fc.record({ 
-      // ...pattern && { pattern: fc.constant(pattern) },
-      ...example && ({ 
-        // example: typeof pattern === 'string' 
-          // ? fc.stringMatching(new RegExp(escapeRegularExpression(pattern))) 
-          example : fc.constant(example) 
-      }) 
-    }).map((_) => ({ ...base, ..._ }))
-  )
+    return fc.record(
+      record, 
+      { requiredKeys: object.keys(record) }
+    )
+  })
 }
 
 interface Schema_string<T = unknown, M extends {} = {}> extends t.Schema_string<T, M> {}
@@ -698,7 +725,9 @@ declare namespace Schema_string {
   interface Constraints<T = unknown> extends
     Partial<Constraints.Base<T>> {
       arbitrary: typeof Schema_string.base,
+      exampleArbitrary?: ExampleArbitrary<string, fc.StringConstraints>
     }
+  interface Config<T = unknown> extends Required<Constraints<T>> {}
 }
 
 /**
@@ -911,7 +940,7 @@ function Schema_allOf<T>(
   _: Constraints = Constraints.defaults
 ): fc.Arbitrary<Schema_allOf<T>> {
   const $ = Constraints.configure(_)
-  return $.allOf.arbitrary(LOOP, $)  satisfies fc.Arbitrary<JsonSchema.allOfF<T>>
+  return $.allOf.arbitrary(LOOP, $) satisfies fc.Arbitrary<JsonSchema.allOfF<T>>
 }
 ///    ALL OF    ///
 ////////////////////

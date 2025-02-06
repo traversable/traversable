@@ -1040,24 +1040,6 @@ export function mediatype(_?: mediatype.Constraints) {
 const constraintsAdapter
   : (arbitraryConstraints?: arbitrary.Constraints) => Schema.Constraints
   = (_?: arbitrary.Constraints) => {
-
-    _?.schemas?.anyOf?.arbitrary
-    _?.schemas?.anyOf?.comparator
-    _?.schemas?.anyOf?.const
-    _?.schemas?.anyOf?.depthIdentifier
-    _?.schemas?.anyOf?.description
-    _?.schemas?.anyOf?.example
-    _?.schemas?.anyOf?.include
-    _?.schemas?.anyOf?.maxLength
-    _?.schemas?.anyOf?.minLength
-
-
-    Schema.Constraints.defaults.anyOf.arbitrary
-    Schema.Constraints.defaults.anyOf.include
-    Schema.Constraints.defaults.anyOf.maxLength
-    Schema.Constraints.defaults.anyOf.minLength
-
-    
     return {
       allOf: {
         comparator: _?.schemas?.allOf?.comparator ?? Schema.Constraints.defaults.allOf.comparator,

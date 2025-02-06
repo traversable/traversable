@@ -6,10 +6,6 @@ import { _ } from "@traversable/registry"
 import IR = zod.IR
 
 vi.describe("〖️⛳️〗‹‹‹ ❲@traversable/algebra/zod❳", () => {
-  vi.it("〖️⛳️〗› ❲zod.serializer❳", () => {
-    console.log("serialized", zod.serializer({ })({ type: 'number' }))
-  })
-
   vi.it("〖️⛳️〗› ❲zod.toString❳", () => {
     vi.expect( zod.toString( z.tuple([z.string(), z.number(), z.object({ pointsScored: z.number() })]) ))
     .toMatchInlineSnapshot(`"z.tuple([z.string(), z.number(), z.object({ pointsScored: z.number() })])"`)

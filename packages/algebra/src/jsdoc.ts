@@ -1,7 +1,6 @@
 import type { Json } from '@traversable/core'
 import { Format, tree } from '@traversable/core'
 
-import { fn } from '@traversable/data'
 import type { Index } from './shared.js'
 
 /** 
@@ -26,7 +25,7 @@ export function example(k: string, $: Index): string | null {
   const child = tree.get($.document, ...$.absolutePath, 'properties', k, 'meta', 'example')
   return typeof child === 'symbol' 
     ? null 
-    : tag('example')(child, { leftOffset: $.indent + 2 })
+    : Format.multiline(child, { wrapWith: [' * @example\n', ' '], leftOffset: $.indent + 2, rightOffset: 0, indent: 2 })
 }
 
 const breaklines 

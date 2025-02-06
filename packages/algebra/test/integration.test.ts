@@ -5,7 +5,7 @@ import { z } from 'zod'
 
 import { ark, fastcheck, seed, typebox, zod } from "@traversable/algebra"
 import type { JsonSchema } from "@traversable/core"
-import { fc } from "@traversable/core"
+import { fc, show } from "@traversable/core"
 import type { OpenAPI } from "@traversable/openapi"
 import { Schema } from "@traversable/openapi"
 import type { _ } from "@traversable/registry"
@@ -39,11 +39,15 @@ export const PATH = {
   }
 } as const
 
-const allOf = (LOOP: fc.Arbitrary<unknown>, $: Schema.Constraints.Config) => Schema.allOf.base(fc.dictionary(LOOP), $)
+const allOf = (LOOP: fc.Arbitrary<unknown>, $: Schema.Constraints.Config) => 
+  Schema.allOf.base(
+  Schema.object.base({ properties: LOOP, additionalProperties: LOOP }, $),
+  $
+)
 
 seed({ 
   regenerateSeedFilesOnSave: true,
-  exclude: ['allOf'],
+  exclude: ['const'],
   include: {
     description: false,
     example: false,
@@ -66,34 +70,6 @@ seed({
   }
 })
 
-const tupleSchema = z.tuple([
-  z.string().url(),
-  z.number().int().min(8244).lt(13730),
-  z.tuple([
-  ])
-])
-
-const test = z.union([
-  z.array(
-    z.tuple([
-      z.array(
-        z.string().min(50).max(240)
-      ),
-      z.string().min(96).max(219).regex(/\/\[\^J-X\]\|\//),
-      z.string().email(),
-      z.string().min(18).max(154),
-      z.array(
-        z.string().ulid()
-      ),
-      z.string().min(53).max(243)
-    ])
-  ),
-  z.never()
-])
-
-const data = [ 'https://c.rh/', 9215, [] ]
-const result = tupleSchema.safeParse(data)
-
 vi.describe("〖️⛳️〗‹‹‹ ❲@traversable/algebra/integration❳", () => {
   const importDoc = `import $doc from "../__specs__/arbitrary.hack.js"`
   const document
@@ -104,13 +80,22 @@ vi.describe("〖️⛳️〗‹‹‹ ❲@traversable/algebra/integration❳", (
     // ark: ark.deriveAll({ document, header: [...ark.defaults.header, importDoc] }),
     fastcheck: fastcheck.deriveAll({ document, header: [...fastcheck.defaults.header, importDoc] }),
     // typebox: typebox.deriveAll({ document, header: [...typebox.defaults.header, importDoc] }),
-    zod: zod.deriveAll({ document, header: [...zod.defaults.header, importDoc], flags: { includeJsdocLinks: false, includeLinkToOpenApiNode: false, } }),
+    zod: zod.deriveAll({ document, header: [...zod.defaults.derive.header, importDoc] }),
   }
   const compiled = {
     // ark: ark.compileAll({ document, header: [...ark.defaults.header, importDoc] }),
     fastcheck: fastcheck.compileAll({ document, header: [...fastcheck.defaults.header, importDoc] }),
     // typebox: typebox.compileAll({ document, header: [...typebox.defaults.header, importDoc] }),
-    zod: zod.compileAll({ document, header: [...zod.defaults.header, importDoc], template: (x) => [x] }),
+    zod: zod.compileAll({ 
+      ...zod.defaults.compile,
+      document, 
+      header: [...zod.defaults.compile.header, importDoc], 
+      flags: {
+        includeJsdocLinks: true,
+        includeLinkToOpenApiNode: true,
+        includeExamples: true,
+      }
+    }),
   }
 
   // vi.it("〖️⛳️〗› ❲ark.generate❳", async () => {
@@ -180,11 +165,11 @@ vi.describe("〖️⛳️〗‹‹‹ ❲@traversable/algebra/integration❳", (
       const x = fc.sample(arbitrary, 1)[0]
 
 
-      console.log('\n\nx:\n', x, '\n')
+      // console.log('\n\nx:\n', x, '\n')
 
 
       const zodSchema = derived.zod.byName[k]
-      console.log("zodSchema", zod.toString(zodSchema))
+      // console.log("zodSchema", zod.toString(zodSchema))
 
       const result = zodSchema.safeParse(x)
 
@@ -193,13 +178,13 @@ vi.describe("〖️⛳️〗‹‹‹ ❲@traversable/algebra/integration❳", (
 
 
       if (!result.success) {
-        console.group("\n\n\n\n===============   INTEGRATION TEST (FAILURE)   ===============")
-        console.log("\n\nRESULT is ERROR:\n", result.error, '\n')
-        console.log("\n\nschemaName:", k, "\n")
-        console.log('\n\nx:\n', x, '\n')
-        console.log('\n\ncompiled.zod.byName[k]:\n', compiled.zod.byName[k], '\n')
-        console.log('\n\nresult:\n', result, '\n')
-        console.groupEnd()
+        // console.group("\n\n\n\n===============   INTEGRATION TEST (FAILURE)   ===============")
+        // console.log("\n\nRESULT is ERROR:\n", result.error, '\n')
+        // console.log("\n\nschemaName:", k, "\n")
+        // console.log('\n\nx:\n', x, '\n')
+        // console.log('\n\ncompiled.zod.byName[k]:\n', compiled.zod.byName[k], '\n')
+        // console.log('\n\nresult:\n', result, '\n')
+        // console.groupEnd()
       }
 
       vi.assert.isTrue(result.success)

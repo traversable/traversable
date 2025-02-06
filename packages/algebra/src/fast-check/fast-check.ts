@@ -221,6 +221,14 @@ const deriveAll
   : (options: Options<fc.Arbitrary<unknown>>) => Gen.All<fc.Arbitrary<unknown>>
   = (options) => Gen.deriveAll(derive, { ...defaults, ...options })
 
+const compileObjectNode 
+  : (x: core.Traversable.objectF<string>, $: Index) => string
+  = ({ properties: xs, required: req, ..._ }, _$) => { 
+  return `${NS}.record({`
+    + Object.entries(xs).map(([k, v]) => object.parseKey(k) + ': ' + v) 
+    + `}, { requiredKeys: [${(req ?? []).map((_) => '"' + String(_) + '"').join(', ')}] })`
+}
+
 const compilers = {
   any() { return `${NS}.anything()` },
   null() { return `${NS}.constant(null)` },
@@ -232,21 +240,15 @@ const compilers = {
       ? CompiledStringFormat[meta.format]
       : `${NS}.string({${Constrain.compiled.string(meta)}})`
   },
-  allOf({ allOf: xs, ..._ }) { return `${NS}.tuple(` + xs.join(', ') + ').map(intersect)' },
+  allOf({ allOf: xs, ..._ }, $) { return `${NS}.tuple(` + xs.map((x) => compileObjectNode(x, $)) + ').map(intersect)' },
   anyOf({ anyOf: xs, ..._ }) { return `${NS}.oneof(` + xs.join(', ') + ')' },
   oneOf({ oneOf: xs, ..._ }) { return `${NS}.oneof(` + xs.join(', ') + ')' },
   const({ const: x, ..._ }, $) { return `${NS}.constant(` + serializer($)(x) + ')' },
   enum({ enum: xs, ..._ }) { return `${NS}.constantFrom(` + xs.join(', ') + ')' },
+  object(x, $) { return compileObjectNode(x, $) },
   array({ items: x, ..._ }) { return `${NS}.array(` + x + ')' },
   tuple({ items: xs, ..._ }) { return `${NS}.tuple(` + xs.join(', ') + ')' },
-  record({ additionalProperties: x, ..._ }) { 
-    return `${NS}.dictionary(${NS}.oneof(${NS}.lorem(), ${NS}.string()), ${x})` 
-  },
-  object({ properties: xs, required: req, ..._ }, _$) { 
-    return `${NS}.record({`
-      + Object.entries(xs).map(([k, v]) => object.parseKey(k) + ': ' + v) 
-      + `}, { requiredKeys: [${(req ?? []).map((_) => '"' + String(_) + '"').join(', ')}] })` 
-  }
+  record({ additionalProperties: x, ..._ }) { return `${NS}.dictionary(${NS}.oneof(${NS}.lorem(), ${NS}.string()), ${x})` },
 } as const satisfies Matchers<string>
 
 const compile

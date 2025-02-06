@@ -2,10 +2,11 @@ import * as fs from 'node:fs'
 import * as path from 'node:path'
 
 import type { JsonSchema } from '@traversable/core'
-import { Traversable, fc, is, tree } from '@traversable/core'
-import { fn, keys, map, string } from '@traversable/data'
-import { OpenAPI, Schema } from '@traversable/openapi'
-import type { _, autocomplete } from '@traversable/registry'
+import { Traversable, fc, is, show, tree } from '@traversable/core'
+import { fn, keys, map, object, string } from '@traversable/data'
+import { composeExamples, OpenAPI, Schema } from '@traversable/openapi'
+import type { Functor, _, autocomplete } from '@traversable/registry'
+import { symbol } from '@traversable/registry'
 
 import { escapePathSegment, unescapePathSegment } from './shared.js'
 
@@ -78,6 +79,7 @@ export const remapRefs
     }
   }
 
+
 const pathify = fn.flow(
   keys.map.deep(escapePathSegment),
   remapRefs('#/components/schemas'),
@@ -85,8 +87,9 @@ const pathify = fn.flow(
   (_) => 'export default ' + _.trimEnd() + ' as const;'
 )
 
-const allOf = (LOOP: fc.Arbitrary<unknown>, $: Schema.Constraints.Config) => Schema.allOf.base(fc.dictionary(LOOP), $)
-
+const allOf = (LOOP: fc.Arbitrary<unknown>, $: Schema.Constraints.Config) => 
+  Schema.allOf.base(Schema.object.base({ properties: LOOP, additionalProperties: LOOP }, $), $)
+  
 const preprocess = fn.flow(
   OpenAPI.map(Traversable.fromJsonSchema),
   (trav) => tree.modify(
@@ -160,6 +163,9 @@ const generateSpec = (options?: seed.Options) => fn.pipe(
   }),
   fc.peek,
   preprocess,
+  options?.include?.example ?? defaults.include.example 
+    ? OpenAPI.map(composeExamples)
+    : fn.identity,
   JSON_stringify,
 )
 

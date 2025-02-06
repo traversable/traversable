@@ -23,6 +23,8 @@ const URI_any = `${ns}::Any` as const
 type URI_any = typeof URI_any
 const URI_unknown = `${ns}::Unknown` as const
 type URI_unknown = typeof URI_unknown
+const URI_enum = `${ns}::Enum` as const
+type URI_enum = typeof URI_enum
 
 ///
 const symbol_null = Symbol.for(URI_null)
@@ -45,6 +47,8 @@ const symbol_any = Symbol.for(URI_any)
 type symbol_any = typeof symbol_any
 const symbol_unknown = Symbol.for(URI_unknown)
 type symbol_unknown = typeof symbol_unknown
+const symbol_enum = Symbol.for(URI_enum)
+type symbol_enum = typeof symbol_enum
 const symbol_REGISTRY = Symbol.for(URI_REGISTRY)
 type symbol_REGISTRY = typeof symbol_REGISTRY
 
@@ -145,6 +149,7 @@ declare namespace URI {
     URI_bigint as bigint,
     URI_string as string,
     URI_object as object,
+    URI_enum as enum,
   }
 }
 
@@ -159,6 +164,7 @@ void (URI.number = URI_number)
 void (URI.bigint = URI_bigint)
 void (URI.string = URI_string)
 void (URI.object = URI_object)
+void (URI.enum = URI_enum)
 
 namespace symbol_ {
   export const ref = Symbol.for(URI.ref)
@@ -237,6 +243,7 @@ declare namespace symbol_ {
     symbol_bigint as bigint,
     symbol_string as string,
     symbol_object as object,
+    symbol_enum as enum,
   }
 }
 void (symbol_.REGISTRY = symbol_REGISTRY)
@@ -250,3 +257,4 @@ void (symbol_.number = symbol_number)
 void (symbol_.bigint = symbol_bigint)
 void (symbol_.string = symbol_string)
 void (symbol_.object = symbol_object)
+void (symbol_.enum = symbol_enum)

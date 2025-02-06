@@ -1,8 +1,8 @@
 import { z } from 'zod'
 
-import type { HKT, _, Functor } from '@traversable/registry'
 import { core, tree } from '@traversable/core'
-import { fn, map as fmap, object } from '@traversable/data';
+import { map as fmap, fn, object } from '@traversable/data';
+import type { Functor, HKT, _ } from '@traversable/registry'
 
 export {
   type Z as z,
@@ -237,22 +237,11 @@ function deriveOneOfNode<S, T>(f: (s: S) => T) {
   })
 }
 
-
-
-// const compileObjectNode = <S>(f: (s: S) => string, x: Z.Object<S>) => ({
-//   ...x,
-//   shape: fmap(x.shape, f),
-//   _def: {
-//     ...x._def,
-//     ...!tagged('never')(x._def.catchall) && { catchall: f(x._def.catchall)}
-//   },
-// })
-
 const Functor_: Functor<Z.lambda, Any> = {
   map(f) {
     return (x) => {
       switch (true) {
-        default: return fn.softExhaustiveCheck(x) // fn.exhaustive(x)
+        default: return fn.exhaustive(x)
         ///  leaves, a.k.a "nullary" types
         case tagged('never')(x): return x
         case tagged('any')(x): return x
@@ -297,8 +286,9 @@ const Functor_: Functor<Z.lambda, Any> = {
 }
 
 function compileObjectNode<S>(x: Z.Object<S>) {
-  return `z.object({ ${
-    Object.entries(x.shape).map(([k, v]) => object.parseKey(k) + ': ' + v).join(', ')} })${
+  const xs = Object.entries(x.shape)
+  return xs.length === 0 ? `z.object({})` : `z.object({ ${
+    xs.map(([k, v]) => object.parseKey(k) + ': ' + v).join(', ')} })${
     typeof x._def.catchall === 'string' ? `.catchall(${x._def.catchall})` : ''}`
 }
 
@@ -321,7 +311,7 @@ const applyArrayConstraints = (x: Z.Array) => ([
 namespace Algebra {
   export const toString: Functor.Algebra<Z.lambda, string> = (x) => {
     switch (true) {
-      default: return fn.softExhaustiveCheck(x) // fn.exhaustive(x)
+      default: return fn.exhaustive(x)
       ///  leaves, a.k.a. "nullary" types
       case tagged('never')(x): return 'z.never()'
       case tagged('any')(x): return 'z.any()'

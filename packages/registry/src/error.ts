@@ -108,4 +108,6 @@ export const NonSerializableInput = Error("Expected input to be valid JSON, got 
 
 export const UnexpectedEmptyString = Error("Expected input string to be non-empty")
 
-export const UnexpectedIntersectionWithNonObject = Error("The semantics of 'allOf' are not defined for non-objects")
+export const UnexpectedIntersectionWithNonObject = Error(
+  "The semantics of 'allOf' are not defined for non-objects",
+)

@@ -1,18 +1,20 @@
 import { z } from "zod"
 
-import type { Meta } from "@traversable/core"
-import { type Traversable, core, keyOf$, tree } from "@traversable/core"
+import type { Meta, Traversable } from "@traversable/core"
+import { core, keyOf$, merge, t, tree } from "@traversable/core"
 import { fn, object } from "@traversable/data"
-import type { _ } from "@traversable/registry"
+import type { Depth, Wane, Wax, _, symbol } from "@traversable/registry"
 import { Invariant, KnownFormat } from "@traversable/registry"
 
 import * as Gen from "../generator.js"
 import * as JSDoc from "../jsdoc.js"
 import * as Print from "../print.js"
 
-import type { Index, Matchers, Options, TargetTemplate } from "../shared.js"
+import { inline } from "any-ts"
+import type { Index, Matchers, TargetTemplate } from "../shared.js"
 import {
   JsonLike,
+  type Options,
   createMask,
   createZodIdent,
   defaults as defaults_,
@@ -21,6 +23,7 @@ import {
 } from "../shared.js"
 
 export {
+  type Formats,
   NS,
   TypeName,
   dependencies,
@@ -42,7 +45,6 @@ const Object_entries = globalThis.Object.entries
 const Object_fromEntries = globalThis.Object.fromEntries
 /** @internal */
 const JSON_stringify = (u: unknown) => JSON.stringify(u, null, 2)
-
 
 type NS = typeof NS
 const NS = 'z' as const
@@ -68,37 +70,73 @@ const template = (
   ] as const satisfies string[]
 )  satisfies TargetTemplate
 
+const Formats = {
+  integer: {
+    compile: {
+      [KnownFormat.integer.int32]: `z.number()`,
+      [KnownFormat.integer.int64]: `z.number()`,
+    } satisfies { [K in KnownFormat.integer[keyof KnownFormat.integer]]+?: string },
+    derive: {
+      [KnownFormat.integer.int32]: z.number().int(),
+      [KnownFormat.integer.int64]: z.number().int(),
+    } satisfies { [K in KnownFormat.integer[keyof KnownFormat.integer]]+?: ReturnType<typeof z.number> },
+  },
+  number: {
+    compile: {
+      [KnownFormat.number.double]: `z.number()`,
+      [KnownFormat.number.float]: `z.number()`,
+    } satisfies { [K in KnownFormat.number[keyof KnownFormat.number]]+?: string },
+    derive: {
+      [KnownFormat.number.double]: z.number(),
+      [KnownFormat.number.float]: z.number(),
+    } satisfies { [K in KnownFormat.number[keyof KnownFormat.number]]+?: ReturnType<typeof z.number> },
+  },
+  string: {
+    compile: {
+      [KnownFormat.string.date]: '.date()',
+      [KnownFormat.string.datetime]: '.datetime({ offset: true })',
+      [KnownFormat.string.email]: '.email()',
+      [KnownFormat.string.emoji]: '.emoji()',
+      [KnownFormat.string.ipv4]: '.ip({ version: \'v4\' })',
+      [KnownFormat.string.ipv6]: '.ip({ version: \'v6\' })',
+      [KnownFormat.string.ulid]: '.ulid()',
+      [KnownFormat.string.uri]: '.url()',
+      [KnownFormat.string.uuid]: '.uuid()',
+    } as const satisfies { [K in KnownFormat.string[keyof KnownFormat.string]]+?: string },
+    derive: {
+      [KnownFormat.string.date]: z.string().date(),
+      [KnownFormat.string.datetime]: z.string().datetime({ offset: true }),
+      [KnownFormat.string.emoji]: z.string().emoji(),
+      [KnownFormat.string.ipv4]: z.string().ip({ version: 'v4' }),
+      [KnownFormat.string.ipv6]: z.string().ip({ version: 'v6' }),
+      [KnownFormat.string.ulid]: z.string().ulid(),
+      [KnownFormat.string.uri]: z.string().url(),
+      [KnownFormat.string.uuid]: z.string().uuid(),
+      // [KnownFormat.string.email]: z.string().email(),
+    } as const satisfies { [K in KnownFormat.string[keyof KnownFormat.string]]+?: ReturnType<typeof z.string> },
+  },
+} as const
+
 const defaults = {
-  ...defaults_,
-  typeName: defaults_.typeName + TypeName,
-  header: headers,
-  template,
-} satisfies Omit<Options.Config<unknown>, 'handlers'>
-
-type StringFormat = typeof StringFormat
-const StringFormat = {
-  [KnownFormat.string.date]: '.date()',
-  [KnownFormat.string.datetime]: '.datetime({ offset: true })',
-  [KnownFormat.string.email]: '.email()',
-  [KnownFormat.string.emoji]: '.emoji()',
-  [KnownFormat.string.ipv4]: '.ip({ version: \'v4\' })',
-  [KnownFormat.string.ipv6]: '.ip({ version: \'v6\' })',
-  [KnownFormat.string.ulid]: '.ulid()',
-  [KnownFormat.string.uri]: '.url()',
-  [KnownFormat.string.uuid]: '.uuid()',
-} as const satisfies { [K in KnownFormat.string[keyof KnownFormat.string]]+?: string }
-
-const StringSchema = {
-  [KnownFormat.string.date]: z.string().date(),
-  [KnownFormat.string.datetime]: z.string().datetime({ offset: true }),
-  [KnownFormat.string.email]: z.string().email(),
-  [KnownFormat.string.emoji]: z.string().emoji(),
-  [KnownFormat.string.ipv4]: z.string().ip({ version: 'v4' }),
-  [KnownFormat.string.ipv6]: z.string().ip({ version: 'v6' }),
-  [KnownFormat.string.ulid]: z.string().ulid(),
-  [KnownFormat.string.uri]: z.string().url(),
-  [KnownFormat.string.uuid]: z.string().uuid(),
-} as const satisfies { [K in KnownFormat.string[keyof KnownFormat.string]]+?: ReturnType<typeof z.string> }
+  derive: {
+    ...defaults_,
+    typeName: defaults_.typeName + TypeName,
+    header: headers,
+    template,
+    integerFormats: Formats.integer.derive,
+    numberFormats: Formats.number.derive,
+    stringFormats: Formats.string.derive,
+  },
+  compile: {
+    ...defaults_,
+    typeName: defaults_.typeName + TypeName,
+    header: headers,
+    template,
+    integerFormats: Formats.integer.compile,
+    numberFormats: Formats.number.compile,
+    stringFormats: Formats.string.compile,
+  },
+}
 
 const numericConstraints
   : (meta: Meta.Numeric) => string[]
@@ -111,7 +149,7 @@ const numericConstraints
 const stringConstraints
   : (meta: Meta.string) => string[]
   = ({ format, maxLength: max, minLength: min, pattern }) => [
-    format && keyOf$(StringFormat)(format) && StringFormat[format],
+    format && keyOf$(Formats.string.compile)(format) && Formats.string.compile[format],
     min !== undefined && `.min(${min})`,
     max !== undefined && `.max(${max})`,
     pattern !== undefined && `.regex(${pattern})`
@@ -129,8 +167,7 @@ const compilers = {
   boolean(_, $) { return 'z.boolean()' },
   integer({ meta = {} }, $) { return `z.number().int()${Constrain.integer(meta).join('')}` },
   number({ meta = {} }, $) { return `z.number()${Constrain.number(meta).join('')}` },
-  string({ meta = {} }, $) { return `z.string()` },
-  // string({ meta = {} }, $) { return `z.string()${Constrain.string(meta).join('')}` },
+  string({ meta = {} }, $) { return `z.string()${Constrain.string(meta).join('')}` },
   const({ const: xs }, $) { return serializer($)(xs) },
   enum({ enum: xs }, $) {
     if (xs.length === 0) return 'z.never()'
@@ -143,24 +180,22 @@ const compilers = {
   array({ items: s }, $) { return Print.array($)('z.array(', s, ')') },
   record({ additionalProperties: s }, $) { return Print.array($)('z.record(', s, ')') },
   tuple({ items: ss }, $) { return Print.array($)('z.tuple([', ...ss, '])') },
-  anyOf({ anyOf: ss }, $) { 
-    if(ss.length < 2) {
-      console.log("compilers.anyOf: ss.length < 2", ss); 
-      // throw Error("compilers.anyOf: ss.length < 2" + JSON.stringify(ss, null, 2));
-    } 
-    return Print.array($)('z.union([', ...ss, '])') 
-    // ss.length < 2 && console.log("compilers.anyOf: ss.length < 2", ss); return Print.array($)('z.union([', ...ss, '])') 
+  anyOf({ anyOf: xs }, $) { 
+    switch (true) {
+      case xs.length === 0: return 'z.never()'
+      case xs.length === 1: return xs[0]
+      default: return Print.array($)('z.union([', ...xs, '])') 
+    }
   },
-  // anyOf({ anyOf: [s0 = 'z.never()', s1 = 'z.never()', ...ss] }, $) { return Print.array($)('z.union([', s0, s1, ...ss, '])') },
-  oneOf({ oneOf: ss }, $) { 
-    if(ss.length < 2) {
-      console.log("compilers.oneOf: ss.length < 2", ss); 
-      // throw Error("compilers.oneOf: ss.length < 2")
-    } 
-    return Print.array($)('z.union([', ...ss, '])') 
+  oneOf({ oneOf: xs }, $) { 
+    switch (true) {
+      case xs.length === 0: return 'z.never()'
+      case xs.length === 1: return xs[0]
+      default: return Print.array($)('z.union([', ...xs, '])')
+    }
   },
-  allOf({ allOf: ss }, $) {
-    const xs = ss.map(compileObjectNode($))
+  allOf({ allOf: x }, $) {
+    const xs = x.map(compileObjectNode($))
     switch (true) {
       case xs.length === 0: return 'z.unknown'
       case xs.length === 1: return xs[0]
@@ -193,11 +228,11 @@ const compileObjectNode = ($: Index) => (ss: core.Traversable.objectF<string>) =
  */
 const compile
   : Gen.Generator<string>
-  = Gen.compile(compilers, defaults)
+  = Gen.compile(compilers, defaults.compile)
 
 const compileAll
   : (options: Options<string>) => Gen.All<string>
-  = (options) => Gen.compileAll(compile, { ...defaults, ...options })
+  = (options) => Gen.compileAll(compile, { ...defaults.compile, ...options })
 
 const deriveObjectNode 
   : ($: Index) => (x: core.Traversable.objectF<z.ZodTypeAny>) => z.ZodTypeAny
@@ -218,8 +253,7 @@ const derivatives = {
   boolean(_) { return z.boolean() },
   integer(_) { return z.number().int() },
   number(_) { return z.number() },
-  string({ meta }) { return z.string() },
-  // string({ meta }) { return (StringSchema[(meta?.format ?? '') as never] ?? z.string()) },
+  string({ meta }) { return (Formats.string.derive[(meta?.format ?? '') as never] ?? z.string()) },
   const(_, $) { return constToZodSchema($)(_) },
   enum({ enum: ss }) {
     const [s0, s1, ...sn] = ss.filter(core.is.primitive).map((v) => z.literal(v))
@@ -249,7 +283,7 @@ const derivatives = {
  */
 const derive
   : Gen.Generator<z.ZodTypeAny>
-  = Gen.derive(derivatives, defaults)
+  = Gen.derive(derivatives, defaults.derive)
 
 const deriveAll
   : (options: Options<z.ZodTypeAny>) => Gen.All<z.ZodTypeAny>
@@ -269,26 +303,30 @@ function generateEntry(
     [BEFORE_OPT, AFTER_OPT]: readonly [before: string, after: string]
 ): (entry: [string, string]) => string {
   return ([k, v]) => {
-    const EXAMPLE_TAG = JSDoc.example(k , $)
+    const EXAMPLE_TAG = JSDoc.example(k, $)
     const DESCRIPTION_TAG = JSDoc.description(k, $)
     const LINK_HERE = linkToNode(k, $)
     const LINK_TO_DOC = linkToOpenAPIDocument(k, $)
-    const JSDOCS = [
+    // const JSDOCS = [
+    //   LINK_HERE, 
+    //   LINK_TO_DOC, 
+    //   DESCRIPTION_TAG, 
+    //   EXAMPLE_TAG
+    // ].filter((_) => _ !== null)
+    return ([
+      '',
+      // JSDOCS.length === 0 ? null : [
+      '/**',
       LINK_HERE, 
       LINK_TO_DOC, 
       DESCRIPTION_TAG, 
-      EXAMPLE_TAG
-    ].filter((_) => _ !== null)
-    return ([
-      '',
-      JSDOCS.length === 0 ? null : [
-      '/**',
-      LINK_HERE,
-      LINK_TO_DOC,
-      DESCRIPTION_TAG,
       EXAMPLE_TAG,
+      // LINK_HERE,
+      // LINK_TO_DOC,
+      // DESCRIPTION_TAG,
+      // EXAMPLE_TAG,
       ' */',
-      ].join('\n'),
+      // ].join(''),
       `${object.parseKey(k)}: ${
         !required.includes(k) ? (BEFORE_OPT + v + AFTER_OPT) : v
       }`,
@@ -331,7 +369,7 @@ function serializer(ix: Index): (x: unknown) => string {
   return (x: unknown) => {
     if (!JsonLike.is(x) ) return Invariant.NonSerializableInput("zod.serialize", x)
     const out = loop(ix.indent)(x)
-  console.group("\n\n\nserializer::\n\n\n")
+    console.group("\n\n\nserializer::\n\n\n")
     console.log('serializer [BEFORE]:: ', x)
     console.log('serializer [AFTER]:: ', out)
     console.groupEnd()

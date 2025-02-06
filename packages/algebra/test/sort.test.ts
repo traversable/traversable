@@ -1,7 +1,7 @@
 import * as vi from "vitest"
 
 import { sort } from "@traversable/algebra"
-import { show, tr as t, type Traversable } from "@traversable/core"
+import { type Traversable, show, tr as t } from "@traversable/core"
 
 vi.describe("〖️⛳️〗‹‹‹ ❲@traversable/algebra/sort❳", () => {
   vi.it("〖️⛳️〗› ❲sort.deep❳", () => {

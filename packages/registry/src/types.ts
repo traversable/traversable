@@ -1195,3 +1195,157 @@ export declare namespace Union {
   }
   type toThunk<U> = (U extends U ? (_: () => U) => void : never) extends (_: infer _) => void ? _ : never
 }
+
+export declare namespace Depth {
+  type Max = Exclude<keyof cache, string>
+  type Cached = Cache[keyof Cache]
+  interface cache extends inline<{ [x: `${number}`]: { length: void } }> {
+    [0x00]: []
+    [0x01]: [1]
+    [0x02]: [1, 1]
+    [0x03]: [1, 1, 1]
+    [0x04]: [1, 1, 1, 1]
+    [0x05]: [1, 1, 1, 1, 1]
+    [0x06]: [1, 1, 1, 1, 1, 1]
+    [0x07]: [1, 1, 1, 1, 1, 1, 1]
+    [0x08]: [1, 1, 1, 1, 1, 1, 1, 1]
+    [0x09]: [1, 1, 1, 1, 1, 1, 1, 1, 1]
+  }
+  interface circular extends cache {
+    [0x0a]: cache[0x00]
+  }
+  interface up {
+    [0x00]: cache[0x01]
+    [0x01]: cache[0x02]
+    [0x02]: cache[0x03]
+    [0x03]: cache[0x04]
+    [0x04]: cache[0x05]
+    [0x05]: cache[0x06]
+    [0x06]: cache[0x07]
+    [0x07]: cache[0x08]
+    [0x08]: cache[0x09]
+    [0x09]: never
+  }
+  interface down {
+    [0x09]: cache[0x08]
+    [0x08]: cache[0x07]
+    [0x07]: cache[0x06]
+    [0x06]: cache[0x05]
+    [0x05]: cache[0x04]
+    [0x04]: cache[0x03]
+    [0x03]: cache[0x02]
+    [0x02]: cache[0x01]
+    [0x01]: cache[0x00]
+    [0x00]: never
+  }
+}
+
+/**
+ * ## {@link Wane `Wane`}
+ *
+ * Dual of {@link Wax `Wax`}.
+ *
+ * Useful for merging configuration objects, for example, or any time
+ * you might need to _invert_ the operation.
+ *
+ * This works because `Wax` and `Wane` are adjoint. And if `Depth`
+ * is constant, I believe the two form a proper isomorphism,
+ * which means you can convert back and forth between the two without
+ * any loss of information.
+ *
+ * See also: {@link Wax `Wax`}
+ *
+ * @example
+ * import type { Wane } from '@traversable/registry'
+ *
+ * interface ex_01 extends inline<typeof ex_01> {}
+ * declare const ex_01: {
+ *   readonly a: 1
+ *   b: {
+ *     readonly c: 2
+ *     d: {
+ *       readonly e: 3
+ *       f: {
+ *         readonly g: 4
+ *         h: 5
+ *       }
+ *     }
+ *   }
+ * }
+ *
+ * // if `Depth` is unspecified, defaults to `2`:
+ * declare const ex_02: Wane<ex_01>
+ * //            ^? const ex_02: { readonly a?: 1, b?: { readonly c?: 2, d?: { readonly e: 3, f: { readonly g: 4, h: 5 } } } }
+ *
+ * declare const ex_03: Wane<ex_01, 3>
+ * //            ^? const ex_03: { readonly a?: 1, b?: { readonly c?: 2, d?: { readonly e?: 3, f?: { readonly g: 4, h: 5 } } } }
+ *
+ * // if `Depth` is `0` or `number`, `Wane` preserves the original reference:
+ * declare const ex_00: Wane<ex_01, 0>
+ * //            ^? const ex_03: ex_01
+ *
+ * // otherwise if `Depth` is an out of band numeric literal, recursion is unbounded:
+ * declare const out_of_band: Wane<ex_01, -1>
+ * //            ^? const out_of_band: { readonly a?: 1, b?: { readonly c?: 2, d?: { e?: 3 } } } }
+ */
+export type Wane<T, Depth extends number = 2> = Wane.loop<Depth.cache[Depth & keyof Depth.cache], T, 0>
+export declare namespace Wane {
+  type loop<Depth extends { length: any }, T, Max extends Depth.Max> = Depth["length"] extends Max
+    ? T
+    : { [K in keyof T]+?: loop<Depth.down[Depth["length"]], T[K], Max> }
+}
+
+/**
+ * ## {@link Wax `Wax`}
+ *
+ * Dual of {@link Wane `Wane`}.
+ *
+ * Useful for merging configuration objects, for example, or any time
+ * you might need to _invert_ the operation.
+ *
+ * This works because `Wax` and `Wane` are adjoint. And if `Depth`
+ * is constant, I believe the two form a proper isomorphism,
+ * which means you can convert back and forth between the two without
+ * any loss of information.
+ *
+ * See also: {@link Wane `Wane`}
+ *
+ * @example
+ * import type { Wax } from '@traversable/registry'
+ *
+ * interface ex_01 extends inline<typeof ex_01> {}
+ * declare const ex_01: {
+ *   readonly a?: 1
+ *   b?: {
+ *     readonly c?: 2
+ *     d?: {
+ *       readonly e?: 3
+ *       f?: {
+ *         readonly g?: 4
+ *         h?: 5
+ *       }
+ *     }
+ *   }
+ * }
+ *
+ * // if `Depth` is unspecified, defaults to `2`:
+ * declare const ex_02: Wax<ex_01>
+ * //            ^? const ex_02: { readonly a: 1, b: { readonly c: 2, d: { readonly e?: 3, f?: { readonly g?: 4, h?: 5 } } } }
+ *
+ * declare const ex_03: Wax<ex_01, 3>
+ * //            ^? const ex_03: { readonly a: 1, b: { readonly c: 2, d: { readonly e: 3, f: { readonly g?: 4, h?: 5 } } } }
+ *
+ * // if `Depth` is `0` or `number`, `Wax` preserves the original reference:
+ * declare const ex_00: Wax<ex_01, 0>
+ * //            ^? const ex_03: ex_01
+ *
+ * // otherwise if `Depth` is an out of band numeric literal, recursion is unbounded:
+ * declare const out_of_band: Wax<ex_01, -1>
+ * //            ^? const out_of_band: { readonly a: 1, b: { readonly c: 2, d: { e: 3 } } } }
+ */
+export type Wax<T, Depth extends number = 2> = Wax.loop<Depth.cache[0], T, Depth & Depth.Max>
+export declare namespace Wax {
+  type loop<Depth extends { length: any }, T, Max extends Depth.Max> = Depth["length"] extends Max
+    ? T
+    : { [K in keyof T]-?: loop<Depth.up[Depth["length"]], T[K], Max> }
+}
