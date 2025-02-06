@@ -1,3 +1,5 @@
+import { map } from '@traversable/data'
+
 import * as t from './ast.js'
 
 /** @internal */
@@ -27,4 +29,17 @@ export function indexedBy<K extends readonly (keyof any)[], const T extends t.ty
 export function keyOf<K extends keyof T, T extends { [x: string]: unknown }>(object: T): t.Schema<K>
 export function keyOf<T extends { [x: string]: unknown }>(object: T) {
   return t.fromGuard((u): u is keyof T => Object_keys(object).includes(u as never))
+}
+
+type partial<T> = never | { [K in keyof T]: [T[K]] extends [t.optional<any>] ? T[K] : t.optional<T[K]> }
+type required<T> = never | { [K in keyof T]: [T[K]] extends [t.optional<infer S>] ? S : T[K] }
+
+export function partial<T extends t.object.children>(x: t.object<T>): t.object<partial<T>>
+export function partial<T extends t.object.children>(x: t.object<T>) { 
+  return t.object(map(x.def, t.optional)) 
+}
+
+export function required<T extends t.object.children>(x: t.object<T>): t.object<required<T>>
+export function required<T extends t.object.children>(x: t.object<T>) { 
+  return t.object(map(x.def, (_) => t.optional.is(_) ? _.def : _)) 
 }
