@@ -1,10 +1,10 @@
 
-import { type Functor, Invariant, type _, type newtype, type symbol } from "@traversable/registry"
 import { fn, map } from "@traversable/data"
+import { type Functor, Invariant, type _, type newtype, type symbol } from "@traversable/registry"
 
 import type * as Traversable from "../model/traversable.js"
-import * as t from "./ast.js"
 import { has } from "../tree.js"
+import * as t from "./ast.js"
 
 ///
 export type { typeof, Schema } from "./ast.js"
