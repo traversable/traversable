@@ -49,7 +49,7 @@ export const Flags = t.object({
   nominalTypes: t.boolean(),
   preferInterfaces: t.boolean(),
   includeJsdocLinks: t.optional(t.boolean()),
-  includeLinkToOpenApiNode: t.optional(t.string()),
+  includeLinkToOpenApiNode: t.optional(t.boolean()),
   includeExamples: t.optional(t.boolean()),
 })
 
@@ -77,7 +77,7 @@ export type Options<T> = Partial<
 export declare namespace Options {
   interface Base {
     absolutePath: Context["absolutePath"]
-    flags: Flags
+    flags: Partial<Flags>
     typeName: string
     document: OpenAPI.doc<Traversable.orJsonSchema>
     header: string | string[]
@@ -101,9 +101,9 @@ export const defaults = {
   flags: {
     nominalTypes: true,
     preferInterfaces: true,
-    includeJsdocLinks: true,
+    includeJsdocLinks: false,
     includeExamples: true,
-    includeLinkToOpenApiNode: path.resolve(),
+    includeLinkToOpenApiNode: false, // path.resolve(),
   },
   indent: 0,
   path: [],
@@ -277,7 +277,7 @@ export const createZodIdent: PathInterpreter = buildIdentInterpreter(ZOD_IDENT_M
 export const createOpenApiNodePath: PathInterpreter = buildOpenApiNodePathInterpreter({})
 
 export function linkToOpenAPIDocument(k: string, $: Index): string | null {
-  return $.flags.includeLinkToOpenApiNode === undefined 
+  return $.flags.includeLinkToOpenApiNode === false
     ? null 
     : ''
     + ' * #### {@link $doc.' 

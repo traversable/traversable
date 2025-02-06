@@ -1,3 +1,5 @@
+import { type } from 'arktype'
+
 import type { Meta } from "@traversable/core"
 import { core, keyOf$ } from "@traversable/core"
 import { fn, object } from "@traversable/data"
@@ -21,9 +23,12 @@ export {
   headers,
   template,
   //
-  generators,
-  generate,
-  generateAll,
+  derivatives,
+  derive,
+  deriveAll,
+  compilers,
+  compile,
+  compileAll,
 }
 
 type NS = typeof NS
@@ -48,15 +53,11 @@ const template = (
     ` * # {@link ${$.typeName} \`${$.typeName}\`}`,
     ` * - Visit: {@link $doc.${$.absolutePath.map(escapePathSegment).join('.')} OpenAPI definition}`,
     ' */',
-    `export ${NS} ${$.typeName}`,
+    `export type ${$.typeName}`,
     '  //        ^?',
     `  = typeof ${$.typeName}.infer`,
-    ...target.length < 0x20 
-      ? [`export const ${$.typeName} = ${target.startsWith(NS) ? target : `${NS}(${target})`}`] 
-      : [
-        `export const ${$.typeName}`,
-        `  = ${target.startsWith(NS) ? target : `${NS}(${target})`}`,
-      ]
+    `export const ${$.typeName} =`,
+    `  ${target.startsWith(NS) ? target : `${NS}(${target})`}`,
   ]
 ) satisfies TargetTemplate
 
@@ -67,19 +68,34 @@ const defaults = {
   template,
 } as const satisfies Omit<Options.Config<unknown>, 'handlers'>
 
-type StringFormat = typeof StringFormat
-const StringFormat = {
+type CompiledStringFormat = typeof CompiledStringFormat
+const CompiledStringFormat = {
   [KnownFormat.string.datetime]: '.date.iso',
   [KnownFormat.string.date]: '.date',
   [KnownFormat.string.email]: '.email',
-  [KnownFormat.string.emoji]: '',
-  [KnownFormat.string.ipv4]: '.ip',
-  [KnownFormat.string.ipv6]: '',
-  [KnownFormat.string.ulid]: '',
+  [KnownFormat.string.ipv4]: '.ip.v4',
+  [KnownFormat.string.ipv6]: '.ip.v6',
   [KnownFormat.string.uri]: '.url',
   [KnownFormat.string.uuid]: '.uuid',
+  // [KnownFormat.string.emoji]: '',
+  // [KnownFormat.string.ulid]: '',
 } as const satisfies { [K in KnownFormat.string[keyof KnownFormat.string]]+?: string }
-const isStringFormat = keyOf$(StringFormat)
+const isCompiledStringFormat = keyOf$(CompiledStringFormat)
+
+const DerivedStringFormat = {
+  [KnownFormat.string.datetime]: type.keywords.string.date.iso.root,
+  [KnownFormat.string.date]: type.keywords.string.date.root,
+  [KnownFormat.string.email]: type.keywords.string.email,
+  [KnownFormat.string.ipv4]: type.keywords.string.ip.v4,
+  [KnownFormat.string.ipv6]: type.keywords.string.ip.v6,
+  [KnownFormat.string.uri]: type.keywords.string.url.root,
+  [KnownFormat.string.uuid]: type.keywords.string.uuid.root,
+  // [KnownFormat.string.datetime]: type.keywords.string.date.iso,
+  // [KnownFormat.string.date]: type.keywords.string.date,
+  // [KnownFormat.string.emoji]: type.'',
+  // [KnownFormat.string.ulid]: '',
+} satisfies Record<string, type.Any>
+const isDerivedStringFormat = keyOf$(DerivedStringFormat)
 
 const numericConstraints 
   : (meta: Meta.Numeric) => string
@@ -102,14 +118,18 @@ const numericConstraints
   .join("")
 
 
-const getStringFormat = (meta: Meta.string) => isStringFormat(meta.format) ? StringFormat[meta.format] : null
+const getCompiledStringFormat = (meta: Meta.string) => 
+  isCompiledStringFormat(meta.format) ? CompiledStringFormat[meta.format] : null
+
+const getDerivedStringBase = (meta: { format?: string }) => 
+  isDerivedStringFormat(meta.format) ? DerivedStringFormat[meta.format] : type.string
 
 const integerConstraints = numericConstraints
 const numberConstraints = numericConstraints
 const stringConstraints
   : (meta: Meta.string) => string
   = ({ minLength: min, maxLength: max, ...meta }) => {
-  const format = getStringFormat(meta)
+  const format = getCompiledStringFormat(meta)
   const methods = ([
     min !== undefined && `.atLeastLength(${min})`,
     max !== undefined && `.atMostLength(${max})`
@@ -140,7 +160,20 @@ const startsWithScalar = (x: string) =>
 const NotYetSupported = (nodeType: string) =>
   Invariant.NotYetSupported('arktype.derive.' + nodeType, 'arktype.derive')('algebra/src/arktype/ark.ts')
 
-const generators = {
+const compileObjectNode
+  : ($: Index) => (x: core.Traversable.objectF<string>) => string
+  = ($) => ({ properties: p, required: req = [] }) => {
+    const xs = Object_entries(p)
+     .map(([k, v]) => req.includes(k) ? `${k}: ${v}` : `${JSON.stringify(k + `?`)}: ${v}`)
+    return xs.length === 0 ? `{}` 
+      : Print.array($)(
+      `{`,
+      ...xs,
+      `}`
+    )
+  }
+
+const compilers = {
   any() { return `${NS}.unknown()` },
   enum({ enum: xs }, ix) { 
     return Print.array(ix)(
@@ -154,16 +187,10 @@ const generators = {
   integer({ meta = {} }) { return `${NS}.keywords.number.integer` + Constrain.integer(meta) },
   number({ meta = {} }) { return `${NS}.number` + Constrain.number(meta) },
   string({ meta = {} }) {
-    const base = getStringFormat(meta) === null ? `${NS}.string` : `${NS}.keywords.string`
+    const base = getCompiledStringFormat(meta) === null ? `${NS}.string` : `${NS}.keywords.string`
     return typeof meta.pattern === `string` 
       ? meta.pattern
       : base + Constrain.string(meta)
-  },
-  allOf({ allOf: [x, ...xs] }, ix) {
-    return Print.rows({ separator: `\n`, indent: ix.indent })(
-      x.startsWith(NS) ? x : `${NS}(` + x + `)`,
-      xs.reduce((acc, cur) => `${acc}.and(${cur})`, ``),
-    )
   },
   anyOf({ anyOf: [x, ...xs] }, ix) {
     return Print.rows({ separator: `\n`, indent: ix.indent })(
@@ -207,27 +234,129 @@ const generators = {
       `)`
     )
   },
-  object({ properties: p, required: req = [] }, $) {
-   const xs = Object_entries(p)
-     .map(([k, v]) => req.includes(k) ? `${k}: ${v}` : `${JSON.stringify(k + `?`)}: ${v}`)
-    return xs.length === 0 ? `{}` 
-      : Print.array($)(
-        `{`,
-        ...xs,
-        `}`
-      )
+  object(x, $) { return compileObjectNode($)(x) },
+  allOf({ allOf: xs }, $) {
+    const [y, ...ys] = xs.map(compileObjectNode($))
+    return Print.rows({ separator: `\n`, indent: $.indent })(
+      y.startsWith(NS) ? y : `${NS}(` + y + `)`,
+      ys.reduce((acc, cur) => `${acc}.and(${cur})`, ``),
+    )
   },
 } as const satisfies Matchers<string>
 
-const generate
+const compile
   : Gen.Generator<string>
-  = Gen.generatorFromMatchers(generators)
+  = Gen.compile(compilers, defaults)
 
-const generateAll
-  : (options: Options<string>) => Gen.Many<string>
-  = (options) => Gen.many({ ...defaults, ...options, generate })
+const compileAll
+  : (options: Options<string>) => Gen.All<string>
+  = (options) => Gen.compileAll(compile, { ...defaults, ...options })
 
-const NEGATIVE_INFINITY = globalThis.Number.NEGATIVE_INFINITY
+const deriveObjectNode 
+  : ($: Index) => (x: core.Traversable.objectF<type.Any<any>>) => type.Any
+  = ($: Index) => ({ properties: p, required: req = [] }: core.Traversable.objectF<type.Any<any>>) => {
+    const props: Record<string, type.Any> = {}
+    for (const k in p) props[req.includes(k) ? k : `${k}?`] = type(p[k])
+    return type(props)
+  }
+
+const derivatives = {
+  any() { return type.unknown },
+  enum({ enum: xs }) { return type.enumerated(...xs) },
+  null() { return type.null },
+  boolean() { return type.boolean },
+  integer({ 
+    meta: { 
+      exclusiveMaximum: lt,
+      exclusiveMinimum: gt,
+      minimum: min,
+      maximum: max,
+      multipleOf: mod,
+    } = {} }, 
+  ) { 
+    let base = type.keywords.number.integer
+    switch (true) {
+      case typeof gt === 'number': 
+        { void (base = base.moreThan(gt));  break }
+      case min != null && (gt === true): 
+        { void (base = base.moreThan(min)); break }
+      case min != null: 
+        { void (base = base.atLeast(min));  break }
+      case typeof lt === 'number': 
+        { void (base = base.lessThan(lt));  break }
+      case max != null && (lt === true): 
+        { void (base = base.lessThan(max)); break }
+      case max != null: 
+        { void (base = base.atMost(max));   break }
+    }
+    return typeof mod === 'number' ? base.divisibleBy(mod) : base
+  },
+  number({ 
+    meta: { 
+      exclusiveMaximum: lt,
+      exclusiveMinimum: gt,
+      minimum: min,
+      maximum: max,
+      multipleOf: mod,
+    } = {} 
+  }) { 
+    let base = type.number
+    switch (true) {
+      case typeof gt === 'number': 
+        { void (base = base.moreThan(gt));  break }
+      case min != null && (gt === true): 
+        { void (base = base.moreThan(min)); break }
+      case min != null: 
+        { void (base = base.atLeast(min));  break }
+      case typeof lt === 'number': 
+        { void (base = base.lessThan(lt));  break }
+      case max != null && (lt === true): 
+        { void (base = base.lessThan(max)); break }
+      case max != null: 
+        { void (base = base.atMost(max));   break }
+    }
+    return typeof mod === 'number' ? base.divisibleBy(mod) : base
+  },
+  string({ meta: { minLength: min, maxLength: max, format } = {} }) {
+    let base = getDerivedStringBase({ format });
+    void (min !== undefined && (base = base.atLeastLength(min)));
+    void (max !== undefined && (base = base.atMostLength(max)));
+    return base
+  },
+  anyOf({ anyOf: xs }) { return xs.reduce((acc, y) => acc.or(y), type.never as type<_>) },
+  oneOf({ oneOf: xs }) { return xs.reduce((acc, y) => acc.or(y), type.never as type<_>) },
+  const({ const: x }) { return type.unit(x) },
+  array({ items: x }) { return x.array() },
+  record({ additionalProperties: x }, ix) { return type.Record('string', x) },
+  tuple({ items: xs }) { 
+    switch (true) {
+      default: return type(xs as [])
+      case xs.length === 0: return type([])
+      case xs.length === 1: return type([xs[0]])
+      case xs.length === 2: return type([xs[0], xs[1]])
+      case xs.length === 3: return type([xs[0], xs[1], xs[2]])
+      case xs.length === 4: return type([xs[0], xs[1], xs[2], xs[3]])
+      case xs.length === 5: return type([xs[0], xs[1], xs[2], xs[3], xs[4]])
+      case xs.length === 6: return type([xs[0], xs[1], xs[2], xs[3], xs[4], xs[5]])
+      case xs.length === 7: return type([xs[0], xs[1], xs[2], xs[3], xs[4], xs[5], xs[6]])
+      case xs.length === 8: return type([xs[0], xs[1], xs[2], xs[3], xs[4], xs[5], xs[6], xs[7]])
+      case xs.length === 9: return type([xs[0], xs[1], xs[2], xs[3], xs[4], xs[5], xs[6], xs[7], xs[8]])
+    }
+  },
+  allOf({ allOf: xs }, $) { 
+    try { return xs.map(deriveObjectNode($)).reduce((acc, y) => acc.and(y), type.unknown) } 
+    catch (_) { return type.never }
+  },
+  object(x, $) { return deriveObjectNode($)(x) },
+} as const satisfies Matchers<type.Any>
+
+const derive
+  : Gen.Generator<type.Any>
+  = Gen.derive(derivatives, defaults)
+
+const deriveAll
+  : (options: Options<type.Any>) => Gen.All<type.Any>
+  = (options) => Gen.deriveAll(derive, { ...defaults, ...options })
 
 const serializer
   : (ix: Index) => (x: unknown) => string

@@ -1,5 +1,5 @@
 import type { key, keys } from "@traversable/data"
-import { fn } from "@traversable/data"
+import { fn, map } from "@traversable/data"
 import { symbol as Sym } from "@traversable/registry"
 import type { Array, Functor } from "@traversable/registry"
 
@@ -124,7 +124,9 @@ export namespace Recursive {
       case n._tag === "record": return n.def.map(prepend(Sym.record))
       case n._tag === "allOf": return n.def.length === 0
         ? path({ leaf: n.def }) 
-        : n.def.flatMap((ks, i) => ks.map(prepend(Sym.allOf, i)))
+        // TODO: turn this back on
+        : []
+        //n.def.flatMap((ks, i) => ks.map(prepend(Sym.allOf, i)))
       case n._tag === "anyOf": return n.def.length === 0
         ? path({ leaf: n.def }) 
         : n.def.flatMap((ks, i) => ks.map(prepend(Sym.anyOf, i)))

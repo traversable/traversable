@@ -25,10 +25,13 @@ export {
   derivatives,
   derive,
   deriveAll,
-  generators,
-  generate,
-  generateAll,
+  compilers,
+  compile,
+  compileAll,
 }
+
+/** @internal */
+const Object_entries = globalThis.Object.entries
 
 type NS = typeof NS
 const NS = 'T' as const
@@ -48,9 +51,9 @@ const template = (
     ` * # {@link ${$.typeName} \`${$.typeName}\`}`,
     ` * - Visit: {@link $doc.${$.absolutePath.map(escapePathSegment).join('.')} OpenAPI definition}`,
     ' */',
-    'export type ' + $.typeName + ' = typeof ' + $.typeName + '.static',
+    `export type ${$.typeName}\n  = typeof ${$.typeName}.static`,
     '//          ^?',
-    'export const ' + $.typeName + ' = ' + target,
+    `export const ${$.typeName}\n  = ${target}`,
   ] as const
 ) satisfies TargetTemplate
 
@@ -61,36 +64,9 @@ const defaults = {
   template,
 } satisfies Omit<Options.Config<unknown>, 'handlers'>
 
-const serializer
-  : (ix: Index) => (x: unknown) => string
-  = (ix) => {
-    const loop = (indent: number) => (x: JsonLike): string => {
-      switch (true) {
-        default: return fn.exhaustive(x)
-        case x === null:
-        case x === undefined:
-        case typeof x === 'boolean':
-        case typeof x === 'number': return x + ''
-        case typeof x === 'string': return '"' + x + '"'
-        case JsonLike.isArray(x): 
-          return x.length === 0 ? '[]' 
-            : Print.array({ indent })('[', 
-              ...x.map(loop(indent + 2)), 
-            ']')
-        case !!x && typeof x === 'object': {
-          const xs = globalThis.Object.entries(x)
-          return xs.length === 0 ? '{}' : fn.pipe(
-            xs,
-            map(([k, v]) => JSON.stringify(k) + ': ' + loop(indent + 2)(v)),
-            (xs) => Print.array({ indent })('{', ...xs, '}'),
-          )
-        }
-      }
-    }
-    return (x: unknown) => !JsonLike.is(x) 
-      ? Invariant.NonSerializableInput("typebox.serialize", x)
-      : loop(ix.indent)(x)
-  }
+const deriveObjectNode 
+  : ($: Index) => (x: core.Traversable.objectF<T.TAnySchema>) => T.TAnySchema
+  = ($) => ({ properties: xs, additionalProperties, ..._ }) => T.Object(xs, { additionalProperties, ...$, ..._ })
 
 const derivatives = {
   any(_) { return T.Unknown(_) },
@@ -101,14 +77,14 @@ const derivatives = {
   string(_) { return T.String(_) },
   anyOf({ anyOf: xs, ..._ }, $) { return T.Union([...xs], { ...$, ..._ }) },
   oneOf({ oneOf: xs, ..._ }, $) { return T.Union([...xs], { ...$, ..._ }) },
-  allOf({ allOf: xs, ..._ }, $) { return T.Intersect([...xs], { ...$, ..._ }) },
   const({ const: x, ..._ }, $) { return T.Const(x, { ...$, ..._ }) },
   array({ items: x, ..._ }, $) { return T.Array(x, { ...$, ..._ }) },
   tuple({ items: xs, ..._ }, $) { return T.Tuple([...xs], { ...$, ..._ }) },
+  object(x, $) { return deriveObjectNode($)(x) },
   record({ additionalProperties: x, ..._ }, $) 
     { return T.Record(T.String(), x, { ...$, ..._ }) },
-  object({ properties: xs, additionalProperties, ..._ }, $) 
-    { return T.Object(xs, { additionalProperties, ...$, ..._ }) },
+  allOf({ allOf: xs, ..._ }, $) 
+    { return T.Intersect([...xs.map(deriveObjectNode($))], { ...$, ..._ }) },
   enum({ enum: xs, ..._ }, $) { 
     return fn.pipe(
       xs.filter((anyOf$(core.is.string, core.is.number))),
@@ -134,41 +110,38 @@ const derivatives = {
  */
 const derive
   : (schema: Traversable.orJsonSchema, options: Options<T.TAnySchema>) => T.TAnySchema
-  = fn.flow(
-    Gen.fromMatchers(derivatives),
-    ([target]) => target,
-  )
+  = Gen.derive(derivatives, defaults)
 
 const deriveAll
-  : (options: Options<T.TAnySchema>) => Gen.Many<T.TAnySchema>
-  = (options) => Gen.many({ ...defaults, ...options, generate: derive })
+  : (options: Options<T.TAnySchema>) => Gen.All<T.TAnySchema>
+  = (options) => Gen.deriveAll(derive, { ...defaults, ...options })
 
-const generators = {
-  any(_) { return `${NS}.Unknown()` },
-  null(_) { return `${NS}.Null()` as const },
-  boolean(_) { return `${NS}.Boolean()` as const },
-  integer(_) { return `${NS}.Integer()` as const },
-  number(_) { return `${NS}.Number()` as const },
-  string(_) { return `${NS}.String()` as const },
-  anyOf(_, $) { return Print.array($)(`${NS}.Union([`, _.anyOf.join(`, `), `])`) },
-  oneOf(_, $) { return Print.array($)(`${NS}.Union([`, _.oneOf.join(`, `), `])`) },
-  allOf(_, $) { return Print.array($)(`${NS}.Intersect([`, _.allOf.join(`, `), `])`) },
-  const(_, $) { return `${NS}.Const(` + serializer($)(_.const) + `)` },
-  array(_, $) { return Print.array($)(`${NS}.Array(`, _.items, `)`) },
-  enum(_, $) { return `${NS}.Enum([` + _.enum.map(serializer($)).join(`, `) + `])` },
-  tuple(_, $) { 
-    return _.items.length === 0 
+const compilers = {
+  any() { return `${NS}.Unknown()` },
+  null() { return `${NS}.Null()` as const },
+  boolean() { return `${NS}.Boolean()` as const },
+  integer() { return `${NS}.Integer()` as const },
+  number() { return `${NS}.Number()` as const },
+  string() { return `${NS}.String()` as const },
+  anyOf(x, $) { return Print.array($)(`${NS}.Union([`, x.anyOf.join(`, `), `])`) },
+  oneOf(x, $) { return Print.array($)(`${NS}.Union([`, x.oneOf.join(`, `), `])`) },
+  allOf(x, $) { return Print.array($)(`${NS}.Intersect([`, x.allOf.join(`, `), `])`) },
+  const(x, $) { return `${NS}.Const(` + serializer($)(x.const) + `)` },
+  array(x, $) { return Print.array($)(`${NS}.Array(`, x.items, `)`) },
+  enum(x, $) { return `${NS}.Enum([` + x.enum.map(serializer($)).join(`, `) + `])` },
+  tuple(x, $) { 
+    return x.items.length === 0 
       ? `${NS}.Tuple([])` : `${NS}.Tuple([\n` 
       + ` `.repeat($.indent + 2) 
-      +  _.items.join(`,\n` 
+      +  x.items.join(`,\n` 
       + ` `.repeat($.indent + 2)) 
       + `\n` + ` `.repeat($.indent) 
       + `])` 
   },
-  record(_, $) 
-    { return Print.array($)(`${NS}.Record(T.String(), `, _.additionalProperties, `)`) },
-  object(_, $) { 
-    const xs = globalThis.Object.entries(_.properties)
+  record(x, $) 
+    { return Print.array($)(`${NS}.Record(T.String(), `, x.additionalProperties, `)`) },
+  object(x, $) { 
+    const xs = globalThis.Object.entries(x.properties)
     return xs.length === 0 ? `${NS}.Object({})` : fn.pipe(
       xs.map(
         ([k, v]) => JSON.stringify(k) + `: ` + v + `,` + `\n` + ` `.repeat($.indent + 2)
@@ -179,18 +152,50 @@ const generators = {
 } as const satisfies Matchers<string>
 
 /**
- * ## {@link generate `typebox.generate`}
+ * ## {@link compile `typebox.compile`}
  *
- * Given a JSON Schema, OpenAPI document or {@link Traversable} schema, generates the
+ * Given a JSON Schema, OpenAPI document or {@link Traversable} schema, compile the
  * corresponding TypeBox schema as a string.
  *
  * If you need to derive a schema dynamically, especially if the schema comes from
  * some kind of user input, use {@link derive `typebox.derive`} instead.
  */
-const generate
+const compile
   : (schema: core.Traversable.orJsonSchema, options: Options<string>) => string
-  = Gen.generatorFromMatchers(generators, defaults)
+  = Gen.compile(compilers, defaults)
 
-const generateAll
-  : (options: Options<string>) => Gen.Many<string>
-  = (options) => Gen.many({ ...defaults, ...options, generate })
+const compileAll
+  : (options: Options<string>) => Gen.All<string>
+  = (options) => Gen.compileAll(compile, { ...defaults, ...options })
+
+
+const serializer
+  : (ix: Index) => (x: unknown) => string
+  = (ix) => {
+    const loop = (indent: number) => (x: JsonLike): string => {
+      switch (true) {
+        default: return fn.exhaustive(x)
+        case x === null:
+        case x === undefined:
+        case typeof x === 'boolean':
+        case typeof x === 'number': return x + ''
+        case typeof x === 'string': return '"' + x + '"'
+        case JsonLike.isArray(x): 
+          return x.length === 0 ? '[]' 
+            : Print.array({ indent })('[', 
+              ...x.map(loop(indent + 2)), 
+            ']')
+        case !!x && typeof x === 'object': {
+          const xs = Object_entries(x)
+          return xs.length === 0 ? '{}' : fn.pipe(
+            xs,
+            map(([k, v]) => JSON.stringify(k) + ': ' + loop(indent + 2)(v)),
+            (xs) => Print.array({ indent })('{', ...xs, '}'),
+          )
+        }
+      }
+    }
+    return (x: unknown) => !JsonLike.is(x) 
+      ? Invariant.NonSerializableInput("typebox.serialize", x)
+      : loop(ix.indent)(x)
+  }

@@ -2,8 +2,6 @@ import { fn } from "@traversable/data"
 import type { Functor, HKT } from "@traversable/registry"
 
 import { t } from "../guard/index.js"
-import { is } from "../guard/predicates.js"
-import * as tree from "../tree.js"
 import type { Meta } from "./meta.js"
 import type { Const, Enum, Items, MaybeAdditionalProps, Props } from "./shared.js"
 

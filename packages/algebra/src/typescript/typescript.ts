@@ -1,17 +1,16 @@
-import * as path from "node:path"
 
 import type { Traversable } from "@traversable/core"
-import { fn, object } from "@traversable/data"
-import { OpenAPI } from "@traversable/openapi"
+import { object } from "@traversable/data"
 import { KnownFormat, symbol } from "@traversable/registry"
 
 import * as Gen from "../generator.js"
-import type { Matchers, Options } from "../shared.js"
+import type { Matchers, Options, TargetTemplate } from "../shared.js"
+import { defaults as defaults_ } from "../shared.js"
 
 export {
-  generators,
-  generate,
-  generateAll,
+  compilers,
+  compile,
+  compileAll,
 }
 
 /** @internal */
@@ -23,23 +22,23 @@ const isKeyOf = <T extends Record<string, string>>(dictionary: T) =>
   (k: keyof any | undefined): k is keyof T =>
     k !== undefined && k in dictionary
 
+type TypeName = typeof TypeName
+const TypeName = 'TypeScript'
+
+const headers = [] as const satisfies string[]
+const template = (
+  (target, $) => [
+    'export type ' + $.typeName + ' = typeof ' + $.typeName,
+    'export declare const ' + $.typeName + ': ' + target,
+  ]
+) satisfies TargetTemplate
+
+
 const defaults = {
-  typeName: 'AnonymousTypeScriptType',
-  absolutePath: ['components', 'schemas'],
-  header: [],
-  document: OpenAPI.new({}),
-  flags: {
-    nominalTypes: true,
-    preferInterfaces: true,
-    includeJsdocLinks: true,
-    includeExamples: true,
-    includeLinkToOpenApiNode: path.resolve(),
-  },
-  indent: 0,
-  path: [],
-  template: (target) => [target],
-  depth: 0,
-  siblingCount: 0,
+  ...defaults_,
+  typeName: defaults_.typeName + TypeName,
+  header: headers,
+  template,
 } satisfies Omit<Options.Config<unknown>, 'handlers'>
 
 const KnownStringFormats = {
@@ -78,7 +77,7 @@ const baseHandlers = {
   },
 } satisfies Matchers<string>
 
-const generators = {
+const compilers = {
   any(_) { return 'unknown' },
   null(_) { return 'null' },
   boolean(_) { return 'boolean' },
@@ -117,23 +116,13 @@ const generators = {
   }
 } satisfies Matchers<string>
 
-const generate
+const compile
   : (schema: Traversable.orJsonSchema, options: Options<string>) => string
-  = fn.flow(
-    Gen.fromMatchers(generators),
-    ([target, $]) => [
-      'export type ' + $.typeName + ' = typeof ' + $.typeName,
-      'export declare const ' + $.typeName + ': ' + target,
-    ].join('\n')
-  )
+  = Gen.compile(compilers, defaults)
  
-const generateAll
-  : (options: Options<string>) => Gen.Many<string>
-  = (options) => Gen.many({ 
-    ...defaults, 
-    ...options, 
-    generate, 
-  })
+const compileAll
+  : (options: Options<string>) => Gen.All<string>
+  = (options) => Gen.compileAll(compile, { ...defaults, ...options })
 
 /** @deprecated */
 const nominalHandlers = {
@@ -144,7 +133,7 @@ const nominalHandlers = {
 
 /** @deprecated */
 const nominalPathHandlers = {
-  ...generators,
+  ...compilers,
   integer() { return 'number.integer' },
   string(_) { return isKnownStringFormat(_.meta?.format) ? KnownStringFormats[_?.meta.format] : 'string' },
 } satisfies Matchers<string>

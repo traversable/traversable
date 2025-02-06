@@ -167,7 +167,7 @@ declare namespace AST {
     | optional_<S>
     | array_<S>
     | record_<S>
-    | allOf_<readonly S[]>
+    | allOf_<readonly { [x: string]: S }[]>
     | anyOf_<readonly S[]>
     | oneOf_<readonly S[]>
     | tuple_<readonly S[]>
@@ -251,7 +251,7 @@ const Functor: Functor<AST.lambda> = {
         case x._tag === "optional": return optional_.def(f(x.def)) as never
         case x._tag === "array": return array_.def(f(x.def)) as never
         case x._tag === "record": return record_.def(f(x.def)) as never
-        case x._tag === "allOf": return allOf_.def(x.def.map(f)) as never
+        case x._tag === "allOf": return allOf_.def(x.def.map(map(f))) as never
         case x._tag === "anyOf": return anyOf_.def(x.def.map(f)) as never
         case x._tag === "oneOf": return oneOf_.def(x.def.map(f)) as never
         case x._tag === "tuple": return tuple_.def(x.def.map(f)) as never
@@ -787,7 +787,7 @@ function allOf_<I, O extends typeof allOf_.children>(
 }
 declare namespace allOf_ {
   const spec: readonly _[]
-  const children: readonly AST.Node[]
+  const children: readonly object_<_>[]
   interface def<S extends typeof allOf_.spec> {
     _tag: typeof Tag.allOf
     def: S
@@ -815,7 +815,6 @@ namespace allOf_ {
 ///    ALL OF    ///
 ////////////////////
 
-
 ////////////////////
 ///    ANY OF    ///
 interface anyOf_<S extends typeof anyOf_.spec> extends anyOf_.def<S> {
@@ -823,7 +822,7 @@ interface anyOf_<S extends typeof anyOf_.spec> extends anyOf_.def<S> {
   get toJsonSchema(): anyOf_.toJsonSchema<S>
 }
 function anyOf_<S extends typeof anyOf_.children>(...specs: S): anyOf_<S>
-function anyOf_<I, O extends typeof allOf_.children>(...args: [...O, Options<I>]): anyOf_.Codec<I, O>
+function anyOf_<I, O extends typeof anyOf_.children>(...args: [...O, Options<I>]): anyOf_.Codec<I, O>
 function anyOf_<S extends readonly _[]>(...specs: S): anyOf_<S>
 function anyOf_<I, O extends typeof anyOf_.children>(
   ...args:
@@ -845,7 +844,7 @@ declare namespace anyOf_ {
     def: S
     _type: S[number]["_type" & keyof S[number]]
   }
-  interface Codec<I, O extends typeof allOf_.spec> extends anyOf_.def<O>, codec<I, O> {}
+  interface Codec<I, O extends typeof anyOf_.spec> extends anyOf_.def<O>, codec<I, O> {}
   type apply<S> = anyOf_<readonly S[]>
   type toJsonSchema<S> = never | { anyOf: { [I in keyof S]: S[I]["toJsonSchema" & keyof S[I]] } }
   interface JsonSchemaF extends HKT { [-1]: toJsonSchema<this[0]> }

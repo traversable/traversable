@@ -98,13 +98,65 @@ const preprocess = fn.flow(
 
 const generateSpec = (options?: seed.Options) => fn.pipe(
   OpenAPI.generate({
-    include: options?.include ?? defaults.include,
+    ...options,
+    include: !options?.include ? defaults.include : {
+      const: options.include.const ?? defaults.include.const,
+      description: options.include.description ?? defaults.include.description,
+      example: options.include.example ?? defaults.include.example,
+      examples: options.include.examples ?? defaults.include.examples,
+    },
+    exclude: !options?.exclude ? defaults.exclude : options.exclude,
     schemas: {
       ...options?.schemas,
-      allOf: {
+      allOf: !options?.schemas?.allOf ? defaults.schemas.allOf : {
         arbitrary: options?.schemas?.allOf?.arbitrary || allOf,
-      }
-    }
+        ...options?.schemas.allOf,
+      },
+      anyOf: !options?.schemas?.anyOf ? defaults.schemas.anyOf : {
+        ...defaults.schemas.anyOf,
+        ...options.schemas.anyOf,
+      },
+      oneOf: !options?.schemas?.oneOf ? defaults.schemas.oneOf : {
+        ...defaults.schemas.oneOf,
+        ...options.schemas.oneOf,
+      },
+      array: !options?.schemas?.array ? defaults.schemas.array : {
+        ...defaults.schemas.array,
+        ...options.schemas.array,
+      },
+      boolean: !options?.schemas?.boolean ? defaults.schemas.boolean : {
+        ...defaults.schemas.boolean,
+        ...options.schemas.boolean,
+      },
+      integer: !options?.schemas?.integer ? defaults.schemas.integer : {
+        ...defaults.schemas.integer,
+        ...options.schemas.integer,
+      },
+      null: !options?.schemas?.null ? defaults.schemas.null : {
+        ...defaults.schemas.null,
+        ...options.schemas.null,
+      },
+      number: !options?.schemas?.number ? defaults.schemas.number : {
+        ...defaults.schemas.number,
+        ...options.schemas.number,
+      },
+      object: !options?.schemas?.object ? defaults.schemas.object : {
+        ...defaults.schemas.object,
+        ...options.schemas.object,
+      },
+      record: !options?.schemas?.record ? defaults.schemas.record : {
+        ...defaults.schemas.record,
+        ...options.schemas.record,
+      },
+      string: !options?.schemas?.string ? defaults.schemas.string : {
+        ...defaults.schemas.string,
+        ...options.schemas.string,
+      },
+      tuple: !options?.schemas?.tuple ? defaults.schemas.tuple : {
+        ...defaults.schemas.tuple,
+        ...options.schemas.tuple,
+      },
+    },
   }),
   fc.peek,
   preprocess,

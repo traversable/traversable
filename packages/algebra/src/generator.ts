@@ -8,30 +8,59 @@ import { fold, optionsFromMatchers, parseOptions } from "./shared.js"
 
 export {
   type Generator,
-  type Many,
-  fromMatchers,
-  generatorFromMatchers,
-  many,
+  type All,
+  derive,
+  deriveAll,
+  compile,
+  deriveAll as compileAll,
 }
+
+type All<T> = { 
+  byName: Record<string, T>
+  order: string[]
+  meta: {
+    header?: string
+  }
+}
+
 
 /** @internal */
 const Object_keys = globalThis.Object.keys
 
 type Generator<T> = (schema: Traversable.orJsonSchema, options: Options<T>) => T
 
-function fromMatchers<T>(matchers: Handlers<T>) {
+function derive<T>(matchers: Handlers<T>, defaults?: Options<T>) {
   return (schema: Traversable.orJsonSchema, options: Options<T>) => {
-    const $ = optionsFromMatchers(matchers)(options)
+    const $ = optionsFromMatchers(matchers)({ ...defaults, ...options })
     return fn.pipe(
       fold($),
       fn.applyN($, schema),
-      (target) => [target, $] satisfies [any, any],
     )
   }
 }
 
-function generatorFromMatchers(matchers: Handlers<string>, defaults?: Options<string>) {
-  return (schema: Traversable.orJsonSchema, options: Options<string>) => {
+function deriveAll<T>(generator: Generator<T>, options: Options<T>): All<T>
+function deriveAll<T>(generator: Generator<T>, options: Options<T>): All<T> {
+  const $ = parseOptions(options)
+  const header = typeof $.header === "string" ? $.header : ($.header || []).join("\n")
+  const schemas = $.document.components.schemas
+  const order = Object_keys(schemas)
+  const meta = { ...header && { header } }
+  const byName = map(
+    schemas,
+    (schema, schemaName) => generator(
+      schema, { 
+        ...$, 
+        absolutePath: [...$.absolutePath, `${schemaName}`],
+        typeName: typeNameFromPath(`${schemaName}`),
+      },
+    )
+  )
+  return { meta, order, byName }
+}
+
+function compile(matchers: Handlers<string>, defaults?: Options<string>) {
+  return (schema: Traversable.orJsonSchema, options?: Options<string>) => {
     const $ = optionsFromMatchers(matchers)({ ...defaults, ...options })
     return fn.pipe(
       fold($),
@@ -40,33 +69,4 @@ function generatorFromMatchers(matchers: Handlers<string>, defaults?: Options<st
       (ss) => ss.join('\n')
     )
   }
-}
-
-type Many<T> = { 
-  byName: Record<string, T>
-  order: string[]
-  meta: {
-    header?: string
-  }
-}
-
-function many<T>(options: Omit<Options<T>, "header"> & { generate: Generator<T> }): Many<T>
-function many<T>(options: Options<T> & { generate: Generator<T> }): Many<T> {
-  const $ = parseOptions(options)
-  const header = $.header === undefined ? null : typeof $.header === "string" ? $.header : $.header.join("\n")
-  const schemas = $.document.components.schemas
-  const order = Object_keys(schemas)
-  const meta = { ...header && { header } }
-  const byName = map(
-    schemas,
-    (schema, k) => options.generate(
-      schema, { 
-        ...$, 
-        absolutePath: [...$.absolutePath, `${k}`],
-        typeName: typeNameFromPath(`${k}`),
-      },
-    )
-  )
-
-  return { meta, order, byName }
 }

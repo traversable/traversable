@@ -1,7 +1,7 @@
 import { Traversable, core, tree } from "@traversable/core"
-import { fn } from "@traversable/data"
+import { fn, map } from "@traversable/data"
 import { openapi } from "@traversable/openapi"
-import type { Functor, Partial } from "@traversable/registry"
+import type { Functor, Part, Partial } from "@traversable/registry"
 
 import * as Sort from "./sort.js"
 import * as Type from "./type.js"
@@ -9,6 +9,7 @@ import * as Type from "./type.js"
 export { deriveValidator as derive }
 
 export type Options = Partial<typeof defaults>
+export type Config = Part<typeof defaults, "compare" | "document">
 export type ContinuationContext = {
   path: (string | number)[]
   rawPath: (string | number)[]
@@ -82,6 +83,25 @@ const ident = (depth: number, pathname?: string) => '$' + (depth + '') + '$' + (
 const inlineOptionalityCheck = ($: ContinuationContext) => $.isRequired ? '' : $.path.join('') + '!==undefined&&'
 /** @internal */
 const createIsObjectVarName = ($: ContinuationContext) => '$isObj' + $.depth + ($.path.at($.path.length - 1) ?? '')
+
+const parseOptions  
+  : (options: Options) => Config
+  = ({
+    compare,
+    document,
+    functionName = defaults.functionName,
+    validationType = defaults.validationType,
+    flags: {
+      jitCompile = defaults.flags.jitCompile,
+      treatArraysLikeObjects = defaults.flags.treatArraysLikeObjects,
+    } = defaults.flags,
+  }) => ({
+    compare,
+    document,
+    functionName,
+    validationType,
+    flags: { jitCompile, treatArraysLikeObjects }
+  })
 
 /** 
  * @example
@@ -295,14 +315,8 @@ const createIsObjectVarName = ($: ContinuationContext) => '$isObj' + $.depth + (
 
 namespace RAlgebra {
   export function validator(options?: Options): Functor.RAlgebra<Traversable.lambda, Stream> 
-  export function validator({ 
-    flags: {
-      jitCompile = defaults.flags.jitCompile,
-      treatArraysLikeObjects = defaults.flags.treatArraysLikeObjects
-    } = defaults.flags, 
-    functionName = defaults.functionName, 
-    validationType = defaults.validationType
-  }: Options = defaults): Functor.RAlgebra<Traversable.lambda, Stream> {
+  export function validator(options: Options = defaults): Functor.RAlgebra<Traversable.lambda, Stream> {
+    const cfg = parseOptions(options)
 
     /**
      * - [ ] TODO:
@@ -320,21 +334,21 @@ namespace RAlgebra {
             const varName = $.path.join('')
             const schemaPath = $.schemaPath.join('/') + '/'
             const path = $.rawPath.join('.')
-            if (validationType === ValidationType.failFast || validationType === ValidationType.failSlow) {
+            if (cfg.validationType === ValidationType.failFast || cfg.validationType === ValidationType.failSlow) {
               return ''
                 + 'if('
                 + `${$.isRequired ? '' : varName + '!==undefined && '}`
                 + varName
                 + '!==null){'
-                + ( validationType === ValidationType.failFast 
-                    ? (functionName + '.errors=[{' ) 
-                    : ('errNo++;' + functionName + '.errors.push({' ) 
+                + ( cfg.validationType === ValidationType.failFast 
+                    ? (cfg.functionName + '.errors=[{' ) 
+                    : ('errNo++;' + cfg.functionName + '.errors.push({' ) 
                   )
                 + `path:"${path}",`
                 + `schemaPath:"${schemaPath}",`
                 + 'keyword:"type",'
                 + `message:"must be null (was "+typeof ${varName}+")"`
-                + ( validationType === ValidationType.failFast ? '}];return false;' : '});' )
+                + ( cfg.validationType === ValidationType.failFast ? '}];return false;' : '});' )
                 + '}'
             } else {
               return `if(${varName}!==null){return false;}`
@@ -346,20 +360,20 @@ namespace RAlgebra {
             const varName = $.path.join('')
             const schemaPath = $.schemaPath.join('/') + '/'
             const path = $.rawPath.join('.')
-            if (validationType === ValidationType.failFast || validationType === ValidationType.failSlow) {
+            if (cfg.validationType === ValidationType.failFast || cfg.validationType === ValidationType.failSlow) {
               return ''
                 + 'if('
                 + `${$.isRequired ? '' : varName + '!==undefined && '}`
                 + `typeof ${varName} !== "boolean"){`
-                + ( validationType === ValidationType.failFast 
-                    ? (functionName + '.errors=[{' ) 
-                    : ('errNo++;' + functionName + '.errors.push({' ) 
+                + ( cfg.validationType === ValidationType.failFast 
+                    ? (cfg.functionName + '.errors=[{' ) 
+                    : ('errNo++;' + cfg.functionName + '.errors.push({' ) 
                   )
                 + `path:"${path}",`
                 + `schemaPath:"${schemaPath}",`
                 + 'keyword:"type",'
                 + `message:"must be a boolean (was "+typeof ${varName}+")"`
-                + ( validationType === ValidationType.failFast ? '}];return false;' : '});' )
+                + ( cfg.validationType === ValidationType.failFast ? '}];return false;' : '});' )
                 + '}'
             } else {
               return ''
@@ -377,20 +391,20 @@ namespace RAlgebra {
             const varName = $.path.join('')
             const schemaPath = $.schemaPath.join('/') + '/'
             const path = $.rawPath.join('.')
-            if (validationType === ValidationType.failFast || validationType === ValidationType.failSlow) {
+            if (cfg.validationType === ValidationType.failFast || cfg.validationType === ValidationType.failSlow) {
               return ''
                 + 'if('
                 + `${$.isRequired ? '' : varName + '!==undefined && '}`
                 + `!globalThis.Number.isInteger(${varName})){`
-                + ( validationType === ValidationType.failFast 
-                    ? (functionName + '.errors=[{' ) 
-                    : ('errNo++;' + functionName + '.errors.push({' ) 
+                + ( cfg.validationType === ValidationType.failFast 
+                    ? (cfg.functionName + '.errors=[{' ) 
+                    : ('errNo++;' + cfg.functionName + '.errors.push({' ) 
                   )
                 + `path:"${path}",`
                 + `schemaPath:"${schemaPath}",`
                 + 'keyword:"type",'
                 + `message:"must be an integer (was "+typeof ${varName}+")"`
-                + ( validationType === ValidationType.failFast ? '}];return false;' : '});' )
+                + ( cfg.validationType === ValidationType.failFast ? '}];return false;' : '});' )
                 + '}'
             } else {
               return ''
@@ -408,20 +422,20 @@ namespace RAlgebra {
             const varName = $.path.join('')
             const schemaPath = $.schemaPath.join('/') + '/'
             const path = $.rawPath.join('.')
-            if (validationType === ValidationType.failFast || validationType === ValidationType.failSlow) {
+            if (cfg.validationType === ValidationType.failFast || cfg.validationType === ValidationType.failSlow) {
               return ''
                 + 'if('
                 + `${$.isRequired ? '' : varName + '!==undefined && '}`
                 + `typeof ${varName} !== "number"){`
-                + ( validationType === ValidationType.failFast 
-                    ? (functionName + '.errors=[{' ) 
-                    : ('errNo++;' + functionName + '.errors.push({' ) 
+                + ( cfg.validationType === ValidationType.failFast 
+                    ? (cfg.functionName + '.errors=[{' ) 
+                    : ('errNo++;' + cfg.functionName + '.errors.push({' ) 
                   )
                 + `path:"${path}",`
                 + `schemaPath:"${schemaPath}",`
                 + 'keyword:"type",'
                 + `message:"must be a number (was "+typeof ${varName}+")"`
-                + ( validationType === ValidationType.failFast ? '}];return false;' : '});' )
+                + ( cfg.validationType === ValidationType.failFast ? '}];return false;' : '});' )
                 + '}'
             } else {
               return ''
@@ -437,20 +451,20 @@ namespace RAlgebra {
             const varName = $.path.join('')
             const schemaPath = $.schemaPath.join('/') + '/'
             const path = $.rawPath.join('.')
-            if (validationType === ValidationType.failFast || validationType === ValidationType.failSlow) {
+            if (cfg.validationType === ValidationType.failFast || cfg.validationType === ValidationType.failSlow) {
               return ''
                 + 'if('
                 + `${$.isRequired ? '' : varName + '!==undefined && '}`
                 + `typeof ${varName} !== "string"){`
-                + ( validationType === ValidationType.failFast 
-                    ? (functionName + '.errors=[{' ) 
-                    : ('errNo++;' + functionName + '.errors.push({' ) 
+                + ( cfg.validationType === ValidationType.failFast 
+                    ? (cfg.functionName + '.errors=[{' ) 
+                    : ('errNo++;' + cfg.functionName + '.errors.push({' ) 
                   )
                 + `path:"${path}",`
                 + `schemaPath:"${schemaPath}",`
                 + 'keyword:"type",'
                 + `message:"must be a string (was "+typeof ${varName}+")"`
-                + ( validationType === ValidationType.failFast ? '}];return false;' : '});' )
+                + ( cfg.validationType === ValidationType.failFast ? '}];return false;' : '});' )
                 + '}'
             } else {
               return ''
@@ -461,19 +475,9 @@ namespace RAlgebra {
           }
         } 
 
-        case Traversable.is.allOf(n): return { 
-          GO($) {
-            if (validationType === ValidationType.failFast || validationType === ValidationType.failSlow) {
-              return ''
-            } else {
-              return n.allOf.map(([, ctx]) => ctx.GO($)).join('') 
-            }
-          }
-        }
-
         case Traversable.is.anyOf(n): return { 
           GO($) { 
-            if (validationType === ValidationType.failFast || validationType === ValidationType.failSlow) {
+            if (cfg.validationType === ValidationType.failFast || cfg.validationType === ValidationType.failSlow) {
               return ''
             } else {
               const path = [ident($.depth), ...$.path.slice(1)]
@@ -494,7 +498,7 @@ namespace RAlgebra {
 
         case Traversable.is.oneOf(n): return {
           GO($) { 
-            if (validationType === ValidationType.failFast || validationType === ValidationType.failSlow) {
+            if (cfg.validationType === ValidationType.failFast || cfg.validationType === ValidationType.failSlow) {
               return ''
             } else {
               const path = [ident($.depth), ...$.path.slice(1)]
@@ -513,116 +517,9 @@ namespace RAlgebra {
           }
         }
 
-        case Traversable.is.object(n): return {
-          GO($) {
-            if (validationType === ValidationType.failFast || validationType === ValidationType.failSlow) {
-              const $$_path = [ident($.depth), ...$.path.slice(1)]
-              const $$_varname = $$_path.join('')
-              const index = Object_keys(n.properties).map((k, ix) => [k, ix] satisfies [any, any])
-              const required = index.filter(([k]) => (n.required || []).includes(k))
-              const isObjVar = createIsObjectVarName($)
-              const $$_check
-                = `let ${isObjVar}=!!${$$_varname} && typeof ${$$_varname}==="object";`
-                + 'if(' 
-                + `!${isObjVar}`
-                + (treatArraysLikeObjects ? '' : '||globalThis.Array.isArray(' + $$_varname + ')')
-                + '){'
-                + functionName
-                + ( validationType === ValidationType.failFast ? '.errors=[{' : '.errors.push({' )
-                + ([
-                    `path:"${$.rawPath.join('.')}"`,
-                    `schemaPath:"${$.schemaPath.join('/')}/"`,
-                    'keyword:"type"',
-                    `message:"must be an object (was "+typeof ${$$_varname}+")"`,
-                  ]).join(',')
-                + ( validationType === ValidationType.failFast ? '}];' : '});' )
-                + ( validationType === ValidationType.failFast ? 'return false;' : 'errNo++;' )
-                + '}'
-
-              const $$_property_checks = required.length === 0 ? null 
-                : '(' 
-                + required.reduce(
-                  (acc, [k, kix]) => {
-                    const accessor = `${$$_path.join('')}["${k}"]`
-                    const schemaPath = [...$.schemaPath, 'required']
-                    const rawPath = [...$.rawPath, k]
-                    return acc + (acc.length === 0 ? '' : ' || ') + (
-                      validationType === ValidationType.failFast ? ''
-                      : `(${isObjVar} && ${accessor}===undefined && (errNo++,void ${functionName}.errors.push({${
-                        [
-                          `path:"${rawPath.join('.')}"`,
-                          `schemaPath:"${schemaPath.join('/')}/"`,
-                          'keyword:"required"',
-                          `message:"must have required property '${k}'"`,
-                        ].join(',')
-                      }})))`
-                    )
-                  },
-                  ''
-                )
-                + ')'
-
-              const CHILDREN = index
-                .map(([k, ix]) => [k, n.properties[k], ix] satisfies [any, any, any])
-                .map(([k, [, xf], ix]) => {
-                  const isRequired = (n.required ?? []).includes(k)
-                  const depth = $.depth + 1
-                  const path = [ident(depth), k, ...$.path.slice(1)]
-                  const schemaPath = [...$.schemaPath, 'properties', k]
-                  const rawPath = [...$.rawPath, k]
-                  const $_varname = path.join('')
-                  const var_ = `let ${$_varname}=${$$_varname}["${k}"];`
-                  const CHILD = xf.GO({ depth, index: ix, isRequired, path, rawPath, schemaPath })
-                  return `if(${isObjVar}){${var_}${CHILD}}`
-                })
-
-              const $$_reqOpen  = $.isRequired ? ( '' ) : ( 'if(' + $.path.join('') + '!==undefined){' )
-              const $$_reqClose = $.isRequired ? ( '' ) : ( '}' )
-
-              return '' 
-                + $$_reqOpen
-                + $$_check
-                + ($$_property_checks === null ? '' : ('if(' + $$_property_checks + '){};'))
-                + CHILDREN.join('')
-                + $$_reqClose
-
-            } else {
-              const $$_path = [ident($.depth), ...$.path.slice(1)]
-              const $$_varname = $$_path.join('')
-              const CHILDREN = Object_entries(n.properties)
-                .map(([k, [, xf]]) => {
-                  const isRequired = (n.required ?? []).includes(k)
-                  const path = [...$$_path, k]
-                  const $_varname = path.join('')
-                  const var_ = `let ${$_varname}=${$$_varname}['${k}'];`
-                  const CHILD = xf.GO({ ...$, path, isRequired })
-                  return var_ + CHILD
-                })
-
-              const $$_check
-                = 'if(' 
-                + (! $.isRequired ? $$_varname + '===null' : '!' + $$_varname)
-                + '||'
-                + 'typeof ' + $$_varname + '!=="object"' 
-                + (treatArraysLikeObjects ? '' : '||globalThis.Array.isArray(' + $$_varname + ')')
-                + ')'
-                + 'return false;'
-
-              const $$_reqOpen  = $.isRequired ? ( '' ) : ( 'if(' + $.path.join('') + '!==undefined){' )
-              const $$_reqClose = $.isRequired ? ( '' ) : ( '}' )
-
-              return '' 
-                + $$_reqOpen
-                + $$_check
-                + CHILDREN.join('')
-                + $$_reqClose
-            }
-          },
-        }
-
         case Traversable.is.tuple(n): return {
           GO($) {
-            if (validationType === ValidationType.failFast || validationType === ValidationType.failSlow) {
+            if (cfg.validationType === ValidationType.failFast || cfg.validationType === ValidationType.failSlow) {
               return ''
             }
             else {
@@ -650,7 +547,7 @@ namespace RAlgebra {
         case Traversable.is.array(n): {
           return {
             GO($) {
-              if (validationType === ValidationType.failFast || validationType === ValidationType.failSlow) {
+              if (cfg.validationType === ValidationType.failFast || cfg.validationType === ValidationType.failSlow) {
                 return ''
               } else {
                 const $prev = [ident($.depth), ...$.path.slice(1)].join('')
@@ -677,11 +574,11 @@ namespace RAlgebra {
         case Traversable.is.record(n): {
           return {
             GO($) {
-              if (validationType === ValidationType.failFast || validationType === ValidationType.failSlow) {
+              if (cfg.validationType === ValidationType.failFast || cfg.validationType === ValidationType.failSlow) {
                 return ''
               } else {
                 const $prev = [ident($.depth), ...$.path.slice(1)].join('')
-                const arrayCheck = treatArraysLikeObjects ? '' : `||globalThis.Array.isArray(${$prev})`
+                const arrayCheck = cfg.flags.treatArraysLikeObjects ? '' : `||globalThis.Array.isArray(${$prev})`
                 const $reqOpen = $.isRequired ? '' : 'if(' + $.path.join('') + '!==undefined){'
                 const $reqClose = $.isRequired ? '' : '}'
                 const $check =
@@ -704,10 +601,132 @@ namespace RAlgebra {
             }
           }
         }
+
+        case Traversable.is.object(n): return { GO: deriveObjectNode(cfg)(n) }
+
+        case Traversable.is.allOf(n): return { 
+          GO($) {
+            if (
+              cfg.validationType === ValidationType.failFast || 
+              cfg.validationType === ValidationType.failSlow
+            ) return ''
+            else {
+              const out = n.allOf.map((x) => deriveObjectNode(cfg)(x)($))
+              return out.join('')
+            }
+          }
+        }
       }
     }
   }
 }
+
+const deriveObjectNode 
+  : (cfg: Config) => (n: core.Traversable.objectF<[source: core.Traversable.F<Stream, never>, target: Stream]>) => ($: ContinuationContext) => string
+  = (cfg) => (n) => ($) => {
+    if (cfg.validationType === ValidationType.failFast || cfg.validationType === ValidationType.failSlow) {
+      const $$_path = [ident($.depth), ...$.path.slice(1)]
+      const $$_varname = $$_path.join('')
+      const index = Object_keys(n.properties).map((k, ix) => [k, ix] satisfies [any, any])
+      const required = index.filter(([k]) => (n.required || []).includes(k))
+      const isObjVar = createIsObjectVarName($)
+      const $$_check
+        = `let ${isObjVar}=!!${$$_varname} && typeof ${$$_varname}==="object";`
+        + 'if(' 
+        + `!${isObjVar}`
+        + (cfg.flags?.treatArraysLikeObjects ? '' : '||globalThis.Array.isArray(' + $$_varname + ')')
+        + '){'
+        + cfg.functionName
+        + ( cfg.validationType === ValidationType.failFast ? '.errors=[{' : '.errors.push({' )
+        + ([
+            `path:"${$.rawPath.join('.')}"`,
+            `schemaPath:"${$.schemaPath.join('/')}/"`,
+            'keyword:"type"',
+            `message:"must be an object (was "+typeof ${$$_varname}+")"`,
+          ]).join(',')
+        + ( cfg.validationType === ValidationType.failFast ? '}];' : '});' )
+        + ( cfg.validationType === ValidationType.failFast ? 'return false;' : 'errNo++;' )
+        + '}'
+
+      const $$_property_checks = required.length === 0 ? null 
+        : '(' 
+        + required.reduce(
+          (acc, [k, kix]) => {
+            const accessor = `${$$_path.join('')}["${k}"]`
+            const schemaPath = [...$.schemaPath, 'required']
+            const rawPath = [...$.rawPath, k]
+            return acc + (acc.length === 0 ? '' : ' || ') + (
+              cfg.validationType === ValidationType.failFast ? ''
+              : `(${isObjVar} && ${accessor}===undefined && (errNo++,void ${cfg.functionName}.errors.push({${
+                [
+                  `path:"${rawPath.join('.')}"`,
+                  `schemaPath:"${schemaPath.join('/')}/"`,
+                  'keyword:"required"',
+                  `message:"must have required property '${k}'"`,
+                ].join(',')
+              }})))`
+            )
+          },
+          ''
+        )
+        + ')'
+
+      const CHILDREN = index
+        .map(([k, ix]) => [k, n.properties[k], ix] satisfies [any, any, any])
+        .map(([k, [, xf], ix]) => {
+          const isRequired = (n.required ?? []).includes(k)
+          const depth = $.depth + 1
+          const path = [ident(depth), k, ...$.path.slice(1)]
+          const schemaPath = [...$.schemaPath, 'properties', k]
+          const rawPath = [...$.rawPath, k]
+          const $_varname = path.join('')
+          const var_ = `let ${$_varname}=${$$_varname}["${k}"];`
+          const CHILD = xf.GO({ depth, index: ix, isRequired, path, rawPath, schemaPath })
+          return `if(${isObjVar}){${var_}${CHILD}}`
+        })
+
+      const $$_reqOpen  = $.isRequired ? ( '' ) : ( 'if(' + $.path.join('') + '!==undefined){' )
+      const $$_reqClose = $.isRequired ? ( '' ) : ( '}' )
+
+      return '' 
+        + $$_reqOpen
+        + $$_check
+        + ($$_property_checks === null ? '' : ('if(' + $$_property_checks + '){};'))
+        + CHILDREN.join('')
+        + $$_reqClose
+
+    } else {
+      const $$_path = [ident($.depth), ...$.path.slice(1)]
+      const $$_varname = $$_path.join('')
+      const CHILDREN = Object_entries(n.properties)
+        .map(([k, [, xf]]) => {
+          const isRequired = (n.required ?? []).includes(k)
+          const path = [...$$_path, k]
+          const $_varname = path.join('')
+          const var_ = `let ${$_varname}=${$$_varname}['${k}'];`
+          const CHILD = xf.GO({ ...$, path, isRequired })
+          return var_ + CHILD
+        })
+
+      const $$_check
+        = 'if(' 
+        + (! $.isRequired ? $$_varname + '===null' : '!' + $$_varname)
+        + '||'
+        + 'typeof ' + $$_varname + '!=="object"' 
+        + (cfg.flags?.treatArraysLikeObjects ? '' : '||globalThis.Array.isArray(' + $$_varname + ')')
+        + ')'
+        + 'return false;'
+
+      const $$_reqOpen  = $.isRequired ? ( '' ) : ( 'if(' + $.path.join('') + '!==undefined){' )
+      const $$_reqClose = $.isRequired ? ( '' ) : ( '}' )
+
+      return '' 
+        + $$_reqOpen
+        + $$_check
+        + CHILDREN.join('')
+        + $$_reqClose
+    }
+  }
 
 deriveValidator.defaults = defaults
 deriveValidator.fold = ({ 

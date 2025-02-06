@@ -3,7 +3,7 @@ import type { Compare } from "@traversable/data"
 import { fn, map, order } from "@traversable/data"
 import { Weight, openapi } from "@traversable/openapi"
 import type { Functor, Partial } from "@traversable/registry"
-import { WeightByType, WeightMap } from "@traversable/registry"
+import { Invariant, WeightByType, WeightMap } from "@traversable/registry"
 
 export { deriveSort as derive }
 
@@ -37,13 +37,15 @@ function compareMany($: Compare<Traversable>): Compare<readonly Traversable[]> {
         if (shallow !== 0) return shallow
       }
       for (let ix = 0, len = li.length; ix < len; ix++) {
-        const items = compare($)(li[ix], ri[ix])
-        if (items !== 0) return items
+        const deep = compare($)(li[ix], ri[ix])
+        if (deep !== 0) return deep
       }
       return 0
     }
   }
 }
+
+const orderEntries = order.mapInput.defer(([, v]: readonly [k: string, v: Traversable]) => v)
 
 export const compare
   : (comparisonFn: Compare<Traversable>) => Compare<Traversable> 
@@ -57,7 +59,6 @@ export const compare
       case Traversable.is.integer(l): return 0
       case Traversable.is.number(l): return 0
       case Traversable.is.string(l): return 0
-      case Traversable.is.allOf(l) && Traversable.is.allOf(r): return compareMany($)(l.allOf, r.allOf)
       case Traversable.is.anyOf(l) && Traversable.is.anyOf(r): return compareMany($)(l.anyOf, r.anyOf)
       case Traversable.is.oneOf(l) && Traversable.is.oneOf(r): return compareMany($)(l.oneOf, r.oneOf)
       case Traversable.is.tuple(l) && Traversable.is.tuple(r): return compareMany($)(l.items, r.items)
@@ -72,21 +73,20 @@ export const compare
         else return compare($)(l.additionalProperties, r.additionalProperties)
       }
       case Traversable.is.object(l) && Traversable.is.object(r): {
-        const orderEntries = order.mapInput($, ([, v]: readonly [k: string, v: Traversable]) => v)
         const leftEntries = Object_entries(l.properties)
         const rightEntries = Object_entries(r.properties)
         const lengths = order.array.lengthAscending(leftEntries, rightEntries)
         if (lengths !== 0) return lengths
         else {
-          const left = leftEntries.sort(orderEntries)
-          const right = rightEntries.sort(orderEntries)
+          const left = leftEntries.sort(orderEntries($))
+          const right = rightEntries.sort(orderEntries($))
           for (let ix = 0, len = left.length; ix < len; ix++) {
             const shallow = $(left[ix][1], right[ix][1])
             if (shallow !== 0) return shallow
           }
           for (let ix = 0, len = left.length; ix < len; ix++) {
-            const loop = compare($)(left[ix][1], right[ix][1])
-            if (loop !== 0) return loop
+            const deep = compare($)(left[ix][1], right[ix][1])
+            if (deep !== 0) return deep
           }
           return 0
         }
@@ -106,7 +106,6 @@ export namespace Coalgebra {
         case Traversable.is.scalar(n): return n
         case Traversable.is.array(n): return n
         case Traversable.is.record(n): return n
-        case Traversable.is.allOf(n): return { ...n, allOf: [...n.allOf].sort(compare($)) }
         case Traversable.is.anyOf(n): return { ...n, anyOf: [...n.anyOf].sort(compare($)) }
         case Traversable.is.oneOf(n): return { ...n, oneOf: [...n.oneOf].sort(compare($)) }
         case Traversable.is.tuple(n): return {
@@ -125,6 +124,16 @@ export namespace Coalgebra {
             Object_fromEntries,
           ),
         }
+        case Traversable.is.allOf(n): {
+          // TODO: need to enforce this at the type-level
+          if (!n.allOf.every(Traversable.is.object)) 
+            return Invariant.UnexpectedIntersectionWithNonObject('Coalgebra.sort', n)
+          else 
+            return { 
+              ...n,
+              allOf: fn.pipe([...n.allOf].sort(compare($)))
+            }
+        }
       }
     }
 }
@@ -132,10 +141,22 @@ export namespace Coalgebra {
 /**
  * ## {@link deriveSort `sort.derive`}
  *
- * Given a comparison function that returns `-1`, `0` or `1`, and 2 arbitrary
- * OpenAPI or JSON Schema nodes, returns a function that expects an OpenAPI
- * or JSON Schema spec, and recursively "sorts" it.
- *
+ * Given a comparison function that compares 2 arbitrary OpenAPI or JSON Schema nodes, 
+ * {@link deriveSort `sort.derive`} returns a new function that accepts a single
+ * document and uses the provided comparison function to recursively "sort" the document.
+ * 
+ * Because {@link deriveSort `sort.derive`}'s behavior depends on the comparison function 
+ * it receives, it's up to the caller to define the semantics of their sorting operation.
+ * 
+ * Internally, we use {@link deriveSort `sort.derive`} to apply certain optimizations to
+ * the tree, usually as a first pass. 
+ * 
+ * For example, let's say we're writing an interpreter that generates validation functions.
+ * And let's say we really these validation functions to be _blazing fast_. A natural way
+ * to approach this problem is to identify any opportunities to "fail-fast". A node that
+ * contains a number, for instance, might take less time to validate than a node that 
+ * contains an array.
+ * 
  * @example
  *  import { sort } from "@traversable/algebra"
  *  import * as vi from "vitest"

@@ -267,10 +267,10 @@ const ConstantValue
   )
 
 const defaultInclude = {
-  const: false,
-  example: false,
-  examples: false,
-  description: false,
+  const: false as boolean,
+  example: false as boolean,
+  examples: false as boolean,
+  description: false as boolean,
 } as const
 
 //////////////////
@@ -541,6 +541,8 @@ function Schema_number(_?: Constraints): fc.Arbitrary<Schema_number> {
   return generator.map(({ minimum: min, maximum: max, ..._ }) => {
     const effectiveMinimum = min === undefined ? Number.MIN_SAFE_INTEGER : min + (_.exclusiveMinimum ? 1 : 0)
     const effectiveMaximum = max === undefined ? Number.MAX_SAFE_INTEGER : max - (_.exclusiveMaximum ? 1 : 0)
+    const minimum = min !== undefined && Math.fround(min)
+    const maximum = max !== undefined && Math.fround(max)
     const example 
       = _.example === undefined ? undefined 
       : _.example < effectiveMinimum ? (_.example % effectiveMinimum) 
@@ -548,9 +550,9 @@ function Schema_number(_?: Constraints): fc.Arbitrary<Schema_number> {
       : _.example
     return {
       ..._,
-      ...min && { minimum: min },
-      ...max && { maximum: max },
-      ...example && { example }
+      ...minimum && { minimum },
+      ...maximum && { maximum },
+      ...example && { example },
     }
   })
 }
@@ -638,7 +640,7 @@ function escapeRegularExpression(pattern: string) {
 Schema_string.static = {
   minLength: fc.nat(0x100),
   maxLength: fc.nat(0x100),
-  pattern: regularExpression,
+  // pattern: regularExpression,
 }
 
 
@@ -653,7 +655,7 @@ Schema_string.base = ($: Constraints.Config): fc.Arbitrary<Schema_string> => {
     },
     { requiredKeys: ["type"] }),
   )
-  .map(([format, { example, minLength: _min, maxLength: _max, pattern, ...body }]) => {
+  .map(([format, { example, minLength: _min, maxLength: _max /* , pattern */ , ...body }]) => {
     const min = Bounded.minimumOf(_min, _max)
     const max = Bounded.maximumOf(_min, _max)
     const { minLength } = Bounded.absorbNaN(
@@ -676,16 +678,16 @@ Schema_string.base = ($: Constraints.Config): fc.Arbitrary<Schema_string> => {
         maxLength,
       },
       ...body,
-      ...!format && pattern && { pattern },
+      // ...!format && pattern && { pattern },
       ...optionally({ example: format?.example ?? example }),
     }
   }).chain(
-    ({ pattern, example, ...base }) => fc.record({ 
-      ...pattern && { pattern: fc.constant(pattern) },
+    ({ /* pattern, */ example, ...base }) => fc.record({ 
+      // ...pattern && { pattern: fc.constant(pattern) },
       ...example && ({ 
-        example: typeof pattern === 'string' 
-          ? fc.stringMatching(new RegExp(escapeRegularExpression(pattern))) 
-          : fc.constant(example) 
+        // example: typeof pattern === 'string' 
+          // ? fc.stringMatching(new RegExp(escapeRegularExpression(pattern))) 
+          example : fc.constant(example) 
       }) 
     }).map((_) => ({ ...base, ..._ }))
   )
@@ -859,7 +861,7 @@ Schema_allOf.defaults = {
   comparator: keysDoMeet,
   minLength: 1,
   maxLength: 3,
-  selector: Object_keys as never,
+  selector: Object_keys,
   include: defaultInclude,
 } satisfies Schema_allOf.Constraints
 
@@ -1082,16 +1084,10 @@ Schema_array.defaults = {
 Schema_array.base = <T>(
   LOOP: fc.Arbitrary<T>,
   $: Constraints.Config
-) =>
-  fc.record(
-    typed(
-      DataType.array, {
-        items: LOOP,
-      }
-    ), {
-      requiredKeys: Schema_array.requiredKeys,
-    },
-  )
+) => fc.record(
+  typed(DataType.array, { items: LOOP }), 
+  { requiredKeys: Schema_array.requiredKeys },
+)
 
 interface Schema_array<T = unknown, M extends {} = {}> extends t.Schema_array<T, M> {}
 declare namespace Schema_array {
@@ -1133,11 +1129,11 @@ export { Schema_object as object }
 
 Schema_object.defaults = {
   arbitrary: Schema_object.base,
-  keySize: "small",
-  const: void 0,
-  description: "",
-  nullable: false,
-  example: void 0,
+  keySize: "small" as fc.StringMatchingConstraints["size"],
+  const: void 0 as unknown,
+  description: "" as string,
+  nullable: false as boolean,
+  example: void 0 as unknown,
   include: defaultInclude,
 } as const satisfies Required<Schema_object.Constraints>
 
@@ -1175,7 +1171,7 @@ declare namespace Schema_object {
   interface Constraints<T = unknown> extends
     Partial<Constraints.Base<T>> {
       arbitrary: typeof Schema_object.base
-      keySize?: fc.StringMatchingConstraints["size"]
+      keySize: fc.StringMatchingConstraints["size"]
     }
 }
 
@@ -1227,7 +1223,7 @@ Schema_tuple.base = <T>(
   fc.record(
     typed(
       DataType.array, {
-        items: fc.array(LOOP),
+        items: fc.array(LOOP, $.tuple),
       },
     ), {
       requiredKeys: Schema_tuple.requiredKeys
@@ -1300,7 +1296,10 @@ export interface Constraints extends inline<
 > {}
 
 export declare namespace Constraints {
-  interface Items extends globalThis.Partial<{ [K in keyof t.Schema_Items]: fc.Arbitrary<t.Schema_Items[K]> }> {}
+  interface Items extends globalThis.Partial<{ 
+    [K in keyof t.Schema_Items]: fc.Arbitrary<t.Schema_Items[K]> 
+  }> {}
+
   interface RootBase {
     exclude: readonly Tag[]
     include: t.arbitrary.Include
@@ -1310,8 +1309,8 @@ export declare namespace Constraints {
     nullable: boolean
     description: string
     const: T
-    include: t.arbitrary.Include
     example: T
+    include: t.arbitrary.Include
   }
 
   interface Config {

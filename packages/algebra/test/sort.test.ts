@@ -1,7 +1,43 @@
 import * as vi from "vitest"
 
 import { sort } from "@traversable/algebra"
-import type { Traversable } from "@traversable/core"
+import { show, tr as t, type Traversable } from "@traversable/core"
+
+vi.describe("〖️⛳️〗‹‹‹ ❲@traversable/algebra/sort❳", () => {
+  vi.it("〖️⛳️〗› ❲sort.deep❳", () => {
+
+    const ex_01 = { 
+      type: "allOf", 
+      allOf: [
+        { 
+          type: "object", 
+          properties: { 
+            C: { type: "array", items: { type: "string", meta: {} }, meta: {} }, 
+            A: { type: "array", items: { type: "null", meta: {} }, meta: {} }, 
+            B: { type: "array", items: { type: "boolean", meta: {} }, meta: {} }, 
+          },
+          meta: {},
+        }
+      ],
+      meta: {},
+    } satisfies Traversable.allOf
+    // console.log("ex_01", show.serialize(ex_01, "leuven"))
+
+    const ex_02 = t.allOf(
+      t.object({
+        C: t.array(t.string()),
+      }),
+      t.object({
+        A: t.array(t.null()),
+      }),
+      t.object({
+        B: t.array(t.boolean()),
+      })
+    )
+
+    // console.log("ex_02", show.serialize(ex_02.toTraversable, 'leuven'))
+  })
+})
 
 vi.describe("〖️⛳️〗‹‹‹ ❲@traversable/algebra/sort❳", () => {
   vi.it("〖️⛳️〗› ❲sort.deep❳", () => {
@@ -115,6 +151,33 @@ vi.describe("〖️⛳️〗‹‹‹ ❲@traversable/algebra/sort❳", () => {
           },
           meta: {},
         },
+        /* 
+        eleven: t.record(
+          t.record(
+            t.anyOf(
+              t.object({}),
+              t.allOf(
+                t.object({
+                  C: t.array(t.string()),
+                  A: t.array(t.null()),
+                  B: t.array(t.boolean()),
+                })
+              )
+            )
+          )
+        ),
+        three: t.boolean(),
+        seven: t.number(),
+        fourteen: t.object({
+          A: t.tuple(t.string()),
+        }),
+        ten: t.string(),
+        five: t.integer(),
+        U: t.array(t.boolean()),
+        T: t.array(t.null()),
+        one: t.null(),
+        thirteen: t.object({}),
+        */
         eleven: { 
           type: "record", 
           additionalProperties: {
@@ -248,6 +311,7 @@ vi.describe("〖️⛳️〗‹‹‹ ❲@traversable/algebra/sort❳", () => {
         ],
       ]
     `)
+
     vi.expect(actual_03.properties.eighteen.items).toMatchInlineSnapshot(`
       [
         {
@@ -326,375 +390,18 @@ vi.describe("〖️⛳️〗‹‹‹ ❲@traversable/algebra/sort❳", () => {
         },
       ]
     `)
-
-    vi.expect(Object.entries(actual_03.properties)).toMatchInlineSnapshot(`
-      [
-        [
-          "one",
-          {
-            "meta": {},
-            "type": "null",
-          },
-        ],
-        [
-          "two",
-          {
-            "meta": {},
-            "type": "boolean",
-          },
-        ],
-        [
-          "three",
-          {
-            "meta": {},
-            "type": "boolean",
-          },
-        ],
-        [
-          "four",
-          {
-            "meta": {},
-            "type": "integer",
-          },
-        ],
-        [
-          "five",
-          {
-            "meta": {},
-            "type": "integer",
-          },
-        ],
-        [
-          "six",
-          {
-            "meta": {},
-            "type": "number",
-          },
-        ],
-        [
-          "seven",
-          {
-            "meta": {},
-            "type": "number",
-          },
-        ],
-        [
-          "eight",
-          {
-            "meta": {},
-            "type": "string",
-          },
-        ],
-        [
-          "nine",
-          {
-            "meta": {},
-            "type": "string",
-          },
-        ],
-        [
-          "ten",
-          {
-            "meta": {},
-            "type": "string",
-          },
-        ],
-        [
-          "eleven",
-          {
-            "additionalProperties": {
-              "additionalProperties": {
-                "anyOf": [
-                  {
-                    "meta": {},
-                    "properties": {},
-                    "type": "object",
-                  },
-                  {
-                    "allOf": [
-                      {
-                        "meta": {},
-                        "properties": {
-                          "A": {
-                            "items": {
-                              "meta": {},
-                              "type": "null",
-                            },
-                            "meta": {},
-                            "type": "array",
-                          },
-                          "B": {
-                            "items": {
-                              "meta": {},
-                              "type": "boolean",
-                            },
-                            "meta": {},
-                            "type": "array",
-                          },
-                          "C": {
-                            "items": {
-                              "meta": {},
-                              "type": "string",
-                            },
-                            "meta": {},
-                            "type": "array",
-                          },
-                        },
-                        "type": "object",
-                      },
-                    ],
-                    "meta": {},
-                    "type": "allOf",
-                  },
-                ],
-                "meta": {},
-                "type": "anyOf",
-              },
-              "meta": {},
-              "type": "record",
-            },
-            "meta": {},
-            "type": "record",
-          },
-        ],
-        [
-          "twelve",
-          {
-            "additionalProperties": {
-              "additionalProperties": {
-                "anyOf": [
-                  {
-                    "meta": {},
-                    "type": "null",
-                  },
-                  {
-                    "meta": {},
-                    "properties": {},
-                    "type": "object",
-                  },
-                  {
-                    "allOf": [
-                      {
-                        "meta": {},
-                        "properties": {
-                          "A": {
-                            "items": {
-                              "meta": {},
-                              "type": "null",
-                            },
-                            "meta": {},
-                            "type": "array",
-                          },
-                          "B": {
-                            "items": {
-                              "meta": {},
-                              "type": "boolean",
-                            },
-                            "meta": {},
-                            "type": "array",
-                          },
-                          "C": {
-                            "items": {
-                              "meta": {},
-                              "type": "string",
-                            },
-                            "meta": {},
-                            "type": "array",
-                          },
-                        },
-                        "type": "object",
-                      },
-                    ],
-                    "meta": {},
-                    "type": "allOf",
-                  },
-                ],
-                "meta": {},
-                "type": "anyOf",
-              },
-              "meta": {},
-              "type": "record",
-            },
-            "meta": {},
-            "type": "record",
-          },
-        ],
-        [
-          "thirteen",
-          {
-            "meta": {},
-            "properties": {},
-            "type": "object",
-          },
-        ],
-        [
-          "fourteen",
-          {
-            "meta": {},
-            "properties": {
-              "A": {
-                "items": [
-                  {
-                    "meta": {},
-                    "originalIndex": 0,
-                    "type": "string",
-                  },
-                ],
-                "meta": {},
-                "type": "tuple",
-              },
-            },
-            "type": "object",
-          },
-        ],
-        [
-          "fifteen",
-          {
-            "meta": {},
-            "properties": {
-              "A": {
-                "meta": {},
-                "type": "null",
-              },
-              "B": {
-                "meta": {},
-                "type": "null",
-              },
-            },
-            "type": "object",
-          },
-        ],
-        [
-          "sixteen",
-          {
-            "meta": {},
-            "properties": {
-              "A": {
-                "meta": {},
-                "type": "null",
-              },
-              "B": {
-                "meta": {},
-                "type": "null",
-              },
-            },
-            "type": "object",
-          },
-        ],
-        [
-          "seventeen",
-          {
-            "items": [],
-            "meta": {},
-            "type": "tuple",
-          },
-        ],
-        [
-          "eighteen",
-          {
-            "items": [
-              {
-                "meta": {},
-                "originalIndex": 1,
-                "type": "null",
-              },
-              {
-                "meta": {},
-                "originalIndex": 0,
-                "properties": {
-                  "rFive": {
-                    "meta": {},
-                    "properties": {
-                      "A": {
-                        "meta": {},
-                        "type": "null",
-                      },
-                      "B": {
-                        "meta": {},
-                        "type": "null",
-                      },
-                      "C": {
-                        "meta": {},
-                        "type": "null",
-                      },
-                    },
-                    "type": "object",
-                  },
-                  "rFour": {
-                    "meta": {},
-                    "properties": {
-                      "A": {
-                        "meta": {},
-                        "type": "null",
-                      },
-                      "B": {
-                        "meta": {},
-                        "type": "null",
-                      },
-                      "C": {
-                        "meta": {},
-                        "type": "null",
-                      },
-                    },
-                    "type": "object",
-                  },
-                  "rOne": {
-                    "meta": {},
-                    "type": "boolean",
-                  },
-                  "rThree": {
-                    "meta": {},
-                    "properties": {
-                      "A": {
-                        "meta": {},
-                        "type": "null",
-                      },
-                      "B": {
-                        "meta": {},
-                        "type": "null",
-                      },
-                      "C": {
-                        "meta": {},
-                        "type": "null",
-                      },
-                    },
-                    "type": "object",
-                  },
-                  "rTwo": {
-                    "meta": {},
-                    "type": "number",
-                  },
-                },
-                "type": "object",
-              },
-            ],
-            "meta": {},
-            "type": "tuple",
-          },
-        ],
-        [
-          "T",
-          {
-            "items": {
-              "meta": {},
-              "type": "null",
-            },
-            "meta": {},
-            "type": "array",
-          },
-        ],
-        [
-          "U",
-          {
-            "items": {
-              "meta": {},
-              "type": "boolean",
-            },
-            "meta": {},
-            "type": "array",
-          },
-        ],
-      ]
-    `)
   })
+
+  vi.it("〖️⛳️〗› ❲sort.deep❳: throws when applied to a non-object intersection", () => {
+    vi.assert.throws(() => sort.derive()({
+      type: "allOf", 
+      allOf: [
+        { type: "object", properties: {}, meta: {}, } ,
+        { type: "string" },
+      ],
+      meta: {},
+    }))
+
+  })
+
 })

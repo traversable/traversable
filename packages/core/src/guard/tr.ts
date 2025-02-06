@@ -1,18 +1,16 @@
+
 import { type Functor, Invariant, type _, type newtype, type symbol } from "@traversable/registry"
+import { fn, map } from "@traversable/data"
 
 import type * as Traversable from "../model/traversable.js"
-export type {
-  typeof,
-  Schema,
-} from "./ast.js"
-import { fn } from "@traversable/data"
 import * as t from "./ast.js"
+import { has } from "../tree.js"
 
+///
+export type { typeof, Schema } from "./ast.js"
 export type { meta as Meta }
 interface meta<$> { [symbol.meta]?: $, get meta(): $ }
 
-/** @internal */
-const Object_values = globalThis.Object.values
 /** @internal */
 type decorate<T, $ = T[symbol.meta & keyof T], _ 
   = { meta: [$] extends [never] ? {} : $ & {} }> = never | _
@@ -27,7 +25,7 @@ const NotSupported = (...args: Parameters<typeof Invariant.NotYetSupported>) =>
 //////////////////
 ///    NULL    ///
 export { null_ as null }
-function null_<Meta = {}>(meta?: Meta): null_<Meta> {
+function null_<const Meta = {}>(meta?: Meta): null_<Meta> {
   return {
     ...t.null(),
     get meta() { return !!meta ? meta : meta as never },
@@ -63,7 +61,7 @@ namespace null_ {
 /////////////////////
 ///    BOOLEAN    ///
 export { boolean_ as boolean }
-function boolean_<Meta = {}>(meta?: Meta): boolean_<Meta> {
+function boolean_<const Meta = {}>(meta?: Meta): boolean_<Meta> {
   return {
     ...t.boolean(),
     get meta() { return !!meta ? meta : meta as never },
@@ -99,7 +97,7 @@ namespace boolean_ {
 /////////////////////
 ///    INTEGER    ///
 export { integer_ as integer }
-function integer_<Meta = {}>(meta?: Meta): integer_<Meta> {
+function integer_<const Meta = {}>(meta?: Meta): integer_<Meta> {
   return {
     ...t.integer(),
     get meta() { return !!meta ? meta : meta as never },
@@ -135,7 +133,7 @@ namespace integer_ {
 ////////////////////
 ///    NUMBER    ///
 export { number_ as number }
-function number_<Meta = {}>(meta?: Meta): number_<Meta> {
+function number_<const Meta = {}>(meta?: Meta): number_<Meta> {
   return {
     ...t.number(),
     get meta() { return !!meta ? meta : meta as never },
@@ -171,7 +169,7 @@ namespace number_ {
 ////////////////////
 ///    STRING    ///
 export { string_ as string }
-function string_<Meta>(meta?: Meta): string_<Meta> {
+function string_<const Meta>(meta?: Meta): string_<Meta> {
   return {
     ...t.string(),
     get meta() { return !!meta ? meta : meta as never },
@@ -206,7 +204,7 @@ namespace string_ {
 /////////////////
 ///    ANY    ///
 export { any_ as any }
-function any_<Meta>(meta?: Meta): any_<Meta> {
+function any_<const Meta>(meta?: Meta): any_<Meta> {
   return {
     ...t.any(),
     get meta() { return !!meta ? meta : meta as never },
@@ -238,7 +236,7 @@ namespace any_ {
 ///////////////////
 ///    CONST    ///
 export { const_ as const }
-function const_<const T extends typeof t.const.children, Meta>(
+function const_<const T extends typeof t.const.children, const Meta>(
   value: T, 
   meta?: Meta
 ): const_<T, Meta> { 
@@ -283,8 +281,8 @@ namespace const_ {
 ///    ENUM    ///
 export { enum_ as enum }
 function enum_<T extends typeof t.enum.children>(...specs: [...T]): enum_<T>
-function enum_<T extends typeof t.enum.children, Meta>(...args: [...T, Meta]): enum_<T, Meta>
-function enum_<T extends typeof t.enum.children, Meta>(
+function enum_<T extends typeof t.enum.children, const Meta>(...args: [...T, Meta]): enum_<T, Meta>
+function enum_<T extends typeof t.enum.children, const Meta>(
   ...args:
     | [...T, Meta] 
     | [...spec: T]
@@ -331,7 +329,7 @@ namespace enum_ {
 //////////////////////
 ///    OPTIONAL    ///
 export { optional_ as optional }
-function optional_<T extends typeof t.optional.children, Meta>(
+function optional_<T extends typeof t.optional.children, const Meta>(
   value: T, 
   meta?: Meta
 ): optional_<T, Meta> { 
@@ -375,7 +373,7 @@ namespace optional_ {
 ///////////////////
 ///    ARRAY    ///
 export { array_ as array }
-function array_<T extends typeof t.array.children, Meta>(
+function array_<T extends typeof t.array.children, const Meta>(
   value: T, 
   meta?: Meta
 ): array_<T, Meta> { 
@@ -418,9 +416,9 @@ namespace array_ {
 ////////////////////
 ///    ALL OF    ///
 export { allOf_ as allOf }
-function allOf_<T extends typeof t.allOf.children>(...specs: [...T]): allOf_<T>
-function allOf_<T extends typeof t.allOf.children, Meta>(...args: [...T, Meta]): allOf_<T, Meta>
-function allOf_<T extends typeof t.allOf.children, Meta>(
+function allOf_<T extends typeof t.allOf.spec>(...specs: [...T]): allOf_<T>
+// function allOf_<T extends typeof t.allOf.children, Meta>(...args: [...T, Meta]): allOf_<T, Meta>
+function allOf_<T extends typeof t.allOf.children, const Meta>(
   ...args:
     | [...T, Meta] 
     | [...spec: T]
@@ -461,13 +459,14 @@ namespace allOf_ {
 ///    ALL OF    ///
 ////////////////////
 
+allOf_(object_({ a: number_() }))
 
 ////////////////////
 ///    ANY OF    ///
 export { anyOf_ as anyOf }
 function anyOf_<T extends typeof t.anyOf.children>(...specs: [...T]): anyOf_<T>
-function anyOf_<T extends typeof t.anyOf.children, Meta>(...args: [...T, Meta]): anyOf_<T, Meta>
-function anyOf_<T extends typeof t.anyOf.children, Meta>(
+function anyOf_<T extends typeof t.anyOf.children, const Meta>(...args: [...T, Meta]): anyOf_<T, Meta>
+function anyOf_<T extends typeof t.anyOf.children, const Meta>(
   ...args:
     | [...T, Meta] 
     | [...spec: T]
@@ -515,8 +514,8 @@ namespace anyOf_ {
 ///    ONE OF    ///
 export { oneOf_ as oneOf }
 function oneOf_<T extends typeof t.oneOf.children>(...specs: [...T]): oneOf_<T>
-function oneOf_<T extends typeof t.oneOf.children, Meta>(...args: [...T, Meta]): oneOf_<T, Meta>
-function oneOf_<T extends typeof t.oneOf.children, Meta>(
+function oneOf_<T extends typeof t.oneOf.children, const Meta>(...args: [...T, Meta]): oneOf_<T, Meta>
+function oneOf_<T extends typeof t.oneOf.children, const Meta>(
   ...args:
   | [...T, Meta] 
   | [...spec: T]
@@ -560,7 +559,7 @@ namespace oneOf_ {
 ////////////////////
 ///    RECORD    ///
 export { record_ as record }
-function record_<T extends typeof t.record.children, Meta extends {}>(
+function record_<T extends typeof t.record.children, const Meta extends {}>(
   value: T, 
   meta?: Meta
 ): record_<T, Meta> { 
@@ -604,8 +603,8 @@ namespace record_ {
 ///    TUPLE    ///
 export { tuple_ as tuple }
 function tuple_<T extends typeof t.tuple.children>(...specs: T): tuple_<T>
-function tuple_<T extends typeof t.tuple.children, Meta>(...args: [...T, Meta]): tuple_<T, Meta>
-function tuple_<T extends typeof t.tuple.children, Meta>(
+function tuple_<T extends typeof t.tuple.children, const Meta>(...args: [...T, Meta]): tuple_<T, Meta>
+function tuple_<T extends typeof t.tuple.children, const Meta>(
   ...args:
   | [...T, Meta]
   | [...spec: T]
@@ -621,8 +620,9 @@ interface tuple_<T extends typeof t.tuple.spec, Meta = {}> extends t.tuple<T>, m
   get toTraversable(): tuple_.Traversable<T, Meta>
 }
 declare namespace tuple_ {
-  interface Traversable<T extends typeof t.tuple.spec, Meta = {}> extends t.tuple.toJsonSchema<T> { 
+  interface Traversable<T extends typeof t.tuple.spec, Meta = {}> extends Omit<t.tuple.toJsonSchema<T>, 'type'> { 
     meta: Meta 
+    type: 'tuple'
     items: { [I in keyof T]: T[I]["toJsonSchema" & keyof T[I]] & decorate<T[I]> }
   }
 }
@@ -636,9 +636,12 @@ namespace tuple_ {
     meta: Meta = {} as never
   ) {
     return {
-      ...t.tuple.toJsonSchema(spec),
+      type: "tuple",
+      items: spec.filter(has("toTraversable")).map((_) => _.toTraversable) as never,
+      minItems: spec.length,
+      maxItems: spec.length,
       meta,
-    }
+    } as tuple_.Traversable<T>
   }
 }
 ///    TUPLE    ///
@@ -647,7 +650,7 @@ namespace tuple_ {
 ////////////////////
 ///    OBJECT    ///
 export { object_ as object }
-function object_<T extends typeof t.object.children, Meta>(
+function object_<T extends typeof t.object.children, const Meta>(
   value: T, 
   meta?: Meta
 ): object_<T, Meta> { 
@@ -700,13 +703,13 @@ export const toTraversable
       case "enum": return enum_.toTraversable(ast.def)
       case "const": return const_.toTraversable(ast.def)
       case "array": return array_.toTraversable(ast.def)
-      case "allOf": return allOf_.toTraversable(ast.def)
       case "anyOf": return anyOf_.toTraversable(ast.def)
       case "oneOf": return oneOf_.toTraversable(ast.def)
       case "optional": return optional_.toTraversable(ast.def)
       case "record": return record_.toTraversable(ast.def)
       case "tuple": return tuple_.toTraversable(ast.def)
       case "object": return object_.toTraversable(ast.def)
+      case "allOf": return allOf_.toTraversable(map(ast.def, object_.toTraversable))
     }
   }
 }

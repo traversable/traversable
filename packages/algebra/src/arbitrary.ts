@@ -106,6 +106,10 @@ export namespace Algebra {
 
   const $ = fc.letrec(letrec)
 
+  const mapObject 
+    : (x: Traversable.objectF<fc.Arbitrary<unknown>>) => fc.Arbitrary<Record<string, unknown>>
+    = (x: Traversable.objectF<fc.Arbitrary<unknown>>) => fc.record({ ...x.properties }, { requiredKeys: [...(x.required || [])] })
+
   export const arbitrary
     : Functor.Algebra<Traversable.lambda, fc.Arbitrary<{} | null | undefined>> 
     = (x) => {
@@ -120,12 +124,11 @@ export namespace Algebra {
         case Traversable.is.string(x): return $.string
         case Traversable.is.anyOf(x): return fc.oneof(...x.anyOf)
         case Traversable.is.oneOf(x): return fc.oneof(...x.oneOf)
-        case Traversable.is.allOf(x): return fc.tuple(...x.allOf).map(intersect)
         case Traversable.is.array(x): return fc.array(x.items)
         case Traversable.is.record(x): return fc.dictionary(x.additionalProperties)
         case Traversable.is.tuple(x): return fc.tuple(...x.items)
-        case Traversable.is.object(x): 
-          return fc.record({ ...x.properties }, { requiredKeys: [...(x.required || [])] })
+        case Traversable.is.object(x): return mapObject(x) 
+        case Traversable.is.allOf(x): return fc.tuple(...x.allOf.map(mapObject)).map(intersect)
       }
     }
 

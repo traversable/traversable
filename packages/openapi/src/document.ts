@@ -269,18 +269,18 @@ export declare namespace arbitrary {
     /// cross-cutting configuration
     depthIdentifier?: fc.DepthIdentifier
     /// node-specific options
-    null?: Schema.null.Constraints
-    boolean?: Schema.boolean.Constraints
-    integer?: Schema.integer.Constraints
-    number?: Schema.number.Constraints
-    string?: Schema.string.Constraints
-    array?: Schema.array.Constraints
-    record?: Schema.record.Constraints
-    object?: Schema.object.Constraints
-    tuple?: Schema.tuple.Constraints
-    allOf?: Schema.allOf.Constraints
-    anyOf?: Schema.anyOf.Constraints
-    oneOf?: Schema.oneOf.Constraints
+    null?: Partial<Schema.null.Constraints>
+    boolean?: Partial<Schema.boolean.Constraints>
+    integer?: Partial<Schema.integer.Constraints>
+    number?: Partial<Schema.number.Constraints>
+    string?: Partial<Schema.string.Constraints>
+    array?: Partial<Schema.array.Constraints>
+    record?: Partial<Schema.record.Constraints>
+    object?: Partial<Schema.object.Constraints>
+    tuple?: Partial<Schema.tuple.Constraints>
+    allOf?: Partial<Schema.allOf.Constraints>
+    anyOf?: Partial<Schema.anyOf.Constraints>
+    oneOf?: Partial<Schema.oneOf.Constraints>
   }
   interface Paths extends arbitrary.Countable {}
   interface PathParams extends arbitrary.Countable {}
@@ -357,8 +357,8 @@ export const applyConstraints
         minCount: _.schemas.minCount ?? defaults.schemas.minCount,
         /// node-specific options
         null: {
-          ..._.schemas.null,
           ...defaults.schemas.null,
+          ..._.schemas.null,
           include: {
             const:
               _.schemas.null?.include?.const
@@ -379,8 +379,8 @@ export const applyConstraints
           }
         },
         boolean: {
-          ..._.schemas.boolean,
           ...defaults.schemas.boolean,
+          ..._.schemas.boolean,
           include: {
             const:
               _.schemas.boolean?.include?.const
@@ -401,8 +401,8 @@ export const applyConstraints
           }
         },
         integer: {
-          ..._.schemas.integer,
           ...defaults.schemas.integer,
+          ..._.schemas.integer,
           include: {
             const:
               _.schemas.integer?.include?.const
@@ -423,8 +423,8 @@ export const applyConstraints
           }
         },
         number: {
-          ..._.schemas.number,
           ...defaults.schemas.number,
+          ..._.schemas.number,
           include: {
             example:
               _.schemas.number?.include?.example
@@ -441,8 +441,8 @@ export const applyConstraints
           }
         },
         string: {
-          ..._.schemas.string,
           ...defaults.schemas.string,
+          ..._.schemas.string,
           include: {
             const:
               _.schemas.string?.include?.const
@@ -463,11 +463,9 @@ export const applyConstraints
           }
         },
 
-
-
         array: {
-          ..._.schemas.array,
           ...defaults.schemas.array,
+          ..._.schemas.array,
           include: {
             const:
               _.schemas.array?.include?.const
@@ -489,8 +487,8 @@ export const applyConstraints
         },
 
         object: {
-          ..._.schemas.object,
           ...defaults.schemas.object,
+          ..._.schemas.object,
           include: {
             ..._.schemas.object?.include,
             ...defaults.schemas.object.include,
@@ -509,8 +507,8 @@ export const applyConstraints
           }
         },
         record: {
-          ..._.schemas.record,
           ...defaults.schemas.record,
+          ..._.schemas.record,
           include: {
             const:
               _.schemas.record?.include?.const
@@ -531,8 +529,8 @@ export const applyConstraints
           }
         },
         tuple: {
-          ..._.schemas.tuple,
           ...defaults.schemas.tuple,
+          ..._.schemas.tuple,
           include: {
             const:
               _.schemas.tuple?.include?.const
@@ -553,8 +551,8 @@ export const applyConstraints
           }
         },
         allOf: {
-          ..._.schemas.allOf,
           ...defaults.schemas.allOf,
+          ..._.schemas.allOf,
           include: {
             const:
               _.schemas.allOf?.include?.const
@@ -575,8 +573,8 @@ export const applyConstraints
           }
         },
         anyOf: {
-          ..._.schemas.anyOf,
           ...defaults.schemas.anyOf,
+          ..._.schemas.anyOf,
           include: {
             const:
               _.schemas.anyOf?.include?.const
@@ -597,8 +595,8 @@ export const applyConstraints
           }
         },
         oneOf: {
-          ..._.schemas.oneOf,
           ...defaults.schemas.oneOf,
+          ..._.schemas.oneOf,
           include: {
             const:
               _.schemas.oneOf?.include?.const
@@ -1036,22 +1034,175 @@ export function mediatype(_?: mediatype.Constraints) {
     schema: _?.schema! ?? Schema.any(schemaConstraints), // fc.oneof(Ref.typedef, Schema.any),
     ...$?.include?.description && { description: fc.lorem() },
     ...$?.include?.examples && { examples: fc.dictionary(fc.jsonValue().filter((x) => x !== null)) },
-    // encoding: fc.dictionary(fc.string(), Encoding),
-    // TODO: `Mediatype` is disjoint on `example` and `examples` IRL
-    // const ExampleXORExamples = fc.oneof(Example, Finite.Examples)
-    // ...(constraints?.includeExamples && { example: fc.oneof(fc.jsonValue()) }),
-    // ...(
-    //   constraints?.includeExamples
-    //   && { examples: fc.jsonValue() } // fc.dictionary(fc.string(), Example) }
-    //   // && { examples: fc.dictionary(fc.string(), fc.oneof(Ref.typedef, Example)) }
-    // ),
   }, { requiredKeys: ["schema"] }) satisfies fc.Arbitrary<openapi.mediatype>
 }
 
 const constraintsAdapter
   : (arbitraryConstraints?: arbitrary.Constraints) => Schema.Constraints
   = (_?: arbitrary.Constraints) => {
+
+    _?.schemas?.anyOf?.arbitrary
+    _?.schemas?.anyOf?.comparator
+    _?.schemas?.anyOf?.const
+    _?.schemas?.anyOf?.depthIdentifier
+    _?.schemas?.anyOf?.description
+    _?.schemas?.anyOf?.example
+    _?.schemas?.anyOf?.include
+    _?.schemas?.anyOf?.maxLength
+    _?.schemas?.anyOf?.minLength
+
+
+    Schema.Constraints.defaults.anyOf.arbitrary
+    Schema.Constraints.defaults.anyOf.include
+    Schema.Constraints.defaults.anyOf.maxLength
+    Schema.Constraints.defaults.anyOf.minLength
+
+    
     return {
+      allOf: {
+        comparator: _?.schemas?.allOf?.comparator ?? Schema.Constraints.defaults.allOf.comparator,
+        selector: _?.schemas?.allOf?.selector ?? Schema.Constraints.defaults.allOf.selector,
+        arbitrary: _?.schemas?.allOf?.arbitrary ?? Schema.Constraints.defaults.allOf.arbitrary,
+        include: {
+          const: _?.schemas?.allOf?.include?.const ?? Schema.Constraints.defaults.allOf.include.const,
+          description: _?.schemas?.allOf?.include?.description ?? Schema.Constraints.defaults.allOf.include.description,
+          example: _?.schemas?.allOf?.include?.example ?? Schema.Constraints.defaults.allOf.include.example,
+          examples: _?.schemas?.allOf?.include?.examples ?? Schema.Constraints.defaults.allOf.include.examples,
+        },
+        minLength: _?.schemas?.allOf?.minLength ?? Schema.Constraints.defaults.allOf.minLength,
+        maxLength: _?.schemas?.allOf?.maxLength ?? Schema.Constraints.defaults.allOf.maxLength,
+      },
+      anyOf: {
+        arbitrary: _?.schemas?.anyOf?.arbitrary ?? Schema.Constraints.defaults.anyOf.arbitrary,
+        include: {
+          const: _?.schemas?.anyOf?.include?.const ?? Schema.Constraints.defaults.anyOf.include.const,
+          description: _?.schemas?.anyOf?.include?.description ?? Schema.Constraints.defaults.anyOf.include.description,
+          example: _?.schemas?.anyOf?.include?.example ?? Schema.Constraints.defaults.anyOf.include.example,
+          examples: _?.schemas?.anyOf?.include?.examples ?? Schema.Constraints.defaults.anyOf.include.examples,
+        },
+        minLength: _?.schemas?.anyOf?.minLength ?? Schema.Constraints.defaults.anyOf.minLength,
+        maxLength: _?.schemas?.anyOf?.maxLength ?? Schema.Constraints.defaults.anyOf.maxLength,
+      },
+      oneOf: {
+        arbitrary: _?.schemas?.oneOf?.arbitrary ?? Schema.Constraints.defaults.oneOf.arbitrary,
+        include: {
+          const: _?.schemas?.oneOf?.include?.const ?? Schema.Constraints.defaults.oneOf.include.const,
+          description: _?.schemas?.oneOf?.include?.description ?? Schema.Constraints.defaults.oneOf.include.description,
+          example: _?.schemas?.oneOf?.include?.example ?? Schema.Constraints.defaults.oneOf.include.example,
+          examples: _?.schemas?.oneOf?.include?.examples ?? Schema.Constraints.defaults.oneOf.include.examples,
+        },
+        minLength: _?.schemas?.oneOf?.minLength ?? Schema.Constraints.defaults.oneOf.minLength,
+        maxLength: _?.schemas?.oneOf?.maxLength ?? Schema.Constraints.defaults.oneOf.maxLength,
+      },
+      array: {
+        uniqueItems: _?.schemas?.array?.uniqueItems ?? Schema.Constraints.defaults.array.uniqueItems,
+        arbitrary: _?.schemas?.array?.arbitrary ?? Schema.Constraints.defaults.array.arbitrary,
+        include: {
+          const: _?.schemas?.array?.include?.const ?? Schema.Constraints.defaults.array.include.const,
+          description: _?.schemas?.array?.include?.description ?? Schema.Constraints.defaults.array.include.description,
+          example: _?.schemas?.array?.include?.example ?? Schema.Constraints.defaults.array.include.example,
+          examples: _?.schemas?.array?.include?.examples ?? Schema.Constraints.defaults.array.include.examples,
+        },
+        minItems: Schema.Constraints.defaults.array.minItems,
+        maxItems: Schema.Constraints.defaults.array.maxItems,
+      },
+      boolean: {
+        arbitrary: _?.schemas?.boolean?.arbitrary ?? Schema.Constraints.defaults.boolean.arbitrary,
+        include: {
+          const: _?.schemas?.boolean?.include?.const ?? Schema.Constraints.defaults.boolean.include.const,
+          description: _?.schemas?.boolean?.include?.description ?? Schema.Constraints.defaults.boolean.include.description,
+          example: _?.schemas?.boolean?.include?.example ?? Schema.Constraints.defaults.boolean.include.example,
+          examples: _?.schemas?.boolean?.include?.examples ?? Schema.Constraints.defaults.boolean.include.examples,
+        },
+      },
+      const: {
+        arbitrary: Schema.Constraints.defaults.const.arbitrary,
+        include: {
+          const: Schema.Constraints.defaults.const.include.const,
+          description: Schema.Constraints.defaults.const.include.description,
+          example: Schema.Constraints.defaults.const.include.example,
+          examples: Schema.Constraints.defaults.const.include.examples,
+        },
+      },
+      enum: {
+        arbitrary: Schema.Constraints.defaults.enum.arbitrary,
+        include: {
+          const: Schema.Constraints.defaults.enum.include.const,
+          description: Schema.Constraints.defaults.enum.include.description,
+          example: Schema.Constraints.defaults.enum.include.example,
+          examples: Schema.Constraints.defaults.enum.include.examples,
+        },
+      },
+      integer: {
+        arbitrary: _?.schemas?.integer?.arbitrary ?? Schema.Constraints.defaults.integer.arbitrary,
+        include: {
+          const: _?.schemas?.integer?.include?.const ?? Schema.Constraints.defaults.integer.include.const,
+          description: _?.schemas?.integer?.include?.description ?? Schema.Constraints.defaults.integer.include.description,
+          example: _?.schemas?.integer?.include?.example ?? Schema.Constraints.defaults.integer.include.example,
+          examples: _?.schemas?.integer?.include?.examples ?? Schema.Constraints.defaults.integer.include.examples,
+        },
+      },
+      null: {
+        arbitrary: _?.schemas?.null?.arbitrary ?? Schema.Constraints.defaults.null.arbitrary,
+        include: {
+          const: _?.schemas?.null?.include?.const ?? Schema.Constraints.defaults.null.include.const,
+          description: _?.schemas?.null?.include?.description ?? Schema.Constraints.defaults.null.include.description,
+          example: _?.schemas?.null?.include?.example ?? Schema.Constraints.defaults.null.include.example,
+          examples: _?.schemas?.null?.include?.examples ?? Schema.Constraints.defaults.null.include.examples,
+        },
+      },
+      number: {
+        arbitrary: _?.schemas?.number?.arbitrary ?? Schema.Constraints.defaults.number.arbitrary,
+        include: {
+          const: _?.schemas?.number?.include?.const ?? Schema.Constraints.defaults.number.include.const,
+          description: _?.schemas?.number?.include?.description ?? Schema.Constraints.defaults.number.include.description,
+          example: _?.schemas?.number?.include?.example ?? Schema.Constraints.defaults.number.include.example,
+          examples: _?.schemas?.number?.include?.examples ?? Schema.Constraints.defaults.number.include.examples,
+        },
+      },
+
+      object: {
+        arbitrary: _?.schemas?.object?.arbitrary ?? Schema.Constraints.defaults.object.arbitrary,
+        include: {
+          const: _?.schemas?.object?.include?.const ?? Schema.Constraints.defaults.object.include.const,
+          description: _?.schemas?.object?.include?.description ?? Schema.Constraints.defaults.object.include.description,
+          example: _?.schemas?.object?.include?.example ?? Schema.Constraints.defaults.object.include.example,
+          examples: _?.schemas?.object?.include?.examples ?? Schema.Constraints.defaults.object.include.examples,
+        },
+        const: _?.schemas?.object?.const ?? Schema.Constraints.defaults.object.const,
+        description: _?.schemas?.object?.description ?? Schema.Constraints.defaults.object.description,
+        example: _?.schemas?.object?.example ?? Schema.Constraints.defaults.object.example,
+        keySize: _?.schemas?.object?.keySize ?? Schema.Constraints.defaults.object.keySize,
+        nullable: _?.schemas?.object?.nullable ?? Schema.Constraints.defaults.object.nullable,
+      },
+      record: {
+        arbitrary: _?.schemas?.record?.arbitrary ?? Schema.Constraints.defaults.record.arbitrary,
+        include: {
+          const: _?.schemas?.record?.include?.const ?? Schema.Constraints.defaults.record.include.const,
+          description: _?.schemas?.record?.include?.description ?? Schema.Constraints.defaults.record.include.description,
+          example: _?.schemas?.record?.include?.example ?? Schema.Constraints.defaults.record.include.example,
+          examples: _?.schemas?.record?.include?.examples ?? Schema.Constraints.defaults.record.include.examples,
+        },
+      },
+      string: {
+        arbitrary: _?.schemas?.string?.arbitrary ?? Schema.Constraints.defaults.string.arbitrary,
+        include: {
+          const: _?.schemas?.string?.include?.const ?? Schema.Constraints.defaults.string.include.const,
+          description: _?.schemas?.string?.include?.description ?? Schema.Constraints.defaults.string.include.description,
+          example: _?.schemas?.string?.include?.example ?? Schema.Constraints.defaults.string.include.example,
+          examples: _?.schemas?.string?.include?.examples ?? Schema.Constraints.defaults.string.include.examples,
+        },
+      },
+      tuple: {
+        minLength: _?.schemas?.tuple?.minLength ?? Schema.Constraints.defaults.tuple.minLength,
+        arbitrary: _?.schemas?.tuple?.arbitrary ?? Schema.Constraints.defaults.tuple.arbitrary,
+        include: {
+          const: _?.schemas?.tuple?.include?.const ?? Schema.Constraints.defaults.tuple.include.const,
+          description: _?.schemas?.tuple?.include?.description ?? Schema.Constraints.defaults.tuple.include.description,
+          example: _?.schemas?.tuple?.include?.example ?? Schema.Constraints.defaults.tuple.include.example,
+          examples: _?.schemas?.tuple?.include?.examples ?? Schema.Constraints.defaults.tuple.include.examples,
+        },
+      },
       sortBias: Schema.Constraints.defaults.sortBias,
       base: {
         exclude: _?.exclude ?? Schema.Constraints.defaults.base.exclude,
@@ -1060,9 +1211,9 @@ const constraintsAdapter
           description: _?.include.description ?? Schema.Constraints.defaults.base.include.description,
           example: _?.include.example ?? Schema.Constraints.defaults.base.include.example,
           examples: _?.include.examples ?? Schema.Constraints.defaults.base.include.examples,
-        }
+        },
       },
-    }
+    } satisfies Schema.Constraints
   }
 
 export declare namespace mediatype {

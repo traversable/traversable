@@ -27,7 +27,7 @@ vi.describe("〖️⛳️〗‹‹‹ ❲@traversable/algebra/augmentation❳", 
   })
 
   vi.it("〖️⛳️〗› ❲algebra/augmentation❳: matchers are applied during evaluation", async () => {
-    const za = Generator.fromMatchers({
+    const za = Generator.derive({
       Bro(x, _) { return x.type  },
       Brr(x, _) { return x.type + 1 },
       Bun(x, _) { return x.type },

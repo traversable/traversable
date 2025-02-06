@@ -1,4 +1,4 @@
-import { fn, type nonempty, object } from "@traversable/data"
+import { fn, map, type nonempty, object } from "@traversable/data"
 import { Invariant, symbol } from "@traversable/registry"
 import type {
   Functor,
@@ -165,7 +165,7 @@ const Traversable_map = {
   string: <Traversable_string>{ type: "string" } satisfies Traversable_string,
   enum: <Traversable_enum>{ type: "enum", enum: [] } satisfies Traversable_enum,
   const: <Traversable_const>{ type: "const", "const": {} } satisfies Traversable_const,
-  allOf: <Traversable_allOfF<Traversable>>{ type: "allOf", allOf: [] } satisfies Traversable_allOfF<Traversable>,
+  allOf: { type: "allOf", allOf: [] } satisfies Traversable_allOfF<Traversable>,
   anyOf: <Traversable_anyOfF<Traversable>>{ type: "anyOf", anyOf: [] } satisfies Traversable_anyOfF<Traversable>,
   oneOf: <Traversable_oneOfF<Traversable>>{ type: "oneOf", oneOf: [] } satisfies Traversable_oneOfF<Traversable>,
   array: <Traversable_arrayF<Traversable>>{ type: "array", items: { type: "any" } } satisfies Traversable_arrayF<Traversable>,
@@ -180,7 +180,7 @@ interface Traversable_Meta extends Meta.has<Meta.Base> {}
 interface Traversable_lambda<Ext = never> extends HKT { [-1]: Traversable_F<this[0] | Ext> }
 ///
 interface Traversable_allOf extends
-  Combinator<Traversable, "allOf">,
+  Combinator<Traversable_object, "allOf">,
   Traversable_Meta
   { type: "allOf" }
 
@@ -236,8 +236,12 @@ interface Traversable_recordF<T> extends
   Traversable_Meta
   { type: "record" }
 
+// interface Traversable_allOf extends
+//   Combinator<Record<string, Traversable>, "allOf">,
+//   Traversable_Meta
+//   { type: "allOf" }
 interface Traversable_allOfF<T> extends
-  Combinator<T, "allOf">,
+  Combinator<Traversable_objectF<T>, "allOf">,
   Traversable_Meta
   { type: "allOf" }
 
@@ -455,6 +459,16 @@ const Traversable_is = Object_assign(
   is_,
 )
 
+const mapObject = <S, T>(f: (src: S) => T) => (x: Traversable_objectF<S>) => {
+  const { additionalProperties: a, properties: p, ...y } = x
+  const entries = Object_entries(p).map(([k, v]) => [k, f(v)])
+  return {
+    ...y,
+    properties: Object_fromEntries(entries),
+    ...a && { additionalProperties: f(a) },
+  }
+}
+
 const Traversable_Functor: Functor<Traversable_lambda, Traversable> = {
   map(f) {
     return (x) => {
@@ -469,20 +483,12 @@ const Traversable_Functor: Functor<Traversable_lambda, Traversable> = {
         case Traversable_is.string(x): return x
         case Traversable_is.any(x): return x
         case Traversable_is.array(x): return { ...x, items: f(x.items) }
-        case Traversable_is.allOf(x): return { ...x, allOf: x.allOf.map(f) }
         case Traversable_is.anyOf(x): return { ...x, anyOf: x.anyOf.map(f) }
         case Traversable_is.oneOf(x): return { ...x, oneOf: x.oneOf.map(f) }
+        case Traversable_is.allOf(x): return { ...x, allOf: x.allOf.map(mapObject(f)) }
         case Traversable_is.tuple(x): return { ...x, items: x.items.map(f) }
         case Traversable_is.record(x): return { ...x, additionalProperties: f(x.additionalProperties) }
-        case Traversable_is.object(x): {
-          const { additionalProperties: a, properties: p, ...y } = x
-          const entries = Object_entries(p).map(([k, v]) => [k, f(v)])
-          return {
-            ...y,
-            properties: Object_fromEntries(entries),
-            ...a && { additionalProperties: f(a) },
-          }
-        }
+        case Traversable_is.object(x): return mapObject(f)(x)
       }
     }
   }
@@ -527,25 +533,46 @@ function omitKeywords<T extends {}>(x: T) {
   return object.omit(x, ...keywords)
 }
 
+const makeH = <S>(xs: Traversable_F<S>) => (next?: keyof any) => (path: (keyof any)[], overrides?: {}) => (prev: Context) => ({
+  ...omitKeywords(prev),
+  depth: prev.depth + 1,
+  indent: prev.indent + 2,
+  // `next` is already applied to the path, bc sometimes `next`
+  // isn't actually last (as is the case with `symbol.optional`)
+  path,
+  absolutePath: [
+    ...prev.absolutePath, 
+    PathPrefixMap[xs.type], 
+    (next == null ? null : String(next)),
+    // ...next === undefined ? [] : [String(next)]
+  ].filter((_) => _ !== null),
+  ...overrides,
+} satisfies Context)
+
+const mapIxObject 
+  : <S, T>(g: (ix: Context, x: S) => T) => ($: Context) => (xs: Traversable_objectF<S>, i?: number) => Traversable_objectF<T>
+  = <S, T>(g: (ix: Context, x: S) => T) => ($: Context) => (xs: Traversable_objectF<S>, i?: number) => {
+    const h = makeH(xs)
+    const { additionalProperties: a, properties: p, ...y } = xs
+    const entries = Object_entries(p).map(([k, v]) => {
+      const isOptional = !xs.required?.includes(k)
+      const path = [ ...$.path, symbol.object, k, ...(isOptional ? [symbol.optional] : [])]
+      const next = { ...h(k)(path)($), ...(hasExample(v) && { example: v.meta.example }) }
+      return [k, g(next, v)] satisfies [any, any]
+    })
+    return {
+      ...y,
+      properties: Object_fromEntries(entries),
+      // TODO: move to `symbol.record` instead?
+      // ...a && { additionalProperties: f({ ...$, depth, path: [symbol.record, ...$.path] }, a) }
+    }
+  }
+
 const IxFunctor: IndexedFunctor<Context, Traversable_lambda, Traversable_orJsonSchema> = {
   map: Traversable_Functor.map,
   mapWithIndex(g) {
     return ($, xs) => {
-      const h = (next?: keyof any) => (path: (keyof any)[], overrides?: {}) => (prev: Context) => ({
-        ...omitKeywords(prev),
-        depth: prev.depth + 1,
-        indent: prev.indent + 2,
-        // `next` is already applied to the path, bc sometimes `next`
-        // isn't actually last (as is the case with `symbol.optional`)
-        path,
-        absolutePath: [
-          ...prev.absolutePath, 
-          PathPrefixMap[xs.type], 
-          (next == null ? null : String(next)),
-          // ...next === undefined ? [] : [String(next)]
-        ].filter((_) => _ !== null),
-        ...overrides,
-      } satisfies Context)
+      const h = makeH(xs)
 
       switch (true) {
         default: return fn.softExhaustiveCheck(xs)
@@ -558,27 +585,12 @@ const IxFunctor: IndexedFunctor<Context, Traversable_lambda, Traversable_orJsonS
         case Traversable_is.string(xs): return xs
         case Traversable_is.any(xs): return xs
         case Traversable_is.array(xs): return { ...xs, items: g(h()([...$.path, symbol.array])($), xs.items) }
-        case Traversable_is.allOf(xs): return { ...xs, allOf: xs.allOf.map((x, i) => g(h(i)([...$.path, symbol.allOf, i])($), x)) }
         case Traversable_is.anyOf(xs): return { ...xs, anyOf: xs.anyOf.map((x, i) => g(h(i)([...$.path, symbol.anyOf, i])($), x)) }
         case Traversable_is.oneOf(xs): return { ...xs, oneOf: xs.oneOf.map((x, i) => g(h(i)([...$.path, symbol.oneOf, i])($), x)) }
         case Traversable_is.tuple(xs): return { ...xs, items: xs.items.map((x, i) => g(h(i)([...$.path, symbol.tuple, i])($), x)) }
         case Traversable_is.record(xs): return { ...xs, additionalProperties: g(h()([...$.path, symbol.record])($), xs.additionalProperties) }
-        case Traversable_is.object(xs): {
-          const { additionalProperties: a, properties: p, ...y } = xs
-          const entries = Object_entries(p).map(([k, v]) => {
-            const isOptional = !xs.required?.includes(k)
-            const path = [ ...$.path, symbol.object, k, ...(isOptional ? [symbol.optional] : [])]
-            const next = { ...h(k)(path)($), ...(hasExample(v) && { example: v.meta.example }) }
-            return [k, g(next, v)] satisfies [any, any]
-          })
-
-          return {
-            ...y,
-            properties: Object_fromEntries(entries),
-            // TODO: move to `symbol.record` instead?
-            // ...a && { additionalProperties: f({ ...$, depth, path: [symbol.record, ...$.path] }, a) }
-          }
-        }
+        case Traversable_is.allOf(xs): return { ...xs, allOf: xs.allOf.map((x, i) => mapIxObject(g)(h(i)([...$.path, symbol.allOf, i])($))(x, i)) }
+        case Traversable_is.object(xs): return mapIxObject(g)($)(xs)
       }
     }
   }
@@ -630,6 +642,14 @@ const fromJsonSchema = (expr: JsonSchema.any) => {
 
 const NotYetSupported = (...args: Parameters<typeof Invariant.NotYetSupported>) => Invariant.NotYetSupported(...args)("core/src/model/traversable")
 
+const mapAstObjectProperties
+  : (x: Record<string, Traversable>) => Traversable_object
+  = (x) => ({
+    type: 'object',
+    properties: x,
+    required: Object.keys(x).filter((k) => !x[k].meta?.optional),
+  })
+
 const fromAST
   : Functor.Algebra<t.AST.lambda, Traversable>
   = (x) => {
@@ -645,17 +665,13 @@ const fromAST
       case x._tag === "enum": return { ...x, ...Traversable_enum, type: x._tag, enum: x.def } satisfies Traversable_enum
       case x._tag === "const": return { ...x, type: x._tag, const: x.def } satisfies Traversable_const
       case x._tag === "optional": return { ...x.def, meta: { ...x.def.meta, optional: true } }
-      case x._tag === "allOf": return { ...x, type: x._tag, allOf: x.def } satisfies Traversable_allOf
       case x._tag === "anyOf": return { ...x, type: x._tag, anyOf: x.def } satisfies Traversable_anyOf
       case x._tag === "oneOf": return { ...x, type: x._tag, oneOf: x.def } satisfies Traversable_oneOf
       case x._tag === "array": return { type: x._tag, items: x.def } satisfies Traversable_array
       case x._tag === "record": return { type: x._tag, additionalProperties: x.def } satisfies Traversable_record
       case x._tag === "tuple": return { type: x._tag, items: x.def } satisfies Traversable_tuple
-      case x._tag === "object": return {
-        type: x._tag,
-        properties: x.def,
-        required: Object.keys(x.def).filter((k) => !x.def[k].meta?.optional),
-      } satisfies Traversable_object
+      case x._tag === "allOf": return { ...x, type: x._tag, allOf: x.def.map(mapAstObjectProperties) } satisfies Traversable_allOf
+      case x._tag === "object": return mapAstObjectProperties(x.def) satisfies Traversable_object
     }
   }
 
