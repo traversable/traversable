@@ -249,11 +249,11 @@ const loopRefs = fn.loopN<[_: Serializable, ctx: serialize.Context], void>(
     switch (true) {
       case $.maxDepth > 0 && $.currentDepth >= $.maxDepth:
       case (_ == null): 
-      case (typeof  _) === "boolean":
-      case (typeof  _) === "number":
-      case (typeof  _) === "string":
-      case (typeof  _) === "symbol":
-      case (typeof  _) === "bigint": return void 0
+      case (typeof _) === "boolean":
+      case (typeof _) === "number":
+      case (typeof _) === "string":
+      case (typeof _) === "symbol":
+      case (typeof _) === "bigint": return void 0
       case (typeof _) === "function": return "Function(" + (_ as globalThis.Function).name + ")"
       case Array_isArray(_): {
         if ($.seen.has(_)) {

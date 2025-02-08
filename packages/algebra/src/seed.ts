@@ -2,11 +2,10 @@ import * as fs from 'node:fs'
 import * as path from 'node:path'
 
 import type { JsonSchema } from '@traversable/core'
-import { Traversable, fc, is, show, tree } from '@traversable/core'
-import { fn, keys, map, object, string } from '@traversable/data'
-import { composeExamples, OpenAPI, Schema } from '@traversable/openapi'
-import type { Functor, _, autocomplete } from '@traversable/registry'
-import { symbol } from '@traversable/registry'
+import { Traversable, fc, is, tree } from '@traversable/core'
+import { fn, keys, map, string } from '@traversable/data'
+import { OpenAPI, Schema, composeExamples } from '@traversable/openapi'
+import type { _, autocomplete } from '@traversable/registry'
 
 import { escapePathSegment, unescapePathSegment } from './shared.js'
 
@@ -21,10 +20,6 @@ const Array_isArray: <T>(u: unknown) => u is readonly T[] = globalThis.Array.isA
 /** @internal */
 const Object_values = globalThis.Object.values
 
-const PATTERN = {
-  CleanPathName: /(\/|~|-|{|})/g
-} as const
-
 export const TARGETS_DIR = path.join(path.resolve(), 'packages', 'algebra', 'test', '__generated__')
 export const SPECS_DIR = path.join(path.resolve(), 'packages', 'algebra', 'test', '__specs__')
 export const PATH = {
@@ -36,26 +31,24 @@ export const PATH = {
   specs: {
     dir: SPECS_DIR,
     arbitrary: path.join(SPECS_DIR, 'arbitrary.spec.json'),
-    octokit: path.join(SPECS_DIR, 'octokit.spec.json'),
+    // octokit: path.join(SPECS_DIR, 'octokit.spec.json'),
+    pet: path.join(SPECS_DIR, 'pet.spec.json'),
   },
   hacks: {
     dir: SPECS_DIR,
     arbitrary: path.join(SPECS_DIR, 'arbitrary.hack.ts'),
-    octokit: path.join(SPECS_DIR, 'octokit.hack.ts'),
+    pet: path.join(SPECS_DIR, 'pet.hack.ts'),
+    // octokit: path.join(SPECS_DIR, 'octokit.hack.ts'),
   },
   targets: {
     dir: TARGETS_DIR,
-    octokit: path.join(TARGETS_DIR, `octokit.target.ts`),
+    // octokit: path.join(TARGETS_DIR, `octokit.target.ts`),
     ark: path.join(TARGETS_DIR, 'ark.target.ts'),
     zod: path.join(TARGETS_DIR, 'zod.target.ts'),
     typebox: path.join(TARGETS_DIR, 'typebox.target.ts'),
     zodTypesOnly: path.join(TARGETS_DIR, 'zodtypesOnly.target.ts'),
   }
 } as const
-
-export const typeNameFromPath = (k: string) => k.startsWith('/paths/') 
-  ? string.capitalize(k.slice('/paths/'.length).replace(PATTERN.CleanPathName, '_'))
-  : string.capitalize(k).replace(PATTERN.CleanPathName, '_')
 
 export const remapRefs
   : (leaveUnescaped: autocomplete<`#/components/schemas`>) => (x: Any) => Any
@@ -78,7 +71,6 @@ export const remapRefs
       case is.nonnullable(x): return x
     }
   }
-
 
 const pathify = fn.flow(
   keys.map.deep(escapePathSegment),
@@ -214,20 +206,39 @@ export function seed($: seed.Options = defaults) {
     : OpenAPI.doc
     = JSON_parse(fs.readFileSync(PATH.specs.arbitrary).toString('utf8'))
 
+
   fs.writeFileSync(
     PATH.hacks.arbitrary, 
     pathify(arbitrarySpec),
   )
 
-  const octokitSpec
+  // const octokitSpec
+  //   : OpenAPI.doc<JsonSchema>
+  //   = JSON_parse(fs.readFileSync(PATH.specs.octokit).toString('utf8'))
+
+  // fs.writeFileSync(
+  //   PATH.hacks.octokit,
+  //   fn.pipe(
+  //     octokitSpec,
+  //     OpenAPI.map(Traversable.fromJsonSchema),
+  //     pathify,
+  //   )
+  // )
+
+  const petSpec
     : OpenAPI.doc<JsonSchema>
-    = JSON_parse(fs.readFileSync(PATH.specs.octokit).toString('utf8'))
+    = JSON_parse(fs.readFileSync(PATH.specs.pet).toString('utf8'))
 
   fs.writeFileSync(
-    PATH.hacks.octokit,
+    PATH.hacks.pet,
     fn.pipe(
-      octokitSpec,
-      OpenAPI.map(Traversable.fromJsonSchema),
+      petSpec,
+      OpenAPI.map(
+        fn.flow(
+          Traversable.fromJsonSchema,
+          composeExamples,
+        )
+      ),
       pathify,
     )
   )

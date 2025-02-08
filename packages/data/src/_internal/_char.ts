@@ -17,6 +17,13 @@ const CODE = {
   z: 122,
 } as const
 
+/** @internal */
+const String_fromCharCode = globalThis.String.fromCharCode
+/** @internal */
+const Math_floor = globalThis.Math.floor
+/** @internal */
+const Math_random = globalThis.Math.random
+
 /**
  * ### {@link char_finite `char.finite`}
  * 
@@ -149,3 +156,13 @@ export const isTrailingSurrogate = (char: string) => {
   let pt = char.charCodeAt(0)
   return 0xdc00 <= pt && pt <= 0xdfff
 }
+
+export const buildCharset = (startChar: string, endChar: string) => () => String_fromCharCode(
+  Math_floor(Math_random() * (endChar.charCodeAt(0) - startChar.charCodeAt(0))) + startChar.charCodeAt(0)
+)
+
+export const generateLowercaseChar = buildCharset('a', 'z')
+export const generateUppercaseChar = buildCharset('A', 'Z')
+
+export const generateLowercaseWord = (length: number) => Array.from({ length }, generateLowercaseChar).join('')
+export const generateUppercaseWord = (length: number) => Array.from({ length }, generateUppercaseChar).join('')

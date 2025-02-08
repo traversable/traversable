@@ -64,6 +64,7 @@ namespace Algebra {
       case Traversable.is.anyOf(n): return fn.throw("UNIMPLEMENETED")
       case Traversable.is.oneOf(n): return fn.throw("UNIMPLEMENETED")
       case Traversable.is.record(n): return fn.throw("UNIMPLEMENTED")
+      case Traversable.is.$ref(n): return fn.throw("UNIMPLEMENTED")
     }
   }
 }

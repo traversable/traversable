@@ -23,5 +23,6 @@ export {
   unescapePathSegment, 
   optionsFromMatchers, 
   fold,
+  typeNameFromPath,
 } from "./shared.js"
-export { seed, typeNameFromPath } from "./seed.js"
+export { seed } from "./seed.js"

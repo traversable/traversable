@@ -1,17 +1,17 @@
-import { z } from "zod"
+import { z } from 'zod'
 
-import type { Meta, Traversable } from "@traversable/core"
-import { core, keyOf$, merge, t, tree } from "@traversable/core"
-import { fn, object } from "@traversable/data"
-import type { Depth, Wane, Wax, _, symbol } from "@traversable/registry"
-import { Invariant, KnownFormat } from "@traversable/registry"
+import type { Meta, Traversable } from '@traversable/core'
+import { core, keyOf$ } from '@traversable/core'
+import { fn, object } from '@traversable/data'
+import type { _ } from '@traversable/registry'
+import { Invariant, KnownFormat } from '@traversable/registry'
 
-import * as Gen from "../generator.js"
-import * as JSDoc from "../jsdoc.js"
-import * as Print from "../print.js"
+import * as Gen from '../generator.js'
+import * as JSDoc from '../jsdoc.js'
+import * as Print from '../print.js'
+import { fromUnknownValue, unsafeFromUnknownValue as fromValueObject, serialize } from './algebra.js'
 
-import { inline } from "any-ts"
-import type { Index, Matchers, TargetTemplate } from "../shared.js"
+import type { Index, Matchers, TargetTemplate } from '../shared.js'
 import {
   JsonLike,
   type Options,
@@ -20,7 +20,7 @@ import {
   defaults as defaults_,
   escapePathSegment,
   linkToOpenAPIDocument,
-} from "../shared.js"
+} from '../shared.js'
 
 export {
   type Formats,
@@ -29,7 +29,6 @@ export {
   dependencies,
   defaults,
   template,
-  serializer,
   //
   derivatives,
   derive,
@@ -45,6 +44,16 @@ const Object_entries = globalThis.Object.entries
 const Object_fromEntries = globalThis.Object.fromEntries
 /** @internal */
 const JSON_stringify = (u: unknown) => JSON.stringify(u, null, 2)
+/** @internal */
+const Array_isArray = globalThis.Array.isArray
+/** @internal */
+const twoOrMore = <T>(u: readonly T[]): u is readonly [T, T, ...T[]] => Array_isArray(u) && u.length > 1
+/** @internal */
+const TooFew = (xs: readonly z.ZodTypeAny[]) => Invariant.ZodUnionsRequireTwoOrMore('algebra/zod.derivatives', xs)
+/** @internal */
+const isNonEmptyArrayOf
+  : <T>(guard: (u: unknown) => u is T) => (u: unknown) => u is readonly [T, ...T[]]
+  = (guard) => (u): u is never => Array_isArray(u) && u.every(guard)
 
 type NS = typeof NS
 const NS = 'z' as const
@@ -168,18 +177,22 @@ const compilers = {
   integer({ meta = {} }, $) { return `z.number().int()${Constrain.integer(meta).join('')}` },
   number({ meta = {} }, $) { return `z.number()${Constrain.number(meta).join('')}` },
   string({ meta = {} }, $) { return `z.string()${Constrain.string(meta).join('')}` },
-  const({ const: xs }, $) { return serializer($)(xs) },
+  // const({ const: xs }, $) { return serialize($.indent)(xs as {}) },
+  const({ const: xs }, $) { return serialize($.indent)(xs as {}) },
   enum({ enum: xs }, $) {
     if (xs.length === 0) return 'z.never()'
     else if (xs.every(core.is.string)) return 'z.enum([' + xs.join(', ') + '])'
     else {
-      const ss = xs.filter(core.is.primitive).map((v) => 'z.literal(' + typeof v === 'string' ? JSON_stringify(v) : String(v) + ')')
+      const ss = xs
+        .filter(core.is.primitive)
+        .map((v) => 'z.literal(' + typeof v === 'string' ? JSON_stringify(v) : String(v) + ')')
       return ss.length === 1 ? ss[0] : Print.array($)('z.union([', ...ss, '])')
     }
   },
   array({ items: s }, $) { return Print.array($)('z.array(', s, ')') },
   record({ additionalProperties: s }, $) { return Print.array($)('z.record(', s, ')') },
   tuple({ items: ss }, $) { return Print.array($)('z.tuple([', ...ss, '])') },
+  object(ss, $) { return compileObjectNode($)(ss) },
   anyOf({ anyOf: xs }, $) { 
     switch (true) {
       case xs.length === 0: return 'z.never()'
@@ -200,10 +213,13 @@ const compilers = {
       case xs.length === 0: return 'z.unknown'
       case xs.length === 1: return xs[0]
       case xs.length === 2: return Print.array($)('z.intersection(', xs[0], xs[1], ')')
-      default: return Print.array($)('', ...xs.slice(1).reduce((acc, x) => acc === '' ? xs[0] : `${acc}.and(${x})`, xs[0]), '')
+      default: return Print.array($)('', ...xs.slice(1).reduce((acc, x) => `${acc}.and(${x})`, ''), '')
     }
   },
-  object(ss, $) { return compileObjectNode($)(ss) },
+  $ref({ $ref: x }, $) {
+    const reference = $.refs[x]
+    return x
+  }
 } as const satisfies Matchers<string>
 
 const compileObjectNode = ($: Index) => (ss: core.Traversable.objectF<string>) => {
@@ -211,10 +227,10 @@ const compileObjectNode = ($: Index) => (ss: core.Traversable.objectF<string>) =
   return xs.length === 0 
     ? 'z.object({})' 
     : 'z.object({'
-      + xs.map(generateEntry(ss, $, ['z.optional(', ')'])).join(',') 
-      + '\n' 
-      + ' '.repeat($.indent)
-      + '})'
+    + xs.map(generateEntry(ss, $, ['z.optional(', ')'])).join(',') 
+    + '\n' 
+    + ' '.repeat($.indent)
+    + '})'
 }
 
 /**
@@ -248,24 +264,28 @@ const deriveObjectNode
   }
 
 const derivatives = {
-  any(_) { return z.unknown() },
-  null(_) { return z.null() },
-  boolean(_) { return z.boolean() },
-  integer(_) { return z.number().int() },
-  number(_) { return z.number() },
+  any() { return z.unknown() },
+  null() { return z.null() },
+  boolean() { return z.boolean() },
+  integer() { return z.number().int() },
+  number() { return z.number() },
   string({ meta }) { return (Formats.string.derive[(meta?.format ?? '') as never] ?? z.string()) },
-  const(_, $) { return constToZodSchema($)(_) },
-  enum({ enum: ss }) {
-    const [s0, s1, ...sn] = ss.filter(core.is.primitive).map((v) => z.literal(v))
-    return z.union([s0, s1, ...sn])
+  const({ const: x }, $) { return fromValueObject(x)  },
+  enum({ enum: xs }) {
+    return isNonEmptyArrayOf(core.is.string)(xs) 
+      ? z.enum(xs) 
+      : fn.pipe( xs.map(fromValueObject), (s) => twoOrMore(s) ? z.union(s) : TooFew(s))
   },
-  allOf({ allOf: ss }, $) { return ss.map(deriveObjectNode($)).reduce((acc, x) => acc.and(x), z.unknown()) },
-  anyOf({ anyOf: ss }) { return ss.length < 2 ? fn.throw("anyOf requires 2+", ss) : z.union([ss[0], ss[1], ...ss.slice(2)]) },
-  oneOf({ oneOf: ss }) { return ss.length < 2 ? fn.throw("oneOf requires 2+", ss) : z.union([ss[0], ss[1], ...ss.slice(2)]) },
+  allOf({ allOf: xs }, $) { return xs.map(deriveObjectNode($)).reduce((acc, x) => acc.and(x), z.unknown()) },
+  anyOf({ anyOf: xs }) { return twoOrMore(xs) ? z.union(xs) : TooFew(xs) },
+  oneOf({ oneOf: xs }) { return twoOrMore(xs) ? z.union(xs) : TooFew(xs) },
   array({ items: s }) { return z.array(s) },
   tuple({ items: [s, ...ss] }) { return z.tuple([s, ...ss]) },
   record({ additionalProperties: s }) { return z.record(s) },
-  object(ss, $) { return deriveObjectNode($)(ss) }
+  object(ss, $) { return deriveObjectNode($)(ss) },
+  $ref({ $ref: x }, $) {
+    return z.never()
+  }
 } as const satisfies Matchers<z.ZodTypeAny>
 
 /**
@@ -307,26 +327,11 @@ function generateEntry(
     const DESCRIPTION_TAG = JSDoc.description(k, $)
     const LINK_HERE = linkToNode(k, $)
     const LINK_TO_DOC = linkToOpenAPIDocument(k, $)
-    // const JSDOCS = [
-    //   LINK_HERE, 
-    //   LINK_TO_DOC, 
-    //   DESCRIPTION_TAG, 
-    //   EXAMPLE_TAG
-    // ].filter((_) => _ !== null)
+    const JSDOCS = [LINK_HERE, LINK_TO_DOC, DESCRIPTION_TAG, EXAMPLE_TAG].filter((_) => _ !== null)
+    const COMMENT = JSDOCS.length === 0 ? [] : ['/**', ...JSDOCS, ' */']
     return ([
       '',
-      // JSDOCS.length === 0 ? null : [
-      '/**',
-      LINK_HERE, 
-      LINK_TO_DOC, 
-      DESCRIPTION_TAG, 
-      EXAMPLE_TAG,
-      // LINK_HERE,
-      // LINK_TO_DOC,
-      // DESCRIPTION_TAG,
-      // EXAMPLE_TAG,
-      ' */',
-      // ].join(''),
+      ...COMMENT,
       `${object.parseKey(k)}: ${
         !required.includes(k) ? (BEFORE_OPT + v + AFTER_OPT) : v
       }`,
@@ -336,84 +341,14 @@ function generateEntry(
   }
 }
 
-function serializer(ix: Index): (x: unknown) => string {
-  const loop = (indent: number) => (x: JsonLike): string => {
-    switch (true) {
-      default: return fn.exhaustive(x)
-      case x === null:
-      case x === undefined:
-      case typeof x === 'boolean':
-      case typeof x === 'number': return 'z.literal(' + String(x) + ')'
-      case typeof x === 'string': return 'z.literal("' + x + '")'
-      case JsonLike.isArray(x): {
-        return x.length === 0
-          ? 'z.tuple([])'
-          : Print.array({ indent })(
-            'z.tuple([', 
-            ...x.map(loop(indent + 2)), 
-            '])'
-          )
-      }
-      case !!x && typeof x === 'object': {
-        const xs = Object.entries(x)
-        return xs.length === 0 
-          ? 'z.object({})' 
-          : Print.array({ indent })(
-            'z.object({',
-            ...xs.map(([k, v]) => object.parseKey(k) + ': ' + loop(indent + 2)(v)),
-            '})'
-          )
-      }
-    }
-  }
-  return (x: unknown) => {
-    if (!JsonLike.is(x) ) return Invariant.NonSerializableInput("zod.serialize", x)
-    const out = loop(ix.indent)(x)
-    console.group("\n\n\nserializer::\n\n\n")
-    console.log('serializer [BEFORE]:: ', x)
-    console.log('serializer [AFTER]:: ', out)
-    console.groupEnd()
-
-    return out
-  }
-}
 
 const isArray 
   : (u: unknown) => u is z.ZodTypeAny[]
   = globalThis.Array.isArray
 const isObject
   : (u: unknown) => u is Record<string, z.ZodTypeAny>
-  = (u): u is never => !!u && typeof u === "object"
+  = (u): u is never => !!u && typeof u === 'object'
 
-function constToZodSchema(ix: Index): (x: unknown) => z.ZodTypeAny {
-  const loop = (indent: number) => (x: unknown): z.ZodTypeAny => {
-    console.log("x", x)
-    switch (true) {
-      default: return fn.exhaustive(x)
-      case x === null: return z.null()
-      case x === undefined: return z.undefined()
-      case typeof x === 'boolean': return z.literal(x)
-      case typeof x === 'number': return z.literal(x)
-      case typeof x === 'string': return z.literal(x)
-      case isArray(x): { return z.tuple([x[0], ...x.slice(1)]) }
-      case isObject(x): {
-        const xs = Object.entries(x)
-        return xs.length === 0 
-          ? z.object({}) 
-          : z.object(x)
-          // Print.array({ indent })(
-            // 'z.object({',
-            // ...xs.map(([k, v]) => object.parseKey(k) + ': ' + loop(indent + 2)(v)),
-            // '})'
-          // )
-      }
-      case x != null: return z.object({})
-    }
-  }
-  return (x: unknown) => !JsonLike.is(x) 
-    ? Invariant.NonSerializableInput("zod.serialize", x)
-    : loop(ix.indent)(x)
-}
 
 
 // const typesOnly = {

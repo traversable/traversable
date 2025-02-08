@@ -295,8 +295,7 @@ export function fromPredicate<T, E>(predicate: (t: T) => boolean, onFalse: (t: T
 /// impl.
 export function fromPredicate<T, E>(predicate: (t: T) => boolean, onFalse?: (t: T) => E) {
   return (t: T) => predicate(t) ? ok(t) : err(
-    onFalse?.(t) ?? 
-    toError(t, Invariant.PredicateFailed("@traversable/data/Result.fromPredicate"))
+    !!onFalse ? onFalse(t) : toError(t)
   )
 }
 

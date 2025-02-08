@@ -1,8 +1,9 @@
 import { z } from 'zod'
 
-import { core, tree } from '@traversable/core'
-import { map as fmap, fn, object } from '@traversable/data';
+import { Json, core, tree } from '@traversable/core'
+import { Option, map as fmap, fn, object } from '@traversable/data';
 import type { Functor, HKT, _ } from '@traversable/registry'
+
 
 export {
   type Z as z,
@@ -11,7 +12,15 @@ export {
   tag,
   tagged,
   toString,
+  serialize,
+  fromValueObject,
+  fromUnknownValue,
+  unsafeFromUnknownValue,
 }
+
+const Array_isArray 
+  : <T>(u: unknown) => u is readonly T[]
+  = globalThis.Array.isArray
 
 const tag = z.ZodFirstPartyTypeKind
 type Tag = typeof Tag
@@ -241,7 +250,7 @@ const Functor_: Functor<Z.lambda, Any> = {
   map(f) {
     return (x) => {
       switch (true) {
-        default: return fn.exhaustive(x)
+        default: return x // fn.exhaustive(x)
         ///  leaves, a.k.a "nullary" types
         case tagged('never')(x): return x
         case tagged('any')(x): return x
@@ -311,7 +320,7 @@ const applyArrayConstraints = (x: Z.Array) => ([
 namespace Algebra {
   export const toString: Functor.Algebra<Z.lambda, string> = (x) => {
     switch (true) {
-      default: return fn.exhaustive(x)
+      default: return x // fn.exhaustive(x)
       ///  leaves, a.k.a. "nullary" types
       case tagged('never')(x): return 'z.never()'
       case tagged('any')(x): return 'z.any()'
@@ -359,9 +368,99 @@ namespace Algebra {
       case tagged('object')(x): return compileObjectNode(x)
     }
   }
+
+
+  export const fromValueObject: Functor.Algebra<Json.lambda, z.ZodTypeAny> = (x) => {
+    switch (true) {
+      default: return fn.exhaustive(x)
+      case x === null: return z.null()
+      case x === undefined: return z.undefined()
+      case typeof x === 'boolean': return z.boolean()
+      case typeof x === 'symbol': return z.symbol()
+      case typeof x === 'number': return z.number()
+      case typeof x === 'string': return z.string()
+      case Array_isArray(x): 
+        return x.length === 0 ? z.tuple([]) : z.tuple([x[0], ...x.slice(1)])
+      case !!x && typeof x === 'object': return z.object(x)
+    }
+  }
+
+  export const serialize
+    : (initialOffset?: number) => Functor.Algebra<Json.lambda, string> 
+    = (indent = 2) => (x) => {
+      switch (true) {
+        default: return fn.exhaustive(x)
+        case x === null:
+        case x === undefined:
+        case typeof x === 'boolean':
+        case typeof x === 'number': return `z.literal(${String(x)})`
+        case typeof x === 'string': return `z.literal("${x}")`
+        case Array_isArray(x): {
+          return x.length === 0 ? `z.tuple([])`
+          : `z.tuple([` + x.join(', ') + `])`
+        }
+        case !!x && typeof x === 'object': {
+           const xs = Object.entries(x)
+           return xs.length === 0 ? `z.object({})`
+           : `z.object({` + xs.map(([k, v]) => object.parseKey(k) +': ' + v).join(', ') + `})`
+        }
+      }
+    }
 }
 
+/** 
+ * ## {@link toString `zod.toString`}
+ * 
+ * Converts an arbitrary zod schema back into string form. Used internally 
+ * for testing/debugging.
+ * 
+ * Very useful when you're applying transformations to a zod schema. 
+ * Can be used (for example) to reify a schema, or perform codegen, 
+ * and has more general applications in dev environments.
+ * 
+ * @example
+ * import { zod } from "@traversable/algebra"
+ * import * as vi from "vitest"
+ * 
+ * vi.expect(zod.toString( z.union([z.object({ tag: z.literal("Left") }), z.object({ tag: z.literal("Right") })])))
+ * .toMatchInlineSnapshot(`z.union([z.object({ tag: z.literal("Left") }), z.object({ tag: z.literal("Right") })]))`)
+ * 
+ * vi.expect(zod.toString( z.tuple([z.number().min(0).lt(2), z.number().multipleOf(2), z.number().max(2).nullable()])))
+ * .toMatchInlineSnapshot(`z.tuple([z.number().min(0).lt(2), z.number().multipleOf(2), z.number().max(2).nullable()])`)
+ */
 const toString = fn.cata(Functor_)(Algebra.toString)
+
+/** 
+ * ## {@link fromValueObject `zod.fromValueObject`}
+ * 
+ * Derive a zod schema from an arbitrary
+ * [value object](https://en.wikipedia.org/wiki/Value_object). 
+ * 
+ * Used internally to support the
+ * [`const` keyword](https://json-schema.org/draft/2020-12/draft-bhutton-json-schema-validation-00#rfc.section.6.1.3),
+ * added in [2020-12](https://json-schema.org/draft/2020-12/schema).
+ */
+const fromValueObject = fn.cata(Json.Functor)(Algebra.fromValueObject)
+
+const fromUnknownValue
+  : (value: unknown) => Option<z.ZodTypeAny>
+  = fn.flow(
+    Option.guard(Json.is),
+    Option.map(fromValueObject),
+  )
+
+const unsafeFromUnknownValue 
+  : (value: unknown) => z.ZodTypeAny
+  = fn.flow(
+    fromUnknownValue,
+    Option.getOrThrow,
+  )
+
+const serialize = fn.flow(
+  Algebra.serialize, 
+  fn.cata(Json.Functor), 
+  // (x) => Format.joinAll({ joiner: (xss, d) => '\n' + ' '.repeat(d), beforeEach: '  ', afterEach: '  '}),
+)
 
 type Any<T extends z.ZodTypeAny = z.ZodTypeAny> =
   | z.ZodAny
@@ -629,3 +728,37 @@ type Any<T extends z.ZodTypeAny = z.ZodTypeAny> =
 // }
 // interface _def<T extends {}> extends newtype<T> {}
 // type Named<typeName extends keyof TagMap, T = {}> = { _def: _def<T & { typeName: TagMap[typeName] }> }
+// export function serialize(leftOffset?: number): (x: unknown) => string {
+//   const loop = (indent: number) => (x: JsonLike): string => {
+//     switch (true) {
+//       default: return fn.exhaustive(x)
+//       case x === null:
+//       case x === undefined:
+//       case typeof x === 'boolean':
+//       case typeof x === 'number': return `z.literal(${String(x)})`
+//       case typeof x === 'string': return `z.literal("${x}")`
+//       case JsonLike.isArray(x): {
+//         return x.length === 0
+//           ? `z.tuple([])`
+//           : Print.array({ indent })(
+//             `z.tuple([`, 
+//             ...x.map(loop(indent + 2)), 
+//             '])'
+//           )
+//       }
+//       case !!x && typeof x === 'object': {
+//         const xs = Object.entries(x)
+//         return xs.length === 0 
+//           ? `z.object({})`
+//           : Print.array({ indent })(
+//             `z.object({`,
+//             ...xs.map(([k, v]) => object.parseKey(k) + ': ' + loop(indent + 2)(v)),
+//             `})`
+//           )
+//       }
+//     }
+//   }
+//   return (x: unknown) => !JsonLike.is(x) 
+//     ? Invariant.InputIsNotSerializable('algebra/zod.serialize', x)
+//     : loop(ix.indent)(x)
+// }

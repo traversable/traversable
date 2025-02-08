@@ -16,6 +16,7 @@ export namespace Algebra {
       const _ = minify ? "" : " "
       switch (true) {
         default: return fn.exhaustive(n)
+        case Traversable.is.$ref(n): return n.$ref
         case Traversable.is.enum(n): return n.enum.join(" | ")
         case Traversable.is.const(n): return JSON.stringify(n.const)
         case Traversable.is.null(n): return "null"

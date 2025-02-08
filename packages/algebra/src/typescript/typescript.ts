@@ -39,7 +39,7 @@ const defaults = {
   typeName: defaults_.typeName + TypeName,
   header: headers,
   template,
-} satisfies Omit<Options.Config<unknown>, 'handlers'>
+} satisfies Required<Omit<Options<unknown>, 'handlers'>>
 
 const KnownStringFormats = {
   [KnownFormat.string.email]: 'string.email',
@@ -75,6 +75,7 @@ const baseHandlers = {
         ).join(';\n')
       + '}'
   },
+  $ref({ $ref: x }, $) { return $.refs[x] as never },
 } satisfies Matchers<string>
 
 const compilers = {
@@ -113,7 +114,8 @@ const compilers = {
         ).join(';\n')
       + '}'
     )
-  }
+  },
+  $ref({ $ref: x }, $) { return $.refs[x] as never },
 } satisfies Matchers<string>
 
 const compile

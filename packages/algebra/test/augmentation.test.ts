@@ -46,6 +46,7 @@ vi.describe("〖️⛳️〗‹‹‹ ❲@traversable/algebra/augmentation❳", 
       record(x, _) { return x.type },
       string(x, _) { return x.type },
       tuple(x, _) { return x.type },
+      $ref({ $ref: x }, $) { return typeof $.refs[x] === 'string' ? $.refs[x] : JSON.stringify($.refs[x]) }
     })
   })
 })

@@ -76,13 +76,11 @@ export function sequence<T>(graph: Graph<T>): sequence.Output<T> {
 
   return { safe, chunks, cycles }
 
-  // Function to update the outDegree of a node.
   function changeOutDegree (node: T, value: number) {
     const degree = outDegree.get(node) ?? 0
     outDegree.set(node, degree + value)
   }
 
-  // Function to remove a node from the graph.
   function removeNode (node: T) {
     for (const from of reverseGraph.get(node)!) {
       changeOutDegree(from, -1)

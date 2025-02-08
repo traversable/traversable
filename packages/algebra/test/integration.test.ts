@@ -3,9 +3,10 @@ import * as path from 'node:path'
 import * as vi from 'vitest'
 import { z } from 'zod'
 
-import { ark, fastcheck, seed, typebox, zod } from "@traversable/algebra"
+import { Generator, ark, fastcheck, seed, typebox, zod } from "@traversable/algebra"
 import type { JsonSchema } from "@traversable/core"
-import { fc, show } from "@traversable/core"
+import { fc } from "@traversable/core"
+import { fn } from "@traversable/data"
 import type { OpenAPI } from "@traversable/openapi"
 import { Schema } from "@traversable/openapi"
 import type { _ } from "@traversable/registry"
@@ -22,17 +23,20 @@ export const PATH = {
     dir: SPECS_DIR,
     arbitrary: path.join(SPECS_DIR, 'arbitrary.spec.json'),
     octokit: path.join(SPECS_DIR, 'octokit.spec.json'),
+    pet: path.join(SPECS_DIR, 'pet.spec.json'),
   },
   hacks: {
     dir: SPECS_DIR,
     arbitrary: path.join(SPECS_DIR, 'arbitrary.hack.ts'),
     octokit: path.join(SPECS_DIR, 'octokit.hack.ts'),
+    pet: path.join(SPECS_DIR, 'pet.hack.ts'),
   },
   targets: {
     dir: TARGETS_DIR,
     ark: path.join(TARGETS_DIR, 'ark.target.ts'),
     fastcheck: path.join(TARGETS_DIR, 'fastcheck.target.ts'),
     octokit: path.join(TARGETS_DIR, `octokit.target.ts`),
+    pet: path.join(TARGETS_DIR, 'pet.target.ts'),
     typebox: path.join(TARGETS_DIR, 'typebox.target.ts'),
     zod: path.join(TARGETS_DIR, 'zod.target.ts'),
     zodTypesOnly: path.join(TARGETS_DIR, 'zodtypesOnly.target.ts'),
@@ -40,17 +44,14 @@ export const PATH = {
 } as const
 
 const allOf = (LOOP: fc.Arbitrary<unknown>, $: Schema.Constraints.Config) => 
-  Schema.allOf.base(
-  Schema.object.base({ properties: LOOP, additionalProperties: LOOP }, $),
-  $
-)
+  Schema.allOf.base(Schema.object.base({ properties: LOOP, additionalProperties: LOOP }, $), $)
 
 seed({ 
   regenerateSeedFilesOnSave: true,
-  exclude: ['const'],
+  exclude: [],
   include: {
-    description: false,
-    example: false,
+    description: true,
+    example: true,
   },
   schemas: {
     allOf: {
@@ -77,16 +78,21 @@ vi.describe("〖️⛳️〗‹‹‹ ❲@traversable/algebra/integration❳", (
     = JSON.parse(fs.readFileSync(PATH.specs.arbitrary).toString("utf8"))
 
   const derived = {
-    // ark: ark.deriveAll({ document, header: [...ark.defaults.header, importDoc] }),
-    fastcheck: fastcheck.deriveAll({ document, header: [...fastcheck.defaults.header, importDoc] }),
-    // typebox: typebox.deriveAll({ document, header: [...typebox.defaults.header, importDoc] }),
-    zod: zod.deriveAll({ document, header: [...zod.defaults.derive.header, importDoc] }),
+    ark: () => ark.deriveAll({ document, header: [...ark.defaults.header, importDoc] }),
+    fastcheck: () => fastcheck.deriveAll({ document, header: [...fastcheck.defaults.header, importDoc] }),
+    typebox: () => typebox.deriveAll({ document, header: [...typebox.defaults.header, importDoc] }),
+    zod: () => zod.deriveAll({ document, header: [...zod.defaults.derive.header, importDoc] }),
   }
   const compiled = {
-    // ark: ark.compileAll({ document, header: [...ark.defaults.header, importDoc] }),
-    fastcheck: fastcheck.compileAll({ document, header: [...fastcheck.defaults.header, importDoc] }),
-    // typebox: typebox.compileAll({ document, header: [...typebox.defaults.header, importDoc] }),
-    zod: zod.compileAll({ 
+    ark: () => ark.compileAll({ document, header: [...ark.defaults.header, importDoc] }),
+    fastcheck: () => fastcheck.compileAll({ document, header: [...fastcheck.defaults.header, importDoc] }),
+    typebox: () => typebox.compileAll({ document, header: [...typebox.defaults.header, importDoc] }),
+    pet: () => zod.compileAll({
+      ...zod.defaults.compile,
+      document: JSON.parse(fs.readFileSync(PATH.specs.pet).toString('utf8')),
+      header: [...zod.defaults.compile.header, `import $doc from "../__specs__/pet.hack.js"`],
+    }),
+    zod: () => zod.compileAll({ 
       ...zod.defaults.compile,
       document, 
       header: [...zod.defaults.compile.header, importDoc], 
@@ -98,97 +104,90 @@ vi.describe("〖️⛳️〗‹‹‹ ❲@traversable/algebra/integration❳", (
     }),
   }
 
-  // vi.it("〖️⛳️〗› ❲ark.generate❳", async () => {
-  //   const { byName, order, meta: { header = '' } } = compiled.ark
-  //   void fs.writeFileSync(PATH.targets.ark, [header, ...order .map((k) => byName[k])].join("\n\n") + "\n")
-  //   void vi.assert.isTrue(fs.existsSync(PATH.targets.ark))
-  // })
+  vi.it("〖️⛳️〗› ❲pet.generate❳", async () => {
+    const { byName, order, meta: { header = '' } } = compiled.pet()
+    void fs.writeFileSync(PATH.targets.pet, [header, ...order.map((k) => byName[k])].join("\n\n") + "\n")
+    void vi.assert.isTrue(fs.existsSync(PATH.targets.pet))
+  })
+
+
+  vi.it("〖️⛳️〗› ❲ark.generate❳", async () => {
+    const { byName, order, meta: { header = '' } } = compiled.ark()
+    void fs.writeFileSync(PATH.targets.ark, [header, ...order .map((k) => byName[k])].join("\n\n") + "\n")
+    void vi.assert.isTrue(fs.existsSync(PATH.targets.ark))
+  })
 
   vi.it("〖️⛳️〗› ❲fastcheck.generate❳", async () => {
-    const { byName, order, meta: { header = '' } } = compiled.fastcheck
+    const { byName, order, meta: { header = '' } } = compiled.fastcheck()
     void fs.writeFileSync(PATH.targets.fastcheck, [header, ...order.map((k) => byName[k])].join("\n\n") + "\n")
     void vi.assert.isTrue(fs.existsSync(PATH.targets.fastcheck))
   })
 
-  // vi.it("〖️⛳️〗› ❲typebox.generate❳", async () => {
-  //   const { byName, order, meta: { header = '' } } = compiled.typebox
-  //   void fs.writeFileSync(PATH.targets.typebox, [header, ...order .map((k) => byName[k])].join("\n\n") + "\n")
-  //   void vi.assert.isTrue(fs.existsSync(PATH.targets.typebox))
-  // })
+  vi.it("〖️⛳️〗› ❲typebox.generate❳", async () => {
+    const { byName, order, meta: { header = '' } } = compiled.typebox()
+    void fs.writeFileSync(PATH.targets.typebox, [header, ...order .map((k) => byName[k])].join("\n\n") + "\n")
+    void vi.assert.isTrue(fs.existsSync(PATH.targets.typebox))
+  })
 
   vi.it("〖️⛳️〗› ❲zod.generate❳", async () => {
-    const { byName, order, meta: { header = '' } } = compiled.zod
+    const { byName, order, meta: { header = '' } } = compiled.zod()
     void fs.writeFileSync(PATH.targets.zod, [header, ...order .map((k) => byName[k])].join("\n\n") + "\n")
     void vi.assert.isTrue(fs.existsSync(PATH.targets.zod))
   })
 
   vi.it("〖️⛳️〗› ❲integration❳: targets export the same identifiers", async () => {
+    const arks = derived.ark()
+    const arbitraries = derived.fastcheck()
+    const typeboxes = derived.typebox()
+    const zods = derived.zod()
+
+    /** 
+     * Not strictly necessary since we test the generated assets
+     * pretty thoroughly below, but over time I've found that surfacing
+     * a nice, simple report helps me feel confident that I _don't_ need 
+     * to break these tests open to rule out false positives. 
+     * 
+     * Little sanity checks like these go a long way, for me at least.
+     */
     console.table({
-      // ark: derived.ark.order.length,
-      fastcheck: derived.fastcheck.order.length,
-      // typebox: derived.typebox.order.length,
-      zod: derived.zod.order.length,
+      ark: arks.order.length,
+      fastcheck: arbitraries.order.length,
+      typebox: typeboxes.order.length,
+      zod: zods.order.length,
     })
-    // vi.assert.equal(derived.ark.order.length, derived.fastcheck.order.length)
-    // vi.assert.equal(derived.ark.order.length, derived.typebox.order.length)
-    // vi.assert.equal(derived.ark.order.length, derived.zod.order.length)
-    // if (derived.ark.order.length > 0) {
-    //   vi.assert.containsAllKeys(derived.typebox.byName, derived.ark.order)
-    //   vi.assert.containsAllKeys(derived.zod.byName, derived.ark.order)
-    //   vi.assert.containsAllKeys(derived.fastcheck.byName, derived.ark.order)
-    // }
-    // if (derived.typebox.order.length > 0) {
-    //   vi.assert.containsAllKeys(derived.ark.byName, derived.typebox.order)
-    //   vi.assert.containsAllKeys(derived.zod.byName, derived.typebox.order)
-    //   vi.assert.containsAllKeys(derived.fastcheck.byName, derived.typebox.order)
-    // }
-    if (derived.zod.order.length > 0) {
-      // vi.assert.containsAllKeys(derived.ark.byName, derived.zod.order)
-      // vi.assert.containsAllKeys(derived.typebox.byName, derived.zod.order)
-      vi.assert.containsAllKeys(derived.fastcheck.byName, derived.zod.order)
+
+    vi.assert.equal(arks.order.length, arbitraries.order.length)
+    vi.assert.equal(arks.order.length, typeboxes.order.length)
+    vi.assert.equal(arks.order.length, zods.order.length)
+    if (arks.order.length > 0) {
+      vi.assert.containsAllKeys(typeboxes.byName, arks.order)
+      vi.assert.containsAllKeys(zods.byName, arks.order)
+      vi.assert.containsAllKeys(arbitraries.byName, arks.order)
     }
-    if (derived.fastcheck.order.length > 0) {
-      // vi.assert.containsAllKeys(derived.ark.byName, derived.fastcheck.order)
-      // vi.assert.containsAllKeys(derived.typebox.byName, derived.fastcheck.order)
-      vi.assert.containsAllKeys(derived.zod.byName, derived.fastcheck.order)
+    if (typeboxes.order.length > 0) {
+      vi.assert.containsAllKeys(arks.byName, typeboxes.order)
+      vi.assert.containsAllKeys(zods.byName, typeboxes.order)
+      vi.assert.containsAllKeys(arbitraries.byName, typeboxes.order)
     }
-    for (const k in derived.fastcheck.byName) {
-
-
-      // console.group("\n\n\n\n===============   INTEGRATION TEST   ===============")
-      // console.log("\n\nschemaName:", k, "\n")
-      // console.log('\n\ncompiled.zod.byName[k]:\n', compiled.zod.byName[k], '\n')
-
-
-      const arbitrary = derived.fastcheck.byName[k]
-
+    if (zods.order.length > 0) {
+      vi.assert.containsAllKeys(arks.byName, zods.order)
+      vi.assert.containsAllKeys(typeboxes.byName, zods.order)
+      vi.assert.containsAllKeys(arbitraries.byName, zods.order)
+    }
+    if (arbitraries.order.length > 0) {
+      vi.assert.containsAllKeys(arks.byName, arbitraries.order)
+      vi.assert.containsAllKeys(typeboxes.byName, arbitraries.order)
+      vi.assert.containsAllKeys(zods.byName, arbitraries.order)
+    }
+    for (const k in arbitraries.byName) {
+      const arbitrary = arbitraries.byName[k]
       const x = fc.sample(arbitrary, 1)[0]
-
-
-      // console.log('\n\nx:\n', x, '\n')
-
-
-      const zodSchema = derived.zod.byName[k]
-      // console.log("zodSchema", zod.toString(zodSchema))
-
+      const zodSchema = zods.byName[k]
       const result = zodSchema.safeParse(x)
 
-
-      // console.log('\n\nresult:\n', result, '\n')
-
-
       if (!result.success) {
-        // console.group("\n\n\n\n===============   INTEGRATION TEST (FAILURE)   ===============")
-        // console.log("\n\nRESULT is ERROR:\n", result.error, '\n')
-        // console.log("\n\nschemaName:", k, "\n")
-        // console.log('\n\nx:\n', x, '\n')
-        // console.log('\n\ncompiled.zod.byName[k]:\n', compiled.zod.byName[k], '\n')
-        // console.log('\n\nresult:\n', result, '\n')
-        // console.groupEnd()
+        vi.assert.fail("\n\nRESULT:\n", JSON.stringify(result.error, null, 2), '\n')
       }
-
-      vi.assert.isTrue(result.success)
-
     }
   })
 })

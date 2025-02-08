@@ -141,6 +141,7 @@ export namespace Algebra {
     switch (true) {
       // TODO: turn back on
       default: return fn.softExhaustiveCheck(x)
+      case Traversable.is.$ref(x): return x.$ref
       case Traversable.is.enum(x): return "fc.constantFrom(" + x + ")"
       case Traversable.is.const(x): return "fc.constant(" + x.const + ")"
       case Traversable.is.any(x): return "fc.anything()"

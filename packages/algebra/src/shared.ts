@@ -1,9 +1,9 @@
 import * as path from "node:path"
 
 import type { Context } from "@traversable/core"
-import { Extension, Traversable, core, is, keyOf$, t } from "@traversable/core"
-import { array, fn, object, string } from "@traversable/data"
-import { OpenAPI, deref } from "@traversable/openapi"
+import { Extension, JsonPointer, Traversable, core, is, keyOf$, t, tree } from "@traversable/core"
+import { array, fn, Graph, map, object, string } from "@traversable/data"
+import { OpenAPI, Ref } from "@traversable/openapi"
 import type { Partial } from "@traversable/registry"
 import { symbol } from "@traversable/registry"
 
@@ -85,8 +85,22 @@ export declare namespace Options {
   }
   interface Config<T> extends Options.Base, Context {
     handlers: Extension.Handlers<T, Index>
+    refs: Record<string, {}>
   }
 }
+
+export const PATTERN = {
+  CleanPathName: /(\/|~|-|{|})/g
+} as const
+
+export const typeNameFromPath = (k: string) => k.startsWith('/paths/') 
+  ? string.capitalize(k.slice('/paths/'.length).replace(PATTERN.CleanPathName, '_'))
+  : string.capitalize(k).replace(PATTERN.CleanPathName, '_')
+
+export const expandRef = (<T>(_: string, ref: T) => ref) satisfies Ref.Resolver
+export const resolveBinding = (
+  (path: string) => path.startsWith('#/components/schemas/') ? path.slice('#/components/schemas/'.length) : path
+) satisfies Ref.Resolver
 
 export function fold<T>($: Options.Config<T>) {
   return Traversable.foldIx(Extension.match($))
@@ -95,7 +109,7 @@ export function fold<T>($: Options.Config<T>) {
 export const defaults = {
   typeName: "Anonymous",
   absolutePath: ["components", "schemas"],
-  document:  OpenAPI.new({}),
+  document:  OpenAPI.from({}),
   header: [],
   template: defaultTemplate,
   flags: {
@@ -109,7 +123,7 @@ export const defaults = {
   path: [],
   depth: 0,
   siblingCount: 0,
-} as const satisfies Omit<Options.Config<unknown>, "handlers">
+} as const satisfies Omit<Options.Config<unknown>, "handlers" | "refs">
 
 export function parseOptions<T>(_: Options<T>) {
   return {
@@ -131,26 +145,32 @@ export function parseOptions<T>(_: Options<T>) {
 
 // TODO: implement `optionsFromMatchers` in terms of `parseOptions`
 export function optionsFromMatchers<T>(handlers: Extension.Handlers<T, Index>): (options?: Options<T>) => Options.Config<T> {
-  return ($?: Options<T>) => ({
-    handlers,
-    typeName: $?.typeName ?? defaults.typeName,
-    document: $?.document || defaults.document,
-    header: $?.header || defaults.header,
-    template: $?.template || defaults.template,
-    flags: !$?.flags ? defaults.flags : {
-      nominalTypes: $.flags.nominalTypes ?? defaults.flags.nominalTypes,
-      preferInterfaces: $.flags.preferInterfaces ?? defaults.flags.preferInterfaces,
-      includeExamples: $.flags.includeExamples ?? defaults.flags.includeExamples,
-      includeJsdocLinks: $.flags.includeJsdocLinks ?? defaults.flags.includeJsdocLinks,
-      includeLinkToOpenApiNode: $.flags.includeLinkToOpenApiNode ?? defaults.flags.includeLinkToOpenApiNode,
-    },
-    absolutePath: $?.absolutePath ?? defaults.absolutePath,
-    indent: defaults.indent,
-    path: defaults.path,
-    depth: defaults.depth,
-    siblingCount: defaults.siblingCount,
-  })
+  return ($?: Options<T>) => {
+    const document = $?.document || defaults.document
+    const refs = Ref.resolveAll(document, resolveBinding, typeNameFromPath)
+    return {
+      handlers,
+      refs,
+      typeName: $?.typeName ?? defaults.typeName,
+      document,
+      header: $?.header || defaults.header,
+      template: $?.template || defaults.template,
+      flags: !$?.flags ? defaults.flags : {
+        nominalTypes: $.flags.nominalTypes ?? defaults.flags.nominalTypes,
+        preferInterfaces: $.flags.preferInterfaces ?? defaults.flags.preferInterfaces,
+        includeExamples: $.flags.includeExamples ?? defaults.flags.includeExamples,
+        includeJsdocLinks: $.flags.includeJsdocLinks ?? defaults.flags.includeJsdocLinks,
+        includeLinkToOpenApiNode: $.flags.includeLinkToOpenApiNode ?? defaults.flags.includeLinkToOpenApiNode,
+      },
+      absolutePath: $?.absolutePath ?? defaults.absolutePath,
+      indent: defaults.indent,
+      path: defaults.path,
+      depth: defaults.depth,
+      siblingCount: defaults.siblingCount,
+    }
+  }
 }
+
 
 const ZOD_IDENT_MAP = {
   [symbol.optional]: "._def.innerType",
@@ -201,7 +221,7 @@ const buildIdentInterpreter: BuildPathInterpreter = (lookup) => ($) => (xs) => {
     switch (true) {
       case k === symbol.anyOf: return out
       case k === symbol.allOf: {
-        const siblings = deref($.absolutePath.slice(0, -1).join("/"), is.array)($.document)
+        const siblings = Ref.resolve($.absolutePath.slice(0, -1).join("/"), is.array)($.document)
         if (!siblings) continue
         const siblingCount = siblings.length
         const j = ks.shift()

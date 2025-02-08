@@ -71,7 +71,7 @@ const defaults = {
   typeName: defaults_.typeName + 'Arbitrary',
   header: headers,
   template,
-} satisfies Omit<Options.Config<unknown>, 'handlers'>
+} satisfies Required<Omit<Options<unknown>, 'handlers'>>
 
 const dateDefaults = {
   noInvalidDate: true, 
@@ -198,6 +198,7 @@ const derivatives = {
   record({ additionalProperties: x, ..._ }, _$) { return fc.dictionary(fc.oneof(fc.lorem(), fc.string()), x) },
   object(x, $) { return deriveObjectNode($)(x)  },
   allOf({ allOf: xs, ..._ }, $) { return fc.tuple(...xs.map(deriveObjectNode($))).map(intersect) },
+  $ref({ $ref: x }, $) { return $.refs[x] as never },
 } as const satisfies Matchers<fc.Arbitrary<unknown>>
 
 /**
@@ -249,6 +250,7 @@ const compilers = {
   array({ items: x, ..._ }) { return `${NS}.array(` + x + ')' },
   tuple({ items: xs, ..._ }) { return `${NS}.tuple(` + xs.join(', ') + ')' },
   record({ additionalProperties: x, ..._ }) { return `${NS}.dictionary(${NS}.oneof(${NS}.lorem(), ${NS}.string()), ${x})` },
+  $ref({ $ref: x }, $) { return $.refs[x] as never },
 } as const satisfies Matchers<string>
 
 const compile
@@ -295,6 +297,6 @@ const serializer
     }
 
     return (x: unknown) => !JsonLike.is(x) 
-      ? Invariant.NonSerializableInput("fastcheck.serialize", x)
+      ? Invariant.InputIsNotSerializable("fastcheck.serialize", x)
       : loop(0)(x)
   }

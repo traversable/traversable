@@ -1,10 +1,6 @@
 import { type JsonSchema, type fc, t } from '@traversable/core'
 import { fn, map } from '@traversable/data'
-import type {
-  _,
-  autocomplete,
-  newtype,
-} from '@traversable/registry'
+import type { _, autocomplete } from '@traversable/registry'
 import type { HKT } from '@traversable/registry'
 
 import { arbitrary, defaults, type doc as document, type parameter } from './document.js'
@@ -60,8 +56,8 @@ declare namespace OpenAPI {
   /**
    * ### {@link EtcEtc}
    * "Example" keys are stripped and replaced with a string index signature.
-   * Used only to give the reader a visual hint, show showing the sort of keys
-   * the API expects (without actually enforcing them).
+   * Used only to give the reader a visual hint about what key's an object
+   * is usually expected to have, without actually adding a constraint.
    */
   type Etc<T> = never | { [x: string]: T[keyof T] }
 
@@ -135,15 +131,6 @@ declare namespace OpenAPI {
   type ResponseContent<T> = {} & OpenAPI.Response<T>['content']
   type Response<T> = OpenAPI.Responses<T>[keyof OpenAPI.Responses<T>]
   type Fixpoint = OpenAPI.F<Schema>
-}
-
-declare namespace OpenAPI {
-  export {
-    OpenAPI_map as map,
-    OpenAPI_new as new,
-    Constraints,
-    defaults,
-  }
 }
 
 /** @internal */
@@ -404,7 +391,6 @@ void (Path.any = Path(t.any()))
 void (PathItem.any = PathItem(t.any()))
 void (RequestBody.any = RequestBody(t.any()))
 void (Response.any = Response(t.any()))
-///
 void (Schema.any = Schema(t.any()))
 void (OpenAPI.any = OpenAPI(t.any()))
 
@@ -414,25 +400,36 @@ const defaultInfo = {
   version: '0.0.0',
 } satisfies OpenAPI.doc['info']
 
-function OpenAPI_new<T extends OpenAPI.doc>(spec: Partial<T>): T
+type Empty = typeof Empty
+const Empty = {
+  openapi: "3.1.0" as const,
+  components: { schemas: {} },
+  paths: {},
+  info: { title: '' as const, version: '0.0.0' as const },
+} satisfies OpenAPI.doc
+
+function OpenAPI_from<T extends OpenAPI.doc>(spec: Partial<T>): T
 // function OpenAPI_new<S>(): <T extends OpenAPI.F<S>>(spec: T) => T
-function OpenAPI_new(spec?: Partial<OpenAPI.F<any>>) {
+function OpenAPI_from(spec?: Partial<OpenAPI.F<any>>) {
   return spec === undefined
-    ? (spec: Partial<OpenAPI.F<any>>) => OpenAPI_new(spec)
+    ? (spec: Partial<OpenAPI.F<any>>) => OpenAPI_from(spec)
     : {
       ...spec,
-      openapi: spec.openapi ?? openapi_v3xx,
-      info: !spec.info ? defaultInfo : {
+      openapi: spec.openapi ?? Empty.openapi,
+      info: !spec.info ? Empty.info : {
         ...spec.info,
-        title: spec.info.title ?? defaultInfo.title,
-        version: spec.info.version ?? defaultInfo.version,
+        title: spec.info.title ?? Empty.info.title,
+        version: spec.info.version ?? Empty.info.version,
       },
-      components: !spec.components ? { schemas: {} } : {
-        schemas: spec.components.schemas || {}
+      components: !spec.components ? Empty.components : {
+        schemas: spec.components.schemas || Empty.components.schemas
       },
-      paths: !spec.paths ? {} : spec.paths,
+      paths: !spec.paths ? Empty.paths : spec.paths,
     } satisfies OpenAPI.doc<any>
 }
+
+function OpenAPI_new<const T extends Partial<OpenAPI.doc>, K extends Exclude<keyof Empty, keyof T>>(spec: T): T & { [P in K]: Empty[P] }
+function OpenAPI_new<const T extends Partial<OpenAPI.doc>>(spec: T) { return OpenAPI_from(spec)}
 
 function OpenAPI_map<S, T>(doc: OpenAPI.doc<S>, f: (s: S) => T): OpenAPI.doc<T>
 function OpenAPI_map<S, T>(f: (s: S) => T): (doc: OpenAPI.doc<S>) => OpenAPI.doc<T>
@@ -449,10 +446,7 @@ function OpenAPI_map<S, T>(
       ...doc,
       components: {
         ...doc.components,
-        schemas: fn.pipe(
-          doc.components.schemas,
-          map(f),
-        )
+        schemas: map(doc.components.schemas, f),
       },
       paths: fn.pipe(
         doc.paths,
@@ -464,8 +458,8 @@ function OpenAPI_map<S, T>(
                 operation,
                 ({ parameters, requestBody, responses, ...operation }) => ({
                   ...operation,
-                  ////////////////////////////////
-                  ///    begin: parameters     ///
+
+                  ///
                   ...parameters && ({
                   parameters: map(
                     parameters,
@@ -474,9 +468,8 @@ function OpenAPI_map<S, T>(
                       schema: f(parameter.schema),
                     })
                   )}),
-                  ///      end: parameters     ///
-                  ////////////////////////////////
-                  ///    begin: requestBody    ///
+
+                  ///
                   ...requestBody && ({
                   requestBody: fn.pipe(
                     requestBody,
@@ -492,9 +485,8 @@ function OpenAPI_map<S, T>(
                       )})
                     })
                   )}),
-                  ///      end: requestBody    ///
-                  ////////////////////////////////
-                  ///    begin: responses      ///
+
+                  ///
                   ...responses && ({
                   responses: map(
                     responses,
@@ -513,6 +505,8 @@ function OpenAPI_map<S, T>(
                           ),
                         )
                       )}),
+
+                      ///
                       ...headers && ({
                       headers: fn.pipe(
                         headers,
@@ -525,8 +519,6 @@ function OpenAPI_map<S, T>(
                       )})
                     })
                   )})
-                  ///     end: responses      ///
-                  ///////////////////////////////
                 })
               )
             )
@@ -537,9 +529,20 @@ function OpenAPI_map<S, T>(
   }
 }
 
+declare namespace OpenAPI {
+  export {
+    OpenAPI_new as new,
+    OpenAPI_from as from,
+    OpenAPI_map as map,
+    Constraints,
+    defaults,
+  }
+}
+
 namespace OpenAPI {
-  OpenAPI.map = OpenAPI_map
   OpenAPI.new = OpenAPI_new
+  OpenAPI.from = OpenAPI_from
+  OpenAPI.map = OpenAPI_map
   OpenAPI.defaults = defaults
 
   export function generate(constraints?: arbitrary.Constraints): fc.Arbitrary<OpenAPI.doc<JsonSchema>>

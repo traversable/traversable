@@ -1,4 +1,4 @@
-import { fn, type nonempty, object } from "@traversable/data"
+import { char, fn, type nonempty, object } from "@traversable/data"
 import { Invariant, symbol } from "@traversable/registry"
 import type {
   Functor,
@@ -37,6 +37,7 @@ export type {
   Traversable_Combinator as Combinator,
   Traversable_Composite as Composite,
   Traversable_Special as Special,
+  Traversable_ref as ref,
   ///
   Traversable_any as any,
   Traversable_null as null,
@@ -93,6 +94,8 @@ const Object_keys = globalThis.Object.keys
 /** @internal */
 
 type Traversables = [
+  // [Internal] Traversable_ref,
+  Traversable_ref,
   Traversable_null,
   Traversable_boolean,
   Traversable_integer,
@@ -124,6 +127,7 @@ type Traversable_Special =
   | Traversable_enum
   | Traversable_const
   | Traversable_any
+  | Traversable_ref
   ;
 type Traversable_Combinator =
   | Traversable_allOf
@@ -139,6 +143,8 @@ type Traversable_Composite =
   ;
 
 type Traversable_Map<F> = {
+  // [Internal] $ref: Traversable_ref 
+  $ref: Traversable_ref 
   any: Traversable_any
   null: Traversable_null
   boolean: Traversable_boolean
@@ -156,7 +162,10 @@ type Traversable_Map<F> = {
   object: Traversable_objectF<F>
 }
 
+
 const Traversable_map = {
+  // [Internal] $ref: <Traversable_ref>{ $ref: "", type: "$ref" } satisfies Traversable_ref,
+  $ref: <Traversable_ref>{ $ref: "", type: "$ref" } satisfies Traversable_ref,
   any: <Traversable_any>{ type: "any" } satisfies Traversable_any,
   null: <Traversable_null>{ type: "null" } satisfies Traversable_null,
   boolean: <Traversable_boolean>{ type: "boolean" } satisfies Traversable_boolean,
@@ -236,10 +245,6 @@ interface Traversable_recordF<T> extends
   Traversable_Meta
   { type: "record" }
 
-// interface Traversable_allOf extends
-//   Combinator<Record<string, Traversable>, "allOf">,
-//   Traversable_Meta
-//   { type: "allOf" }
 interface Traversable_allOfF<T> extends
   Combinator<Traversable_objectF<T>, "allOf">,
   Traversable_Meta
@@ -321,6 +326,8 @@ declare namespace Traversable_toType {
 
 type Traversable_Known = typeof Traversable_Known
 const Traversable_Known = [
+  // [Internal]: "$ref",
+  "$ref",
   "any",
   "null",
   "boolean",
@@ -337,6 +344,13 @@ const Traversable_Known = [
   "record",
   "object",
 ] as const satisfies string[]
+
+/** @internal */
+interface Traversable_ref extends JsonSchema.ref, Traversable_Meta { type: '$ref' }
+/** @internal */
+const Traversable_ref = t.object({ ...JsonSchema.ref.def })
+/** @internal */
+const Traversable_isRef = (u: unknown): u is Traversable_ref => Traversable_ref.is(u)
 
 interface Traversable_null extends JsonSchema.null, Traversable_Meta {}
 const Traversable_null = JsonSchema.null
@@ -410,6 +424,11 @@ const Traversable_Composite = t.anyOf(
 const Traversable_isComposite = Traversable_Composite.is as <T>(u: unknown) => u is Traversable_Composite.F<T>
 
 const is_ = {
+  /** 
+   * Refs are resolved automatically by the framework, 
+   * but users might appreciate having this as a helper
+   */
+  $ref: Traversable_isRef,
   null: Traversable_isNull,
   boolean: Traversable_isBoolean,
   integer: Traversable_isInteger,
@@ -436,10 +455,12 @@ type Traversable =
   | Traversable_Combinator
   | Traversable_Special
   | Traversable_Composite
-
+  ;
 const Traversable_is = Object_assign(
   function Traversable_is<T>(u: unknown): u is Traversable_F<T> {
     return t.anyOf(
+      // [Internal]: Traversable_ref,
+       Traversable_ref,
       Traversable_null,
       Traversable_boolean,
       Traversable_integer,
@@ -461,10 +482,10 @@ const Traversable_is = Object_assign(
 
 const mapObject = <S, T>(f: (src: S) => T) => (x: Traversable_objectF<S>) => {
   const { additionalProperties: a, properties: p, ...y } = x
-  const entries = Object_entries(p).map(([k, v]) => [k, f(v)])
+  const xs = Object_entries(p).map(([k, v]) => [k, f(v)])
   return {
     ...y,
-    properties: Object_fromEntries(entries),
+    properties: Object_fromEntries(xs),
     ...a && { additionalProperties: f(a) },
   }
 }
@@ -474,6 +495,7 @@ const Traversable_Functor: Functor<Traversable_lambda, Traversable> = {
     return (x) => {
       switch (true) {
         default: return fn.softExhaustiveCheck(x)
+        case Traversable_is.$ref(x): return x
         case Traversable_is.enum(x): return x
         case Traversable_is.const(x): return x
         case Traversable_is.null(x): return x
@@ -482,25 +504,27 @@ const Traversable_Functor: Functor<Traversable_lambda, Traversable> = {
         case Traversable_is.number(x): return x
         case Traversable_is.string(x): return x
         case Traversable_is.any(x): return x
+        case Traversable_is.object(x): return mapObject(f)(x)
         case Traversable_is.array(x): return { ...x, items: f(x.items) }
         case Traversable_is.anyOf(x): return { ...x, anyOf: x.anyOf.map(f) }
         case Traversable_is.oneOf(x): return { ...x, oneOf: x.oneOf.map(f) }
         case Traversable_is.allOf(x): return { ...x, allOf: x.allOf.map(mapObject(f)) }
         case Traversable_is.tuple(x): return { ...x, items: x.items.map(f) }
         case Traversable_is.record(x): return { ...x, additionalProperties: f(x.additionalProperties) }
-        case Traversable_is.object(x): return mapObject(f)(x)
       }
     }
   }
 }
 
 const PathPrefixMap = {
+  // [Internal] $ref: "$ref",
   boolean: null,
   integer: null,
   null: null,
   number: null,
   string: null,
   any: null,
+  $ref: "$ref",
   ///
   const: "const",
   enum: "enum",
@@ -526,6 +550,7 @@ const keywords = [
   'items',
   'const',
   'enum',
+  '$ref',
 ] as const satisfies string[]
 
 function omitKeywords<T extends {}>(x: T): Omit<T, Keyword> 
@@ -571,14 +596,25 @@ const mapIxObject
     }
   }
 
+const resolveRef = <S, T>(g: (ix: Context<any>, s: S) => T) => 
+  ($: Context) => 
+    ({ $ref }: { $ref: string }) => {
+  // type S = Parameters<typeof g>[1]
+  const node = $.refs[$ref] as Traversable_F<S>
+  if (node === undefined || typeof node === 'symbol') 
+    return fn.throw("Could not find ref: ", $ref)
+  else if (typeof node === 'string') return node
+  else return IxFunctor.mapWithIndex(g)($, node)
+}
+
 const IxFunctor: IndexedFunctor<Context, Traversable_lambda, Traversable_orJsonSchema> = {
   map: Traversable_Functor.map,
   mapWithIndex(g) {
     return ($, xs) => {
       const h = makeH(xs)
-
       switch (true) {
         default: return fn.softExhaustiveCheck(xs)
+        case Traversable_is.$ref(xs): return resolveRef(g)($)(xs)
         case Traversable_is.enum(xs): return xs
         case Traversable_is.const(xs): return xs
         case Traversable_is.null(xs): return xs
@@ -621,6 +657,7 @@ const fromJsonSchema = (expr: JsonSchema.any) => {
   const { type: __yeet, ...x } = { ...expr, type: null }
   switch (true) {
     default: return fn.softExhaustiveCheck(expr)
+    case JsonSchema.is.$ref(expr): return { type: "$ref", $ref: expr.$ref }
     case JsonSchema.is.null(expr): return { type: expr.type, meta: { ...meta, ...x } }
     case JsonSchema.is.enum(expr): return { type: "enum", enum: expr.enum, meta: { ...meta, ...object.omit(x, "enum") } }
     case JsonSchema.is.const(expr): return { type: "const", const: expr.const, meta: { ...meta, ...object.omit(x, "const") } }

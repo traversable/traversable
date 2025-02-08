@@ -2,6 +2,7 @@ import type { Json } from '@traversable/core'
 import { Format, tree } from '@traversable/core'
 
 import type { Index } from './shared.js'
+import { PATTERN, REPLACER } from '@traversable/registry'
 
 /** 
  * ## {@link tag `JSDoc.tag`}
@@ -16,6 +17,8 @@ export function tag(jsdocTag: string): (u: Json, $?: Format.multiline.Options) =
     Format.multiline(u, { ...$, wrapWith: [' * @' + jsdocTag + '\n', ''] })
 }
 
+const escapeMultilineCommentClose = (text: string) => text.replace(PATTERN.multilineCommentClose, `*\\/`)
+
 /** 
  * ## {@link example `JSDoc.example`}
  * 
@@ -25,7 +28,7 @@ export function example(k: string, $: Index): string | null {
   const child = tree.get($.document, ...$.absolutePath, 'properties', k, 'meta', 'example')
   return typeof child === 'symbol' 
     ? null 
-    : Format.multiline(child, { wrapWith: [' * @example\n', ' '], leftOffset: $.indent + 2, rightOffset: 0, indent: 2 })
+    : escapeMultilineCommentClose(Format.multiline(child, { wrapWith: [' * @example\n', ' '], leftOffset: $.indent + 2, rightOffset: 0, indent: 2 }))
 }
 
 const breaklines 

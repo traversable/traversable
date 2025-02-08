@@ -1,4 +1,5 @@
 import { Format } from "@traversable/core"
+import { object } from "@traversable/data"
 import * as vi from "vitest"
 
 vi.describe("〖️⛳️〗‹‹‹ ❲@traversable/algebra/Format❳", () => {
@@ -112,8 +113,8 @@ vi.describe("〖️⛳️〗‹‹‹ ❲@traversable/algebra/Format❳", () => 
          * }"
       `)
 
-    vi.expect(Format.multiline({ DEF: { GHI: { JKL: 456 } } }, { indent: 2, whitespaceUnit: "\t" }))
-      .toMatchInlineSnapshot(`" * { DEF: { GHI: { JKL: 456 } } }"`)
-
+    vi.expect(Format.multiline( { DEF: { GHI: { JKL: 456 } } }, { indent: 2, whitespaceUnit: "\t" }))
+    .toMatchInlineSnapshot(`" * { DEF: { GHI: { JKL: 456 } } }"`)
   })
+
 })

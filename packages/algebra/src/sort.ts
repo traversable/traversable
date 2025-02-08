@@ -100,6 +100,7 @@ export namespace Coalgebra {
     = ($) => (n) => {
       switch (true) {
         default: return fn.softExhaustiveCheck(n)
+        case Traversable.is.$ref(n): return n
         case Traversable.is.enum(n): return n
         case Traversable.is.const(n): return n
         case Traversable.is.any(n): return n

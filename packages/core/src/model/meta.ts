@@ -24,6 +24,8 @@ export const Context = t.object({
   typeName: t.string(),
   absolutePath: t.array(t.string()),
   siblingCount: t.number(),
+  refs: t.record(t.object({})),
+  // document: t.object({})
 })
 
 export interface Context<T = any> extends t.typeof<typeof Context> {

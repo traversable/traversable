@@ -33,6 +33,7 @@ export {
   JsonSchema_anyOf as anyOf,
   JsonSchema_oneOf as oneOf,
   JsonSchema_object as object,
+  JsonSchema_$ref as ref,
   JsonSchema_array as array,
 }
 
@@ -47,6 +48,10 @@ interface JsonSchema_lambda extends HKT { [-1]: JsonSchema_F<this[0]> }
 
 /** @internal */
 const Object_entries = globalThis.Object.entries
+
+interface JsonSchema_$ref { $ref: string }
+const JsonSchema_$ref = t.object({ $ref: t.string() })
+const JsonSchema_isRef: (u: unknown) => u is JsonSchema_$ref = JsonSchema_$ref.is
 
 interface JsonSchema_null { type: "null" }
 const JsonSchema_null = t.object({ type: t.const("null") })
@@ -93,7 +98,8 @@ const JsonSchema_isConst
 type JsonSchema_Special = 
   | JsonSchema_enum
   | JsonSchema_const
-
+  | JsonSchema_$ref
+  ;
 type JsonSchema_Scalar =
   | JsonSchema_null
   | JsonSchema_boolean
@@ -207,6 +213,7 @@ type JsonSchema_F<T = any> =
   | JsonSchema_Scalar
   | Enum
   | Const
+  | JsonSchema_$ref
   | JsonSchema_allOfF<T>
   | JsonSchema_anyOfF<T>
   | JsonSchema_oneOfF<T>
@@ -214,6 +221,7 @@ type JsonSchema_F<T = any> =
   | JsonSchema_objectF<T>
   ;
 const JsonSchema = t.anyOf(
+  JsonSchema_$ref,
   JsonSchema_null,
   JsonSchema_boolean,
   JsonSchema_integer,
@@ -232,6 +240,7 @@ function JsonSchema_is<T>(u: unknown): u is JsonSchema_F<T> {
   return JsonSchema.is(u)
 }
 
+void (JsonSchema_is.$ref = JsonSchema_isRef)
 void (JsonSchema_is.null = JsonSchema_isNull)
 void (JsonSchema_is.boolean = JsonSchema_isBoolean)
 void (JsonSchema_is.integer = JsonSchema_isInteger)
@@ -253,6 +262,7 @@ const JsonSchema_Functor: Functor<JsonSchema_lambda, JsonSchema> = {
     return (x) => {
       switch (true) {
         default: return fn.softExhaustiveCheck(x)
+        case JsonSchema_is.$ref(x): return fn.throw('[JsonSchema.Functor::$ref]: Unimplemented')
         case JsonSchema_is.enum(x): return { enum: x.enum }
         case JsonSchema_is.const(x): return { const: x }
         case JsonSchema_is.scalar(x): return x

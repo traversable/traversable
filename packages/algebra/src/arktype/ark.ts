@@ -66,7 +66,7 @@ const defaults = {
   header: headers,
   typeName: defaults_.typeName + TypeName,
   template,
-} as const satisfies Omit<Options.Config<unknown>, 'handlers'>
+} as const satisfies Required<Omit<Options<unknown>, 'handlers'>>
 
 type CompiledStringFormat = typeof CompiledStringFormat
 const CompiledStringFormat = {
@@ -242,6 +242,7 @@ const compilers = {
       ys.reduce((acc, cur) => `${acc}.and(${cur})`, ``),
     )
   },
+  $ref({ $ref: x }, $) { return JSON.stringify($.refs[x]) }
 } as const satisfies Matchers<string>
 
 const compile
@@ -348,6 +349,7 @@ const derivatives = {
     catch (_) { return type.never }
   },
   object(x, $) { return deriveObjectNode($)(x) },
+  $ref({ $ref: x }, $) { return $.refs[x] as never },
 } as const satisfies Matchers<type.Any>
 
 const derive
@@ -394,7 +396,7 @@ const serializer
     }
 
     return (x: unknown) => !JsonLike.is(x) 
-      ? Invariant.NonSerializableInput("ark.serialize", x)
+      ? Invariant.InputIsNotSerializable("ark.serialize", x)
       : loop(2)(x)
   }
 

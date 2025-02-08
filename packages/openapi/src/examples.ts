@@ -1,6 +1,6 @@
-import type { Functor } from "@traversable/registry"
 import { Traversable } from '@traversable/core'
 import { fn, map } from "@traversable/data"
+import type { Functor } from "@traversable/registry"
 
 const getExample = (node: Traversable) => node.meta?.example
 

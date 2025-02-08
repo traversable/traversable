@@ -62,7 +62,7 @@ const defaults = {
   typeName: defaults_.typeName + TypeName,
   header: headers,
   template,
-} satisfies Omit<Options.Config<unknown>, 'handlers'>
+} satisfies Required<Omit<Options<unknown>, 'handlers'>>
 
 const deriveObjectNode 
   : ($: Index) => (x: core.Traversable.objectF<T.TAnySchema>) => T.TAnySchema
@@ -93,6 +93,7 @@ const derivatives = {
       (xs) => T.Enum(xs, { ...$, ..._ })
     )
   },
+  $ref({ $ref: x }, $) { return $.refs[x] as never },
 } as const satisfies Matchers<T.TAnySchema>
 
 /**
@@ -148,7 +149,8 @@ const compilers = {
       ).join(``),
       (xs) => `${NS}.Object({\n` + ` `.repeat($.indent + 2) + xs + `\n` + ` `.repeat($.indent) + `})`,
     )
-  }
+  },
+  $ref({ $ref: x }, $) { return $.refs[x] as never },
 } as const satisfies Matchers<string>
 
 /**
@@ -196,6 +198,6 @@ const serializer
       }
     }
     return (x: unknown) => !JsonLike.is(x) 
-      ? Invariant.NonSerializableInput("typebox.serialize", x)
+      ? Invariant.InputIsNotSerializable("typebox.serialize", x)
       : loop(ix.indent)(x)
   }

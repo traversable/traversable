@@ -129,7 +129,10 @@ namespace Extension {
   Extension.register = Extension_register
 }
 
-export type BuiltIns<S, Ix> = { [K in keyof Traversable.Map<S>]: (x: Traversable.Map<S>[K], ix: Ix) => S }
+// export type Internal = '$ref'
+export type BuiltIn = keyof Traversable.Map<never>
+export type BuiltIns<S, Ix> = { [K in BuiltIn]: (x: Traversable.Map<S>[K], ix: Ix) => S }
+
 export type ExtensionSet<S> = Omit<Extension, keyof Traversable.Map<S>>
 export type ExtensionName = keyof ExtensionSet<any>
 
@@ -193,6 +196,7 @@ export function Extension_match3<
   
       switch (true) {
         default: return fn.softExhaustiveCheck(n)
+        case Traversable.is.$ref(n): return $.$ref(n, ix)
         case Traversable.is.enum(n): return $.enum(n, ix)
         case Traversable.is.const(n): return $.const(n, ix)
         case Traversable.is.any(n): return $.any(n, ix)
@@ -314,6 +318,7 @@ function Extension_match<S, Ix>(config: Config<S, Ix>): (ix: Ix, n: Traversable.
 
     switch (true) {
       default: return fn.softExhaustiveCheck(n)
+      case Traversable.is.$ref(n): return $.$ref(n, ix)
       case Traversable.is.enum(n): return $.enum(n, ix)
       case Traversable.is.const(n): return $.const(n, ix)
       case Traversable.is.any(n): return $.any(n, ix)

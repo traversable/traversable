@@ -1,4 +1,4 @@
-import { Meta, type Traversable, core, t } from "@traversable/core"
+import { type Traversable, t } from "@traversable/core"
 import { Invariant } from "@traversable/registry"
 
 import { fn, map, object } from "@traversable/data"
@@ -61,7 +61,7 @@ const defaults = {
   header: headers,
   typeName: defaults_.typeName + TypeName,
   template,
-} as const satisfies Omit<Options.Config<unknown>, 'handlers'>
+} as const satisfies Required<Omit<Options<unknown>, 'handlers'>>
 
 const derivatives = {
   null() { return t.null() },
@@ -79,6 +79,7 @@ const derivatives = {
   record({ additionalProperties: x }) { return t.record(x) },
   tuple({ items: xs }) { return t.tuple(...xs) },
   object({ properties: p }) { return t.object(p) },
+  $ref({ $ref: x }, $) { return $.refs[x] as t.type },
 } satisfies Matchers<t.type>
 
 const compilers = {
@@ -125,7 +126,8 @@ const compilers = {
       ),
       (body) => `${NS}.object({` + body + `\n${' '.repeat(left)}})`,
     )
-  }
+  },
+  $ref({ $ref: x }, $) { return $.refs[x] as never },
 } as const satisfies Matchers<string>
 
 const derive 
@@ -189,6 +191,6 @@ const serializer
       }
     }
     return (x: unknown) => !JsonLike.is(x) 
-      ? Invariant.NonSerializableInput("typebox.serialize", x)
+      ? Invariant.InputIsNotSerializable("typebox.serialize", x)
       : loop(ix.indent)(x)
   }
