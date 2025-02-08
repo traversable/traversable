@@ -10,6 +10,9 @@ import type { OpenAPI } from "@traversable/openapi"
 import { Schema } from "@traversable/openapi"
 import type { _ } from "@traversable/registry"
 
+const REGENERATE_SEED_FILES_ON_SAVE = false;
+
+
 export const TARGETS_DIR = path.join(path.resolve(), 'packages', 'algebra', 'test', '__generated__')
 export const SPECS_DIR = path.join(path.resolve(), 'packages', 'algebra', 'test', '__specs__')
 export const PATH = {
@@ -47,7 +50,7 @@ const allOf = (LOOP: fc.Arbitrary<unknown>, $: Schema.Constraints.Config) =>
   Schema.allOf.base(Schema.object.base({ properties: LOOP, additionalProperties: LOOP }, $), $)
 
 seed({ 
-  regenerateSeedFilesOnSave: true,
+  regenerateSeedFilesOnSave: REGENERATE_SEED_FILES_ON_SAVE,
   exclude: [],
   include: {
     description: true,

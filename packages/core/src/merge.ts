@@ -13,8 +13,8 @@ const Object_keys = globalThis.Object.keys
  * 
  * Given a schema, {@link merge `merge`} returns a merging function
  * that expects its first argument to be the object you're merging
- * _into_, and its second argument as the subset of deeply nested
- * properties to give preference to, if they are present.
+ * _into_, and its second argument as the object you're merging
+ * _from_.
  * 
  * The case we have for {@link merge `merge`} is usually merging 
  * some preferred (but not required) set of user-definitions over

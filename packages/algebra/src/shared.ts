@@ -75,7 +75,8 @@ export type Options<T> = Partial<
   & { handlers: Extension.Handlers<T, Index> }
 >
 export declare namespace Options {
-  interface Base {
+  export { Flags, Context }
+  export interface Base {
     absolutePath: Context["absolutePath"]
     flags: Partial<Flags>
     typeName: string
@@ -83,7 +84,7 @@ export declare namespace Options {
     header: string | string[]
     template: TargetTemplate
   }
-  interface Config<T> extends Options.Base, Context {
+  export interface Config<T> extends Options.Base, Context {
     handlers: Extension.Handlers<T, Index>
     refs: Record<string, {}>
   }

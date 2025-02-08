@@ -112,7 +112,6 @@ const compilers = {
   const({ const: x }, $) { return `${NS}.const(${serializer($)(x)})` },
   enum({ enum: x }, $) { return `${NS}.enum(${x.map(serializer($)).join(`, `)})` },
   allOf({ allOf: xs }, $) { return `${NS}.allOf(${xs.map(deriveObjectNode($)).join(', ')})` },
-  //     { return T.Intersect([...xs.map(deriveObjectNode($))], { ...$, ..._ }) },
   anyOf({ anyOf: xs }) { return `${NS}.anyOf(${xs.join(', ')})` },
   oneOf({ oneOf: xs }) { return `${NS}.anyOf(${xs.join(', ')})` },
   array({ items: x }, $) { return Print.array($)(`${NS}.array(`, x, ')') },

@@ -57,6 +57,7 @@ type Json_of<T> =
   ;
 
 const is = {
+  undefined: (u: unknown): u is undefined => u === undefined,
   null: (u: unknown): u is null | undefined => u == null,
   boolean: (u: unknown): u is boolean => typeof u === "boolean",
   integer: (u: unknown): u is number => Number_isInteger(u),

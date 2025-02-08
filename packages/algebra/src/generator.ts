@@ -29,9 +29,6 @@ type All<T> = {
   }
 }
 
-/** @internal */
-const Object_keys = globalThis.Object.keys
-
 function decorateGenerator(refs: Record<string, {}>):
   <T>(generator: Generator<T>) => DecoratedGenerator<T> {
     return (generator) => (schema, options) => {
@@ -73,13 +70,12 @@ function deriveAll<T>(generator: Generator<T>, options: Options<T>): All<T> {
   const header = typeof $.header === "string" ? $.header : ($.header || []).join("\n")
   const schemas = $.document.components.schemas
   const refs = Ref.resolveAll($.document, typeNameFromPath)
-  const graph = Ref.drawDependencyGraph($.document.components.schemas)
-  const order = graph.reduce((xs, ys) => [...xs, ...ys], [])
-  const decorated = decorateGenerator(refs)(generator)
+  const order = Ref.untangle(schemas).flatMap(fn.identity)
+  const decorate = decorateGenerator(refs)(generator)
   const meta = { ...header && { header } }
   const byName = map(
     schemas,
-    (schema, schemaName) => decorated(
+    (schema, schemaName) => decorate(
       schema, { 
         ...$, 
         refs,
@@ -88,7 +84,7 @@ function deriveAll<T>(generator: Generator<T>, options: Options<T>): All<T> {
       }
     )
   )
-      
+
   return { meta, order, byName }
 }
 

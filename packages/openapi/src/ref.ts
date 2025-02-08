@@ -1,6 +1,6 @@
 import type { Traversable } from '@traversable/core'
 import { JsonPointer, is, tree } from '@traversable/core'
-import { Graph, fn, map } from '@traversable/data'
+import { Graph, Option, fn, map } from '@traversable/data'
 import { Invariant } from '@traversable/registry'
 
 import type { OpenAPI } from './spec.js'
@@ -111,16 +111,26 @@ const getAllRefs = (spec: {}) => {
   )
 }
 
-export const drawDependencyGraph
-  = <T>(tree: {}, resolveRef?: Resolver<T>) => {
-    const refs = getAllRefs(tree)
-    const sequence = Graph.sequence(new Map(refs))
-    if(!sequence.safe) return fn.throwWithMessage(
-      "Encountered an unsafe cyclical dependency in your OpenAPI document"
-    )(sequence.cycles)
-    else return sequence.chunks
-  }
+const throwIfCycleDetected = <T>(seq: Graph.sequence.Output<T>) => 
+  !seq.safe ? Invariant.CircularReferenceError('openapi/ref')('drawDependencyGraph', ...seq.cycles) : seq
 
+export const untangle = fn.flow(
+  getAllRefs,
+  (refs) => new globalThis.Map(refs),
+  Graph.sequence,
+  throwIfCycleDetected,
+  (seq) => seq.chunks,
+)
+
+// export const drawDependencyGraph_
+//   = <T>(tree: {}, resolveRef?: Resolver<T>) => {
+//     const refs = getAllRefs(tree)
+//     const sequence = Graph.sequence(new globalThis.Map(refs))
+//     if(!sequence.safe) return fn.throwWithMessage(
+//       "Encountered an unsafe cyclical dependency in your OpenAPI document"
+//     )(sequence.cycles)
+//     else return sequence.chunks
+//   }
 
 /** 
  * ## {@link resolveAll `Ref.resolveAll`}
