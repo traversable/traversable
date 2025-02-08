@@ -1,6 +1,6 @@
 import type { Traversable } from '@traversable/core'
 import { JsonPointer, is, tree } from '@traversable/core'
-import { fn, Graph, map } from '@traversable/data'
+import { Graph, fn, map } from '@traversable/data'
 import { Invariant } from '@traversable/registry'
 
 import type { OpenAPI } from './spec.js'

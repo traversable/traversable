@@ -14,6 +14,7 @@ export { fastcheck } from "./fast-check/exports.js"
 export { typebox } from "./typebox/exports.js"
 export { typescript } from "./typescript/exports.js"
 export { zod } from "./zod/index.js"
+export { trav } from "./traversable/exports.js"
 
 export type { Handlers, Matchers, Options, Index } from "./shared.js"
 export { 

@@ -1,12 +1,11 @@
 import * as fs from "node:fs"
 import * as path from 'node:path'
 import * as vi from 'vitest'
-import { z } from 'zod'
+import { type as arktype } from 'arktype'
 
-import { Generator, ark, fastcheck, seed, typebox, zod } from "@traversable/algebra"
+import { ark, fastcheck, seed, trav, typebox, zod,  } from "@traversable/algebra"
 import type { JsonSchema } from "@traversable/core"
 import { fc } from "@traversable/core"
-import { fn } from "@traversable/data"
 import type { OpenAPI } from "@traversable/openapi"
 import { Schema } from "@traversable/openapi"
 import type { _ } from "@traversable/registry"
@@ -37,6 +36,7 @@ export const PATH = {
     fastcheck: path.join(TARGETS_DIR, 'fastcheck.target.ts'),
     octokit: path.join(TARGETS_DIR, `octokit.target.ts`),
     pet: path.join(TARGETS_DIR, 'pet.target.ts'),
+    trav: path.join(TARGETS_DIR, 'trav.taret.ts'),
     typebox: path.join(TARGETS_DIR, 'typebox.target.ts'),
     zod: path.join(TARGETS_DIR, 'zod.target.ts'),
     zodTypesOnly: path.join(TARGETS_DIR, 'zodtypesOnly.target.ts'),
@@ -80,12 +80,14 @@ vi.describe("〖️⛳️〗‹‹‹ ❲@traversable/algebra/integration❳", (
   const derived = {
     ark: () => ark.deriveAll({ document, header: [...ark.defaults.header, importDoc] }),
     fastcheck: () => fastcheck.deriveAll({ document, header: [...fastcheck.defaults.header, importDoc] }),
+    trav: () => trav.deriveAll({ document, header: [...trav.defaults.header, importDoc] }),
     typebox: () => typebox.deriveAll({ document, header: [...typebox.defaults.header, importDoc] }),
     zod: () => zod.deriveAll({ document, header: [...zod.defaults.derive.header, importDoc] }),
   }
   const compiled = {
     ark: () => ark.compileAll({ document, header: [...ark.defaults.header, importDoc] }),
     fastcheck: () => fastcheck.compileAll({ document, header: [...fastcheck.defaults.header, importDoc] }),
+    trav: () => trav.compileAll({ document, header: [...trav.defaults.header, importDoc] }),
     typebox: () => typebox.compileAll({ document, header: [...typebox.defaults.header, importDoc] }),
     pet: () => zod.compileAll({
       ...zod.defaults.compile,
@@ -103,6 +105,12 @@ vi.describe("〖️⛳️〗‹‹‹ ❲@traversable/algebra/integration❳", (
       }
     }),
   }
+
+  const arks = derived.ark()
+  const arbitraries = derived.fastcheck()
+  const travs = derived.trav()
+  const typeboxes = derived.typebox()
+  const zods = derived.zod()
 
   vi.it("〖️⛳️〗› ❲pet.generate❳", async () => {
     const { byName, order, meta: { header = '' } } = compiled.pet()
@@ -123,6 +131,12 @@ vi.describe("〖️⛳️〗‹‹‹ ❲@traversable/algebra/integration❳", (
     void vi.assert.isTrue(fs.existsSync(PATH.targets.fastcheck))
   })
 
+  vi.it("〖️⛳️〗› ❲trav.generate❳", async () => {
+    const { byName, order, meta: { header = '' } } = compiled.trav()
+    void fs.writeFileSync(PATH.targets.trav, [header, ...order.map((k) => byName[k])].join("\n\n") + "\n")
+    void vi.assert.isTrue(fs.existsSync(PATH.targets.trav))
+  })
+
   vi.it("〖️⛳️〗› ❲typebox.generate❳", async () => {
     const { byName, order, meta: { header = '' } } = compiled.typebox()
     void fs.writeFileSync(PATH.targets.typebox, [header, ...order .map((k) => byName[k])].join("\n\n") + "\n")
@@ -136,10 +150,6 @@ vi.describe("〖️⛳️〗‹‹‹ ❲@traversable/algebra/integration❳", (
   })
 
   vi.it("〖️⛳️〗› ❲integration❳: targets export the same identifiers", async () => {
-    const arks = derived.ark()
-    const arbitraries = derived.fastcheck()
-    const typeboxes = derived.typebox()
-    const zods = derived.zod()
 
     /** 
      * Not strictly necessary since we test the generated assets
@@ -156,38 +166,74 @@ vi.describe("〖️⛳️〗‹‹‹ ❲@traversable/algebra/integration❳", (
       zod: zods.order.length,
     })
 
-    vi.assert.equal(arks.order.length, arbitraries.order.length)
-    vi.assert.equal(arks.order.length, typeboxes.order.length)
-    vi.assert.equal(arks.order.length, zods.order.length)
+    vi.assert.equal(travs.order.length, arbitraries.order.length)
+    vi.assert.equal(travs.order.length, arks.order.length)
+    vi.assert.equal(travs.order.length, typeboxes.order.length)
+    vi.assert.equal(travs.order.length, zods.order.length)
     if (arks.order.length > 0) {
+      vi.assert.containsAllKeys(arbitraries.byName, arks.order)
       vi.assert.containsAllKeys(typeboxes.byName, arks.order)
       vi.assert.containsAllKeys(zods.byName, arks.order)
-      vi.assert.containsAllKeys(arbitraries.byName, arks.order)
+      vi.assert.containsAllKeys(travs.byName, arks.order)
     }
     if (typeboxes.order.length > 0) {
+      vi.assert.containsAllKeys(arbitraries.byName, typeboxes.order)
       vi.assert.containsAllKeys(arks.byName, typeboxes.order)
       vi.assert.containsAllKeys(zods.byName, typeboxes.order)
-      vi.assert.containsAllKeys(arbitraries.byName, typeboxes.order)
+      vi.assert.containsAllKeys(travs.byName, typeboxes.order)
     }
     if (zods.order.length > 0) {
+      vi.assert.containsAllKeys(arbitraries.byName, zods.order)
       vi.assert.containsAllKeys(arks.byName, zods.order)
       vi.assert.containsAllKeys(typeboxes.byName, zods.order)
-      vi.assert.containsAllKeys(arbitraries.byName, zods.order)
+      vi.assert.containsAllKeys(travs.byName, zods.order)
     }
     if (arbitraries.order.length > 0) {
       vi.assert.containsAllKeys(arks.byName, arbitraries.order)
+      vi.assert.containsAllKeys(travs.byName, arbitraries.order)
       vi.assert.containsAllKeys(typeboxes.byName, arbitraries.order)
       vi.assert.containsAllKeys(zods.byName, arbitraries.order)
     }
+    if (travs.order.length > 0) {
+      vi.assert.containsAllKeys(arbitraries.byName, travs.order)
+      vi.assert.containsAllKeys(arks.byName, travs.order)
+      vi.assert.containsAllKeys(typeboxes.byName, travs.order)
+      vi.assert.containsAllKeys(zods.byName, travs.order)
+    }
+  })
+
+  vi.it("〖️⛳️〗› ❲integration❳: validators validate", async () => {
+
     for (const k in arbitraries.byName) {
       const arbitrary = arbitraries.byName[k]
       const x = fc.sample(arbitrary, 1)[0]
-      const zodSchema = zods.byName[k]
-      const result = zodSchema.safeParse(x)
 
-      if (!result.success) {
-        vi.assert.fail("\n\nRESULT:\n", JSON.stringify(result.error, null, 2), '\n')
+      const zodSchema = zods.byName[k]
+      const arkSchema = arks.byName[k]
+      const travSchema = travs.byName[k]
+      const typeboxSchema = typeboxes.byName[k]
+      const results = {
+        ark: arkSchema.assert(x),
+        zod: zodSchema.safeParse(x),
+
+      }
+      const bools = {
+        ark: !(results.ark instanceof arktype.errors),
+        zod: results.zod.success,
+      } as const
+        
+
+      for (const k in bools) {
+        const bool = bools[k as keyof typeof bools]
+        if (!bool) {
+          vi.assert.fail(
+            "\n\n[VALIDATION FAILURE]: ${k}\n", 
+            JSON.stringify(results[k as keyof typeof results], null, 2), '\n'
+          )
+        }
+
       }
     }
   })
+
 })

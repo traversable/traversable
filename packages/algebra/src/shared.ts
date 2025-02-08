@@ -2,7 +2,7 @@ import * as path from "node:path"
 
 import type { Context } from "@traversable/core"
 import { Extension, JsonPointer, Traversable, core, is, keyOf$, t, tree } from "@traversable/core"
-import { array, fn, Graph, map, object, string } from "@traversable/data"
+import { Graph, array, fn, map, object, string } from "@traversable/data"
 import { OpenAPI, Ref } from "@traversable/openapi"
 import type { Partial } from "@traversable/registry"
 import { symbol } from "@traversable/registry"
