@@ -36,7 +36,7 @@ export const PATH = {
     fastcheck: path.join(TARGETS_DIR, 'fastcheck.target.ts'),
     octokit: path.join(TARGETS_DIR, `octokit.target.ts`),
     pet: path.join(TARGETS_DIR, 'pet.target.ts'),
-    trav: path.join(TARGETS_DIR, 'trav.taret.ts'),
+    trav: path.join(TARGETS_DIR, 'trav.target.ts'),
     typebox: path.join(TARGETS_DIR, 'typebox.target.ts'),
     zod: path.join(TARGETS_DIR, 'zod.target.ts'),
     zodTypesOnly: path.join(TARGETS_DIR, 'zodtypesOnly.target.ts'),

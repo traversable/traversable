@@ -82,6 +82,26 @@ const derivatives = {
   $ref({ $ref: x }, $) { return $.refs[x] as t.type },
 } satisfies Matchers<t.type>
 
+const deriveObjectNode
+  : (ix: Index) => (x: Traversable.objectF<string>) => string
+  = ({ indent: left }) =>
+    ({ properties: x, required: req = [] }) => { 
+      const xs = Object_entries(x)
+      if (xs.length === 0) return `${NS}.object({})`
+      else return fn.pipe(
+        xs.map(
+          ([k, v]) => (
+            '\n' 
+            + ' '.repeat(left + 2) 
+            + object.parseKey(k) 
+            + ': ' 
+            + (req.includes(k) ? v : `${NS}.optional(${v})`)
+          )
+        ),
+        (body) => `${NS}.object({` + body + `\n${' '.repeat(left)}})`,
+      )
+    }
+
 const compilers = {
   any() { return `${NS}.any()` as const },
   null() { return `${NS}.null()` as const },
@@ -91,7 +111,8 @@ const compilers = {
   string() { return `${NS}.string()` as const },
   const({ const: x }, $) { return `${NS}.const(${serializer($)(x)})` },
   enum({ enum: x }, $) { return `${NS}.enum(${x.map(serializer($)).join(`, `)})` },
-  allOf({ allOf: xs }) { return `${NS}.allOf(${xs.join(', ')})` },
+  allOf({ allOf: xs }, $) { return `${NS}.allOf(${xs.map(deriveObjectNode($)).join(', ')})` },
+  //     { return T.Intersect([...xs.map(deriveObjectNode($))], { ...$, ..._ }) },
   anyOf({ anyOf: xs }) { return `${NS}.anyOf(${xs.join(', ')})` },
   oneOf({ oneOf: xs }) { return `${NS}.anyOf(${xs.join(', ')})` },
   array({ items: x }, $) { return Print.array($)(`${NS}.array(`, x, ')') },
@@ -108,25 +129,7 @@ const compilers = {
       + (' '.repeat(lhs + 2) + '\n')
       + ' '.repeat(lhs) + ')'
   },
-  object(
-    { properties: x, required: req = [] }, 
-    { indent: left },
-  ) { 
-    const xs = Object_entries(x)
-    if (xs.length === 0) return `${NS}.object({})`
-    else return fn.pipe(
-      xs.map(
-        ([k, v]) => (
-          '\n' 
-          + ' '.repeat(left + 2) 
-          + object.parseKey(k) 
-          + ': ' 
-          + (req.includes(k) ? v : `${NS}.optional(${v})`)
-        )
-      ),
-      (body) => `${NS}.object({` + body + `\n${' '.repeat(left)}})`,
-    )
-  },
+  object(x, ix) { return deriveObjectNode(ix)(x) },
   $ref({ $ref: x }, $) { return $.refs[x] as never },
 } as const satisfies Matchers<string>
 
