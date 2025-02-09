@@ -1,7 +1,7 @@
 import * as fs from "node:fs"
 import * as path from 'node:path'
-import * as vi from 'vitest'
 import { type as arktype } from 'arktype'
+import * as vi from 'vitest'
 
 import { ark, fastcheck, seed, trav, typebox, zod,  } from "@traversable/algebra"
 import type { JsonSchema } from "@traversable/core"

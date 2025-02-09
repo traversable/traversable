@@ -14,7 +14,8 @@ const isObject
   : (u: unknown) => u is { [x: string]: Json.of<string> }
   = is.object as never
 
-export type Options = {
+type OptionsWithHandlers = Options & { handlers?: Handlers }
+type Options = {
   /**
    * ### {@link defaults.indent `Options.indent`}
    *
@@ -266,6 +267,7 @@ void (multiline.defaults = defaults)
 export declare namespace multiline {
   export {
     Options,
+    OptionsWithHandlers,
     Config,
     Handlers,
   }

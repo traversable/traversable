@@ -11,8 +11,8 @@ import type { Index } from './shared.js'
  * 
  * If you need something more flexible, see {@link Format.multiline `core.Format.multiline`}.
  */
-export function tag(jsdocTag: string): (u: unknown, options?: Format.multiline.Options) => string
-export function tag(jsdocTag: string): (u: Json, $?: Format.multiline.Options) => string {
+export function tag(jsdocTag: string): (u: unknown, options?: Format.multiline.OptionsWithHandlers) => string
+export function tag(jsdocTag: string): (u: Json, $?: Format.multiline.OptionsWithHandlers) => string {
   return (u: Json, $?: Format.multiline.Options) => 
     Format.multiline(u, { ...$, wrapWith: [' * @' + jsdocTag + '\n', ''] })
 }
@@ -28,7 +28,7 @@ export function example(k: string, $: Index): string | null {
   const child = tree.get($.document, ...$.absolutePath, 'properties', k, 'meta', 'example')
   return typeof child === 'symbol' 
     ? null 
-    : escapeMultilineCommentClose(Format.multiline(child, { wrapWith: [' * @example\n', ' '], leftOffset: $.indent + 2, rightOffset: 0, indent: 2 }))
+    : escapeMultilineCommentClose(Format.multiline(child, { wrapWith: [' * @example\n', ' '], leftMargin: $.indent + 2, leftPadding: 0, indent: 2 }))
 }
 
 const breaklines 
@@ -47,7 +47,7 @@ const breaklines
       return lines.reduce(
         (acc, line) => (
           acc.length === 0 ? '' 
-          : (acc + '\n' + $.whitespaceUnit.repeat($.leftOffset) + ' * '))
+          : (acc + '\n' + $.whitespaceUnit.repeat($.leftMargin) + ' * '))
           + line,
         '',
       )
@@ -58,7 +58,7 @@ export function description(k: string, $: Index): string | null {
   const child = tree.get($.document, ...$.absolutePath, 'properties', k, 'meta', 'description')
   return typeof child !== 'string' ? null : tag('description')(
     child, { 
-      leftOffset: $.indent + 2,
+      leftMargin: $.indent + 2,
       handlers: { string: breaklines(80) }, 
     }
   )

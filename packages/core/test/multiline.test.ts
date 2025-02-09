@@ -1,4 +1,4 @@
-import { show, Format, Json } from "@traversable/core"
+import { Format, Json, show } from "@traversable/core"
 import { object } from "@traversable/data"
 import * as vi from "vitest"
 
