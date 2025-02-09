@@ -39,6 +39,61 @@ export const defaults = {
   propertyJoiner: (k, v, d) => k + ': ' + v + '\n' + ' '.repeat(d * 2)
 } satisfies Required<Options>
 
+// export function joinAll(options?: joinAll.Options): (yss: joinAll.StringTree) => string
+// export function joinAll ({ 
+//   beforeAll = joinAll.defaults.beforeAll,
+//   afterAll = joinAll.defaults.afterAll,
+//   joiner = joinAll.defaults.joiner, 
+//   propertyJoiner = joinAll.defaults.propertyJoiner,
+//   afterEach = joinAll.defaults.afterEach,
+//   beforeEach = joinAll.defaults.beforeEach,
+//   initialDepth = joinAll.defaults.initialDepth,
+// }: joinAll.Options = joinAll.defaults) {
+//   const go = (xss: joinAll.StringTree, { depth }: joinAll.Patch): string => {
+//     if (typeof xss === 'string') return xss
+//     else if (Array_isArray(xss) && xss.every((x) => typeof x === 'string')) 
+//       return beforeEach + xss.join(joiner(xss, depth)) + afterEach
+//     else if (Array_isArray(xss)) 
+//       return beforeEach + []
+//         .concat(...xss.map((xs) => go(xs, { depth: depth + 1 }) as never))
+//         .join(joiner(xss, depth)) + afterEach
+//     // TODO: I think this broke when I had to add this case
+//     else return JSON.stringify(xss)
+//   }
+// export declare namespace joinAll {
+//   type StringTree = string | readonly StringTree[] | { [x: string]: StringTree }
+//   type Patch = {
+//     depth: number
+//   }
+//   type Options = { 
+//     beforeAll?: string, 
+//     afterAll?: string, 
+//     beforeEach?: string, 
+//     afterEach?: string, 
+//     initialDepth?: number
+//     joiner?: (xs: StringTree, depth: number) => string 
+//     propertyJoiner?: (k: string, v: string, depth: number) => string
+//   }
+// }
+//   return (yss: joinAll.StringTree) => ''
+//     + beforeAll 
+//     + go(yss, { depth: initialDepth }) 
+//     + afterAll
+// }
+// export namespace joinAll {
+//   export const defaults = {
+//     beforeAll: '',
+//     afterAll: '',
+//     beforeEach: '',
+//     afterEach: '',
+//     initialDepth: 0,
+//     joiner: (xs, d) => ',\n' + ' '.repeat(d * 2),
+//     propertyJoiner: (k, v, d) => k + ': ' + v + '\n' + ' '.repeat(d * 2)
+//   } satisfies Required<joinAll.Options>
+// }
+
+
+
 export function joinAll(options?: Options): (yss: StringTree) => string
 export function joinAll({ 
   beforeAll = defaults.beforeAll,

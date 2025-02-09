@@ -3,7 +3,7 @@ export * from "./guard/index.js"
 
 export * as tree from "./tree.js"
 export * as zip from "./zip.js"
-export * as Format from "./formatters.js"
+export * as Format from "./formatters/exports.js"
 export * as show from "./show.js"
 export { merge } from "./merge.js"
 
