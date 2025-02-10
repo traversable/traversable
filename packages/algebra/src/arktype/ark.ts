@@ -1,7 +1,7 @@
 import { type } from 'arktype'
 
-import type { Meta } from "@traversable/core"
-import { core, keyOf$ } from "@traversable/core"
+import type { Meta, Traversable } from "@traversable/core"
+import { schema } from "@traversable/core"
 import { fn, object } from "@traversable/data"
 import type { _ } from "@traversable/registry"
 import { Invariant, KnownFormat } from "@traversable/registry"
@@ -80,7 +80,7 @@ const CompiledStringFormat = {
   // [KnownFormat.string.emoji]: '',
   // [KnownFormat.string.ulid]: '',
 } as const satisfies { [K in KnownFormat.string[keyof KnownFormat.string]]+?: string }
-const isCompiledStringFormat = keyOf$(CompiledStringFormat)
+const isCompiledStringFormat = schema.keyOf$(CompiledStringFormat)
 
 const DerivedStringFormat = {
   [KnownFormat.string.datetime]: type.keywords.string.date.iso.root,
@@ -90,12 +90,10 @@ const DerivedStringFormat = {
   [KnownFormat.string.ipv6]: type.keywords.string.ip.v6,
   [KnownFormat.string.uri]: type.keywords.string.url.root,
   [KnownFormat.string.uuid]: type.keywords.string.uuid.root,
-  // [KnownFormat.string.datetime]: type.keywords.string.date.iso,
-  // [KnownFormat.string.date]: type.keywords.string.date,
   // [KnownFormat.string.emoji]: type.'',
   // [KnownFormat.string.ulid]: '',
 } satisfies Record<string, type.Any>
-const isDerivedStringFormat = keyOf$(DerivedStringFormat)
+const isDerivedStringFormat = schema.keyOf$(DerivedStringFormat)
 
 const numericConstraints 
   : (meta: Meta.Numeric) => string
@@ -114,7 +112,7 @@ const numericConstraints
       : max != null && (lt === true ? `.lessThan(${max})` : `.atMost(${max})`),
     factor != null && `.divisibleBy(${factor})`,
   ])
-  .filter(core.is.string)
+  .filter(schema.is.string)
   .join("")
 
 
@@ -133,7 +131,7 @@ const stringConstraints
   const methods = ([
     min !== undefined && `.atLeastLength(${min})`,
     max !== undefined && `.atMostLength(${max})`
-  ]).filter(core.is.string).join("")
+  ]).filter(schema.is.string).join("")
   return format === null 
     ? methods 
     : format 
@@ -161,7 +159,7 @@ const NotYetSupported = (nodeType: string) =>
   Invariant.NotYetSupported('arktype.derive.' + nodeType, 'arktype.derive')('algebra/src/arktype/ark.ts')
 
 const compileObjectNode
-  : ($: Index) => (x: core.Traversable.objectF<string>) => string
+  : ($: Index) => (x: Traversable.objectF<string>) => string
   = ($) => ({ properties: p, required: req = [] }) => {
     const xs = Object_entries(p)
      .map(([k, v]) => req.includes(k) ? `${k}: ${v}` : `${JSON.stringify(k + `?`)}: ${v}`)
@@ -254,8 +252,8 @@ const compileAll
   = (options) => Gen.compileAll(compile, { ...defaults, ...options })
 
 const deriveObjectNode 
-  : ($: Index) => (x: core.Traversable.objectF<type.Any<any>>) => type.Any
-  = ($: Index) => ({ properties: p, required: req = [] }: core.Traversable.objectF<type.Any<any>>) => {
+  : ($: Index) => (x: Traversable.objectF<type.Any<any>>) => type.Any
+  = ($: Index) => ({ properties: p, required: req = [] }: Traversable.objectF<type.Any<any>>) => {
     const props: Record<string, type.Any> = {}
     for (const k in p) props[req.includes(k) ? k : `${k}?`] = type(p[k])
     return type(props)

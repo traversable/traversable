@@ -1,5 +1,5 @@
-import type { Traversable } from '@traversable/core'
-import { core } from '@traversable/core'
+import type { Meta, Traversable } from '@traversable/core'
+import { schema } from '@traversable/core'
 import { fn, object } from '@traversable/data'
 import type { _ } from '@traversable/registry'
 import type { Intersect } from '@traversable/registry'
@@ -75,8 +75,8 @@ const defaults = {
 
 const dateDefaults = {
   noInvalidDate: true, 
-  min: new globalThis.Date(0),             // ~circa 1970
-  max: new globalThis.Date(0xE4F00000000), // ~circa 2468
+  min: new globalThis.Date(0),             // circa ~1970
+  max: new globalThis.Date(0xE4F00000000), // circa ~2470
 } as const satisfies fc.DateConstraints
 
 const floatDefaults = {
@@ -117,7 +117,7 @@ const CompiledStringFormat = {
 } as const satisfies { [K in KnownFormat.string[keyof KnownFormat.string]]+?: string }
 
 const integerConstraints
-  : (meta: core.Meta.Numeric) => fc.IntegerConstraints
+  : (meta: Meta.Numeric) => fc.IntegerConstraints
   = ({ exclusiveMaximum: lt, exclusiveMinimum: gt, maximum, minimum, multipleOf: mod }) => {
     const min = typeof gt === 'number' ? gt : typeof minimum === 'number' ? minimum : void 0
     const max = typeof lt === 'number' ? lt : typeof maximum === 'number' ? maximum : void 0
@@ -128,21 +128,21 @@ const integerConstraints
   }
 
 const compiledIntegerConstraints
-  : (meta: core.Meta.Numeric) => string
-  = ({ exclusiveMaximum: lt, exclusiveMinimum: gt, maximum, minimum, multipleOf: mod }: core.Meta.Numeric) => [
+  : (meta: Meta.Numeric) => string
+  = ({ exclusiveMaximum: lt, exclusiveMinimum: gt, maximum, minimum, multipleOf: mod }: Meta.Numeric) => [
     typeof gt === 'number' ? `min: ${gt}` : typeof minimum === 'number' ? `min: ${minimum}` : null,
     typeof lt === 'number' ? `max: ${lt}` : typeof maximum === 'number' ? `max: ${maximum}` : null,
   ].filter((_) => _ !== null).join(', ')
 
 const Constrain = {
-  string({ minLength, maxLength }: core.Meta.string) {
+  string({ minLength, maxLength }: Meta.string) {
     return {
       ...minLength !== undefined && { minLength },
       ...maxLength !== undefined && { maxLength },
     } satisfies fc.StringConstraints
   },
   integer: integerConstraints,
-  float(meta: core.Meta.Numeric): fc.FloatConstraints {
+  float(meta: Meta.Numeric): fc.FloatConstraints {
     const { exclusiveMaximum: lt, exclusiveMinimum: gt /* , multipleOf: mod */ } = meta
     const minExcluded = typeof gt === 'number' ? true : typeof gt === 'boolean' ? gt : void 0
     const maxExcluded = typeof lt === 'number' ? true : typeof lt === 'boolean' ? lt : void 0
@@ -155,7 +155,7 @@ const Constrain = {
   },
   compiled: {
     integer: compiledIntegerConstraints,
-    float(meta: core.Meta.Numeric) {
+    float(meta: Meta.Numeric) {
       const { exclusiveMaximum: lt, exclusiveMinimum: gt /* , multipleOf: mod */ } = meta
       return [
         compiledIntegerConstraints(meta),
@@ -163,7 +163,7 @@ const Constrain = {
         typeof lt === 'number' ? `maxExcluded: true` : typeof lt === 'boolean' ? `maxExcluded: ${lt}` : null,
       ].filter((_) => _ !== null).join(', ')
     },
-    string({ minLength, maxLength }: core.Meta.string) {
+    string({ minLength, maxLength }: Meta.string) {
       const constraints = [
         minLength === undefined ? null : `minLength: ${minLength}`,
         maxLength === undefined ? null : `maxLength: ${maxLength}`,
@@ -184,7 +184,7 @@ const derivatives = {
   integer({ meta = {} }) { return fc.integer(Constrain.integer(meta)) },
   number({ meta = {} }) { return fc.float(Constrain.float(meta)) },
   string({ meta = {} }) { 
-    return core.keyOf$(StringFormat)(meta.format) 
+    return schema.keyOf$(StringFormat)(meta.format) 
       ? StringFormat[meta.format]() 
       : fc.string(Constrain.string(meta))
       // : fc.oneof(fc.lorem({ size: 'small' }), fc.string(Constrain.string(meta)))
@@ -223,7 +223,7 @@ const deriveAll
   = (options) => Gen.deriveAll(derive, { ...defaults, ...options })
 
 const compileObjectNode 
-  : (x: core.Traversable.objectF<string>, $: Index) => string
+  : (x: Traversable.objectF<string>, $: Index) => string
   = ({ properties: xs, required: req, ..._ }, _$) => { 
   return `${NS}.record({`
     + Object.entries(xs).map(([k, v]) => object.parseKey(k) + ': ' + v) 
@@ -237,7 +237,7 @@ const compilers = {
   integer({ meta = {} }) { return `${NS}.integer({${Constrain.compiled.integer(meta)}})` },
   number({ meta = {} }) { return `${NS}.float({${Constrain.compiled.float(meta)}})` },
   string({ meta = {} }) { 
-    return core.keyOf$(CompiledStringFormat)(meta.format) 
+    return schema.keyOf$(CompiledStringFormat)(meta.format) 
       ? CompiledStringFormat[meta.format]
       : `${NS}.string({${Constrain.compiled.string(meta)}})`
   },
@@ -284,7 +284,7 @@ const serializer
         case !!x && typeof x === 'object': {
           const entries = Object
             .entries(x)
-            .map(([k, v]) => [JSON.stringify(k), loop(indent + 2)(v)] satisfies [any, any])
+            .map(([k, v]) => [object.parseKey(k), loop(indent + 2)(v)] satisfies [any, any])
           return entries.length === 0 
             ? '{}' 
             : Print.array({ indent })(

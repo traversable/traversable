@@ -267,6 +267,7 @@ export declare namespace arbitrary {
   }
   interface Schemas extends arbitrary.Countable {
     /// cross-cutting configuration
+    sortBias?: Schema.Constraints.SortBias
     depthIdentifier?: fc.DepthIdentifier
     /// node-specific options
     null?: Partial<Schema.null.Constraints>
@@ -349,10 +350,10 @@ export const applyConstraints
     : {
       schemas: !_.schemas ? { ...defaults.schemas, depthIdentifier: fc.createDepthIdentifier() }
       :
-
       {
         /// cross-cutting schema configuration
         depthIdentifier: _.schemas.depthIdentifier ?? createDepthIdentifier(),
+        sortBias: _.schemas.sortBias || defaults.schemas.sortBias,
         maxCount: _.schemas.maxCount ?? defaults.schemas.maxCount,
         minCount: _.schemas.minCount ?? defaults.schemas.minCount,
         /// node-specific options
@@ -657,6 +658,7 @@ export const defaults = {
   schemas: {
     minCount: 1,
     maxCount: 3,
+    sortBias: Schema.Constraints.defaults.sortBias,
     allOf: Schema.allOf.defaults,
     anyOf: Schema.anyOf.defaults,
     array: Schema.array.defaults,

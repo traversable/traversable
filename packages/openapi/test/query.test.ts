@@ -1,12 +1,12 @@
 import { test } from "@fast-check/vitest"
-import { and$, fc, is, or$, tree } from "@traversable/core"
+import { fc, is, schema, tree } from "@traversable/core"
 import { fn } from "@traversable/data"
 import { openapi } from "@traversable/openapi"
 import * as vi from "vitest"
 
 const hasSchema = tree.has("schema", is.object)
 const Array_isArray = globalThis.Array.isArray
-const isObjectNode = and$(
+const isObjectNode = schema.and$(
   tree.has("type", is.literally("object")),
   tree.has("properties", is.object),
 )
@@ -805,7 +805,7 @@ vi.describe("〖⛳️〗‹‹‹ ❲@traversable/openapi❳", () => {
       from: dequalify,
     }
 
-    const getDocumentSchemas = openapi.accessors(tree.has("schema", or$(tree.has("type", is.string), tree.has("$ref"))))
+    const getDocumentSchemas = openapi.accessors(tree.has("schema", schema.or$(tree.has("type", is.string), tree.has("$ref"))))
     let accessors = getDocumentSchemas(ex_02)
 
     ///////////////

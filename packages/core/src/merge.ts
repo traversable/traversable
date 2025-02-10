@@ -1,5 +1,6 @@
 import type { Wane, Wax } from "@traversable/registry"
-import { is, type t } from './guard/exports.js'
+import { is } from './guard/exports.js'
+import type { t } from './guard/index.js'
 
 /** @internal */
 const Array_isArray = globalThis.Array.isArray

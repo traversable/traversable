@@ -127,12 +127,12 @@ const Json_is: isJson & typeof is = Object_assign(
  */
 const Json_Functor: Functor<Json.lambda, Json> = { 
   map: function map(f) {
-    return (_) => {
+    return (x) => {
       switch (true) {
-        default: return fn.exhaustive(_)
-        case is.leaf(_): return _
-        case is.array(_): return _.map(f)
-        case is.object(_): return Object_fromEntries(Object_entries(_).map(([k, v]) => [k, f(v)]))
+        default: return fn.exhaustive(x)
+        case is.leaf(x): return x
+        case is.array(x): return x.map(f)
+        case is.object(x): return Object_fromEntries(Object_entries(x).map(([k, v]) => [k, f(v)]))
       }
     }
   }

@@ -1,10 +1,8 @@
 import * as vi from "vitest"
 
 import { test } from "@fast-check/vitest"
-import { fromSeed, t } from "@traversable/core"
+import { schema, t } from "@traversable/core"
 import type { integer } from "@traversable/registry"
-
-import { Arbitrary } from "./util.js"
 
 // const arbitrary = Arbitrary.letrecShort().tree.map((_) => [_, fromSeed(_)] satisfies [any, any])
 

@@ -1,6 +1,12 @@
-
 import { fn, map } from "@traversable/data"
-import { type Functor, Invariant, type _, type newtype, type symbol } from "@traversable/registry"
+import { Invariant, symbol } from "@traversable/registry"
+import type { 
+  _, 
+  Functor, 
+  HKT, 
+  Kind, 
+  newtype 
+} from "@traversable/registry"
 
 import type * as Traversable from "../model/traversable.js"
 import { has } from "../tree.js"
@@ -17,6 +23,8 @@ type decorate<T, $ = T[symbol.meta & keyof T], _
 /** @internal */
 function decorate<$>(meta: $): <T>(x: T) => decorate<T, $> 
   { return <T>(x: T) => ({ get meta() { return !!meta ? meta : meta as never }, ...x }) }
+/** @internal */
+const phantom: never = symbol.phantom as never
 
 /** @internal */
 const NotSupported = (...args: Parameters<typeof Invariant.NotYetSupported>) => 
@@ -29,18 +37,19 @@ function null_<const Meta = {}>(meta?: Meta): null_<Meta> {
   return {
     ...t.null(),
     get meta() { return !!meta ? meta : meta as never },
-    get toTraversable(): null_.Traversable<Meta> { 
-      return null_.toTraversable(meta)
-    }
+    get toTraversable(): null_.Traversable<Meta> { return null_.toTraversable(meta) },
+    _lambda: null_._lambda,
   }
 }
 interface null_<Meta = {}> extends t.null, meta<Meta> {
   get toTraversable(): null_.Traversable<Meta>
+  _lambda: null_._lambda,
 }
 declare namespace null_ {
   interface Traversable<Meta = {}>
     extends t.null.toJsonSchema 
     { meta: Meta }
+  interface _lambda extends HKT<typeof t.null.spec> { [-1]: null_ }
 }
 namespace null_ {
   export function toTraversable<Meta = {}>
@@ -53,6 +62,7 @@ namespace null_ {
       meta,
     }
   }
+  export const _lambda: null_._lambda = phantom
 }
 ///    NULL    ///
 //////////////////
@@ -67,16 +77,19 @@ function boolean_<const Meta = {}>(meta?: Meta): boolean_<Meta> {
     get meta() { return !!meta ? meta : meta as never },
     get toTraversable(): boolean_.Traversable<Meta> { 
       return boolean_.toTraversable(meta)
-    }
+    },
+    _lambda: boolean_._lambda,
   }
 }
 interface boolean_<Meta = {}> extends t.boolean, meta<Meta> {
   get toTraversable(): boolean_.Traversable<Meta>
+  _lambda: boolean_._lambda,
 }
 declare namespace boolean_ {
   interface Traversable<Meta = {}>
     extends t.boolean.toJsonSchema 
     { meta: Meta }
+  interface _lambda extends HKT<typeof t.boolean.spec> { [-1]: boolean_ }
 }
 namespace boolean_ {
   export function toTraversable<Meta = {}>
@@ -89,6 +102,7 @@ namespace boolean_ {
       meta,
     }
   }
+  export const _lambda: boolean_._lambda = phantom
 }
 ///    BOOLEAN    ///
 /////////////////////
@@ -101,18 +115,19 @@ function integer_<const Meta = {}>(meta?: Meta): integer_<Meta> {
   return {
     ...t.integer(),
     get meta() { return !!meta ? meta : meta as never },
-    get toTraversable(): integer_.Traversable<Meta> { 
-      return integer_.toTraversable(meta)
-    }
+    get toTraversable(): integer_.Traversable<Meta> { return integer_.toTraversable(meta) },
+    _lambda: integer_._lambda,
   }
 }
 interface integer_<Meta = {}> extends t.integer, meta<Meta> {
   get toTraversable(): integer_.Traversable<Meta>
+  _lambda: integer_._lambda
 }
 declare namespace integer_ {
   interface Traversable<Meta = {}>
     extends t.integer.toJsonSchema 
     { meta: Meta }
+  interface _lambda extends HKT<typeof t.integer.spec> { [-1]: integer_ }
 }
 namespace integer_ {
   export function toTraversable<Meta = {}>
@@ -125,6 +140,7 @@ namespace integer_ {
       meta,
     }
   }
+  export const _lambda: integer_._lambda = phantom
 }
 ///    INTEGER    ///
 /////////////////////
@@ -137,18 +153,19 @@ function number_<const Meta = {}>(meta?: Meta): number_<Meta> {
   return {
     ...t.number(),
     get meta() { return !!meta ? meta : meta as never },
-    get toTraversable(): number_.Traversable<Meta> { 
-      return number_.toTraversable(meta)
-    }
+    get toTraversable(): number_.Traversable<Meta> { return number_.toTraversable(meta) },
+    _lambda: number_._lambda,
   }
 }
 interface number_<Meta = {}> extends t.number, meta<Meta> {
   get toTraversable(): number_.Traversable<Meta>
+  _lambda: number_._lambda
 }
 declare namespace number_ {
   interface Traversable<Meta = {}>
     extends t.number.toJsonSchema 
     { meta: Meta }
+  interface _lambda extends HKT<typeof t.number.spec> { [-1]: number_ }
 }
 namespace number_ {
   export function toTraversable<Meta = {}>
@@ -161,6 +178,7 @@ namespace number_ {
       meta,
     }
   }
+  export const _lambda: number_._lambda = phantom
 }
 ///    NUMBER    ///
 ////////////////////
@@ -175,16 +193,19 @@ function string_<const Meta>(meta?: Meta): string_<Meta> {
     get meta() { return !!meta ? meta : meta as never },
     get toTraversable(): string_.Traversable<Meta> { 
       return string_.toTraversable(meta)
-    }
+    },
+    _lambda: string_._lambda,
   }
 }
 interface string_<Meta = {}> extends t.string, meta<Meta> {
   get toTraversable(): string_.Traversable<Meta>
+  _lambda: string_._lambda
 }
 declare namespace string_ {
   interface Traversable<Meta = {}>
     extends t.string.toJsonSchema 
     { meta: Meta }
+  interface _lambda extends HKT<typeof t.string.spec> { [-1]: string_ }
 }
 namespace string_ {
   export function toTraversable<Meta = {}>(meta?: Meta): string_.Traversable<Meta>
@@ -196,6 +217,7 @@ namespace string_ {
       meta,
     }
   }
+  export const _lambda: string_._lambda = phantom
 }
 ///    STRING    ///
 ////////////////////
@@ -210,14 +232,17 @@ function any_<const Meta>(meta?: Meta): any_<Meta> {
     get meta() { return !!meta ? meta : meta as never },
     get toTraversable(): any_.Traversable<Meta> { 
       return any_.toTraversable(meta)
-    }
+    },
+    _lambda: any_._lambda,
   }
 }
 interface any_<Meta = {}> extends t.any, meta<Meta> {
   get toTraversable(): any_.Traversable<Meta>
+  _lambda: any_._lambda
 }
 declare namespace any_ {
   interface Traversable<Meta = {}> extends t.any.toJsonSchema { meta: Meta }
+  interface _lambda extends HKT<typeof t.any.spec> { [-1]: any_ }
 }
 namespace any_ {
   export function toTraversable<Meta = {}>(meta?: Meta): any_.Traversable<Meta>
@@ -229,6 +254,7 @@ namespace any_ {
       meta,
     }
   }
+  export const _lambda: any_._lambda = phantom
 }
 ///    STRING    ///
 ////////////////////
@@ -243,13 +269,13 @@ function const_<const T extends typeof t.const.children, const Meta>(
   return {
     ...t.const(value),
     get meta() { return !!meta ? meta : meta as never },
-    get toTraversable() { 
-      return const_.toTraversable(value, meta)
-    }
+    get toTraversable() { return const_.toTraversable(value, meta) },
+    _lambda: const_._lambda,
   }
 }
 interface const_<T, Meta = {}> extends t.const<T>, meta<Meta> {
   get toTraversable(): const_.Traversable<T, Meta>
+  _lambda: const_._lambda
 }
 declare namespace const_ {
   interface Traversable<T extends typeof t.const.spec, Meta = {}> extends t.const.toJsonSchema<T> { 
@@ -257,6 +283,7 @@ declare namespace const_ {
     const: T & decorate<T>
     meta: Meta
   }
+  interface _lambda extends HKT<typeof t.const.spec> { [-1]: const_<this[0]> }
 }
 namespace const_ {
   export function toTraversable<
@@ -273,6 +300,7 @@ namespace const_ {
       meta,
     }
   }
+  export const _lambda: const_._lambda = phantom
 }
 ///    CONST    ///
 ///////////////////
@@ -293,11 +321,13 @@ function enum_<T extends typeof t.enum.children, const Meta>(
     get meta() { return !!meta ? meta : meta as never },
     get toTraversable() { 
       return enum_.toTraversable(xs, meta) 
-    }
+    },
+    _lambda: enum_._lambda,
   }
 }
-interface enum_<T extends typeof t.enum.spec, Meta = {}> extends t.enum<T>, meta<Meta> {
+interface enum_<T extends typeof t.enum.spec, Meta = {}> extends Omit<t.enum<T>, '_lambda'>, meta<Meta> {
   get toTraversable(): enum_.Traversable<T, Meta>
+  _lambda: enum_._lambda
 }
 declare namespace enum_ {
   interface Traversable<T extends typeof t.enum.spec, Meta = {}> extends t.enum.toJsonSchema<T> { 
@@ -305,6 +335,7 @@ declare namespace enum_ {
     enum: { [I in keyof T]: T[I]["_type" & keyof T[I]] & decorate<T[I]> }
     meta: Meta
   }
+  interface _lambda extends HKT<typeof t.enum.spec> { [-1]: enum_<this[0]> }
 }
 namespace enum_ {
   export function toTraversable<
@@ -321,6 +352,7 @@ namespace enum_ {
       meta,
     }
   }
+  export const _lambda: enum_._lambda = phantom
 }
 ///    ENUM    ///
 //////////////////
@@ -336,11 +368,13 @@ function optional_<T extends typeof t.optional.children, const Meta>(
   return {
     ...t.optional(value),
     get meta() { return !!meta ? meta : meta as never },
-    get toTraversable() { return optional_.toTraversable(value, meta) }
+    get toTraversable() { return optional_.toTraversable(value, meta) },
+    _lambda: optional_._lambda,
   }
 }
 interface optional_<T, Meta = {}> extends t.optional<T>, meta<Meta> {
   get toTraversable(): optional_.Traversable<T, Meta>
+  _lambda: optional_._lambda
 }
 declare namespace optional_ {
   interface Traversable<T extends typeof t.optional.spec, Meta = {}> 
@@ -349,6 +383,7 @@ declare namespace optional_ {
       anyOf: [T & decorate<T>, const_<undefined>["toJsonSchema"]]
       meta: Meta & { optional: true }
     }
+  interface _lambda extends HKT<typeof t.optional.spec> { [-1]: optional_<this[0]> }
 }
 namespace optional_ {
   export function toTraversable<
@@ -365,6 +400,7 @@ namespace optional_ {
       meta: { ...meta, optional: true },
     }
   }
+  export const _lambda: optional_._lambda = phantom
 }
 ///    OPTIONAL    ///
 //////////////////////
@@ -382,17 +418,20 @@ function array_<T extends typeof t.array.children, const Meta>(
     get meta() { return !!meta ? meta : meta as never },
     get toTraversable() { 
       return array_.toTraversable(value, meta)
-    }
+    },
+    _lambda: array_._lambda,
   }
 }
 interface array_<T, Meta = {}> extends t.array<T>, meta<Meta> {
   get toTraversable(): array_.Traversable<T, Meta>
+    _lambda: array_._lambda
 }
 declare namespace array_ {
   interface Traversable<T extends typeof t.array.spec, Meta = {}> extends t.array.toJsonSchema<T> { 
     meta: Meta
     items: T["toJsonSchema" & keyof T] & decorate<T>
   }
+  interface _lambda extends HKT<typeof t.array.spec> { [-1]: array_<this[0]> }
 }
 namespace array_ {
   export function toTraversable<
@@ -408,6 +447,7 @@ namespace array_ {
       meta,
     }
   }
+  export const _lambda: array_._lambda = phantom
 }
 ///    ARRAY    ///
 ///////////////////
@@ -427,11 +467,13 @@ function allOf_<T extends typeof t.allOf.children, const Meta>(
   return {
     ...t.allOf(...xs),
     get meta() { return !!meta ? meta : meta as never },
-    get toTraversable() { return allOf_.toTraversable(xs, meta) }
+    get toTraversable() { return allOf_.toTraversable(xs, meta) },
+    _lambda: allOf_._lambda
   }
 }
 interface allOf_<T extends typeof t.allOf.spec, Meta = {}> extends t.allOf<T>, meta<Meta> {
   get toTraversable(): allOf_.Traversable<T, Meta>
+  _lambda: allOf_._lambda
 }
 declare namespace allOf_ {
   interface Traversable<T extends typeof t.allOf.spec, Meta = {}> extends t.allOf.toJsonSchema<T> { 
@@ -439,6 +481,7 @@ declare namespace allOf_ {
     allOf: { [I in keyof T]: T[I]["toJsonSchema" & keyof T[I]] & decorate<T[I]> } 
     meta: Meta 
   }
+  interface _lambda extends HKT<typeof t.allOf.spec> { [-1]: allOf_<this[0]> }
 }
 namespace allOf_ {
   export function toTraversable<T extends typeof t.allOf.spec, Meta = {}>(
@@ -455,11 +498,10 @@ namespace allOf_ {
       meta,
     }
   }
+  export const _lambda: allOf_._lambda = phantom
 }
 ///    ALL OF    ///
 ////////////////////
-
-allOf_(object_({ a: number_() }))
 
 ////////////////////
 ///    ANY OF    ///
@@ -475,13 +517,13 @@ function anyOf_<T extends typeof t.anyOf.children, const Meta>(
   return {
     ...t.anyOf(...xs),
     get meta() { return !!meta ? meta : meta as never },
-    get toTraversable() { 
-      return anyOf_.toTraversable(xs, meta) 
-    }
+    get toTraversable() { return anyOf_.toTraversable(xs, meta) },
+    _lambda: anyOf_._lambda,
   }
 }
 interface anyOf_<T extends typeof t.anyOf.spec, Meta = {}> extends t.anyOf<T>, meta<Meta> {
   get toTraversable(): anyOf_.Traversable<T, Meta>
+  _lambda: anyOf_._lambda,
 }
 declare namespace anyOf_ {
   interface Traversable<T extends typeof t.anyOf.spec, Meta = {}> extends t.anyOf.toJsonSchema<T> { 
@@ -489,6 +531,7 @@ declare namespace anyOf_ {
     anyOf: { [I in keyof T]: T[I]["toJsonSchema" & keyof T[I]] & decorate<T[I]> } 
     meta: Meta 
   }
+  interface _lambda extends HKT<typeof t.anyOf.spec> { [-1]: anyOf_<this[0]> }
 }
 namespace anyOf_ {
   export function toTraversable<T extends typeof t.anyOf.spec, Meta = {}>(
@@ -505,6 +548,7 @@ namespace anyOf_ {
       meta,
     }
   }
+  export const _lambda: anyOf_._lambda = phantom
 }
 ///    ANY OF    ///
 ////////////////////
@@ -524,11 +568,13 @@ function oneOf_<T extends typeof t.oneOf.children, const Meta>(
   return {
     ...t.oneOf(...xs),
     get meta() { return !!meta ? meta : meta as never },
-    get toTraversable() { return oneOf_.toTraversable(xs, meta) }
+    get toTraversable() { return oneOf_.toTraversable(xs, meta) },
+    _lambda: oneOf_._lambda,
   }
 }
 interface oneOf_<T extends typeof t.oneOf.spec, Meta = {}> extends t.oneOf<T>, meta<Meta> {
   get toTraversable(): oneOf_.Traversable<T, Meta>
+    _lambda: oneOf_._lambda
 }
 declare namespace oneOf_ {
   interface Traversable<T extends typeof t.oneOf.spec, Meta = {}> extends t.oneOf.toJsonSchema<T> { 
@@ -536,6 +582,7 @@ declare namespace oneOf_ {
     oneOf: { [I in keyof T]: T[I]["toJsonSchema" & keyof T[I]] & decorate<T[I]> } 
     meta: Meta 
   }
+  interface _lambda extends HKT<typeof t.oneOf.spec> { [-1]: oneOf_<this[0]> }
 }
 namespace oneOf_ {
   export function toTraversable<T extends typeof t.oneOf.spec, Meta = {}>(
@@ -552,6 +599,7 @@ namespace oneOf_ {
       meta,
     }
   }
+  export const _lambda: oneOf_._lambda = phantom
 }
 ///    ONE OF    ///
 ////////////////////
@@ -566,11 +614,13 @@ function record_<T extends typeof t.record.children, const Meta extends {}>(
   return {
     ...t.record(value),
     get meta() { return !!meta ? meta : meta as never },
-    get toTraversable() { return record_.toTraversable(value, meta) }
+    get toTraversable() { return record_.toTraversable(value, meta) },
+    _lambda: record_._lambda,
   }
 }
 interface record_<T, Meta = {}> extends t.record<T>, meta<Meta> {
   get toTraversable(): record_.Traversable<T, Meta>
+  _lambda: record_._lambda
 }
 declare namespace record_ {
   interface Traversable<T extends typeof t.record.spec, Meta = {}> extends Omit<t.record.toJsonSchema<T>, "type"> { 
@@ -578,6 +628,7 @@ declare namespace record_ {
     meta: Meta 
     additionalProperties: T["toJsonSchema" & keyof T] & decorate<T>
   }
+  interface _lambda extends HKT<typeof t.tuple.spec> { [-1]: record_<this[0]> }
 }
 namespace record_ {
   export function toTraversable<T extends typeof t.record.spec, Meta extends {} = {}>(
@@ -594,6 +645,7 @@ namespace record_ {
       meta,
     }
   }
+  export const _lambda: record_._lambda = phantom
 }
 ///    RECORD    ///
 ////////////////////
@@ -613,11 +665,13 @@ function tuple_<T extends typeof t.tuple.children, const Meta>(
   return {
     ...t.tuple(...xs),
     get meta() { return !!meta ? meta : meta as never },
-    get toTraversable() { return tuple_.toTraversable(xs, meta) }
+    get toTraversable() { return tuple_.toTraversable(xs, meta) },
+    _lambda: tuple_._lambda
   }
 }
 interface tuple_<T extends typeof t.tuple.spec, Meta = {}> extends t.tuple<T>, meta<Meta> { 
   get toTraversable(): tuple_.Traversable<T, Meta>
+  _lambda: tuple_._lambda
 }
 declare namespace tuple_ {
   interface Traversable<T extends typeof t.tuple.spec, Meta = {}> extends Omit<t.tuple.toJsonSchema<T>, 'type'> { 
@@ -625,6 +679,7 @@ declare namespace tuple_ {
     type: 'tuple'
     items: { [I in keyof T]: T[I]["toJsonSchema" & keyof T[I]] & decorate<T[I]> }
   }
+  interface _lambda extends HKT<typeof t.tuple.spec> { [-1]: tuple_<this[0]> }
 }
 namespace tuple_ {
   export function toTraversable<T extends typeof t.tuple.spec, Meta = {}>(
@@ -643,6 +698,7 @@ namespace tuple_ {
       meta,
     } as tuple_.Traversable<T>
   }
+  export const _lambda: tuple_._lambda = phantom
 }
 ///    TUPLE    ///
 ///////////////////
@@ -657,17 +713,20 @@ function object_<T extends typeof t.object.children, const Meta>(
   return {
     ...t.object(value),
     get meta() { return !!meta ? meta : meta as never },
-    get toTraversable() { return object_.toTraversable(value, meta) }
+    get toTraversable() { return object_.toTraversable(value, meta) },
+    _lambda: object_._lambda
   }
 }
 interface object_<T extends typeof t.object.spec, Meta = {}> extends t.object<T>, meta<Meta> {
   get toTraversable(): object_.Traversable<T, Meta>
+  _lambda: object_._lambda
 }
 declare namespace object_ {
   interface Traversable<T extends typeof t.object.spec, Meta = {}> extends t.object.toJsonSchema<T> { 
     meta: Meta, 
     properties: { [K in keyof T]: T[K]["toJsonSchema" & keyof T[K]] & decorate<T[K]> } 
   }
+  interface _lambda extends HKT<{}> { [-1]: object_<this[0]> }
 }
 namespace object_ {
   export function toTraversable<T extends typeof t.object.spec, Meta = {}>(
@@ -683,36 +742,72 @@ namespace object_ {
       meta,
     }
   }
+  export const _lambda: object_._lambda = phantom
 }
 ///    OBJECT    ///
 ////////////////////
 
+
+export type lambda = typeof lambda
+export const lambda = {
+  null: null_._lambda,
+  boolean: boolean_._lambda,
+  integer: integer_._lambda,
+  number: number_._lambda,
+  string: string_._lambda,
+  enum: enum_._lambda,
+  const: const_._lambda,
+  optional: optional_._lambda,
+  array: array_._lambda,
+  record: record_._lambda,
+  tuple: tuple_._lambda,
+  object: object_._lambda,
+  allOf: allOf_._lambda,
+  anyOf: anyOf_._lambda,
+  oneOf: oneOf_._lambda,
+}
+
 namespace Recursive {
-export const toTraversable
-  : Functor.Algebra<t.AST.lambda, Traversable.F<_>>
-  = (ast) => {
-    switch (ast._tag) {
-      default: return fn.exhaustive(ast)
-      case "symbol": return NotSupported("symbol", "Recursive.toTraversable")
-      case "any": return any_.toTraversable()
-      case "null": return null_.toTraversable()
-      case "boolean": return boolean_.toTraversable()
-      case "integer": return integer_.toTraversable()
-      case "number": return number_.toTraversable()
-      case "string": return string_.toTraversable()
-      case "enum": return enum_.toTraversable(ast.def)
-      case "const": return const_.toTraversable(ast.def)
-      case "array": return array_.toTraversable(ast.def)
-      case "anyOf": return anyOf_.toTraversable(ast.def)
-      case "oneOf": return oneOf_.toTraversable(ast.def)
-      case "optional": return optional_.toTraversable(ast.def)
-      case "record": return record_.toTraversable(ast.def)
-      case "tuple": return tuple_.toTraversable(ast.def)
-      case "object": return object_.toTraversable(ast.def)
-      case "allOf": return allOf_.toTraversable(map(ast.def, object_.toTraversable))
-    }
+  export const toTraversableMap = {
+    symbol: () => NotSupported('symbol', 'Recursive.fromASTMap'),
+    any: any_.toTraversable,
+    null: null_.toTraversable,
+    boolean: boolean_.toTraversable,
+    integer: integer_.toTraversable,
+    number: number_.toTraversable,
+    string: string_.toTraversable,
+    enum: enum_.toTraversable,
+    const: const_.toTraversable,
+    array: array_.toTraversable,
+    anyOf: anyOf_.toTraversable,
+    oneOf: oneOf_.toTraversable,
+    optional: optional_.toTraversable,
+    record: record_.toTraversable,
+    tuple: tuple_.toTraversable,
+    object: object_.toTraversable,
+    allOf: map(allOf_.toTraversable),
   }
+
+  export const toTraversable
+    : Functor.Algebra<t.AST.lambda, Traversable.F<_>>
+    = (ast) => (Recursive.toTraversableMap[ast._tag] as (_?: any) => never)(ast.def)
+
+  export type toTraversable<
+    S, 
+    _F extends 
+    | lambda[S['_tag' & keyof S] & keyof lambda] 
+    = lambda[S['_tag' & keyof S] & keyof lambda]
+  > = Kind<_F, S['def' & keyof S]>['toTraversable']
 }
 
 export function fold<S>(g: Functor.Algebra<t.AST.lambda, S>) { return fn.cata(t.Functor)(g) }
-export const toTraversable = fold(Recursive.toTraversable)
+
+/** 
+ * ## {@link toTraversable `tr.toTraversable`}
+ * 
+ * Converts either a {@link t `t`} schema or a {@link tr `tr`} schema
+ * to its {@link Traversable `Traversable`} form.
+ */
+export const toTraversable
+  : <S extends t.Schema>(term: S) => Recursive.toTraversable<S> 
+  = fold(Recursive.toTraversable) as <S extends t.Schema>(term: S) => Recursive.toTraversable<S> 

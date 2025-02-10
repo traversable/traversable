@@ -37,8 +37,8 @@ const PATTERN = {
 /** @internal */
 const Object_keys = globalThis.Object.keys
 
-type Keyword = keyof typeof KEYWORDS
-const KEYWORDS = {
+type Keyword = keyof typeof KEYWORD
+const KEYWORD = {
   break: "break", case: "case", catch: "catch", class: "class", const: "const", 
   continue: "continue", debugger: "debugger", default: "default", delete: "delete", 
   do: "do", else: "else", export: "export", extends: "extends", false: "false", 
@@ -900,13 +900,13 @@ export function stringNumeric(constraints?: fc.FloatConstraints) {
  */
 export function identifier(constraints?: fc.StringMatchingConstraints): fc.Arbitrary<string>
 export function identifier(constraints?: fc.StringMatchingConstraints) {
-  return fc.stringMatching(PATTERN.identifier, constraints).filter((ident) => !(ident in KEYWORDS))
+  return fc.stringMatching(PATTERN.identifier, constraints).filter((ident) => !(ident in KEYWORD))
 }
 
 /**
  * ### {@link pathname `fc.pathname`}
  * 
- * Generates a string that matches:
+ * Generates a string that satisfies:
  * 
  * > `/^[a-zA-Z0-9._-]+$/`
  *

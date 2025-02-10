@@ -1,9 +1,10 @@
 import { z } from 'zod'
 
 import { Json, core, tree } from '@traversable/core'
-import { Option, map as fmap, fn, object } from '@traversable/data';
-import type { Functor, HKT, _ } from '@traversable/registry'
+import { Option, map as fmap, fn, map, object } from '@traversable/data';
+import type { Functor, HKT, IndexedFunctor, _ } from '@traversable/registry'
 
+import * as Print from '../print.js'
 
 export {
   type Z as z,
@@ -317,6 +318,26 @@ const applyArrayConstraints = (x: Z.Array) => ([
   Number.isFinite(x._def.exactLength?.value) && `.length(${x._def.exactLength?.value})`
 ]).filter((_) => typeof _ === 'string').join('')
 
+
+const FormatFunctor: IndexedFunctor<number, Json.lambda> = {
+  map: Json.Functor.map,
+  mapWithIndex(f) {
+    return (indent, x) => {
+      switch (true) {
+        default: return fn.exhaustive(x)
+        case x === null:
+        case x === undefined:
+        case x === true:
+        case x === false:
+        case typeof x === 'number':
+        case typeof x === 'string': return x
+        case Array_isArray(x): return x.map((s) => f(indent + 2, s))
+        case !!x && typeof x === 'object': return map(x, (s) => f(indent + 2, s))
+      }
+    }
+  }
+}
+
 namespace Algebra {
   export const toString: Functor.Algebra<Z.lambda, string> = (x) => {
     switch (true) {
@@ -386,8 +407,8 @@ namespace Algebra {
   }
 
   export const serialize
-    : (initialOffset?: number) => Functor.Algebra<Json.lambda, string> 
-    = (indent = 2) => (x) => {
+    : Functor.IxAlgebra<number, Json.lambda, string> 
+    = (indent, x) => {
       switch (true) {
         default: return fn.exhaustive(x)
         case x === null:
@@ -397,12 +418,19 @@ namespace Algebra {
         case typeof x === 'string': return `z.literal("${x}")`
         case Array_isArray(x): {
           return x.length === 0 ? `z.tuple([])`
-          : `z.tuple([` + x.join(', ') + `])`
+          : Print.array({ indent })(`z.tuple([`, x.join(', '), `])`)
         }
         case !!x && typeof x === 'object': {
            const xs = Object.entries(x)
            return xs.length === 0 ? `z.object({})`
-           : `z.object({` + xs.map(([k, v]) => object.parseKey(k) +': ' + v).join(', ') + `})`
+           : Print.array({ indent })(
+            `z.object({`,
+            ...fn.pipe(
+              xs.map(([k, v]) => object.parseKey(k) +': ' + v),
+              // (xs) => xs.map((_) => `${' '.repeat(depth)}${_}`),
+            ),
+            `})`,
+          )
         }
       }
     }
@@ -456,11 +484,7 @@ const unsafeFromUnknownValue
     Option.getOrThrow,
   )
 
-const serialize = fn.flow(
-  Algebra.serialize, 
-  fn.cata(Json.Functor), 
-  // (x) => Format.joinAll({ joiner: (xss, d) => '\n' + ' '.repeat(d), beforeEach: '  ', afterEach: '  '}),
-)
+const serialize = fn.cataIx(FormatFunctor)(Algebra.serialize)
 
 type Any<T extends z.ZodTypeAny = z.ZodTypeAny> =
   | z.ZodAny

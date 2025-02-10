@@ -12,6 +12,7 @@ export const pad = ({ indent = defaults.indent }: Options) => " ".repeat(indent)
 export const tab = ({ indent = defaults.indent }: Options) => " ".repeat(indent + 2)
 export const newline = ({ indent = defaults.indent }: Options, count = 0) => "\n" + " ".repeat(indent + (2 * (count + 1)))
 
+// TODO: rename to `Print.lines`
 export function array($?: Options): 
   <L extends string, const Body extends string[], R extends string>(left: L, ...body: [...Body, R]) 
     => `${L}${string}${R}`

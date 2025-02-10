@@ -1,8 +1,6 @@
-import * as path from "node:path"
-
 import type { Context } from "@traversable/core"
-import { Extension, JsonPointer, Traversable, core, is, keyOf$, t, tree } from "@traversable/core"
-import { Graph, array, fn, map, object, string } from "@traversable/data"
+import { Extension, Traversable, is, schema, t } from "@traversable/core"
+import { array, fn, object, string } from "@traversable/data"
 import { OpenAPI, Ref } from "@traversable/openapi"
 import type { Partial } from "@traversable/registry"
 import { symbol } from "@traversable/registry"
@@ -36,9 +34,9 @@ export declare namespace JsonLike {
 export const JsonLike = {
   is: (u: unknown): u is JsonLike => {
     return (
-      core.is.scalar(u)
-      || core.is.array(u) && u.every(JsonLike.is)
-      || core.is.object(u) && Object_values(u).every(JsonLike.is)
+      schema.is.scalar(u)
+      || schema.is.array(u) && u.every(JsonLike.is)
+      || schema.is.object(u) && Object_values(u).every(JsonLike.is)
     )
   },
   isArray: globalThis.Array.isArray as (u: unknown) => u is readonly JsonLike.Shallow[],
@@ -83,6 +81,7 @@ export declare namespace Options {
     document: OpenAPI.doc<Traversable.orJsonSchema>
     header: string | string[]
     template: TargetTemplate
+    maxWidth: number
   }
   export interface Config<T> extends Options.Base, Context {
     handlers: Extension.Handlers<T, Index>
@@ -120,9 +119,10 @@ export const defaults = {
     includeExamples: true,
     includeLinkToOpenApiNode: false, // path.resolve(),
   },
-  indent: 0,
+  indent: 2,
   path: [],
   depth: 0,
+  maxWidth: 80,
   siblingCount: 0,
 } as const satisfies Omit<Options.Config<unknown>, "handlers" | "refs">
 
@@ -134,6 +134,7 @@ export function parseOptions<T>(_: Options<T>) {
     template: _.template || defaults.template,
     header: _.header || defaults.header,
     typeName: _.typeName ?? defaults.typeName,
+    maxWidth: _.maxWidth ?? defaults.maxWidth,
     flags: !_.flags ? defaults.flags : {
       nominalTypes: _.flags?.nominalTypes ?? defaults.flags.nominalTypes,
       preferInterfaces: _.flags?.preferInterfaces ?? defaults.flags.preferInterfaces,
@@ -165,6 +166,7 @@ export function optionsFromMatchers<T>(handlers: Extension.Handlers<T, Index>): 
       },
       absolutePath: $?.absolutePath ?? defaults.absolutePath,
       indent: defaults.indent,
+      maxWidth: $?.maxWidth ?? defaults.maxWidth,
       path: defaults.path,
       depth: defaults.depth,
       siblingCount: defaults.siblingCount,
@@ -237,7 +239,7 @@ const buildIdentInterpreter: BuildPathInterpreter = (lookup) => ($) => (xs) => {
         }
         continue
       }
-      case keyOf$(lookup)(k): lookup[k] != null && out.push(lookup[k]); continue
+      case schema.keyOf$(lookup)(k): lookup[k] != null && out.push(lookup[k]); continue
       /**
        * If `k` is a number, we can't go any deeper without breaking the JSDoc link.
        *
@@ -270,7 +272,7 @@ const buildMaskInterpreter: BuildPathInterpreter = (lookup) => ({ typeName, path
     switch (true) {
       case typeof k === "number": { out.push(`[${k}]`); continue }
       case typeof k === "string": { out.push(`.${k}`); continue }
-      case keyOf$(lookup)(k): {
+      case schema.keyOf$(lookup)(k): {
         const v = lookup[k]
         const js = last === lookup[symbol.optional] && String(v).length ? [".", v] : [v]
         v != null && out.push(...js); continue

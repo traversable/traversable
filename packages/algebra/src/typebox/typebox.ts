@@ -1,5 +1,5 @@
 import * as T from "@sinclair/typebox"
-import { type Traversable, anyOf$, core } from "@traversable/core"
+import { type Traversable, schema } from "@traversable/core"
 import { fn, map } from "@traversable/data"
 import type { _ } from "@traversable/registry"
 import { Invariant } from "@traversable/registry"
@@ -65,7 +65,7 @@ const defaults = {
 } satisfies Required<Omit<Options<unknown>, 'handlers'>>
 
 const deriveObjectNode 
-  : ($: Index) => (x: core.Traversable.objectF<T.TAnySchema>) => T.TAnySchema
+  : ($: Index) => (x: Traversable.objectF<T.TAnySchema>) => T.TAnySchema
   = ($) => ({ properties: xs, additionalProperties, ..._ }) => T.Object(xs, { additionalProperties, ...$, ..._ })
 
 const derivatives = {
@@ -87,7 +87,7 @@ const derivatives = {
     { return T.Intersect([...xs.map(deriveObjectNode($))], { ...$, ..._ }) },
   enum({ enum: xs, ..._ }, $) { 
     return fn.pipe(
-      xs.filter((anyOf$(core.is.string, core.is.number))),
+      xs.filter((schema.anyOf$(schema.is.string, schema.is.number))),
       map((x) => [x, x] satisfies [any, any]),
       (xs) => Object.fromEntries(xs),
       (xs) => T.Enum(xs, { ...$, ..._ })
@@ -119,29 +119,40 @@ const deriveAll
 
 const compilers = {
   any() { return `${NS}.Unknown()` },
+  $ref({ $ref: x }, $) { return $.refs[x] as string },
   null() { return `${NS}.Null()` as const },
   boolean() { return `${NS}.Boolean()` as const },
   integer() { return `${NS}.Integer()` as const },
   number() { return `${NS}.Number()` as const },
   string() { return `${NS}.String()` as const },
-  anyOf(x, $) { return Print.array($)(`${NS}.Union([`, x.anyOf.join(`, `), `])`) },
-  oneOf(x, $) { return Print.array($)(`${NS}.Union([`, x.oneOf.join(`, `), `])`) },
-  allOf(x, $) { return Print.array($)(`${NS}.Intersect([`, x.allOf.join(`, `), `])`) },
+  object(x, $) { return compileObjectNode(x, $) },
   const(x, $) { return `${NS}.Const(` + serializer($)(x.const) + `)` },
-  array(x, $) { return Print.array($)(`${NS}.Array(`, x.items, `)`) },
   enum(x, $) { return `${NS}.Enum([` + x.enum.map(serializer($)).join(`, `) + `])` },
-  tuple(x, $) { 
+  array(x, $) { return Print.array($)(`${NS}.Array(`, x.items, `)`) },
+  record(x, $) { return Print.array($)(`${NS}.Record(T.String(), `, x.additionalProperties, `)`) },
+  tuple(x, $) {
     return x.items.length === 0 
       ? `${NS}.Tuple([])` : `${NS}.Tuple([\n` 
       + ` `.repeat($.indent + 2) 
       +  x.items.join(`,\n` 
       + ` `.repeat($.indent + 2)) 
       + `\n` + ` `.repeat($.indent) 
-      + `])` 
+      + `])`
   },
-  record(x, $) 
-    { return Print.array($)(`${NS}.Record(T.String(), `, x.additionalProperties, `)`) },
-  object(x, $) { 
+  anyOf(x, $) { return Print.array($)(`${NS}.Union([`, x.anyOf.join(`, `), `])`) },
+  oneOf(x, $) { return Print.array($)(`${NS}.Union([`, x.oneOf.join(`, `), `])`) },
+  allOf(x, $) { 
+    return Print.array($)(
+      `${NS}.Intersect([`, 
+      x.allOf.map((_) => compileObjectNode(_, $)).join(`, `), 
+      `])`
+    ) 
+  },
+} as const satisfies Matchers<string>
+
+const compileObjectNode 
+  : (x: Traversable.objectF<string>, $: Index) => string
+  = (x, $) => {
     const xs = globalThis.Object.entries(x.properties)
     return xs.length === 0 ? `${NS}.Object({})` : fn.pipe(
       xs.map(
@@ -149,9 +160,7 @@ const compilers = {
       ).join(``),
       (xs) => `${NS}.Object({\n` + ` `.repeat($.indent + 2) + xs + `\n` + ` `.repeat($.indent) + `})`,
     )
-  },
-  $ref({ $ref: x }, $) { return $.refs[x] as never },
-} as const satisfies Matchers<string>
+  }
 
 /**
  * ## {@link compile `typebox.compile`}
@@ -163,7 +172,7 @@ const compilers = {
  * some kind of user input, use {@link derive `typebox.derive`} instead.
  */
 const compile
-  : (schema: core.Traversable.orJsonSchema, options: Options<string>) => string
+  : (schema: Traversable.orJsonSchema, options: Options<string>) => string
   = Gen.compile(compilers, defaults)
 
 const compileAll

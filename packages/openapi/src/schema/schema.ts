@@ -1,8 +1,9 @@
-import { type JsonSchema, core, fc, tree } from "@traversable/core"
+import type { JsonSchema, core } from "@traversable/core"
+import { fc, schema, tree } from "@traversable/core"
 import type { record as Record, keys } from "@traversable/data"
-import { Option, fn, integer, object } from "@traversable/data"
-import type { Require, inline } from "@traversable/registry"
-import { PATTERN, REPLACER, symbol } from "@traversable/registry"
+import { fn, integer, object } from "@traversable/data"
+import type { Compare, Require, inline } from "@traversable/registry"
+import { PATTERN, REPLACER } from "@traversable/registry"
 
 import { type Schema, format } from "../types.js"
 import type * as t from "../types.js"
@@ -1342,13 +1343,13 @@ export declare namespace Constraints {
     include: t.arbitrary.Include
   }
 
+  type TagComparator = Compare<Tag>
+  type TagWeightMap = { [K in Tag]: number }
+  type SortBias = TagComparator | TagWeightMap
+
   interface Config {
     base: Constraints.RootBase
-    sortBias: {
-      (l: Tag, r: Tag): -1 | 0 | 1
-      (l: Tag, r: Tag): number
-      (l: Tag, r: Tag): -1 | 0 | 1
-    }
+    sortBias: SortBias
     null: Require<Schema_null.Constraints, "arbitrary">
     boolean: Require<Schema_boolean.Constraints, "arbitrary">
     integer: Require<Schema_integer.Constraints, "arbitrary">
@@ -1468,20 +1469,17 @@ export interface SchemaLoop<Meta extends {} = {}> {
 /**
  * Order in this array determines default bias; change the order by
  * providing {@link Constraints.sortBias}.
- *
- * TODO: turn `allOf` and `const` back on
  */
-
 export const Tags = [
   "string",
   "number",
   "integer",
   "object",
   "boolean",
-  "const",
-  "null",
   "array",
   "record",
+  "const",
+  "null",
   "tuple",
   "allOf",
   "anyOf",
@@ -1489,12 +1487,20 @@ export const Tags = [
 ] as const satisfies (Tag)[]
 export type Tag = { [K in keyof SchemaLoop]: K }[keyof SchemaLoop]
 
+function applyBias(sortBias: Constraints.SortBias): Compare<Tag> {
+  if (typeof sortBias === 'function') return sortBias
+  else return (left, right) => 
+    sortBias[left] < sortBias[right] ? -1 
+  : sortBias[left] > sortBias[right] ? 1
+  : 0
+}
+
 export function loop(constraints: Constraints = Constraints.defaults): fc.LetrecValue<SchemaLoop> {
   const $ = Constraints.configure(constraints)
   return fc.letrec((LOOP: fc.LetrecTypedTie<SchemaLoop>) => {
     const loops = Tags
       .filter((_) => !$.base.exclude.includes(_))
-      .sort($.sortBias)
+      .sort(applyBias($.sortBias))
       .map(LOOP) as fc.Arbitrary<Schema_any>[]
 
     return {
@@ -1531,11 +1537,11 @@ export namespace has {
   void (has.const = hasConst)
   ///
   export const items = tree.has("items")
-  export const itemsSetToFalse = tree.has("items", core.is.literally(false))
-  export const properties = tree.has("properties", core.is.object)
+  export const itemsSetToFalse = tree.has("items", schema.is.literally(false))
+  export const properties = tree.has("properties", schema.is.object)
   export const additionalProperties = tree.has(
     "additionalProperties",
-    core.or$(core.is.boolean, core.is.object),
+    schema.or$(schema.is.boolean, schema.is.object),
   )
   export const atLeastOneProperty
     : (u: { properties?: {} }) => boolean

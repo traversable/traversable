@@ -300,8 +300,11 @@ export declare namespace Kinds {
   interface identity extends HKT {
     [-1]: this[0]
   }
-  interface keyof extends HKT<HKT> {
+  interface keyof extends HKT {
     [-1]: keyof this[0]
+  }
+  interface get<K extends keyof any> extends HKT {
+    [-1]: this[0][K & keyof this[0]]
   }
   interface duplicate extends HKT {
     [-1]: [this[0], this[0]]
@@ -334,13 +337,13 @@ export declare namespace Kinds {
 // export type Unfix<F extends Fix> = F["unFix"]
 
 export interface Typeclass<F extends HKT, _F = any> {
-  readonly [symbol.typeclass]?: 1 extends _F & 0 ? F : Extract<_F, HKT>
+  readonly [symbol.typeclass]?: 0 extends _F & 1 ? F : Extract<_F, HKT>
 }
 
 /**
  * ## {@link Functor `Functor`}
  */
-export interface Functor<F extends HKT = HKT, _F = any> extends Typeclass<F, _> {
+export interface Functor<F extends HKT = HKT, _F = any> extends Typeclass<F, 0 extends _F & 1 ? F : _F> {
   map<S, T>(f: (s: S) => T): (F: Kind<F, S>) => Kind<F, T>
 }
 

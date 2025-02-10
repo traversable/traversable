@@ -16,7 +16,7 @@ export {
   fromAST,
 }
 
-import { array$, is, t, tree } from "@traversable/core"
+import { is, schema, t, tree } from "@traversable/core"
 import { 
   Option,
   array, 
@@ -102,7 +102,7 @@ const normalizeOptionality
   : (context: Internal.Context_object<any.dict>) => Option<readonly string[]>
   = ($) => fn.pipe(
     $.required,
-    Option.flatMap(Option.guard(array$(is.string))),
+    Option.flatMap(Option.guard(schema.array$(is.string))),
   )
 
 const parseAdditional 

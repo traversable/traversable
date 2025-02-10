@@ -14,7 +14,7 @@ import type { Index } from './shared.js'
 export function tag(jsdocTag: string): (u: unknown, options?: Format.multiline.OptionsWithHandlers) => string
 export function tag(jsdocTag: string): (u: Json, $?: Format.multiline.OptionsWithHandlers) => string {
   return (u: Json, $?: Format.multiline.Options) => 
-    Format.multiline(u, { ...$, wrapWith: [' * @' + jsdocTag + '\n', ''] })
+    Format.multiline(u, { ...$, leftGutter: ' * ', wrapWith: [' * @' + jsdocTag + '\n', ''] })
 }
 
 const escapeMultilineCommentClose = (text: string) => text.replace(PATTERN.multilineCommentClose, `*\\/`)
@@ -28,7 +28,17 @@ export function example(k: string, $: Index): string | null {
   const child = tree.get($.document, ...$.absolutePath, 'properties', k, 'meta', 'example')
   return typeof child === 'symbol' 
     ? null 
-    : escapeMultilineCommentClose(Format.multiline(child, { wrapWith: [' * @example\n', ' '], leftMargin: $.indent + 2, leftPadding: 0, indent: 2 }))
+    : escapeMultilineCommentClose(
+      Format.multiline(
+        child, { 
+          wrapWith: [' * @example\n', ' '], 
+          leftGutter: ' * ',
+          leftMargin: $.indent + 2, 
+          leftPadding: 0, 
+          indent: 2 
+        }
+      )
+    )
 }
 
 const breaklines 

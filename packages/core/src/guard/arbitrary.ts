@@ -1,8 +1,10 @@
-import { TagTree as TagTree_, fc, t } from "@traversable/core"
-import { array, fn, order } from "@traversable/data"
-import { Functor, symbol } from "@traversable/registry"
+import { array, order } from "@traversable/data"
+import { symbol } from "@traversable/registry"
+import * as fc from "fast-check"
 
-export function Arbitrary() {}
+import { TagTree as TagTree_, toJson } from "./fromSeed.js"
+import { entries, identifier } from "../arbitrary/exports.js"
+import type { Json } from "../json.js"
 
 export namespace Arbitrary {
   export type Options = Partial<typeof defaults>
@@ -128,7 +130,7 @@ export namespace Arbitrary {
     anyOf: TagTree_.anyOfF<readonly TagTree_[]>
     array: TagTree_.arrayF<TagTree_>
     boolean: TagTree_.boolean
-    const: TagTree_.const
+    const: TagTree_.constF<Json>
     integer: TagTree_.integer
     null: TagTree_.null
     number: TagTree_.number
@@ -137,7 +139,7 @@ export namespace Arbitrary {
     record: TagTree_.recordF<Record<string, TagTree_>>
     string: TagTree_.string
     tuple: TagTree_.tupleF<readonly TagTree_[]>
-    tree: TagTree_.F<unknown>
+    tree: TagTree_
   }
 
   export const createTagTree 
@@ -160,11 +162,14 @@ export namespace Arbitrary {
           anyOf: fc.array(loop("tree")).map(TagTree_.byName.anyOf),
           array: loop("tree").map(TagTree_.byName.array),
           boolean: fc.constant(TagTree_.byName.boolean()),
-          const: fc.constant(TagTree_.byName.constant()),
+          const: loop("tree").map(toJson).map(TagTree_.byName.constant),
+          // const: fc.jsonValue() as never,
+          // fc.constant(TagTree_.byName.constant()),
+          // const: fc.constant(TagTree_.byName.constant()),
           integer: fc.constant(TagTree_.byName.integer()),
           null: fc.constant(TagTree_.byName.null()),
           number: fc.constant(TagTree_.byName.number()),
-          object: fc.entries(loop("tree")).map(TagTree_.byName.object),
+          object: entries(loop("tree")).map(TagTree_.byName.object),
           optional: loop("tree").map(TagTree_.byName.optional),
           record: loop("tree").map(TagTree_.byName.record),
           string: fc.constant(TagTree_.byName.string()),
@@ -173,24 +178,9 @@ export namespace Arbitrary {
             $,
             loop("any"),
             ...loops,
-          )
+          ) as fc.Arbitrary<TagTree_>
         }
       });
-
-  const TagTreeMap = {
-    [symbol.boolean]: fc.constant(TagTree_.byName.boolean()),
-    [symbol.null]: fc.constant(TagTree_.byName.null())
-
-  } as const
-
-  // export const arbitraryFromTagTree
-  //   : Functor.Coalgebra<t.AST.lambda, TagTree_.F<TagTree_>>
-  //   = (tag) => {
-  //     switch (tag[0]) {
-  //       case symbol.boolean: return fc.constant(TagTree_.byName.boolean())
-  //       case symbol.null: return fc.constant(TagTree_.byName.null())
-  //     }
-  //   }
 
   export const TagTree = createTagTree({ 
     depthIdentifier: Arbitrary.defaults.depthIdentifier,
@@ -201,78 +191,10 @@ export namespace Arbitrary {
     sortBias: Arbitrary.defaults.sortBias,
   })
 
-  // export const terminal
-  //   : fc.Arbitrary<t.Terminal>
-  //   = fc.constantFrom(...t.Terminals)
-  // export type LetrecShort = (
-  //   & { tree: t.AST.Short }
-  //   & {
-  //     booleans: "boolean" | "boolean[]" | "boolean{}";
-  //     symbols: "symbol" | "symbol[]" | "symbol{}";
-  //     integers: "integer" | "integer[]" | "integer{}";
-  //     numbers: "number" | "number[]" | "number{}";
-  //     strings: "string" | "string[]" | "string{}";
-  //   }
-  //   & {
-  //     allOf: readonly ["&", t.AST.Short[]]
-  //     anyOf: readonly ["|", t.AST.Short[]]
-  //     array: readonly ["[]", t.AST.Short]
-  //     record: readonly ["{}", t.AST.Short]
-  //     tuple: readonly t.AST.Short[]
-  //     object: Record<string, t.AST.Short>
-  //   } 
-  // )
-
   export const maybeOptionalProperty = fc
-    .tuple(fc.identifier(), fc.boolean())
+    .tuple(identifier(), fc.boolean())
     .map(([prop, isRequired]) => isRequired ? prop : `${prop}?`)
 
   export const optionalsDictionary = <T>(model: fc.Arbitrary<T>) => 
     fc.dictionary(maybeOptionalProperty, model)
-
-  // export const letrecShort
-  //   : (options?: Arbitrary.Options) => fc.LetrecValue<LetrecShort>
-  //   = ($ = Arbitrary.defaults) => fc.letrec(
-  //     (loop) => ({
-  //       booleans: fc.constantFrom("boolean", "boolean[]", "boolean{}"),
-  //       symbols: fc.constantFrom("symbol", "symbol[]", "symbol{}"),
-  //       integers: fc.constantFrom("integer", "integer[]", "integer{}"),
-  //       numbers: fc.constantFrom("number", "number[]", "number{}"),
-  //       strings: fc.constantFrom("string", "string[]", "string{}"),
-  //       allOf: fc.tuple(fc.constant("&"), fc.array(loop("tree"))),
-  //       anyOf: fc.tuple(fc.constant("|"), fc.array(loop("tree"))),
-  //       array: fc.tuple(fc.constant("[]"), loop("tree")),
-  //       record: fc.tuple(fc.constant("{}"), loop("tree")),
-  //       tuple: fc.array(loop("tree")),
-  //       object: optionalsDictionary(loop("tree")),
-  //       tree: fc.oneof(
-  //         $,
-  //         loop("booleans"),
-  //         loop("symbols"),
-  //         loop("integers"),
-  //         loop("numbers"),
-  //         loop("strings"),
-  //         loop("allOf"),
-  //         loop("anyOf"),
-  //         loop("array"),
-  //         loop("record"),
-  //         loop("tuple"),
-  //         loop("object"),
-  //       ),
-  //     })
-  //   )
-
-  // export const makeAstNode = fn.flow(
-  //   Arbitrary.letrecShort,
-  //   (xs) => xs.tree.map(t.fromSeed),
-  // )
-
-  // export const node = makeAstNode({ 
-  //   depthIdentifier: Arbitrary.defaults.depthIdentifier,
-  //   depthSize: "xsmall",
-  //   maxDepth: 3,
-  //   withCrossShrink: Arbitrary.defaults.withCrossShrink,
-  //   exclude: Arbitrary.defaults.exclude,
-  //   sortBias: Arbitrary.defaults.sortBias,
-  // })
 }

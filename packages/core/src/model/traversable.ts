@@ -1,4 +1,4 @@
-import { char, fn, type nonempty, object } from "@traversable/data"
+import { fn, type nonempty, object } from "@traversable/data"
 import { Invariant, symbol } from "@traversable/registry"
 import type {
   Functor,
@@ -161,27 +161,6 @@ type Traversable_Map<F> = {
   record: Traversable_recordF<F>
   object: Traversable_objectF<F>
 }
-
-
-const Traversable_map = {
-  // [Internal] $ref: <Traversable_ref>{ $ref: "", type: "$ref" } satisfies Traversable_ref,
-  $ref: <Traversable_ref>{ $ref: "", type: "$ref" } satisfies Traversable_ref,
-  any: <Traversable_any>{ type: "any" } satisfies Traversable_any,
-  null: <Traversable_null>{ type: "null" } satisfies Traversable_null,
-  boolean: <Traversable_boolean>{ type: "boolean" } satisfies Traversable_boolean,
-  integer: <Traversable_integer>{ type: "integer" } satisfies Traversable_integer,
-  number: <Traversable_number>{ type: "number" } satisfies Traversable_number,
-  string: <Traversable_string>{ type: "string" } satisfies Traversable_string,
-  enum: <Traversable_enum>{ type: "enum", enum: [] } satisfies Traversable_enum,
-  const: <Traversable_const>{ type: "const", "const": {} } satisfies Traversable_const,
-  allOf: { type: "allOf", allOf: [] } satisfies Traversable_allOfF<Traversable>,
-  anyOf: <Traversable_anyOfF<Traversable>>{ type: "anyOf", anyOf: [] } satisfies Traversable_anyOfF<Traversable>,
-  oneOf: <Traversable_oneOfF<Traversable>>{ type: "oneOf", oneOf: [] } satisfies Traversable_oneOfF<Traversable>,
-  array: <Traversable_arrayF<Traversable>>{ type: "array", items: { type: "any" } } satisfies Traversable_arrayF<Traversable>,
-  tuple: <Traversable_tupleF<Traversable>>{ type: "tuple", items: [] } satisfies Traversable_tupleF<Traversable>,
-  record: <Traversable_recordF<Traversable>>{ type: "record", additionalProperties: { type: "any" } } satisfies Traversable_recordF<Traversable>,
-  object: <Traversable_objectF<Traversable>>{ type: "object", properties: {} } satisfies Traversable_objectF<Traversable>,
-} as const satisfies Record<Traversable_Known[number], Traversable>
 
 const Traversable_Meta = t.object({ meta: Meta.Base })
 interface Traversable_Meta extends Meta.has<Meta.Base> {}
@@ -574,6 +553,17 @@ const makeH = <S>(xs: Traversable_F<S>) => (next?: keyof any) => (path: (keyof a
   ...overrides,
 } satisfies Context)
 
+const additionalProperties 
+  : <S>(additionalProperties: S, prev: Context) => Context
+  = (_, $) => fn.pipe(
+    [...$.path, symbol.record],
+    makeH({ 
+      type: 'record', 
+      additionalProperties: _ 
+    })(),
+    fn.apply($),
+  )
+
 const mapIxObject 
   : <S, T>(g: (ix: Context, x: S) => T) 
     => ($: Context) 
@@ -588,11 +578,11 @@ const mapIxObject
       const next = { ...h(k)(path)($), ...(hasExample(v) && { example: v.meta.example }) }
       return [k, g(next, v)] satisfies [any, any]
     })
+    // const r = 
     return {
       ...y,
       properties: Object_fromEntries(entries),
-      // TODO: move to `symbol.record` instead?
-      // ...a && { additionalProperties: f({ ...$, depth, path: [symbol.record, ...$.path] }, a) }
+      ...a && { additionalProperties: g(additionalProperties(a, $), a) }
     }
   }
 
@@ -722,3 +712,23 @@ const Traversable_fromJsonSchema
 const Traversable_fromAST
   : <S extends t.AST.Node>(term: S) => Traversable
   = t.AST.fold(fromAST)
+
+// const Traversable_map = {
+//   // [Internal] $ref: <Traversable_ref>{ $ref: "", type: "$ref" } satisfies Traversable_ref,
+//   $ref: <Traversable_ref>{ $ref: "", type: "$ref" } satisfies Traversable_ref,
+//   any: <Traversable_any>{ type: "any" } satisfies Traversable_any,
+//   null: <Traversable_null>{ type: "null" } satisfies Traversable_null,
+//   boolean: <Traversable_boolean>{ type: "boolean" } satisfies Traversable_boolean,
+//   integer: <Traversable_integer>{ type: "integer" } satisfies Traversable_integer,
+//   number: <Traversable_number>{ type: "number" } satisfies Traversable_number,
+//   string: <Traversable_string>{ type: "string" } satisfies Traversable_string,
+//   enum: <Traversable_enum>{ type: "enum", enum: [] } satisfies Traversable_enum,
+//   const: <Traversable_const>{ type: "const", "const": {} } satisfies Traversable_const,
+//   allOf: { type: "allOf", allOf: [] } satisfies Traversable_allOfF<Traversable>,
+//   anyOf: <Traversable_anyOfF<Traversable>>{ type: "anyOf", anyOf: [] } satisfies Traversable_anyOfF<Traversable>,
+//   oneOf: <Traversable_oneOfF<Traversable>>{ type: "oneOf", oneOf: [] } satisfies Traversable_oneOfF<Traversable>,
+//   array: <Traversable_arrayF<Traversable>>{ type: "array", items: { type: "any" } } satisfies Traversable_arrayF<Traversable>,
+//   tuple: <Traversable_tupleF<Traversable>>{ type: "tuple", items: [] } satisfies Traversable_tupleF<Traversable>,
+//   record: <Traversable_recordF<Traversable>>{ type: "record", additionalProperties: { type: "any" } } satisfies Traversable_recordF<Traversable>,
+//   object: <Traversable_objectF<Traversable>>{ type: "object", properties: {} } satisfies Traversable_objectF<Traversable>,
+// } as const satisfies Record<Traversable_Known[number], Traversable>

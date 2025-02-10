@@ -1,7 +1,7 @@
 import { z } from 'zod'
 
 import type { Meta, Traversable } from '@traversable/core'
-import { core, keyOf$ } from '@traversable/core'
+import { schema } from '@traversable/core'
 import { fn, object } from '@traversable/data'
 import type { _ } from '@traversable/registry'
 import { Invariant, KnownFormat } from '@traversable/registry'
@@ -73,17 +73,21 @@ const template = (
     ` * # {@link ${$.typeName} \`${$.typeName}\`}`,
     ` * - Visit: {@link $doc.${$.absolutePath.map(escapePathSegment).join('.')} OpenAPI definition}`,
     ' */',
-    'export type ' + $.typeName + ' = z.infer<typeof ' + $.typeName + '>',
-    '//          ^?',
-    'export const ' + $.typeName + ' = ' + target,
+    `export type ${$.typeName} = `,
+    `  ${NS}.infer<typeof ${$.typeName}>`,
+    `export const ${$.typeName} = ${
+      $.maxWidth < (`export const ${$.typeName} = ${target}`.length)
+        ? `\n  ${target}` 
+        : target
+    }`,
   ] as const satisfies string[]
 )  satisfies TargetTemplate
 
 const Formats = {
   integer: {
     compile: {
-      [KnownFormat.integer.int32]: `z.number()`,
-      [KnownFormat.integer.int64]: `z.number()`,
+      [KnownFormat.integer.int32]: `${NS}.number()`,
+      [KnownFormat.integer.int64]: `${NS}.number()`,
     } satisfies { [K in KnownFormat.integer[keyof KnownFormat.integer]]+?: string },
     derive: {
       [KnownFormat.integer.int32]: z.number().int(),
@@ -92,8 +96,8 @@ const Formats = {
   },
   number: {
     compile: {
-      [KnownFormat.number.double]: `z.number()`,
-      [KnownFormat.number.float]: `z.number()`,
+      [KnownFormat.number.double]: `${NS}.number()`,
+      [KnownFormat.number.float]: `${NS}.number()`,
     } satisfies { [K in KnownFormat.number[keyof KnownFormat.number]]+?: string },
     derive: {
       [KnownFormat.number.double]: z.number(),
@@ -153,16 +157,16 @@ const numericConstraints
     typeof gt === 'number' ? `.gt(${gt})` : min !== undefined && (gt === true ? `.gt(${min})` : `.min(${min})`),
     typeof lt === 'number' ? `.lt(${lt})` : max !== undefined && (lt === true ? `.lt(${max})` : `.max(${max})`),
     mod !== undefined && `.multipleOf(${mod})`,
-  ].filter(core.is.string)
+  ].filter(schema.is.string)
 
 const stringConstraints
   : (meta: Meta.string) => string[]
   = ({ format, maxLength: max, minLength: min, pattern }) => [
-    format && keyOf$(Formats.string.compile)(format) && Formats.string.compile[format],
+    format && schema.keyOf$(Formats.string.compile)(format) && Formats.string.compile[format],
     min !== undefined && `.min(${min})`,
     max !== undefined && `.max(${max})`,
     pattern !== undefined && `.regex(${pattern})`
-  ].filter(core.is.string)
+  ].filter(schema.is.string)
 
 const Constrain = {
   integer: numericConstraints,
@@ -171,48 +175,43 @@ const Constrain = {
 } as const
 
 const compilers = {
-  any(_, $) { return 'z.unknown()'},
-  null(_, $) { return 'z.null()' },
-  boolean(_, $) { return 'z.boolean()' },
-  integer({ meta = {} }, $) { return `z.number().int()${Constrain.integer(meta).join('')}` },
-  number({ meta = {} }, $) { return `z.number()${Constrain.number(meta).join('')}` },
-  string({ meta = {} }, $) { return `z.string()${Constrain.string(meta).join('')}` },
-  // const({ const: xs }, $) { return serialize($.indent)(xs as {}) },
-  const({ const: xs }, $) { return serialize($.indent)(xs as {}) },
+  any(_, $) { return `${NS}.unknown()` },
+  null(_, $) { return `${NS}.null()` },
+  boolean(_, $) { return `${NS}.boolean()` },
+  integer({ meta = {} }, $) { return `${NS}.number().int()${Constrain.integer(meta).join('')}` },
+  number({ meta = {} }, $) { return `${NS}.number()${Constrain.number(meta).join('')}` },
+  string({ meta = {} }, $) { return `${NS}.string()${Constrain.string(meta).join('')}` },
+  const({ const: xs }, $) { return serialize($.indent, xs) },
   enum({ enum: xs }, $) {
-    if (xs.length === 0) return 'z.never()'
-    else if (xs.every(core.is.string)) return 'z.enum([' + xs.join(', ') + '])'
-    else {
-      const ss = xs
-        .filter(core.is.primitive)
-        .map((v) => 'z.literal(' + typeof v === 'string' ? JSON_stringify(v) : String(v) + ')')
-      return ss.length === 1 ? ss[0] : Print.array($)('z.union([', ...ss, '])')
-    }
+    if (xs.length === 0) return `${NS}.never()`
+    else if (xs.every(schema.is.string)) 
+      return Print.array($)(`${NS}.enum([`, ...xs, `])`)
+    else return `${NS}.union([${serialize($.indent, xs)}])`
   },
-  array({ items: s }, $) { return Print.array($)('z.array(', s, ')') },
-  record({ additionalProperties: s }, $) { return Print.array($)('z.record(', s, ')') },
-  tuple({ items: ss }, $) { return Print.array($)('z.tuple([', ...ss, '])') },
+  array({ items: s }, $) { return Print.array($)(`${NS}.array(`, s, ')') },
+  record({ additionalProperties: s }, $) { return Print.array($)(`${NS}.record(`, s, ')') },
+  tuple({ items: ss }, $) { return Print.array($)(`${NS}.tuple([`, ...ss, '])') },
   object(ss, $) { return compileObjectNode($)(ss) },
-  anyOf({ anyOf: xs }, $) { 
+  anyOf({ anyOf: xs }, $) {
     switch (true) {
-      case xs.length === 0: return 'z.never()'
+      case xs.length === 0: return `${NS}.never()`
       case xs.length === 1: return xs[0]
-      default: return Print.array($)('z.union([', ...xs, '])') 
+      default: return Print.array($)(`${NS}.union([`, ...xs, '])')
     }
   },
-  oneOf({ oneOf: xs }, $) { 
+  oneOf({ oneOf: xs }, $) {
     switch (true) {
-      case xs.length === 0: return 'z.never()'
+      case xs.length === 0: return `${NS}.never()`
       case xs.length === 1: return xs[0]
-      default: return Print.array($)('z.union([', ...xs, '])')
+      default: return Print.array($)(`${NS}.union([`, ...xs, '])')
     }
   },
   allOf({ allOf: x }, $) {
     const xs = x.map(compileObjectNode($))
     switch (true) {
-      case xs.length === 0: return 'z.unknown'
-      case xs.length === 1: return xs[0]
-      case xs.length === 2: return Print.array($)('z.intersection(', xs[0], xs[1], ')')
+      case xs.length === 0: return `${NS}.unknown()`
+      case xs.length === 1: return Print.array($)(`${NS}.intersection(`, xs[0], `${NS}.unknown()`, `)`)
+      // case xs.length === 2: return Print.array($)(`${NS}.intersection(`, xs[0], xs[1], ')')
       default: return Print.array($)('', ...xs.slice(1).reduce((acc, x) => `${acc}.and(${x})`, ''), '')
     }
   },
@@ -221,17 +220,6 @@ const compilers = {
     return x
   }
 } as const satisfies Matchers<string>
-
-const compileObjectNode = ($: Index) => (ss: core.Traversable.objectF<string>) => {
-  const xs = Object_entries(ss.properties)
-  return xs.length === 0 
-    ? 'z.object({})' 
-    : 'z.object({'
-    + xs.map(generateEntry(ss, $, ['z.optional(', ')'])).join(',') 
-    + '\n' 
-    + ' '.repeat($.indent)
-    + '})'
-}
 
 /**
  * ## {@link compile `zod.compile`}
@@ -250,8 +238,8 @@ const compileAll
   : (options: Options<string>) => Gen.All<string>
   = (options) => Gen.compileAll(compile, { ...defaults.compile, ...options })
 
-const deriveObjectNode 
-  : ($: Index) => (x: core.Traversable.objectF<z.ZodTypeAny>) => z.ZodTypeAny
+const deriveObjectNode
+  : ($: Index) => (x: Traversable.objectF<z.ZodTypeAny>) => z.ZodTypeAny
   = ($) => ({ properties: p, additionalProperties: catchall, required = [] }) => {
     const xs = Object_entries(p)
     const opt = xs.filter(([k]) => !required.includes(k))
@@ -272,8 +260,8 @@ const derivatives = {
   string({ meta }) { return (Formats.string.derive[(meta?.format ?? '') as never] ?? z.string()) },
   const({ const: x }, $) { return fromValueObject(x)  },
   enum({ enum: xs }) {
-    return isNonEmptyArrayOf(core.is.string)(xs) 
-      ? z.enum(xs) 
+    return isNonEmptyArrayOf(schema.is.string)(xs)
+      ? z.enum(xs)
       : fn.pipe( xs.map(fromValueObject), (s) => twoOrMore(s) ? z.union(s) : TooFew(s))
   },
   allOf({ allOf: xs }, $) { return xs.map(deriveObjectNode($)).reduce((acc, x) => acc.and(x), z.unknown()) },
@@ -312,13 +300,31 @@ const deriveAll
 function linkToNode(k: string, $: Index): string | null {
   const IDENT = createZodIdent($)([...$.path, 'shape', k]).join('')
   const MASK = createMask($)([...$.path, k]).join('')
-  return !$.flags.includeJsdocLinks 
-    ? null 
+  return !$.flags.includeJsdocLinks
+    ? null
     : ' * ## {@link ' + IDENT + ` \`${MASK}\`}`
 }
 
+const compileObjectNode = ($: Index) => (ss: Traversable.objectF<string>) => {
+  const xs = Object_entries(ss.properties)
+  return xs.length === 0
+    ? `${NS}.object({})`
+    : Print.array($)(
+      `${NS}.object({`,
+      xs.map(generateEntry(ss, $, ['', '.optional()'])).join(','),
+      `})`.concat(!ss.additionalProperties ? '' : `.catchall(${ss.additionalProperties})`),
+    )
+    // : `${NS}.object({`
+    // + xs.map(generateEntry(ss, $, ['', '.optional()'])).join(',')
+    // + '\n'
+    // + ' '.repeat($.indent)
+    // + '})'
+    // + (!ss.additionalProperties ? '' : `.catchall(${ss.additionalProperties})`)
+}
+
+
 function generateEntry(
-    { required = [] }: core.Traversable.objectF<string>,
+    { required = [] }: Traversable.objectF<string>,
     $: Index,
     [BEFORE_OPT, AFTER_OPT]: readonly [before: string, after: string]
 ): (entry: [string, string]) => string {
@@ -330,10 +336,11 @@ function generateEntry(
     const JSDOCS = [LINK_HERE, LINK_TO_DOC, DESCRIPTION_TAG, EXAMPLE_TAG].filter((_) => _ !== null)
     const COMMENT = JSDOCS.length === 0 ? [] : ['/**', ...JSDOCS, ' */']
     return ([
-      '',
       ...COMMENT,
       `${object.parseKey(k)}: ${
-        !required.includes(k) ? (BEFORE_OPT + v + AFTER_OPT) : v
+        !required.includes(k)
+          ? (BEFORE_OPT + v + AFTER_OPT)
+          : v
       }`,
     ])
     .filter((_) => _ !== null)
@@ -342,7 +349,7 @@ function generateEntry(
 }
 
 
-const isArray 
+const isArray
   : (u: unknown) => u is z.ZodTypeAny[]
   = globalThis.Array.isArray
 const isObject
@@ -359,7 +366,7 @@ const isObject
 //   string() { return 'z.ZodString' },
 //   enum({ enum: xs }) {
 //     return xs.length === 0 ? 'z.ZodNever'
-//       : xs.every(core.is.string) ? 'z.ZodEnum<[' + xs.map(JSON_stringify).join(', ') + ']>'
+//       : xs.every(schema.is.string) ? 'z.ZodEnum<[' + xs.map(JSON_stringify).join(', ') + ']>'
 //       : 'z.ZodUnion<[' + xs.map((s) => `z.ZodLiteral<${typeof s === 'string' ? JSON_stringify : String(s)}>`) + ']>'
 //   },
 //   // const() {},
@@ -432,7 +439,7 @@ const isObject
  * // If you hover over `a` here 𐋇 you'll see that the JSDoc link works 🥳
  */
 // const typelevel
-//   : (schema: core.Traversable.orJsonSchema, options: Options<string>) => string
+//   : (schema: Traversable.orJsonSchema, options: Options<string>) => string
 //   = fn.flow(
 //     createTarget(typesOnly),
 //     ([target, $]) => [
@@ -461,7 +468,7 @@ const isObject
 //       '  typeof u === \'string\' ? !Number.isNaN(new Date(u).getTime()) ? new Date(u) : null : u,',
 //       '  z.date()',
 //       ')'
-//     ].filter(core.is.notnull).join(''),
+//     ].filter(schema.is.notnull).join(''),
 //     encoder: 'z.date().pipe(z.coerce.string())',
 //   },
 // }
@@ -481,8 +488,8 @@ const isObject
 //           return x.length === 0
 //             ? 'z.ZodTuple<[]>'
 //             : Print.array({ indent })(
-//               'z.ZodTuple<[', 
-//               ...x.map(loop(indent + 2)), 
+//               'z.ZodTuple<[',
+//               ...x.map(loop(indent + 2)),
 //               ']>'
 //             )
 //         }
@@ -490,8 +497,8 @@ const isObject
 //           const entries = Object
 //             .entries(x)
 //             .map(([k, v]) => [JSON.stringify(k), loop(indent + 2)(v)] satisfies [any, any])
-//           return entries.length === 0 
-//             ? 'z.ZodObject<{}>' 
+//           return entries.length === 0
+//             ? 'z.ZodObject<{}>'
 //             : Print.array({ indent })(
 //               'z.ZodObject<{',
 //               ...entries.map(([k, v]) => k + ': ' + v),
@@ -500,7 +507,7 @@ const isObject
 //         }
 //       }
 //     }
-//     return (x: unknown) => !JsonLike.is(x) 
+//     return (x: unknown) => !JsonLike.is(x)
 //       ? Invariant.NonSerializableInput("zod.serializeType", x)
 //       : loop(ix.indent)(x)
 //   }
