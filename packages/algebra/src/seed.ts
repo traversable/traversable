@@ -75,8 +75,6 @@ export const remapRefs
 const pathify = fn.flow(
   keys.map.deep(escapePathSegment),
   remapRefs('#/components/schemas'),
-  /* @ts-expect-error - testing */
-  (_) => (console.log('KEYS', Object.keys(_), Object.keys(_.components), Object.keys(_.components.schemas)), _),
   JSON_stringify,
   (_) => 'export default ' + _.trimEnd() + ' as const;'
 )
@@ -194,11 +192,11 @@ export function seed($: seed.Options = defaults) {
     firstRun = false
   }
 
-  // if ($.regenerateSeedFilesOnSave) {
-  //   const newDoc = generateSpec($)
-  //   console.log('RE-GENERATING...')
-  //   fs.writeFileSync(PATH.specs.arbitrary, newDoc)
-  // }
+  if ($.regenerateSeedFilesOnSave) {
+    const newDoc = generateSpec($)
+    console.log('RE-GENERATING...')
+    fs.writeFileSync(PATH.specs.arbitrary, newDoc)
+  }
 
   const arbitrarySpec
     : OpenAPI.doc
