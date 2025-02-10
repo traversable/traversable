@@ -42,7 +42,7 @@ jobs:
       - name: Checkout project
         uses: actions/checkout@v4
       - name: Install pnpm
-        run: corepack enable
+        run: npm i -g corepack@latest && corepack enable
       - name: Install node
         uses: actions/setup-node@v4
         with:
