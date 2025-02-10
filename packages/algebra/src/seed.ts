@@ -75,6 +75,8 @@ export const remapRefs
 const pathify = fn.flow(
   keys.map.deep(escapePathSegment),
   remapRefs('#/components/schemas'),
+  /* @ts-expect-error - testing */
+  (_) => (console.log('KEYS', Object.keys(_), Object.keys(_.components), Object.keys(_.components.schemas)), _),
   JSON_stringify,
   (_) => 'export default ' + _.trimEnd() + ' as const;'
 )
