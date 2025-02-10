@@ -12,7 +12,7 @@ import type { OpenAPI } from "@traversable/openapi"
 import { Schema } from "@traversable/openapi"
 import type { _ } from "@traversable/registry"
 
-const REGENERATE_SEED_FILES_ON_SAVE = true;
+const REGENERATE_SEED_FILES_ON_SAVE = false;
 
 
 export const TARGETS_DIR = path.join(path.resolve(), 'packages', 'algebra', 'test', '__generated__')

@@ -12,11 +12,11 @@ import { escapePathSegment, unescapePathSegment } from './shared.js'
 /** @internal */
 type Any = {} | null | undefined
 /** @internal */
-const JSON_parse = globalThis.JSON.parse
+const JSON_parse = globalThis.JSON.parse;
 /** @internal */
-const JSON_stringify = <T>(_: T) => globalThis.JSON.stringify(_, null, 2)
+const JSON_stringify = <T>(_: T) => globalThis.JSON.stringify(_, null, 2);
 /** @internal */
-const Array_isArray: <T>(u: unknown) => u is readonly T[] = globalThis.Array.isArray
+const Array_isArray: <T>(u: unknown) => u is readonly T[] = globalThis.Array.isArray;
 /** @internal */
 const Object_values = globalThis.Object.values
 
@@ -194,16 +194,12 @@ export function seed($: seed.Options = defaults) {
     firstRun = false
   }
 
-  if ($.regenerateSeedFilesOnSave) {
-    const newDoc = generateSpec($)
-    console.log('RE-GENERATING...')
-    fs.writeFileSync(PATH.specs.arbitrary, newDoc)
-  }
+  // if ($.regenerateSeedFilesOnSave) {
+  //   const newDoc = generateSpec($)
+  //   console.log('RE-GENERATING...')
+  //   fs.writeFileSync(PATH.specs.arbitrary, newDoc)
+  // }
 
-  /** 
-   * TODO: generate tests that confirm that {@link ark.derive `derived`} and {@link ark.generate `generated`}
-   * algebras are equivalent
-   */
   const arbitrarySpec
     : OpenAPI.doc
     = JSON_parse(fs.readFileSync(PATH.specs.arbitrary).toString('utf8'))
