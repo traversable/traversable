@@ -1,5 +1,5 @@
+import { TagTree, schema, t } from "@traversable/core"
 import * as vi from "vitest"
-import { schema, t, TagTree } from "@traversable/core"
 
 vi.describe("〖️⛳️〗‹‹‹ ❲@traversable/core/traversable❳", () => {
   vi.it.skip("〖️⛳️〗› ❲traversable.???❳", () => {

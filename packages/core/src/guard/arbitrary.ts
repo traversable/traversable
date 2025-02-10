@@ -2,9 +2,9 @@ import { array, order } from "@traversable/data"
 import { symbol } from "@traversable/registry"
 import * as fc from "fast-check"
 
-import { TagTree as TagTree_, toJson } from "./fromSeed.js"
 import { entries, identifier } from "../arbitrary/exports.js"
 import type { Json } from "../json.js"
+import { TagTree as TagTree_ } from "./fromSeed.js"
 
 export namespace Arbitrary {
   export type Options = Partial<typeof defaults>
@@ -130,7 +130,7 @@ export namespace Arbitrary {
     anyOf: TagTree_.anyOfF<readonly TagTree_[]>
     array: TagTree_.arrayF<TagTree_>
     boolean: TagTree_.boolean
-    const: TagTree_.constF<Json>
+    const: TagTree_.const
     integer: TagTree_.integer
     null: TagTree_.null
     number: TagTree_.number
@@ -162,9 +162,9 @@ export namespace Arbitrary {
           anyOf: fc.array(loop("tree")).map(TagTree_.byName.anyOf),
           array: loop("tree").map(TagTree_.byName.array),
           boolean: fc.constant(TagTree_.byName.boolean()),
-          const: loop("tree").map(toJson).map(TagTree_.byName.constant),
+          // const: loop("tree").map(toJson).map(TagTree_.byName.constant),
           // const: fc.jsonValue() as never,
-          // fc.constant(TagTree_.byName.constant()),
+          const: fc.constant(TagTree_.byName.constant()),
           // const: fc.constant(TagTree_.byName.constant()),
           integer: fc.constant(TagTree_.byName.integer()),
           null: fc.constant(TagTree_.byName.null()),

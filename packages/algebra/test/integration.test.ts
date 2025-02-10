@@ -1,7 +1,7 @@
 import * as fs from "node:fs"
 import * as path from 'node:path'
 import { Check, } from '@sinclair/typebox/value'
-import { type as arktype } from 'arktype'
+import type { type as arktype } from 'arktype'
 import * as vi from 'vitest'
 import { z } from 'zod'
 
@@ -230,7 +230,7 @@ vi.describe("〖️⛳️〗‹‹‹ ❲@traversable/algebra/integration❳", (
     const arkParse
       : <T>(type: arktype.Any) => (u: unknown) => unknown
       = (type) => (u) => {
-          let result;
+          let result: unknown;
           try {
             void (result = type.assert(u))
           } catch(typeError) {

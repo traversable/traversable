@@ -1,10 +1,10 @@
 import { fn, map } from "@traversable/data"
 import { Invariant, symbol } from "@traversable/registry"
 import type { 
-  _, 
   Functor, 
   HKT, 
   Kind, 
+  _, 
   newtype 
 } from "@traversable/registry"
 

@@ -1,8 +1,8 @@
 import { fn } from '@traversable/data'
 import { object } from '@traversable/data'
 import type { Functor } from '@traversable/registry'
-import * as t from './ast.js'
 import { Json } from '../json.js'
+import * as t from './ast.js'
 import { is } from './predicates.js'
 
 /** @internal */

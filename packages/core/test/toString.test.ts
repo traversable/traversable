@@ -1,6 +1,6 @@
 import * as vi from "vitest"
 
-import { t, schema } from "@traversable/core"
+import { schema, t } from "@traversable/core"
 import { symbol } from "@traversable/registry"
 
 

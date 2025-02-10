@@ -1,6 +1,6 @@
-import * as vi from "vitest"
+import { fc, test } from "@fast-check/vitest"
 import { Arbitrary, schema, t } from "@traversable/core"
-import { test, fc } from "@fast-check/vitest"
+import * as vi from "vitest"
 
 // fc.constant(schema.fromSeed(fc.sample(Arbitrary.TagTree.tree, 0)[0]))
 
