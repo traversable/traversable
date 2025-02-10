@@ -192,7 +192,7 @@ export function seed($: seed.Options = defaults) {
     firstRun = false
   }
 
-  if ($.regenerateSeedFilesOnSave) {
+  if ($.regenerateSeedFilesOnSave && !process.env.CI) {
     const newDoc = generateSpec($)
     console.log('RE-GENERATING...')
     fs.writeFileSync(PATH.specs.arbitrary, newDoc)
