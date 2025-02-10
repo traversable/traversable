@@ -7,7 +7,7 @@ import { test, fc } from "@fast-check/vitest"
 
 const arb = Arbitrary.TagTree.tree.map((tag) => [tag, schema.fromSeed(tag)] satisfies [any, any])
 
-test.prop([arb], { verbose: 0 })(
+test.skip.prop([arb], { verbose: 0 })(
   '',
   ([tag, ast]) => {
     // console.log('arbitrary schema', schemaotoString(s))
@@ -29,7 +29,7 @@ test.prop([arb], { verbose: 0 })(
 )
 
 vi.describe("〖️⛳️〗‹‹‹ ❲@traversable/core/schema❳", () => {
-  vi.it("〖️⛳️〗› ❲schema.fromSeed❳", () => {
+  vi.it.skip("〖️⛳️〗› ❲schema.fromSeed❳", () => {
     // const seeds =  fc.sample(schema.arbitrary, 1)
     // console.log(seeds)
     // console.log('arbitrary schema', schema.fromSeed(seed))

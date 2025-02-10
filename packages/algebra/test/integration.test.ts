@@ -44,7 +44,6 @@ export const PATH = {
     trav: path.join(TARGETS_DIR, 'trav.target.ts'),
     typebox: path.join(TARGETS_DIR, 'typebox.target.ts'),
     zod: path.join(TARGETS_DIR, 'zod.target.ts'),
-    zodTypesOnly: path.join(TARGETS_DIR, 'zodtypesOnly.target.ts'),
   }
 } as const
 
@@ -279,6 +278,7 @@ vi.describe("〖️⛳️〗‹‹‹ ❲@traversable/algebra/integration❳", (
           console.group(`\n\n\n${____}${____}\tVALIDATION FAILURE\n${____}\nvendor: ${failure.vendor.toUpperCase()}`)
           console.debug(`\nErrors: \n\n${JSON.stringify(failure.error, null, 2)}\n\n`)
           console.debug(`\nschema.toString(travSchema)\n\n`, schema.toString(travSchema), '\n\n')
+          console.debug(`\nzod.toString(zodSchema)\n\n`, zod.toString(zodSchema), '\n\n')
           console.debug(`\nInput: \n\n${failure.input}\n\n`)
           console.groupEnd()
         }

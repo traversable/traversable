@@ -44,10 +44,9 @@ export const PATH = {
     dir: TARGETS_DIR,
     // octokit: path.join(TARGETS_DIR, `octokit.target.ts`),
     ark: path.join(TARGETS_DIR, 'ark.target.ts'),
-    trav: path.join(TARGETS_DIR, 'trav.taret.ts'),
+    trav: path.join(TARGETS_DIR, 'trav.target.ts'),
     zod: path.join(TARGETS_DIR, 'zod.target.ts'),
     typebox: path.join(TARGETS_DIR, 'typebox.target.ts'),
-    zodTypesOnly: path.join(TARGETS_DIR, 'zodtypesOnly.target.ts'),
   }
 } as const
 

@@ -582,7 +582,8 @@ const mapIxObject
     return {
       ...y,
       properties: Object_fromEntries(entries),
-      ...a && { additionalProperties: g(additionalProperties(a, $), a) }
+      // TODO: turn this back on 
+      // ...a && { additionalProperties: g(additionalProperties(a, $), a) }
     }
   }
 
@@ -603,7 +604,7 @@ const IxFunctor: IndexedFunctor<Context, Traversable_lambda, Traversable_orJsonS
     return ($, xs) => {
       const h = makeH(xs)
       switch (true) {
-        default: return fn.softExhaustiveCheck(xs)
+        default: return fn.exhaustive(xs)
         case Traversable_is.$ref(xs): return resolveRef(g)($)(xs)
         case Traversable_is.enum(xs): return xs
         case Traversable_is.const(xs): return xs

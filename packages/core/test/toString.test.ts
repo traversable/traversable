@@ -3,6 +3,7 @@ import * as vi from "vitest"
 import { t, schema } from "@traversable/core"
 import { symbol } from "@traversable/registry"
 
+
 vi.describe("〖️⛳️〗‹‹‹ ❲@traversable/core/guard.toString❳", () => {
   vi.it("〖️⛳️〗› ❲t.toString❳", () => {
     vi.expect(schema.toString( t.null()) )
@@ -47,6 +48,23 @@ vi.describe("〖️⛳️〗‹‹‹ ❲@traversable/core/guard.toString❳", (
       .toMatchInlineSnapshot(`"t.allOf(t.allOf(t.string()), t.allOf(t.const(123)))"`)
     vi.expect(schema.toString( t.object({ x: t.optional(t.const('x')), y: t.optional(t.const('y')), z: t.const('z') })) )
       .toMatchInlineSnapshot(`"t.object({ x: t.optional(t.const("x")), y: t.optional(t.const("y")), z: t.const("z") })"`)
+    vi.expect(
+      schema.toString(
+        t.anyOf(
+          t.allOf(
+            t.any(),
+            t.object({
+              x: t.optional(
+                t.object({
+                  y: t.string(),
+                })
+              ),
+            }) // .catchall(z.string())
+          ),
+          t.string()
+        )
+      )
+    ).toMatchInlineSnapshot(`"t.anyOf(t.allOf(t.any(), t.object({ x: t.optional(t.object({ y: t.string() })) })), t.string())"`)
   })
 
   vi.it("〖️⛳️〗› ❲t.toTypeString❳: interprets optional properties", () => {
@@ -90,6 +108,7 @@ vi.describe("〖️⛳️〗‹‹‹ ❲@traversable/core/guard.toString❳", (
       .toMatchInlineSnapshot(`"string & 123"`)
     vi.expect(schema.toTypeString( t.object({ x: t.optional(t.const('x')), y: t.optional(t.const('y')), z: t.const('z') })) )
       .toMatchInlineSnapshot(`"{ x,"x" | undefined, y,"y" | undefined, z,"z" }"`)
+
   })
 
 })
