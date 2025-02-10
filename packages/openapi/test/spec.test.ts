@@ -1,7 +1,6 @@
 import * as vi from "vitest"
 
-import { Traversable } from "@traversable/core"
-import { OpenAPI, Schema } from "@traversable/openapi"
+import { OpenAPI } from "@traversable/openapi"
 
 const doc = OpenAPI.from({
   components: {
@@ -86,7 +85,7 @@ const doc = OpenAPI.from({
   }
 })
 
-vi.describe.only("〖⛳️〗‹‹‹ ❲@traversable/openapi/OpenAPI❳", () => {
+vi.describe("〖⛳️〗‹‹‹ ❲@traversable/openapi/OpenAPI❳", () => {
   vi.test("〖⛳️〗‹ ❲OpenAPI.map❳", () => {
     let count = 0
 
