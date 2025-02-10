@@ -4,7 +4,7 @@ node_modules/
 .DS_Store
 .attest
 .nvmrc
-tmp/
+# tmp/
 dist/
 build/
 org/
