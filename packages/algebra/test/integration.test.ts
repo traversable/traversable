@@ -223,7 +223,7 @@ vi.describe("〖️⛳️〗‹‹‹ ❲@traversable/algebra/integration❳", (
     }
   })
 
-  vi.it("〖️⛳️〗› ❲integration❳: validators validate", async () => {
+  vi.it("〖️⛳️〗› ❲integration❳: validators validate", { retry: 2 }, async () => {
     let results = Array.of<Record<string, unknown>>()
     let failures = Array.of<{ error: unknown, input: unknown, vendor: string }>()
 

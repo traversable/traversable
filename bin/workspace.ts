@@ -13,7 +13,7 @@ const $$ = (command: string) => process.execSync(command, { stdio: "inherit" })
 
 const PATH = {
   packages: path.join(path.resolve(), "packages"),
-  vitestSharedConfig: path.join(path.resolve(), "vitest.shared.ts"),
+  vitestSharedConfig: path.join(path.resolve(), "vitest.config.ts"),
   rootTsConfig: path.join(path.resolve(), "tsconfig.json"),
   rootTsConfigBase: path.join(path.resolve(), "tsconfig.base.json"),
   rootTsConfigBuild: path.join(path.resolve(), "tsconfig.build.json"),
@@ -107,7 +107,7 @@ namespace vitest {
   export const sharedConfig = fs.readFileSync(PATH.vitestSharedConfig).toString("utf8")
   export const nodeConfig = ([
     `import { defineConfig, mergeConfig } from "vitest/config"`,
-    `import sharedConfig from "../../vitest.shared.js"`,
+    `import sharedConfig from "../../vitest.config.js"`,
     ``,
     `const localConfig = defineConfig({})`,
     ``,
@@ -116,7 +116,7 @@ namespace vitest {
   export const reactConfig = ([
     `import react from "@vitejs/plugin-react"`,
     `import { defineConfig, mergeConfig } from "vitest/config"`,
-    `import sharedConfig from "../../vitest.shared.js"`,
+    `import sharedConfig from "../../vitest.config.js"`,
     ``,
     `export default mergeConfig(`,
     `  sharedConfig,`,
