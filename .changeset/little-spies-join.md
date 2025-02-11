@@ -6,7 +6,6 @@
 "@traversable/core": patch
 "@traversable/data": patch
 "@traversable/http": patch
-"@traversable/client": patch
 ---
 
 ❲🌳❳ ‹‹‹ ❲release v0.1.0❳
