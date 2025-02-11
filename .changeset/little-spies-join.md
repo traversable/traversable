@@ -72,4 +72,5 @@ that doesn't get enough credit
 
 - Bartosz Milewski's [category theory lectures](https://youtu.be/I8LbkfSSR58?si=Q-CwMWndEZK4V5d4) 
 (most of them went over my head, but his talks on Functors, and recursion schemes in particular,
-had a tremendous impact on the abstractions we buil).
+had a tremendous impact on the abstractions we built)
+
