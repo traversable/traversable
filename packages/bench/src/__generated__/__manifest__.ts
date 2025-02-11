@@ -1,7 +1,7 @@
 export default {
   "name": "@traversable/bench",
   "type": "module",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "private": false,
   "description": "benchmarking and profiling utilities for the @traversable repo",
   "repository": {
@@ -14,8 +14,12 @@ export default {
     "email": "ahrjarrett@gmail.com"
   },
   "@traversable": {
-    "generateExports": { "include": ["**/*.ts"] },
-    "generateIndex": { "include": ["**/*.ts"] }
+    "generateExports": {
+      "include": ["**/*.ts"]
+    },
+    "generateIndex": {
+      "include": ["**/*.ts"]
+    }
   },
   "publishConfig": {
     "directory": "dist",
@@ -39,7 +43,11 @@ export default {
     "any-ts": "0.48.1"
   },
   "peerDependenciesMeta": {
-    "@traversable/registry": { "optional": false },
-    "any-ts": { "optional": false }
+    "@traversable/registry": {
+      "optional": false
+    },
+    "any-ts": {
+      "optional": false
+    }
   }
 } as const

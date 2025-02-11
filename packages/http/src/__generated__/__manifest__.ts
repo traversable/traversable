@@ -1,7 +1,7 @@
 export default {
   "name": "@traversable/http",
   "type": "module",
-  "version": "0.0.2",
+  "version": "0.0.3",
   "private": false,
   "description": "HTTP utilities for the @traversable repo",
   "repository": {
@@ -14,8 +14,12 @@ export default {
     "email": "ahrjarrett@gmail.com"
   },
   "@traversable": {
-    "generateExports": { "include": ["**/*.ts"] },
-    "generateIndex": { "include": ["**/*.ts"] }
+    "generateExports": {
+      "include": ["**/*.ts"]
+    },
+    "generateIndex": {
+      "include": ["**/*.ts"]
+    }
   },
   "publishConfig": {
     "directory": "dist",
@@ -45,8 +49,14 @@ export default {
     "@traversable/registry": "workspace:^"
   },
   "peerDependenciesMeta": {
-    "@traversable/core": { "optional": false },
-    "@traversable/data": { "optional": false },
-    "@traversable/registry": { "optional": false }
+    "@traversable/core": {
+      "optional": false
+    },
+    "@traversable/data": {
+      "optional": false
+    },
+    "@traversable/registry": {
+      "optional": false
+    }
   }
 } as const

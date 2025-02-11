@@ -1,7 +1,7 @@
 export default {
   "name": "@traversable/openapi",
   "type": "module",
-  "version": "0.0.2",
+  "version": "0.0.3",
   "private": false,
   "description": "Utilities for parsing and generating OpenAPI documents",
   "repository": {
@@ -14,8 +14,12 @@ export default {
     "email": "ahrjarrett@gmail.com"
   },
   "@traversable": {
-    "generateExports": { "include": ["**/*.ts"] },
-    "generateIndex": { "include": ["**/*.ts"] }
+    "generateExports": {
+      "include": ["**/*.ts"]
+    },
+    "generateIndex": {
+      "include": ["**/*.ts"]
+    }
   },
   "publishConfig": {
     "directory": "dist",
@@ -42,11 +46,21 @@ export default {
     "any-ts": "0.48.1"
   },
   "peerDependenciesMeta": {
-    "@traversable/data": { "optional": false },
-    "@traversable/core": { "optional": false },
-    "@traversable/http": { "optional": false },
-    "@traversable/registry": { "optional": false },
-    "any-ts": { "optional": false }
+    "@traversable/data": {
+      "optional": false
+    },
+    "@traversable/core": {
+      "optional": false
+    },
+    "@traversable/http": {
+      "optional": false
+    },
+    "@traversable/registry": {
+      "optional": false
+    },
+    "any-ts": {
+      "optional": false
+    }
   },
   "devDependencies": {
     "@traversable/bench": "workspace:^"
