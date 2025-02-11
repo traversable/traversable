@@ -33,6 +33,7 @@ export default {
     "clean:deps": "rm -rf node_modules",
     "test": "vitest"
   },
+  "dependencies": {},
   "peerDependencies": {},
   "devDependencies": {}
 } as const

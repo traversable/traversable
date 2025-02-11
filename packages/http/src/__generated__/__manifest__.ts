@@ -33,19 +33,20 @@ export default {
     "clean:deps": "rm -rf node_modules",
     "test": "vitest"
   },
-  "dependencies": {
-    "@traversable/registry": "workspace:^"
-  },
+  "dependencies": {},
   "devDependencies": {
     "@traversable/core": "workspace:^",
-    "@traversable/data": "workspace:^"
+    "@traversable/data": "workspace:^",
+    "@traversable/registry": "workspace:^"
   },
   "peerDependencies": {
     "@traversable/core": "workspace:^",
-    "@traversable/data": "workspace:^"
+    "@traversable/data": "workspace:^",
+    "@traversable/registry": "workspace:^"
   },
   "peerDependenciesMeta": {
     "@traversable/core": { "optional": false },
-    "@traversable/data": { "optional": false }
+    "@traversable/data": { "optional": false },
+    "@traversable/registry": { "optional": false }
   }
 } as const
