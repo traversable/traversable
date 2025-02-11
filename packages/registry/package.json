@@ -14,8 +14,8 @@
     "email": "ahrjarrett@gmail.com"
   },
   "@traversable": {
-    "generateExports": { "include": ["**/*.ts"] },
-    "generateIndex": { "include": ["**/*.ts"] }
+    "generateExports": { "include": [ "**/*.ts" ] },
+    "generateIndex": { "include": [ "**/*.ts" ] }
   },
   "publishConfig": {
     "directory": "dist",
@@ -33,6 +33,7 @@
     "clean:deps": "rm -rf node_modules",
     "test": "vitest"
   },
+  "dependencies": {},
   "peerDependencies": {},
   "devDependencies": {}
 }

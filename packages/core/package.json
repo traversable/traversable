@@ -14,16 +14,8 @@
     "email": "ahrjarrett@gmail.com"
   },
   "@traversable": {
-    "generateExports": {
-      "include": [
-        "**/*.ts"
-      ]
-    },
-    "generateIndex": {
-      "include": [
-        "**/*.ts"
-      ]
-    }
+    "generateExports": { "include": [ "**/*.ts" ] },
+    "generateIndex": { "include": [ "**/*.ts" ] }
   },
   "publishConfig": {
     "directory": "dist",
@@ -41,20 +33,16 @@
     "clean:deps": "rm -rf node_modules",
     "test": "vitest"
   },
-  "dependencies": {
-    "@traversable/registry": "workspace:^"
-  },
+  "dependencies": {},
   "peerDependencies": {
     "@traversable/data": "workspace:^",
+    "@traversable/registry": "workspace:^",
     "any-ts": "0.48.1"
   },
   "peerDependenciesMeta": {
-    "@traversable/data": {
-      "optional": false
-    },
-    "any-ts": {
-      "optional": false
-    }
+    "@traversable/data": { "optional": false }, 
+    "@traversable/registry": { "optional": false }, 
+    "any-ts": { "optional": false }
   },
   "devDependencies": {
     "@standard-schema/spec": "1.0.0-rc.0",
