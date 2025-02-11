@@ -1,5 +1,0 @@
----
-"@traversable/core": patch
----
-
-stub

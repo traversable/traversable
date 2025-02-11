@@ -1,12 +1,12 @@
 ---
-"@traversable/registry": minor
-"@traversable/algebra": minor
-"@traversable/openapi": minor
-"@traversable/bench": minor
-"@traversable/core": minor
-"@traversable/data": minor
-"@traversable/http": minor
-"@traversable/client": minor
+"@traversable/registry": patch
+"@traversable/algebra": patch
+"@traversable/openapi": patch
+"@traversable/bench": patch
+"@traversable/core": patch
+"@traversable/data": patch
+"@traversable/http": patch
+"@traversable/client": patch
 ---
 
 ❲🌳❳ ‹‹‹ ❲release v0.1.0❳
