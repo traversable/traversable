@@ -14,12 +14,8 @@ export default {
     "email": "ahrjarrett@gmail.com"
   },
   "@traversable": {
-    "generateExports": {
-      "include": ["**/*.ts"]
-    },
-    "generateIndex": {
-      "include": ["**/*.ts"]
-    }
+    "generateExports": { "include": ["**/*.ts"] },
+    "generateIndex": { "include": ["**/*.ts"] }
   },
   "publishConfig": {
     "directory": "dist",
@@ -37,19 +33,18 @@ export default {
     "clean:deps": "rm -rf node_modules",
     "test": "vitest"
   },
-  "dependencies": {
-    "@traversable/registry": "workspace:^"
-  },
+  "dependencies": {},
   "peerDependencies": {
+    "@traversable/registry": "workspace:^",
     "any-ts": "0.48.1"
   },
   "peerDependenciesMeta": {
-    "any-ts": {
-      "optional": false
-    }
+    "@traversable/registry": { "optional": false },
+    "any-ts": { "optional": false }
   },
   "devDependencies": {
     "@traversable/bench": "workspace:^",
+    "@traversable/registry": "workspace:^",
     "lodash.isequal": "^4.5.0"
   }
 } as const

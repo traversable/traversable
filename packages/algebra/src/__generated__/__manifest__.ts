@@ -14,12 +14,8 @@ export default {
     "email": "ahrjarrett@gmail.com"
   },
   "@traversable": {
-    "generateExports": {
-      "include": ["**/*.ts"]
-    },
-    "generateIndex": {
-      "include": ["**/*.ts"]
-    }
+    "generateExports": { "include": ["**/*.ts"] },
+    "generateIndex": { "include": ["**/*.ts"] }
   },
   "publishConfig": {
     "directory": "dist",
@@ -38,9 +34,7 @@ export default {
     "clean:generated": "rm -rf test/__generated__",
     "test": "vitest"
   },
-  "dependencies": {
-    "@traversable/registry": "workspace:^"
-  },
+  "dependencies": {},
   "peerDependencies": {
     "@sinclair/typebox": "^0.34.14",
     "@standard-schema/spec": "1.0.0-rc.0",
@@ -54,18 +48,15 @@ export default {
     "zod": "^3.24.1"
   },
   "peerDependenciesMeta": {
-    "arktype": {
-      "optional": true
-    },
-    "@sinclair/typebox": {
-      "optional": true
-    },
-    "@standard-schema/spec": {
-      "optional": true
-    },
-    "zod": {
-      "optional": true
-    }
+    "arktype": { "optional": true },
+    "@sinclair/typebox": { "optional": true },
+    "@standard-schema/spec": { "optional": true },
+    "zod": { "optional": true },
+    "@traversable/core": { "optional": false },
+    "@traversable/data": { "optional": false },
+    "@traversable/http": { "optional": false },
+    "@traversable/openapi": { "optional": false },
+    "@traversable/registry": { "optional": false }
   },
   "devDependencies": {
     "@faker-js/faker": "^9.4.0",

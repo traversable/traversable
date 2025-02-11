@@ -157,9 +157,6 @@ importers:
       '@sinclair/typebox':
         specifier: ^0.34.14
         version: 0.34.14
-      '@traversable/registry':
-        specifier: workspace:^
-        version: link:../registry/dist
     devDependencies:
       '@faker-js/faker':
         specifier: ^9.4.0
@@ -182,6 +179,9 @@ importers:
       '@traversable/openapi':
         specifier: workspace:^
         version: link:../openapi/dist
+      '@traversable/registry':
+        specifier: workspace:^
+        version: link:../registry/dist
       arktype:
         specifier: 2.0.0-rc.30
         version: 2.0.0-rc.30
@@ -225,9 +225,6 @@ importers:
 
   packages/data:
     dependencies:
-      '@traversable/registry':
-        specifier: workspace:^
-        version: link:../registry/dist
       any-ts:
         specifier: 0.48.1
         version: 0.48.1
@@ -235,16 +232,15 @@ importers:
       '@traversable/bench':
         specifier: workspace:^
         version: link:../bench/dist
+      '@traversable/registry':
+        specifier: workspace:^
+        version: link:../registry/dist
       lodash.isequal:
         specifier: ^4.5.0
         version: 4.5.0
     publishDirectory: dist
 
   packages/http:
-    dependencies:
-      '@traversable/registry':
-        specifier: workspace:^
-        version: link:../registry/dist
     devDependencies:
       '@traversable/core':
         specifier: workspace:^
@@ -252,6 +248,9 @@ importers:
       '@traversable/data':
         specifier: workspace:^
         version: link:../data/dist
+      '@traversable/registry':
+        specifier: workspace:^
+        version: link:../registry/dist
     publishDirectory: dist
 
   packages/openapi:
@@ -1450,10 +1449,6 @@ packages:
   external-editor@3.1.0:
     resolution: {integrity: sha512-hMQ4CX1p1izmuLYyZqLMO/qGNw10wSv9QDCPfzXfyFrOaCSSoRfqE1Kf1s5an66J5JZC62NewG+mK49jOCtQew==}
     engines: {node: '>=4'}
-
-  fast-check@3.22.0:
-    resolution: {integrity: sha512-8HKz3qXqnHYp/VCNn2qfjHdAdcI8zcSqOyX64GOMukp7SL2bfzfeDKjSd+UyECtejccaZv3LcvZTm9YDD22iCQ==}
-    engines: {node: '>=8.0.0'}
 
   fast-check@3.23.1:
     resolution: {integrity: sha512-u/MudsoQEgBUZgR5N1v87vEgybeVYus9VnDVaIkxkkGP2jt54naghQ3PCQHJiogS8U/GavZCUPFfx3Xkp+NaHw==}
@@ -2809,7 +2804,7 @@ snapshots:
   '@effect/schema@0.68.27(effect@3.10.14)':
     dependencies:
       effect: 3.10.14
-      fast-check: 3.22.0
+      fast-check: 3.23.1
 
   '@effect/typeclass@0.24.52(effect@3.10.14)':
     dependencies:
@@ -3623,10 +3618,6 @@ snapshots:
       chardet: 0.7.0
       iconv-lite: 0.4.24
       tmp: 0.0.33
-
-  fast-check@3.22.0:
-    dependencies:
-      pure-rand: 6.1.0
 
   fast-check@3.23.1:
     dependencies:

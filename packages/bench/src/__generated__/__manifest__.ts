@@ -33,15 +33,13 @@ export default {
     "clean:deps": "rm -rf node_modules",
     "test": "vitest"
   },
-  "dependencies": {
-    "@traversable/registry": "workspace:^"
-  },
+  "dependencies": {},
   "peerDependencies": {
+    "@traversable/registry": "workspace:^",
     "any-ts": "0.48.1"
   },
   "peerDependenciesMeta": {
-    "any-ts": {
-      "optional": false
-    }
+    "@traversable/registry": { "optional": false },
+    "any-ts": { "optional": false }
   }
 } as const
