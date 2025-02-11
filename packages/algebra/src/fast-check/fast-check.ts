@@ -116,7 +116,28 @@ const CompiledStringFormat = {
   // [KnownFormat.string.emoji]: '.emoji()',
 } as const satisfies { [K in KnownFormat.string[keyof KnownFormat.string]]+?: string }
 
-const integerConstraints
+const numberConstraints
+  : (meta: Meta.Numeric) => fc.Arbitrary<number>
+  = ({ exclusiveMaximum: lt, exclusiveMinimum: gt, maximum, minimum, multipleOf: mod }) => {
+    const min = typeof gt === 'number' ? gt : typeof minimum === 'number' ? minimum : void 0
+    const max = typeof lt === 'number' ? lt : typeof maximum === 'number' ? maximum : void 0
+    return fc.float({
+      ...min && { min },
+      ...max && { max },
+    } satisfies fc.IntegerConstraints)
+  }
+
+const modulo 
+  : (meta: Meta.Numeric) => (x: number) => number
+  = ({ minimum: min, maximum: max, multipleOf: mod }) => (x: number) => 
+    mod === undefined           ? x
+  : min === undefined           ? (x - (x % mod))
+  : max === undefined           ? (x - (x % mod) + mod)
+  : min < (x - (x % mod))       ? (x - (x % mod))
+  : max > (x - (x % mod) + mod) ? (x - (x % mod) + mod)
+  : x
+
+const minmax
   : (meta: Meta.Numeric) => fc.IntegerConstraints
   = ({ exclusiveMaximum: lt, exclusiveMinimum: gt, maximum, minimum, multipleOf: mod }) => {
     const min = typeof gt === 'number' ? gt : typeof minimum === 'number' ? minimum : void 0
@@ -126,6 +147,13 @@ const integerConstraints
       ...max && { max },
     } satisfies fc.IntegerConstraints
   }
+
+const minmaxString 
+  : (meta: Meta.string) => fc.StringConstraints
+  = ({ minLength, maxLength }) => ({
+    ...minLength !== undefined && { minLength },
+    ...maxLength !== undefined && { maxLength },
+  })
 
 const compiledIntegerConstraints
   : (meta: Meta.Numeric) => string
@@ -140,18 +168,6 @@ const Constrain = {
       ...minLength !== undefined && { minLength },
       ...maxLength !== undefined && { maxLength },
     } satisfies fc.StringConstraints
-  },
-  integer: integerConstraints,
-  float(meta: Meta.Numeric): fc.FloatConstraints {
-    const { exclusiveMaximum: lt, exclusiveMinimum: gt /* , multipleOf: mod */ } = meta
-    const minExcluded = typeof gt === 'number' ? true : typeof gt === 'boolean' ? gt : void 0
-    const maxExcluded = typeof lt === 'number' ? true : typeof lt === 'boolean' ? lt : void 0
-    return {
-      ...integerConstraints(meta),
-      ...minExcluded && { maxExcluded },
-      ...maxExcluded && { maxExcluded },
-      ...floatDefaults,
-    }
   },
   compiled: {
     integer: compiledIntegerConstraints,
@@ -178,16 +194,15 @@ const deriveObjectNode
   = ($) => ({ properties: xs, required: req }) => fc.record(xs, { requiredKeys: !!req ? [...req] : req })
 
 const derivatives = {
-  any() { return fc.anything() },
+  any() { return fc.jsonValue() },
   null() { return fc.constant(null) },
   boolean() { return fc.boolean() },
-  integer({ meta = {} }) { return fc.integer(Constrain.integer(meta)) },
-  number({ meta = {} }) { return fc.float(Constrain.float(meta)) },
+  integer({ meta = {} }) { return fc.integer(minmax(meta)).map(modulo(meta)) },
+  number({ meta = {} }) { return fc.float(minmax(meta)) },
   string({ meta = {} }) { 
     return schema.keyOf$(StringFormat)(meta.format) 
       ? StringFormat[meta.format]() 
-      : fc.string(Constrain.string(meta))
-      // : fc.oneof(fc.lorem({ size: 'small' }), fc.string(Constrain.string(meta)))
+      : fc.string(minmaxString(meta))
   },
   anyOf({ anyOf: xs, ..._ }, _$) { return fc.oneof(...xs) },
   oneOf({ oneOf: xs, ..._ }, _$) { return fc.oneof(...xs) },
@@ -195,9 +210,11 @@ const derivatives = {
   enum({ enum: xs, ..._ }, _$) { return fc.constantFrom(...xs) },
   array({ items: x, ..._ }, _$) { return fc.array(x) },
   tuple({ items: xs, ..._ }, _$) { return fc.tuple(...xs) },
-  record({ additionalProperties: x, ..._ }, _$) { return fc.dictionary(fc.oneof(fc.lorem(), fc.string()), x) },
+  record({ additionalProperties: x, ..._ }, _$) 
+    { return fc.dictionary(fc.oneof(fc.lorem(), fc.string()), x) },
   object(x, $) { return deriveObjectNode($)(x)  },
-  allOf({ allOf: xs, ..._ }, $) { return fc.tuple(...xs.map(deriveObjectNode($))).map(intersect) },
+  allOf({ allOf: xs, ..._ }, $) 
+    { return fc.tuple(...xs).map(intersect) },
   $ref({ $ref: x }, $) { return $.refs[x] as never },
 } as const satisfies Matchers<fc.Arbitrary<unknown>>
 
@@ -241,7 +258,7 @@ const compilers = {
       ? CompiledStringFormat[meta.format]
       : `${NS}.string({${Constrain.compiled.string(meta)}})`
   },
-  allOf({ allOf: xs, ..._ }, $) { return `${NS}.tuple(` + xs.map((x) => compileObjectNode(x, $)) + ').map(intersect)' },
+  allOf({ allOf: xs, ..._ }, $) { return `${NS}.tuple(` + xs.join(', ') + ').map(intersect)' },
   anyOf({ anyOf: xs, ..._ }) { return `${NS}.oneof(` + xs.join(', ') + ')' },
   oneOf({ oneOf: xs, ..._ }) { return `${NS}.oneof(` + xs.join(', ') + ')' },
   const({ const: x, ..._ }, $) { return `${NS}.constant(` + serializer($)(x) + ')' },

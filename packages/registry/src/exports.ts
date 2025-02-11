@@ -10,7 +10,7 @@ export type { emoji, gitmoji, jsdoc, math } from "./utf-16.js"
 export type { integer, number } from "./newtypes.js"
 export type { string } from "./newtypes.js"
 export type { diff, Diff } from "./diff.js"
-export type { Char, Equal, Finite } from "./satisfies.js"
+export type * from "./satisfies.js"
 export type { char, equal, finite } from "./satisfies.js"
 
 export type { Homomorphism, MapTo, Record } from "./homomorphism.js"

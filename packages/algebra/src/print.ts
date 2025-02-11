@@ -21,11 +21,13 @@ export function array($: Options = defaults) {
     const [left, body, right] = [args.at(0), args.slice(1, -1), args.at(-1)]
     return ""
       + left
-      + [body.map((_) => newline($) + _).join(",")].join("," + newline($))
+      + [body.map((_) => newline($) + _).join(",")].join("," + newline($, -1))
       + newline($, -1) 
       + right
   }
 }
+
+
 
 export function rows($: Options = defaults): (...rows: string[]) => string {
   return (...rows) => rows.map((_) => _).join(newline($))

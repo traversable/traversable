@@ -1,7 +1,7 @@
 import type { Json } from '@traversable/core'
 import { Format, tree } from '@traversable/core'
 
-import { PATTERN, REPLACER } from '@traversable/registry'
+import { PATTERN } from '@traversable/registry'
 import type { Index } from './shared.js'
 
 /** 

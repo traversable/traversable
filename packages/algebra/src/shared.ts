@@ -46,9 +46,11 @@ export interface Flags extends t.typeof<typeof Flags> {}
 export const Flags = t.object({
   nominalTypes: t.boolean(),
   preferInterfaces: t.boolean(),
-  includeJsdocLinks: t.optional(t.boolean()),
-  includeLinkToOpenApiNode: t.optional(t.boolean()),
-  includeExamples: t.optional(t.boolean()),
+  includeComment: t.boolean(),
+  includeDescription: t.boolean(),
+  includeExamples: t.boolean(),
+  includeJsdocLinks: t.boolean(),
+  includeLinkToOpenApiNode: t.boolean(),
 })
 
 export type PathInterpreter
@@ -115,16 +117,18 @@ export const defaults = {
   flags: {
     nominalTypes: true,
     preferInterfaces: true,
-    includeJsdocLinks: false,
+    includeComment: true,
+    includeDescription: true,
     includeExamples: true,
-    includeLinkToOpenApiNode: false, // path.resolve(),
+    includeJsdocLinks: true,
+    includeLinkToOpenApiNode: true,
   },
   indent: 2,
   path: [],
   depth: 0,
   maxWidth: 80,
   siblingCount: 0,
-} as const satisfies Omit<Options.Config<unknown>, "handlers" | "refs">
+} as const satisfies Omit<Options.Config<unknown>, "handlers" | "refs" | "flags"> & { flags: Flags }
 
 export function parseOptions<T>(_: Options<T>) {
   return {

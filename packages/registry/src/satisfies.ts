@@ -129,6 +129,8 @@ export type Singleton<T> = [isSingleton<T>] extends [true] ? unknown : never
 export const singleton: <T extends Singleton<T>>(x: T) => T = identity
 
 export type Char<T> = [T] extends [`${string}${infer _}`] ? ([_] extends [""] ? string : never) : never
+export type CharOrNonFinite<T> = [T] extends [infer U] ? string extends U ? string : Char<T> : never
+
 export function char<T extends Char<T>>(x: T): T {
   return x
 }

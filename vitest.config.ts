@@ -21,7 +21,8 @@ export default defineConfig({
       .reduce((acc, cur) => ({ ...acc, ...cur }), {}),
     fakeTimers: { toFake: undefined },
     // reporters: [['default', { summary: false }]],
-    // printConsoleTrace: true,
+    printConsoleTrace: true,
+    disableConsoleIntercept: true,
     sequence: { concurrent: true },
     workspace: [
       'packages/*',

@@ -9,11 +9,10 @@ import { Invariant, KnownFormat } from '@traversable/registry'
 import * as Gen from '../generator.js'
 import * as JSDoc from '../jsdoc.js'
 import * as Print from '../print.js'
-import { fromUnknownValue, unsafeFromUnknownValue as fromValueObject, serialize } from './algebra.js'
+import { unsafeFromUnknownValue as fromValueObject, serialize } from './algebra.js'
 
 import type { Index, Matchers, TargetTemplate } from '../shared.js'
 import {
-  JsonLike,
   type Options,
   createMask,
   createZodIdent,
@@ -43,8 +42,6 @@ const Object_entries = globalThis.Object.entries
 /** @internal */
 const Object_fromEntries = globalThis.Object.fromEntries
 /** @internal */
-const JSON_stringify = (u: unknown) => JSON.stringify(u, null, 2)
-/** @internal */
 const Array_isArray = globalThis.Array.isArray
 /** @internal */
 const twoOrMore = <T>(u: readonly T[]): u is readonly [T, T, ...T[]] => Array_isArray(u) && u.length > 1
@@ -68,20 +65,32 @@ const headers = [
 ] as const satisfies string[]
 
 const template = (
-  (target, $) => [
-    '/**',
-    ` * # {@link ${$.typeName} \`${$.typeName}\`}`,
-    ` * - Visit: {@link $doc.${$.absolutePath.map(escapePathSegment).join('.')} OpenAPI definition}`,
-    ' */',
-    `export type ${$.typeName} = `,
-    `  ${NS}.infer<typeof ${$.typeName}>`,
-    `export const ${$.typeName} = ${
-      $.maxWidth < (`export const ${$.typeName} = ${target}`.length)
-        ? `\n  ${target}` 
-        : target
-    }`,
-  ] as const satisfies string[]
-)  satisfies TargetTemplate
+  (target, $) => {
+    const linkToOpenApiNode = $.flags.includeLinkToOpenApiNode 
+      ? ` * - Visit: {@link $doc.${
+        $.absolutePath.map(escapePathSegment).join('.')
+      } OpenAPI definition}` as const
+      : null
+    const comment 
+      = !$.flags.includeComment ? [] 
+      : [
+        '/**',
+        ` * # {@link ${$.typeName} \`${$.typeName}\`}`,
+        linkToOpenApiNode,
+        ' */',
+      ].filter((_) => _ !== null)
+
+    return [
+      ...comment,
+      `export type ${$.typeName} = `,
+      `  ${NS}.infer<typeof ${$.typeName}>`,
+      `export const ${$.typeName} = ${
+        $.maxWidth < (`export const ${$.typeName} = ${target}`.length)
+          ? `\n  ${target}` 
+          : target
+      }`,
+    ]
+}) satisfies TargetTemplate
 
 const Formats = {
   integer: {
@@ -159,6 +168,23 @@ const numericConstraints
     mod !== undefined && `.multipleOf(${mod})`,
   ].filter(schema.is.string)
 
+const derivedNumericConstraints
+  : (meta: Meta.Numeric, base: z.ZodNumber) => z.ZodNumber
+  = ({ exclusiveMaximum: lt, exclusiveMinimum: gt, maximum: max, minimum: min, multipleOf: mod }, base) => {
+    if (typeof gt === 'number') base = base.gt(gt)
+    else if (min !== undefined) {
+      if (gt === true) base = base.gt(min)
+      else if (gt === false) base = base.min(min)
+    }
+    if (typeof lt === 'number') base = base.lt(lt)
+    else if (max !== undefined) {
+      if (lt === true) base = base.lt(max)
+      else if (lt === false) base = base.max(max)
+    }
+    if (mod !== undefined) base = base.multipleOf(mod)
+    return base
+  }
+
 const stringConstraints
   : (meta: Meta.string) => string[]
   = ({ format, maxLength: max, minLength: min, pattern }) => [
@@ -168,11 +194,28 @@ const stringConstraints
     pattern !== undefined && `.regex(${pattern})`
   ].filter(schema.is.string)
 
+const derivedStringConstraints
+  : (meta: Meta.string) => z.ZodString
+  = ({ format, maxLength: max, minLength: min, pattern }) => {
+    let base = z.string()
+    if (format && schema.keyOf$(Formats.string.derive)(format)) base = Formats.string.derive[format]
+    if (min !== undefined) base = base.min(min)
+    if (max !== undefined) base = base.max(max)
+    if (pattern !== undefined) base = base.regex(new RegExp(pattern))
+    return base
+  }
+
 const Constrain = {
   integer: numericConstraints,
   number: numericConstraints,
   string: stringConstraints,
 } as const
+
+const ConstrainDerivative = {
+  integer: derivedNumericConstraints,
+  number: derivedNumericConstraints,
+  string: derivedStringConstraints,
+}
 
 const compilers = {
   any(_, $) { return `${NS}.unknown()` },
@@ -207,12 +250,12 @@ const compilers = {
     }
   },
   allOf({ allOf: x }, $) {
-    const xs = x.map(compileObjectNode($))
+    // const xs = x.map(compileObjectNode($))
     switch (true) {
-      case xs.length === 0: return `${NS}.unknown()`
-      case xs.length === 1: return Print.array($)(`${NS}.intersection(`, xs[0], `${NS}.unknown()`, `)`)
+      case x.length === 0: return `${NS}.unknown()`
+      case x.length === 1: return Print.array($)(`${NS}.intersection(`, x[0] as never as string, `${NS}.unknown()`, `)`)
       // case xs.length === 2: return Print.array($)(`${NS}.intersection(`, xs[0], xs[1], ')')
-      default: return Print.array($)('', ...xs.slice(1).reduce((acc, x) => `${acc}.and(${x})`, ''), '')
+      default: return Print.array($)('', ...x.slice(1).reduce((acc, x) => `${acc}.and(${x})`, ''), '')
     }
   },
   $ref({ $ref: x }, $) {
@@ -255,16 +298,16 @@ const derivatives = {
   any() { return z.unknown() },
   null() { return z.null() },
   boolean() { return z.boolean() },
-  integer() { return z.number().int() },
-  number() { return z.number() },
-  string({ meta }) { return (Formats.string.derive[(meta?.format ?? '') as never] ?? z.string()) },
+  integer({ meta = {} }) { return ConstrainDerivative.integer(meta, z.number().int()) },
+  number({ meta = {} }) { return ConstrainDerivative.number(meta, z.number()) },
+  string({ meta = {} }) { return ConstrainDerivative.string(meta) },
   const({ const: x }, $) { return fromValueObject(x)  },
   enum({ enum: xs }) {
     return isNonEmptyArrayOf(schema.is.string)(xs)
       ? z.enum(xs)
       : fn.pipe( xs.map(fromValueObject), (s) => twoOrMore(s) ? z.union(s) : TooFew(s))
   },
-  allOf({ allOf: xs }, $) { return xs.map(deriveObjectNode($)).reduce((acc, x) => acc.and(x), z.unknown()) },
+  allOf({ allOf: xs }, $) { return xs.reduce((acc, x) => acc.and(x), z.unknown()) },
   anyOf({ anyOf: xs }) { return twoOrMore(xs) ? z.union(xs) : TooFew(xs) },
   oneOf({ oneOf: xs }) { return twoOrMore(xs) ? z.union(xs) : TooFew(xs) },
   array({ items: s }) { return z.array(s) },
@@ -311,7 +354,7 @@ const compileObjectNode = ($: Index) => (ss: Traversable.objectF<string>) => {
     ? `${NS}.object({})`
     : Print.array($)(
       `${NS}.object({`,
-      xs.map(generateEntry(ss, $, ['', '.optional()'])).join(','),
+      ...xs.map(generateEntry(ss, $, ['', '.optional()'])),
       `})`.concat(!ss.additionalProperties ? '' : `.catchall(${ss.additionalProperties})`),
     )
     // : `${NS}.object({`
@@ -329,10 +372,10 @@ function generateEntry(
     [BEFORE_OPT, AFTER_OPT]: readonly [before: string, after: string]
 ): (entry: [string, string]) => string {
   return ([k, v]) => {
-    const EXAMPLE_TAG = JSDoc.example(k, $)
-    const DESCRIPTION_TAG = JSDoc.description(k, $)
-    const LINK_HERE = linkToNode(k, $)
-    const LINK_TO_DOC = linkToOpenAPIDocument(k, $)
+    const EXAMPLE_TAG = $.flags.includeExamples ? JSDoc.example(k, $) : null
+    const DESCRIPTION_TAG = $.flags.includeDescription ? JSDoc.description(k, $) : null
+    const LINK_HERE = $.flags.includeJsdocLinks ? linkToNode(k, $) : null
+    const LINK_TO_DOC = $.flags.includeLinkToOpenApiNode ? linkToOpenAPIDocument(k, $) : null
     const JSDOCS = [LINK_HERE, LINK_TO_DOC, DESCRIPTION_TAG, EXAMPLE_TAG].filter((_) => _ !== null)
     const COMMENT = JSDOCS.length === 0 ? [] : ['/**', ...JSDOCS, ' */']
     return ([
@@ -343,172 +386,7 @@ function generateEntry(
           : v
       }`,
     ])
-    .filter((_) => _ !== null)
     .join(Print.newline($))
   }
 }
-
-
-const isArray
-  : (u: unknown) => u is z.ZodTypeAny[]
-  = globalThis.Array.isArray
-const isObject
-  : (u: unknown) => u is Record<string, z.ZodTypeAny>
-  = (u): u is never => !!u && typeof u === 'object'
-
-
-
-// const typesOnly = {
-//   null() { return 'z.ZodNull' },
-//   boolean() { return 'z.ZodBoolean' },
-//   integer() { return 'z.ZodNumber' },
-//   number() { return 'z.ZodNumber' },
-//   string() { return 'z.ZodString' },
-//   enum({ enum: xs }) {
-//     return xs.length === 0 ? 'z.ZodNever'
-//       : xs.every(schema.is.string) ? 'z.ZodEnum<[' + xs.map(JSON_stringify).join(', ') + ']>'
-//       : 'z.ZodUnion<[' + xs.map((s) => `z.ZodLiteral<${typeof s === 'string' ? JSON_stringify : String(s)}>`) + ']>'
-//   },
-//   // const() {},
-//   const({ const: x }, ix) { return serializeType(ix)(x) },
-//   array({ items: s }, $) { return Print.array($)('z.ZodArray<', s, '>') },
-//   record({ additionalProperties: s }, $) { return Print.array($)('z.ZodRecord<z.ZodString, ', s, '>') },
-//   tuple({ items: ss }, $) { return Print.array($)('z.ZodTuple<[', ...ss, ']>') },
-//   anyOf({ anyOf: [s0 = 'z.ZodNever', ...ss] }, $) { return Print.array($)('z.ZodUnion<[', s0, ...ss, ']>') },
-//   oneOf({ oneOf: [s0 = 'z.ZodNever', ...ss] }, $) { return Print.array($)('z.ZodUnion<[', s0, ...ss, ']>') },
-//   allOf({ allOf: [s0, s1 = 'z.ZodUnknown', ...ss] }, $) {
-//     return s0 === undefined ? s1
-//       : ss.length === 0 ? s1
-//       : Print.array($)('', [s1, ...ss].reduce((acc, x) => acc === '' ? x : `z.ZodIntersection<${acc}, ${x}>`, s0), '')
-//   },
-//   object(ss, $) {
-//     return ''
-//     + 'z.ZodObject<{'
-//     + Object_entries(ss.properties).map(generateEntry(ss, $, ['z.ZodOptional<', '>'])).join(',')
-//     + '\n' + ' '.repeat($.indent) + '}>'
-//   }
-// } as const satisfies Matchers<string>
-
-/**
- * ## {@link typelevel `zod.typelevel`}
- *
- * Given a JSON Schema, OpenAPI document or {@link Traversable} schema, generates the
- * __types__ that __would be generated__ by the spec.
- *
- * This target is intended for users who _only want to generate types_, and don't need
- * the zod schemas, but _still_ want the generated types to include JSDoc links and
- * OpenAPI links.
- *
- * This is required do to an implementation detail of this codegen strategy, combined
- * with a limitation of TypeScript's JSDoc implementation that makes it significantly
- * easier to create deeply nested links to particular nodes if that node's type is
- * defined as a declaration, e.g.:
- *
- * @example
- * interface Ex01 {
- *   /\** # {@link Ex01["a"] `Ex01["a"]`} *\/
- *   a: {
- *     /\** # {@link Ex01["a"]["b"] `Ex01["b"]`} *\/
- *     b: {
- *       /\** # {@link Ex01["a"]["b"]["c"] `Ex01["c"]`} *\/
- *       c: 123
- *     }
- *   }
- * }
- * declare const ex_01: Ex01
- *
- * declare const ex_02: {
- *   /\** # {@link ex_02.a `Ex02["a"]`} *\/
- *   a: {
- *     /\** # {@link ex_02.b `Ex02["b"]`} *\/
- *     b: {
- *       /\** # {@link ex_02.c `Ex02["c"]`} *\/
- *       c: 456
- *     }
- *   }
- * }
- *
- * type Id<T> = T
- * interface Ex02 extends Id<typeof ex_02> {}
- *
- * function identity<T>(x: T): T { return x }
- *
- * const ex_03 = identity(ex_01).a
- * // If you hover over `a` here 𐋇 you'll see that the JSDoc link is broken
- * const ex_04 = identity(ex_02).a
- * // If you hover over `a` here 𐋇 you'll see that the JSDoc link works 🥳
- */
-// const typelevel
-//   : (schema: Traversable.orJsonSchema, options: Options<string>) => string
-//   = fn.flow(
-//     createTarget(typesOnly),
-//     ([target, $]) => [
-//       '/**',
-//       ` * # {@link ${$.typeName} \`${$.typeName}\`}`,
-//       ` * - Visit: {@link $doc.${$.absolutePath.map(escapePathSegment).join('.')} OpenAPI definition}`,
-//       ' */',
-//       'export type ' + $.typeName + ' = z.infer<typeof ' + $.typeName + '>',
-//       '//          ^?',
-//       'export declare const ' + $.typeName + ': ' + target,
-//     ].join('\n')
-//   )
-
-/**
- * TODO: add lightweight infrastructure to support deriving/generating codecs
- * (lossless to/from transformations that are baked into the parsing layer)
- */
-// const StringCodec = {
-//   [KnownFormat.string.datetime]: {
-//     decoder: 'z.string().datetime({ offset: true }).pipe(z.coerce.date())',
-//     encoder: 'z.date().pipe(z.coerce.string())',
-//   },
-//   [KnownFormat.string.date]: {
-//     decoder: [
-//       'z.preprocess((u) =>',
-//       '  typeof u === \'string\' ? !Number.isNaN(new Date(u).getTime()) ? new Date(u) : null : u,',
-//       '  z.date()',
-//       ')'
-//     ].filter(schema.is.notnull).join(''),
-//     encoder: 'z.date().pipe(z.coerce.string())',
-//   },
-// }
-
-// const serializeType
-//   : (ix: Index) => (x: unknown) => string
-//   = (ix) => {
-//     const loop = (indent: number) => (x: JsonLike): string => {
-//       switch (true) {
-//         default: return fn.exhaustive(x)
-//         case x === null:
-//         case x === undefined:
-//         case typeof x === 'boolean':
-//         case typeof x === 'number': return 'z.ZodLiteral<' + String(x) + '>'
-//         case typeof x === 'string': return 'z.ZodLiteral<"' + x + '">'
-//         case JsonLike.isArray(x): {
-//           return x.length === 0
-//             ? 'z.ZodTuple<[]>'
-//             : Print.array({ indent })(
-//               'z.ZodTuple<[',
-//               ...x.map(loop(indent + 2)),
-//               ']>'
-//             )
-//         }
-//         case !!x && typeof x === 'object': {
-//           const entries = Object
-//             .entries(x)
-//             .map(([k, v]) => [JSON.stringify(k), loop(indent + 2)(v)] satisfies [any, any])
-//           return entries.length === 0
-//             ? 'z.ZodObject<{}>'
-//             : Print.array({ indent })(
-//               'z.ZodObject<{',
-//               ...entries.map(([k, v]) => k + ': ' + v),
-//               '}>'
-//             )
-//         }
-//       }
-//     }
-//     return (x: unknown) => !JsonLike.is(x)
-//       ? Invariant.NonSerializableInput("zod.serializeType", x)
-//       : loop(ix.indent)(x)
-//   }
 

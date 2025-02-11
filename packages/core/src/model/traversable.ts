@@ -168,7 +168,7 @@ interface Traversable_Meta extends Meta.has<Meta.Base> {}
 interface Traversable_lambda<Ext = never> extends HKT { [-1]: Traversable_F<this[0] | Ext> }
 ///
 interface Traversable_allOf extends
-  Combinator<Traversable_object, "allOf">,
+  Combinator<Traversable, "allOf">,
   Traversable_Meta
   { type: "allOf" }
 
@@ -225,7 +225,7 @@ interface Traversable_recordF<T> extends
   { type: "record" }
 
 interface Traversable_allOfF<T> extends
-  Combinator<Traversable_objectF<T>, "allOf">,
+  Combinator<T, "allOf">,
   Traversable_Meta
   { type: "allOf" }
 
@@ -487,7 +487,7 @@ const Traversable_Functor: Functor<Traversable_lambda, Traversable> = {
         case Traversable_is.array(x): return { ...x, items: f(x.items) }
         case Traversable_is.anyOf(x): return { ...x, anyOf: x.anyOf.map(f) }
         case Traversable_is.oneOf(x): return { ...x, oneOf: x.oneOf.map(f) }
-        case Traversable_is.allOf(x): return { ...x, allOf: x.allOf.map(mapObject(f)) }
+        case Traversable_is.allOf(x): return { ...x, allOf: x.allOf.map(f) }
         case Traversable_is.tuple(x): return { ...x, items: x.items.map(f) }
         case Traversable_is.record(x): return { ...x, additionalProperties: f(x.additionalProperties) }
       }
@@ -619,7 +619,7 @@ const IxFunctor: IndexedFunctor<Context, Traversable_lambda, Traversable_orJsonS
         case Traversable_is.oneOf(xs): return { ...xs, oneOf: xs.oneOf.map((x, i) => g(h(i)([...$.path, symbol.oneOf, i])($), x)) }
         case Traversable_is.tuple(xs): return { ...xs, items: xs.items.map((x, i) => g(h(i)([...$.path, symbol.tuple, i])($), x)) }
         case Traversable_is.record(xs): return { ...xs, additionalProperties: g(h()([...$.path, symbol.record])($), xs.additionalProperties) }
-        case Traversable_is.allOf(xs): return { ...xs, allOf: xs.allOf.map((x, i) => mapIxObject(g)(h(i)([...$.path, symbol.allOf, i])($))(x, i)) }
+        case Traversable_is.allOf(xs): return { ...xs, allOf: xs.allOf.map((x, i) => g(h(i)([...$.path, symbol.allOf, i])($), x)) }
         case Traversable_is.object(xs): return mapIxObject(g)($)(xs)
       }
     }
@@ -701,7 +701,7 @@ const fromAST
       case x._tag === "array": return { type: x._tag, items: x.def } satisfies Traversable_array
       case x._tag === "record": return { type: x._tag, additionalProperties: x.def } satisfies Traversable_record
       case x._tag === "tuple": return { type: x._tag, items: x.def } satisfies Traversable_tuple
-      case x._tag === "allOf": return { ...x, type: x._tag, allOf: x.def.map(mapAstObjectProperties) } satisfies Traversable_allOf
+      case x._tag === "allOf": return { ...x, type: x._tag, allOf: x.def } satisfies Traversable_allOf
       case x._tag === "object": return mapAstObjectProperties(x.def) satisfies Traversable_object
     }
   }

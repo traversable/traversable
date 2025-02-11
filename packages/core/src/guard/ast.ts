@@ -115,13 +115,7 @@ const Functor: Functor<AST.lambda> = {
         case x._tag === "record": return record_(f(x.def))
         case x._tag === "anyOf": return anyOf_(...x.def.map(f))
         case x._tag === "oneOf": return oneOf_(...x.def.map(f))
-        case x._tag === "allOf": return allOf_(
-          ...x.def.map(
-            // TODO: this type assertion is here for compatibility
-            // with a legacy definition of `allOf`
-            (y) => f(y as Parameters<typeof f>[0])
-          ) as Record<string, ReturnType<typeof f>>[]
-        )
+        case x._tag === "allOf": return allOf_(...x.def.map(f))
         case x._tag === "tuple": return tuple_(...x.def.map(f))
         case x._tag === "object": return object_(map(x.def, f))
       }
@@ -223,7 +217,7 @@ declare namespace AST {
     | optional_<S>
     | array_<S>
     | record_<S>
-    | allOf_<readonly { [x: string]: S }[]>
+    | allOf_<readonly S[]>
     | anyOf_<readonly S[]>
     | oneOf_<readonly S[]>
     | tuple_<readonly S[]>
