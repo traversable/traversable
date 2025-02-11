@@ -1,6 +1,6 @@
 import type { array_of } from "./_internal/_array.js"
-import type { prop, props } from "./_internal/_prop.js"
 import type { key, keys } from "./_internal/_key.js"
+import type { prop, props } from "./_internal/_prop.js"
 
 export declare namespace nonempty {
   export { 

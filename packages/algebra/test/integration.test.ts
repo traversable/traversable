@@ -7,7 +7,7 @@ import { fc, schema, type t } from "@traversable/core"
 import type { OpenAPI } from "@traversable/openapi"
 import type { _ } from "@traversable/registry"
 
-import * as Box from '@sinclair/typebox'
+import type * as Box from '@sinclair/typebox'
 import * as BoxValue from '@sinclair/typebox/value'
 import { 
   type Generator, 
