@@ -1,7 +1,7 @@
 {
   "name": "@traversable/http",
   "type": "module",
-  "version": "0.0.2",
+  "version": "0.0.3",
   "private": false,
   "description": "HTTP utilities for the @traversable repo",
   "repository": {
@@ -13,9 +13,17 @@
     "url": "https://github.com/traversable/traversable/issues",
     "email": "ahrjarrett@gmail.com"
   },
-  "@traversable": { 
-    "generateExports": { "include": [ "**/*.ts" ] },
-    "generateIndex": { "include": [ "**/*.ts" ] }
+  "@traversable": {
+    "generateExports": {
+      "include": [
+        "**/*.ts"
+      ]
+    },
+    "generateIndex": {
+      "include": [
+        "**/*.ts"
+      ]
+    }
   },
   "publishConfig": {
     "directory": "dist",
@@ -45,8 +53,14 @@
     "@traversable/registry": "workspace:^"
   },
   "peerDependenciesMeta": {
-    "@traversable/core": { "optional": false },
-    "@traversable/data": { "optional": false },
-    "@traversable/registry": { "optional": false }
+    "@traversable/core": {
+      "optional": false
+    },
+    "@traversable/data": {
+      "optional": false
+    },
+    "@traversable/registry": {
+      "optional": false
+    }
   }
 }

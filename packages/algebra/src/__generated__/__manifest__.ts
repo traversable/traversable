@@ -1,7 +1,7 @@
 export default {
   "name": "@traversable/algebra",
   "type": "module",
-  "version": "0.0.0",
+  "version": "0.0.1",
   "private": false,
   "description": "",
   "repository": {
@@ -14,8 +14,12 @@ export default {
     "email": "ahrjarrett@gmail.com"
   },
   "@traversable": {
-    "generateExports": { "include": ["**/*.ts"] },
-    "generateIndex": { "include": ["**/*.ts"] }
+    "generateExports": {
+      "include": ["**/*.ts"]
+    },
+    "generateIndex": {
+      "include": ["**/*.ts"]
+    }
   },
   "publishConfig": {
     "directory": "dist",
@@ -48,15 +52,33 @@ export default {
     "zod": "^3.24.1"
   },
   "peerDependenciesMeta": {
-    "arktype": { "optional": true },
-    "@sinclair/typebox": { "optional": true },
-    "@standard-schema/spec": { "optional": true },
-    "zod": { "optional": true },
-    "@traversable/core": { "optional": false },
-    "@traversable/data": { "optional": false },
-    "@traversable/http": { "optional": false },
-    "@traversable/openapi": { "optional": false },
-    "@traversable/registry": { "optional": false }
+    "arktype": {
+      "optional": true
+    },
+    "@sinclair/typebox": {
+      "optional": true
+    },
+    "@standard-schema/spec": {
+      "optional": true
+    },
+    "zod": {
+      "optional": true
+    },
+    "@traversable/core": {
+      "optional": false
+    },
+    "@traversable/data": {
+      "optional": false
+    },
+    "@traversable/http": {
+      "optional": false
+    },
+    "@traversable/openapi": {
+      "optional": false
+    },
+    "@traversable/registry": {
+      "optional": false
+    }
   },
   "devDependencies": {
     "@faker-js/faker": "^9.4.0",
