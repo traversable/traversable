@@ -1,5 +1,11 @@
 # @traversable/algebra
 
+## 0.0.2
+
+### Patch Changes
+
+- [#32](https://github.com/traversable/traversable/pull/32) [`3ff3f1d`](https://github.com/traversable/traversable/commit/3ff3f1d091107da3434b195f15bad067591a45e3) Thanks [@ahrjarrett](https://github.com/ahrjarrett)! - 🐛(algebra): uses Math.fround to round min/max constraints
+
 ## 0.0.1
 
 ### Patch Changes
