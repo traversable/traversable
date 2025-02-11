@@ -2,7 +2,7 @@ import * as vi from "vitest"
 import { z } from "zod"
 
 import { zod } from "@traversable/algebra"
-import { _ } from "@traversable/registry"
+import type { _ } from "@traversable/registry"
 import IR = zod.IR
 
 vi.describe("〖️⛳️〗‹‹‹ ❲@traversable/algebra/zod❳", () => {
@@ -48,7 +48,42 @@ vi.describe("〖️⛳️〗‹‹‹ ❲@traversable/algebra/zod❳", () => {
 
     vi.expect( zod.toString( z.object({ x: z.array(z.number()).min(0).max(1), y: z.array(z.number()).length(1), z: z.array(z.array(z.array(z.literal('z')).min(9000)).max(9001)).length(9001) })))
     .toMatchInlineSnapshot(`"z.object({ x: z.array(z.number()).min(0).max(1), y: z.array(z.number()).length(1), z: z.array(z.array(z.array(z.literal("z")).min(9000)).max(9001)).length(9001) })"`)
+
+    vi.expect( zod.toString( z.number().readonly() ))
+    .toMatchInlineSnapshot(`"z.number().readonly()"`)
+
+    vi.expect( zod.toString( z.number().brand() ))
+    .toMatchInlineSnapshot(`"z.number().brand()"`)
+
+    vi.expect( zod.toString( z.set(z.number()) ))
+    .toMatchInlineSnapshot(`"z.set(z.number())"`)
+
+    vi.expect( zod.toString( z.map(z.array(z.boolean()), z.set(z.number().optional())) ))
+    .toMatchInlineSnapshot(`"z.map(z.array(z.boolean()), z.set(z.number().optional()))"`)
+
+    vi.expect( zod.toString( z.promise(z.literal("promise")) ))
+    .toMatchInlineSnapshot(`"z.promise(z.literal("promise"))"`)
+
+    vi.expect( zod.toString( z.intersection(z.number(), z.union([z.literal(1), z.literal(2), z.literal(3)])) ))
+    .toMatchInlineSnapshot(`"z.intersection(z.number(), z.union([z.literal(1), z.literal(2), z.literal(3)]))"`)
+
+    vi.expect( zod.toString( z.lazy(() => z.tuple([])) ))
+    .toMatchInlineSnapshot(`"z.lazy(() => z.tuple([]))"`)
+
+    vi.expect( zod.toString( z.number().pipe(z.bigint()) ))
+    .toMatchInlineSnapshot(`"z.number().pipe(z.bigint())"`)
+
+    vi.expect( zod.toString( z.number().catch(0) ))
+    .toMatchInlineSnapshot(`"z.number().catch(0)"`)
+
+    vi.expect( zod.toString( z.array(z.string()).catch(["a", "b"]) ))
+    .toMatchInlineSnapshot(`"z.array(z.string()).catch(["a", "b"])"`)
+
+    vi.expect( zod.toString( z.object({ powerlevel: z.union([z.string(), z.number()]).default(9001) }) ))
+    .toMatchInlineSnapshot(`"z.object({ powerlevel: z.union([z.string(), z.number()]).default(9001) })"`)
   })
+  
+
 
   const Null = IR.make.null()
   const examples = {
@@ -66,91 +101,88 @@ vi.describe("〖️⛳️〗‹‹‹ ❲@traversable/algebra/zod❳", () => {
     union: IR.make.union([Null, Null]),
   } as const
 
-  // vi.it("〖️⛳️〗› ❲zod.IR.make❳", () => {
-  //   vi.assert.deepEqual(
-  //     { tag: z.ZodFirstPartyTypeKind.ZodNull, meta: {} },
-  //     examples.null, 
-  //   )
-  //   vi.assert.deepEqual(
-  //     { tag: z.ZodFirstPartyTypeKind.ZodBoolean, meta: {} },
-  //     examples.boolean, 
-  //   )
-  //   vi.assert.deepEqual(
-  //     { tag: z.ZodFirstPartyTypeKind.ZodNumber, meta: {} },
-  //     examples.number,
-  //   )
-  //   vi.assert.deepEqual(
-  //     { tag: z.ZodFirstPartyTypeKind.ZodString, meta: {} },
-  //     examples.string, 
-  //   )
-  //   vi.assert.deepEqual(
-  //     { tag: z.ZodFirstPartyTypeKind.ZodLiteral, meta: { literal: null } },
-  //     examples.literal, 
-  //   )
-  //   vi.assert.deepEqual(
-  //     { tag: z.ZodFirstPartyTypeKind.ZodOptional, meta: {}, def: Null },
-  //     examples.optional, 
-  //   )
-  //   vi.assert.deepEqual(
-  //     { tag: z.ZodFirstPartyTypeKind.ZodArray, meta: {}, def: Null },
-  //     examples.array, 
-  //   )
-  //   vi.assert.deepEqual(
-  //     { tag: z.ZodFirstPartyTypeKind.ZodRecord, meta: {}, def: Null },
-  //     examples.record, 
-  //   )
-  //   vi.assert.deepEqual(
-  //     { tag: z.ZodFirstPartyTypeKind.ZodObject, meta: {}, def: { a: Null } },
-  //     examples.object, 
-  //   )
-  //   vi.assert.deepEqual(
-  //     { tag: z.ZodFirstPartyTypeKind.ZodTuple, meta: {}, def: [Null, Null] },
-  //     examples.tuple, 
-  //   )
-  //   vi.assert.deepEqual(
-  //     { tag: z.ZodFirstPartyTypeKind.ZodIntersection, meta: {}, def: [Null, Null] },
-  //     examples.intersection,
-  //   )
-  //   vi.assert.deepEqual(
-  //     { tag: z.ZodFirstPartyTypeKind.ZodUnion, meta: {}, def: [Null, Null] },
-  //     examples.union, 
-  //   )
-  // })
+  vi.it("〖️⛳️〗› ❲zod.IR.make❳", () => {
+    vi.assert.deepEqual(
+      { tag: z.ZodFirstPartyTypeKind.ZodNull, meta: {} },
+      examples.null, 
+    )
+    vi.assert.deepEqual(
+      { tag: z.ZodFirstPartyTypeKind.ZodBoolean, meta: {} },
+      examples.boolean, 
+    )
+    vi.assert.deepEqual(
+      { tag: z.ZodFirstPartyTypeKind.ZodNumber, meta: {} },
+      examples.number,
+    )
+    vi.assert.deepEqual(
+      { tag: z.ZodFirstPartyTypeKind.ZodString, meta: {} },
+      examples.string, 
+    )
+    vi.assert.deepEqual(
+      { tag: z.ZodFirstPartyTypeKind.ZodLiteral, meta: { literal: null } },
+      examples.literal, 
+    )
+    vi.assert.deepEqual(
+      { tag: z.ZodFirstPartyTypeKind.ZodOptional, meta: {}, def: Null },
+      examples.optional, 
+    )
+    vi.assert.deepEqual(
+      { tag: z.ZodFirstPartyTypeKind.ZodArray, meta: {}, def: Null },
+      examples.array, 
+    )
+    vi.assert.deepEqual(
+      { tag: z.ZodFirstPartyTypeKind.ZodRecord, meta: {}, def: Null },
+      examples.record, 
+    )
+    vi.assert.deepEqual(
+      { tag: z.ZodFirstPartyTypeKind.ZodObject, meta: {}, def: { a: Null } },
+      examples.object, 
+    )
+    vi.assert.deepEqual(
+      { tag: z.ZodFirstPartyTypeKind.ZodTuple, meta: {}, def: [Null, Null] },
+      examples.tuple, 
+    )
+    vi.assert.deepEqual(
+      { tag: z.ZodFirstPartyTypeKind.ZodIntersection, meta: {}, def: [Null, Null] },
+      examples.intersection,
+    )
+    vi.assert.deepEqual(
+      { tag: z.ZodFirstPartyTypeKind.ZodUnion, meta: {}, def: [Null, Null] },
+      examples.union, 
+    )
+  })
 
-  // vi.it("〖️⛳️〗› ❲zod.IR.is❳", () => {
-  //   vi.assert.isTrue(IR.is.null(examples.null))
-  //   vi.assert.isFalse(IR.is.null(examples.boolean))
+  vi.it("〖️⛳️〗› ❲zod.IR.is❳", () => {
+    vi.assert.isTrue(IR.is.null(examples.null))
+    vi.assert.isFalse(IR.is.null(examples.boolean))
 
-  //   vi.assert.isTrue(IR.is.boolean(examples.boolean))
-  //   vi.assert.isFalse(IR.is.boolean(examples.null))
+    vi.assert.isTrue(IR.is.boolean(examples.boolean))
+    vi.assert.isFalse(IR.is.boolean(examples.null))
 
-  //   vi.assert.isTrue(IR.is.number(examples.number))
-  //   vi.assert.isFalse(IR.is.number(examples.null))
+    vi.assert.isTrue(IR.is.number(examples.number))
+    vi.assert.isFalse(IR.is.number(examples.null))
 
-  //   vi.assert.isTrue(IR.is.string(examples.string))
-  //   vi.assert.isFalse(IR.is.string(examples.null))
+    vi.assert.isTrue(IR.is.string(examples.string))
+    vi.assert.isFalse(IR.is.string(examples.null))
 
-  //   vi.assert.isTrue(IR.is.array(examples.array))
-  //   vi.assert.isFalse(IR.is.array(examples.null))
+    vi.assert.isTrue(IR.is.array(examples.array))
+    vi.assert.isFalse(IR.is.array(examples.null))
 
-  //   vi.assert.isTrue(IR.is.record(examples.record))
-  //   vi.assert.isFalse(IR.is.record(examples.null))
+    vi.assert.isTrue(IR.is.record(examples.record))
+    vi.assert.isFalse(IR.is.record(examples.null))
 
-  //   vi.assert.isTrue(IR.is.object(examples.object))
-  //   vi.assert.isFalse(IR.is.object(examples.null))
+    vi.assert.isTrue(IR.is.object(examples.object))
+    vi.assert.isFalse(IR.is.object(examples.null))
 
-  //   vi.assert.isTrue(IR.is.tuple(examples.tuple))
-  //   vi.assert.isFalse(IR.is.tuple(examples.null))
+    vi.assert.isTrue(IR.is.tuple(examples.tuple))
+    vi.assert.isFalse(IR.is.tuple(examples.null))
 
-  //   vi.assert.isTrue(IR.is.intersection(examples.intersection))
-  //   vi.assert.isFalse(IR.is.intersection(examples.null))
+    vi.assert.isTrue(IR.is.intersection(examples.intersection))
+    vi.assert.isFalse(IR.is.intersection(examples.null))
 
-  //   vi.assert.isTrue(IR.is.union(examples.union))
-  //   vi.assert.isFalse(IR.is.union(examples.null))
-  // })
-
-  // const Z = z.ZodFirstPartyTypeKind
-  
+    vi.assert.isTrue(IR.is.union(examples.union))
+    vi.assert.isFalse(IR.is.union(examples.null))
+  })
 
   // /** 
   //  * Order of operations:

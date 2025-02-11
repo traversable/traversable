@@ -1,1 +1,1 @@
-export * as ark from "./ark.js"
+export * from './ark.js'

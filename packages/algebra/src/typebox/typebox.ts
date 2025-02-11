@@ -40,8 +40,10 @@ type TypeName = typeof TypeName
 const TypeName = 'TypeBox' as const
 
 const dependencies = [] as const satisfies string[]
-const headers = [
+const imports = [
   `import * as ${NS} from "@sinclair/typebox"`,
+] as const satisfies string[]
+const headers = [
   ...dependencies,
 ] as const satisfies string[]
 
@@ -61,12 +63,25 @@ const defaults = {
   ...defaults_,
   typeName: defaults_.typeName + TypeName,
   header: headers,
+  imports,
   template,
 } satisfies Required<Omit<Options<unknown>, 'handlers'>>
 
 const deriveObjectNode 
   : ($: Index) => (x: Traversable.objectF<T.TAnySchema>) => T.TAnySchema
-  = ($) => ({ properties: xs, additionalProperties, ..._ }) => T.Object(xs, { additionalProperties, ...$, ..._ })
+  = ($) => ({ properties: p, additionalProperties, required = [], ..._ }) => {
+    const xs = Object.entries(p)
+    return xs.length === 0 
+      ? T.Object({})
+      : fn.pipe(
+        xs.map(([k, v]) => [
+          k, 
+          required.includes(k) ? v : T.Optional(v)
+        ] satisfies [any, any]),
+        Object.fromEntries,
+        (ps) => T.Object(ps, _)
+      )
+  }
 
 const derivatives = {
   any(_) { return T.Unknown(_) },
@@ -84,7 +99,7 @@ const derivatives = {
   record({ additionalProperties: x, ..._ }, $) 
     { return T.Record(T.String(), x, { ...$, ..._ }) },
   allOf({ allOf: xs, ..._ }, $) 
-    { return T.Intersect([...xs.map(deriveObjectNode($))], { ...$, ..._ }) },
+    { return T.Intersect([...xs], { ...$, ..._ }) },
   enum({ enum: xs, ..._ }, $) { 
     return fn.pipe(
       xs.filter((schema.anyOf$(schema.is.string, schema.is.number))),
@@ -115,7 +130,7 @@ const derive
 
 const deriveAll
   : (options: Options<T.TAnySchema>) => Gen.All<T.TAnySchema>
-  = (options) => Gen.deriveAll(derive, { ...defaults, ...options })
+  = ($) => Gen.deriveAll(defaults)(derive, $)
 
 const compilers = {
   any() { return `${NS}.Unknown()` },
@@ -144,7 +159,7 @@ const compilers = {
   allOf(x, $) { 
     return Print.array($)(
       `${NS}.Intersect([`, 
-      x.allOf.map((_) => compileObjectNode(_, $)).join(`, `), 
+      x.allOf.join(`, `), 
       `])`
     ) 
   },
@@ -152,11 +167,11 @@ const compilers = {
 
 const compileObjectNode 
   : (x: Traversable.objectF<string>, $: Index) => string
-  = (x, $) => {
-    const xs = globalThis.Object.entries(x.properties)
+  = ({ properties, required = [] }, $) => {
+    const xs = globalThis.Object.entries(properties)
     return xs.length === 0 ? `${NS}.Object({})` : fn.pipe(
       xs.map(
-        ([k, v]) => JSON.stringify(k) + `: ` + v + `,` + `\n` + ` `.repeat($.indent + 2)
+        ([k, v]) => JSON.stringify(k) + `: ` + (required.includes(k) ? v : `${NS}.Optional(${v})` )  + `,` + `\n` + ` `.repeat($.indent + 2)
       ).join(``),
       (xs) => `${NS}.Object({\n` + ` `.repeat($.indent + 2) + xs + `\n` + ` `.repeat($.indent) + `})`,
     )
@@ -177,8 +192,7 @@ const compile
 
 const compileAll
   : (options: Options<string>) => Gen.All<string>
-  = (options) => Gen.compileAll(compile, { ...defaults, ...options })
-
+  = ($) => Gen.compileAll(defaults)(compile, $)
 
 const serializer
   : (ix: Index) => (x: unknown) => string

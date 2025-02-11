@@ -1,4 +1,4 @@
-import { string } from "@traversable/data"
+import type { string } from "@traversable/data"
 import type { CharOrNonFinite as Char } from "@traversable/registry"
 
 export interface Combinator<S = string, T = string> { (src: S): ParseResult<T> }

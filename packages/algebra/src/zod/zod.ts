@@ -59,8 +59,11 @@ type TypeName = typeof TypeName
 const TypeName = 'zod' as const
 
 const dependencies = [] as const satisfies string[]
-const headers = [
+const imports = [
   `import { ${NS} } from "zod"`,
+] as const satisfies string[]
+
+const headers = [
   ...dependencies,
 ] as const satisfies string[]
 
@@ -144,6 +147,7 @@ const defaults = {
     ...defaults_,
     typeName: defaults_.typeName + TypeName,
     header: headers,
+    imports,
     template,
     integerFormats: Formats.integer.derive,
     numberFormats: Formats.number.derive,
@@ -153,6 +157,7 @@ const defaults = {
     ...defaults_,
     typeName: defaults_.typeName + TypeName,
     header: headers,
+    imports,
     template,
     integerFormats: Formats.integer.compile,
     numberFormats: Formats.number.compile,
@@ -279,7 +284,7 @@ const compile
 
 const compileAll
   : (options: Options<string>) => Gen.All<string>
-  = (options) => Gen.compileAll(compile, { ...defaults.compile, ...options })
+  = ($) => Gen.compileAll(defaults.compile)(compile, $)
 
 const deriveObjectNode
   : ($: Index) => (x: Traversable.objectF<z.ZodTypeAny>) => z.ZodTypeAny
@@ -338,7 +343,7 @@ const derive
 
 const deriveAll
   : (options: Options<z.ZodTypeAny>) => Gen.All<z.ZodTypeAny>
-  = (options) => Gen.deriveAll(derive, { ...defaults, ...options })
+  = ($) => Gen.deriveAll(defaults.derive)(derive, $)
 
 function linkToNode(k: string, $: Index): string | null {
   const IDENT = createZodIdent($)([...$.path, 'shape', k]).join('')

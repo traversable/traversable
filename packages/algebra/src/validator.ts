@@ -68,7 +68,7 @@ export const defaults = {
      * Since arrays are JavaScript objects, this flag is **opt-out** (defaults to `true`).
      */
     treatArraysLikeObjects: false,
-    jitCompile: true as boolean,
+    aheadOfTime: true as boolean,
   },
   validationType: ValidationType.typeguard as ValidationType,
 }
@@ -92,7 +92,7 @@ const parseOptions
     functionName = defaults.functionName,
     validationType = defaults.validationType,
     flags: {
-      jitCompile = defaults.flags.jitCompile,
+      aheadOfTime = defaults.flags.aheadOfTime,
       treatArraysLikeObjects = defaults.flags.treatArraysLikeObjects,
     } = defaults.flags,
   }) => ({
@@ -100,7 +100,7 @@ const parseOptions
     document,
     functionName,
     validationType,
-    flags: { jitCompile, treatArraysLikeObjects }
+    flags: { aheadOfTime, treatArraysLikeObjects }
   })
 
 /** 
@@ -476,6 +476,29 @@ namespace RAlgebra {
           }
         } 
 
+        case Traversable.is.allOf(n): return { 
+          GO($) {
+            if (
+              cfg.validationType === ValidationType.failFast || 
+              cfg.validationType === ValidationType.failSlow
+            ) return ''
+            else {
+              const path = [ident($.depth), ...$.path.slice(1)]
+              const $valid = `v${path.join('')}`
+              return 'let ' + $valid + '=' + '[' 
+                + n.allOf.map(([, xf], ix) => {
+                  const schemaPath = [ix, 'allOf', ...$.schemaPath]
+                  const { depth, rawPath } = $
+                  const CHILD = xf.GO({ depth, index: ix, isRequired: true, path, rawPath, schemaPath })
+                  return '(() => {' + CHILD + 'return true;})()'
+                })
+                .join(',')
+                + '].every((_) => _ === true);' 
+                + 'if(' + $valid + '!==true)return false;'
+            }
+          }
+        }
+
         case Traversable.is.anyOf(n): return { 
           GO($) { 
             if (cfg.validationType === ValidationType.failFast || cfg.validationType === ValidationType.failSlow) {
@@ -604,19 +627,6 @@ namespace RAlgebra {
         }
 
         case Traversable.is.object(n): return { GO: deriveObjectNode(cfg)(n) }
-
-        case Traversable.is.allOf(n): return { 
-          GO($) {
-            if (
-              cfg.validationType === ValidationType.failFast || 
-              cfg.validationType === ValidationType.failSlow
-            ) return ''
-            else {
-              const out = n.allOf.map((x) => deriveObjectNode(cfg)(x)($))
-              return out.join('')
-            }
-          }
-        }
       }
     }
   }
@@ -734,7 +744,7 @@ deriveValidator.fold = ({
   compare = deriveValidator.defaults.compare,
   flags: { 
     treatArraysLikeObjects = defaults.flags.treatArraysLikeObjects,
-    jitCompile = defaults.flags.jitCompile,
+    aheadOfTime = defaults.flags.aheadOfTime,
   } = defaults.flags,
   validationType = defaults.validationType,
 }: Pick<Options, 'compare' | 'flags' | 'validationType'> = deriveValidator.defaults,
@@ -742,7 +752,7 @@ deriveValidator.fold = ({
   fn.flow(
     Sort.derive({ compare }), 
     Traversable.fromJsonSchema,
-    fn.para(Traversable.Functor)(RAlgebra.validator({ flags: { treatArraysLikeObjects, jitCompile }, validationType })), 
+    fn.para(Traversable.Functor)(RAlgebra.validator({ flags: { treatArraysLikeObjects, aheadOfTime }, validationType })), 
     (xf) => xf.GO({ depth: 0, index: 0, isRequired: true, path: [], rawPath: [], schemaPath: ['#'] }),
   );
 
@@ -764,15 +774,15 @@ function deriveValidator(
     validationType = defaults.validationType,
   }: Options = deriveValidator.defaults,
 ) {
-  const $_ = flags.jitCompile ? '' : ' '
-  const $ReturnType = flags.jitCompile ? '' : ':' + $_ + '$0$ is ' + Type.derive.fold({ minify: flags.jitCompile })(schema)
+  const $_ = flags.aheadOfTime ? '' : ' '
+  const $ReturnType = flags.aheadOfTime ? '' : ':' + $_ + '$0$ is ' + Type.derive.fold({ minify: flags.aheadOfTime })(schema)
   if (validationType === ValidationType.failSlow) {
     return fn.pipe(
       schema,
       deriveValidator.fold({ compare, flags, validationType }),
       (body) => '' 
         + `function${functionName && functionName.length > 0 ? (' ' + functionName) : ''}($0$${
-          flags.jitCompile ? '' : ':any'
+          flags.aheadOfTime ? '' : ':any'
         })${$ReturnType}{` 
         + 'let errors=[];' + functionName + '.errors=errors;let errNo=0;if(errNo===0){'
         + body 
@@ -785,7 +795,7 @@ function deriveValidator(
       deriveValidator.fold({ compare, flags, validationType }),
       (body) => '' 
         + `function${functionName && functionName.length > 0 ? (' ' + functionName) : ''}($0$${
-          flags.jitCompile ? '' : ':any'
+          flags.aheadOfTime ? '' : ':any'
         })${$ReturnType}{` 
         + 'let errors=null;let errNo=0;if(errNo===0){'
         + body 
@@ -798,13 +808,13 @@ function deriveValidator(
       deriveValidator.fold({ compare, flags, validationType }),
       (body) => 
         '' +
-        (flags.jitCompile ? '(' : '') +
+        (flags.aheadOfTime ? '(' : '') +
         `function${functionName && functionName.length > 0 ? ' ' + functionName : ''}($0$${
-          flags.jitCompile ? '' : ':any'
+          flags.aheadOfTime ? '' : ':any'
         })${$ReturnType}{` +
         body +
         'return true;}' +
-        (flags.jitCompile ? ')' : ''),
+        (flags.aheadOfTime ? ')' : ''),
     )
   }
 }

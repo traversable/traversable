@@ -79,6 +79,9 @@ vi.describe(` 〖⛳️️〗‹‹‹ ❲@traversable/data/show❳`, () => {
 
   test.prop([fc.jsonValue()], {
     // numRuns: 10_000,
+    examples: [
+      [{"":["\\"]}]
+    ]
   })(
   `〖️⛳️️〗 ›  ❲show.serialize❳: roundtrip`, (json) => {
       const stringified = globalThis.JSON.stringify(json)

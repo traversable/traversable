@@ -128,7 +128,7 @@ export namespace Algebra {
         case Traversable.is.record(x): return fc.dictionary(x.additionalProperties)
         case Traversable.is.tuple(x): return fc.tuple(...x.items)
         case Traversable.is.object(x): return mapObject(x) 
-        case Traversable.is.allOf(x): return fc.tuple(...x.allOf.map(mapObject)).map(intersect)
+        case Traversable.is.allOf(x): return fc.tuple(...x.allOf).map(intersect)
       }
     }
 

@@ -234,7 +234,7 @@ const compilers = {
   },
   object(x, $) { return compileObjectNode($)(x) },
   allOf({ allOf: xs }, $) {
-    const [y, ...ys] = xs.map(compileObjectNode($))
+    const [y, ...ys] = xs
     return Print.rows({ separator: `\n`, indent: $.indent })(
       y.startsWith(NS) ? y : `${NS}(` + y + `)`,
       ys.reduce((acc, cur) => `${acc}.and(${cur})`, ``),
@@ -249,7 +249,7 @@ const compile
 
 const compileAll
   : (options: Options<string>) => Gen.All<string>
-  = (options) => Gen.compileAll(compile, { ...defaults, ...options })
+  = ($) => Gen.compileAll(defaults)(compile, $)
 
 const deriveObjectNode 
   : ($: Index) => (x: Traversable.objectF<type.Any<any>>) => type.Any
@@ -291,7 +291,7 @@ const derivatives = {
     return typeof mod === 'number' ? base.divisibleBy(mod) : base
   },
   number({ 
-    meta: { 
+    meta: {
       exclusiveMaximum: lt,
       exclusiveMinimum: gt,
       minimum: min,
@@ -343,7 +343,7 @@ const derivatives = {
     }
   },
   allOf({ allOf: xs }, $) { 
-    try { return xs.map(deriveObjectNode($)).reduce((acc, y) => acc.and(y), type.unknown) } 
+    try { return xs.reduce((acc, y) => acc.and(y), type.unknown) } 
     catch (_) { return type.never }
   },
   object(x, $) { return deriveObjectNode($)(x) },
@@ -356,7 +356,7 @@ const derive
 
 const deriveAll
   : (options: Options<type.Any>) => Gen.All<type.Any>
-  = (options) => Gen.deriveAll(derive, { ...defaults, ...options })
+  = ($) => Gen.deriveAll(defaults)(derive, $)
 
 const serializer
   : (ix: Index) => (x: unknown) => string

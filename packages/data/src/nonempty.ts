@@ -1,5 +1,6 @@
 import type { array_of } from "./_internal/_array.js"
 import type { prop, props } from "./_internal/_prop.js"
+import type { key, keys } from "./_internal/_key.js"
 
 export declare namespace nonempty {
   export { 
@@ -28,6 +29,11 @@ export declare namespace nonempty {
   type propsLeft<
     T extends props.any = props.any,
     U extends prop.any = prop.any,
+  > = readonly [...lead: T, last: U]
+
+  type keysLeft<
+    T extends keys.any = keys.any,
+    U extends key.any = key.any,
   > = readonly [...lead: T, last: U]
 
   namespace mut {

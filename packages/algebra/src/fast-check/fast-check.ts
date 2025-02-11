@@ -21,6 +21,7 @@ export {
   defaults,
   dependencies,
   headers,
+  imports,
   template,
   //
   derivatives,
@@ -40,19 +41,21 @@ const TypeName = 'Arbitrary'
 const Object_assign = globalThis.Object.assign
 
 /** @internal */
-function intersect<T>(xs: readonly T[]): Intersect<T> 
+function intersect<T>(...xs: readonly T[]): Intersect<T> 
 function intersect<T>(xs: readonly T[]) { return xs.reduce(Object_assign, {}) }
 
 const dependencies = [
-  '',
   `export type Intersect<S, O = unknown> = S extends readonly [infer H, ...infer T] ? Intersect<T, O & H> : O`,
   `function intersect<T>(xs: readonly T[]): Intersect<T>`,
   `function intersect<T>(xs: readonly T[]) { return xs.reduce(globalThis.Object.assign, {}) }`,
-  // `type Infer<T> = T extends ${NS}.Arbitrary<infer F> ? F : never`,
 ] as const
 
-const headers = [
+const imports = [
   `import * as ${NS} from "fast-check"`,
+] as const satisfies string[]
+
+const headers = [
+  // ...imports,
   ...dependencies,
 ] as const satisfies string[]
 
@@ -70,6 +73,7 @@ const defaults = {
   ...defaults_,
   typeName: defaults_.typeName + 'Arbitrary',
   header: headers,
+  imports,
   template,
 } satisfies Required<Omit<Options<unknown>, 'handlers'>>
 
@@ -116,17 +120,6 @@ const CompiledStringFormat = {
   // [KnownFormat.string.emoji]: '.emoji()',
 } as const satisfies { [K in KnownFormat.string[keyof KnownFormat.string]]+?: string }
 
-const numberConstraints
-  : (meta: Meta.Numeric) => fc.Arbitrary<number>
-  = ({ exclusiveMaximum: lt, exclusiveMinimum: gt, maximum, minimum, multipleOf: mod }) => {
-    const min = typeof gt === 'number' ? gt : typeof minimum === 'number' ? minimum : void 0
-    const max = typeof lt === 'number' ? lt : typeof maximum === 'number' ? maximum : void 0
-    return fc.float({
-      ...min && { min },
-      ...max && { max },
-    } satisfies fc.IntegerConstraints)
-  }
-
 const modulo 
   : (meta: Meta.Numeric) => (x: number) => number
   = ({ minimum: min, maximum: max, multipleOf: mod }) => (x: number) => 
@@ -136,12 +129,29 @@ const modulo
   : min < (x - (x % mod))       ? (x - (x % mod))
   : max > (x - (x % mod) + mod) ? (x - (x % mod) + mod)
   : x
+  ;
+
+const computeMin 
+  : (meta: Meta.Numeric) => number | undefined
+  = ({ exclusiveMinimum: gt, minimum }) => 
+    typeof gt === 'number' ? gt + 1
+    : (gt === true && typeof minimum === 'number') ? minimum + 1
+    : typeof minimum === 'number' ? minimum 
+    : void 0
+
+const computeMax 
+  : (meta: Meta.Numeric) => number | undefined
+  = ({ exclusiveMaximum: lt, maximum }) => 
+    typeof lt === 'number' ? lt - 1
+    : (lt === true && typeof maximum === 'number') ? maximum - 1
+    : typeof maximum === 'number' ? maximum 
+    : void 0
 
 const minmax
   : (meta: Meta.Numeric) => fc.IntegerConstraints
-  = ({ exclusiveMaximum: lt, exclusiveMinimum: gt, maximum, minimum, multipleOf: mod }) => {
-    const min = typeof gt === 'number' ? gt : typeof minimum === 'number' ? minimum : void 0
-    const max = typeof lt === 'number' ? lt : typeof maximum === 'number' ? maximum : void 0
+  = (meta) => {
+    const min = computeMin(meta)
+    const max = computeMax(meta)
     return {
       ...min && { min },
       ...max && { max },
@@ -157,10 +167,14 @@ const minmaxString
 
 const compiledIntegerConstraints
   : (meta: Meta.Numeric) => string
-  = ({ exclusiveMaximum: lt, exclusiveMinimum: gt, maximum, minimum, multipleOf: mod }: Meta.Numeric) => [
-    typeof gt === 'number' ? `min: ${gt}` : typeof minimum === 'number' ? `min: ${minimum}` : null,
-    typeof lt === 'number' ? `max: ${lt}` : typeof maximum === 'number' ? `max: ${maximum}` : null,
-  ].filter((_) => _ !== null).join(', ')
+  = (meta: Meta.Numeric) => {
+    const min = computeMin(meta)
+    const max = computeMax(meta)
+    return [
+      typeof min === 'number' && `min: ${min}`,
+      typeof max === 'number' && `max: ${max}`,
+    ].filter((_) => typeof _ === 'string').join(', ')
+  }
 
 const Constrain = {
   string({ minLength, maxLength }: Meta.string) {
@@ -198,7 +212,7 @@ const derivatives = {
   null() { return fc.constant(null) },
   boolean() { return fc.boolean() },
   integer({ meta = {} }) { return fc.integer(minmax(meta)).map(modulo(meta)) },
-  number({ meta = {} }) { return fc.float(minmax(meta)) },
+  number({ meta = {} }) { return fc.float(minmax(meta)).map(Math.fround) },
   string({ meta = {} }) { 
     return schema.keyOf$(StringFormat)(meta.format) 
       ? StringFormat[meta.format]() 
@@ -214,7 +228,7 @@ const derivatives = {
     { return fc.dictionary(fc.oneof(fc.lorem(), fc.string()), x) },
   object(x, $) { return deriveObjectNode($)(x)  },
   allOf({ allOf: xs, ..._ }, $) 
-    { return fc.tuple(...xs).map(intersect) },
+    { return fc.tuple(...xs).map((ys) => ys.reduce(intersect)) },
   $ref({ $ref: x }, $) { return $.refs[x] as never },
 } as const satisfies Matchers<fc.Arbitrary<unknown>>
 
@@ -237,7 +251,7 @@ const derive
 
 const deriveAll
   : (options: Options<fc.Arbitrary<unknown>>) => Gen.All<fc.Arbitrary<unknown>>
-  = (options) => Gen.deriveAll(derive, { ...defaults, ...options })
+  = ($) => Gen.deriveAll(defaults)(derive, $)
 
 const compileObjectNode 
   : (x: Traversable.objectF<string>, $: Index) => string
@@ -276,7 +290,7 @@ const compile
 
 const compileAll
   : (options: Options<string>) => Gen.All<string>
-  = (options) => Gen.compileAll(compile, { ...defaults, ...options })
+  = ($) => Gen.compileAll(defaults)(compile, $)
 
 const serializer
   : (ix: Index) => (x: unknown) => string

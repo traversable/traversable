@@ -1,1 +1,1 @@
-export * as fastcheck from './fast-check.js'
+export * from './fast-check.js'

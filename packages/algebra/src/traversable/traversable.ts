@@ -37,9 +37,10 @@ type TypeName = typeof TypeName
 const TypeName = 'Traversable'
 
 const dependencies = [] as const satisfies string[]
-
-const headers = [
+const imports = [
   `import { ${NS} } from "@traversable/core"`,
+] as const satisfies string[]
+const headers = [
 ] as const satisfies string[]
 
 const template = (
@@ -59,6 +60,7 @@ const template = (
 const defaults = {
   ...defaults_,
   header: headers,
+  imports,
   typeName: defaults_.typeName + TypeName,
   template,
 } as const satisfies Required<Omit<Options<unknown>, 'handlers'>>
@@ -111,7 +113,7 @@ const compilers = {
   string() { return `${NS}.string()` as const },
   const({ const: x }, $) { return `${NS}.const(${serializer($)(x)})` },
   enum({ enum: x }, $) { return `${NS}.enum(${x.map(serializer($)).join(`, `)})` },
-  allOf({ allOf: xs }, $) { return `${NS}.allOf(${xs.map(deriveObjectNode($)).join(', ')})` },
+  allOf({ allOf: xs }, $) { return `${NS}.allOf(${xs.join(', ')})` },
   anyOf({ anyOf: xs }) { return `${NS}.anyOf(${xs.join(', ')})` },
   oneOf({ oneOf: xs }) { return `${NS}.anyOf(${xs.join(', ')})` },
   array({ items: x }, $) { return Print.array($)(`${NS}.array(`, x, ')') },
@@ -138,7 +140,7 @@ const derive
 
 const deriveAll 
   : (options: Options<t.type>) => Gen.All<t.type>
-  = ($) => Gen.deriveAll(derive, { ...defaults, ...$ })
+  = ($) => Gen.deriveAll(defaults)(derive, $)
 
 /**
  * ## {@link compile `t.compile`}
@@ -164,7 +166,7 @@ const compile = Gen.compile(compilers, defaults)
  */
 const compileAll
   : (options: Options<string>) => Gen.All<string>
-  = (options) => Gen.compileAll(compile, { ...defaults, ...options })
+  = ($) => Gen.compileAll(defaults)(compile, $)
 
 const serializer
   : (ix: Index) => (x: unknown) => string

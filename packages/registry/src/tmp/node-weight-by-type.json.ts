@@ -1,4 +1,4 @@
-export type WeightByType = typeof WeightByType;
+export type WeightByType = typeof WeightByType
 export const WeightByType = {
   "unknown": -1,
   "null": 0,
@@ -13,5 +13,5 @@ export const WeightByType = {
   "record": 1000,
   "object": 1100,
   "tuple": 1200,
-  "array": 1400
-} as const;
+  "array": 1400,
+} as const

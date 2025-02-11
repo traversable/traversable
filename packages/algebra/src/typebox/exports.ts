@@ -1,1 +1,2 @@
-export * as typebox from "./typebox.js"
+export * from './typebox.js'
+export * from './algebra.js'

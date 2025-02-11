@@ -1,7 +1,7 @@
 import { z } from 'zod'
 
 import { Json, core, tree } from '@traversable/core'
-import { Option, map as fmap, fn, map, object } from '@traversable/data';
+import { Option, fn, map, object } from '@traversable/data';
 import type { Functor, HKT, IndexedFunctor, _ } from '@traversable/registry'
 
 import * as Print from '../print.js'
@@ -26,9 +26,9 @@ const Array_isArray
 const tag = z.ZodFirstPartyTypeKind
 type Tag = typeof Tag
 const Tag = {
-  /* alias */ allOf: `${tag[tag.ZodIntersection]}` as const,
-  /* alias */ anyOf: `${tag[tag.ZodUnion]}` as const,
-  /* alias */ oneOf: `${tag[tag.ZodDiscriminatedUnion]}` as const,
+  intersection: `${tag[tag.ZodIntersection]}` as const,
+  union: `${tag[tag.ZodUnion]}` as const,
+  discriminatedUnion: `${tag[tag.ZodDiscriminatedUnion]}` as const,
   any: `${tag.ZodAny}` as const,
   array: `${tag[tag.ZodArray]}` as const,
   bigint: `${tag[tag.ZodBigInt]}` as const,
@@ -67,9 +67,9 @@ const Tag = {
 declare namespace Z {
   type lookup<K extends keyof Tag, S = _> = Z.byTag<S>[Tag[K]]
   type byTag<S> = {
-    /* alias */ [Tag.allOf]: Z.AllOf<S>
-    /* alias */ [Tag.anyOf]: Z.AnyOf<S>
-    /* alias */ [Tag.oneOf]: Z.OneOf<S>
+    [Tag.intersection]: Z.AllOf<S>
+    [Tag.union]: Z.AnyOf<S>
+    [Tag.discriminatedUnion]: Z.OneOf<S>
     [Tag.any]: Z.Any
     [Tag.array]: Z.Array<S>
     [Tag.bigint]: Z.BigInt
@@ -115,7 +115,6 @@ declare namespace Z {
   interface Symbol { _def: { typeName: Tag['symbol'] } }
   interface Boolean { _def: { typeName: Tag['boolean'] } }
   interface BigInt { _def: { typeName: Tag['bigint'] } }
-  // ._def.checks.find((check) => check.kind === 'int')
   interface Number { _def: { typeName: Tag['number'], checks?: Number.Check[] } }
   interface String { _def: { typeName: Tag['string'] } }
   interface Date { _def: { typeName: Tag['date'] } }
@@ -127,22 +126,22 @@ declare namespace Z {
   interface Map<S = _> { _def: { typeName: Tag['map'], keyType: S, valueType: S } }
   interface Readonly<S = _> { _def: { typeName: Tag['readonly'], innerType: S } }
   interface Promise<S = _> { _def: { typeName: Tag['promise'], type: S  } }
-  interface Object<S = _> { _def: { typeName: Tag['object'], catchall: S }, shape: { [x: string]: S } }
+  interface Object<S = _> { _def: { typeName: Tag['object'], catchall?: S }, shape: { [x: string]: S } }
   interface Branded<S = _> { _def: { typeName: Tag['branded'], type: S } }
   interface Record<S = _> { _def: { typeName: Tag['record'] }, element: S }
   interface Tuple<S = _> { _def: { typeName: Tag['tuple'], items: [S, ...S[]], rest?: S } }
   interface Function<S = _> { _def: { typeName: Tag['function'], args: [] | [S, ...S[]], returns: S } }
   interface Lazy<S = _> { _def: { typeName: Tag['lazy'], getter(): S } }
-  interface AllOf<S = _> { _def: { typeName: Tag['allOf'], left: S, right: S } }
-  interface AnyOf<S = _> { _def: { typeName: Tag['anyOf'], options: readonly [S, S, ...S[]] } }
-  interface Catch<S = _> { _def: { typeName: Tag['catch'], catchValue: S } }
-  interface Default<S = _> { _def: { typeName: Tag['default'], defaultValue: S } }
+  interface AllOf<S = _> { _def: { typeName: Tag['intersection'], left: S, right: S } }
+  interface AnyOf<S = _> { _def: { typeName: Tag['union'], options: readonly [S, S, ...S[]] } }
+  interface Catch<S = _> { _def: { typeName: Tag['catch'], innerType: S, catchValue(ctx: Ctx): unknown } }
+  interface Default<S = _> { _def: { typeName: Tag['default'], innerType: S, defaultValue: (ctx: Ctx) => unknown } }
   interface Effect<S = _> { _def: { typeName: Tag['effects'], schema: S, effect: S } }
   interface Pipeline<S = _> { _def: { typeName: Tag['pipeline'], in: S, out: S } }
   interface OneOf<S = _, K extends keyof any = keyof any> { 
     _def: { 
       discriminator: K
-      typeName: Tag['oneOf'], options: readonly (Z.Object<S>)[] 
+      typeName: Tag['discriminatedUnion'], options: readonly (Z.Object<S>)[] 
     } 
   }
   interface Enum<N = _> { _def: { typeName: Tag['enum'], values: [N, ...N[]] } }
@@ -167,6 +166,7 @@ declare namespace Z {
     | Z.Enum
     | Z.Literal
     | Z.NativeEnum
+    | Z.Catch<S>
     | Z.Optional<S>
     | Z.Nullable<S>
     | Z.Array<S>
@@ -183,7 +183,6 @@ declare namespace Z {
     | Z.AllOf<S>
     | Z.AnyOf<S>
     | Z.OneOf<S>
-    | Z.Catch<S>
     | Z.Default<S>
     | Z.Effect<S>
     | Z.Pipeline<S>
@@ -204,51 +203,34 @@ declare namespace Z {
       exactLength: null | { value: number }
     }
   }
-
 }
 
 const tagged
   : <K extends keyof Tag>(tag: K) => <S>(u: unknown) => u is Z.lookup<K, S>
   = (tag) => tree.has('_def', 'typeName', core.is.literally(Tag[tag])) as never
 
-function deriveObjectNode<S, T>(f: (s: S) => T): (x: Z.Object<S>) => Z.Object<T>
-function deriveObjectNode<S, T>(f: (s: S) => T) {
-  return (x: Z.Object<S>) => ({
-    ...x,
-    shape: fmap(x.shape, f),
-    _def: {
-      ...x._def,
-      ...!tagged('never')(x._def.catchall) && { catchall: f(x._def.catchall) }
+const mapObject
+  : <S, T>(f: (s: S) => T) => (x: Z.Object<S>) => Z.Object<T>
+  = (f) => ({ shape, _def: { catchall, ...def }, ...x }) => ({ 
+    ...x, 
+    shape: map(shape, f), 
+    _def: { 
+      ...def, 
+      ...catchall && !tagged('never')(catchall) && 
+      ({ catchall: f(catchall) })
     },
   })
-}
 
-function deriveTupleNode<S, T>(f: (s: S) => T): (x: Z.Tuple<S>) => Z.Tuple<T>
-function deriveTupleNode<S, T>(f: (s: S) => T) {
-  return (x: Z.Tuple<S>) => ({
-    ...x,
-    _def: { 
-      ...x._def, 
-      items: fmap(x._def.items, f), 
-      ...x._def.rest && { rest: f(x._def.rest) },
-    }
-  })
-}
+const mapTuple
+  : <S, T>(f: (s: S) => T) => (x: Z.Tuple<S>) => Z.Tuple<T>
+  = (f) => ({ _def: { items, rest, ...def }, ...x }) => 
+    ({ ...x, _def: { ...def, items: map(items, f), ...rest && ({ rest: f(rest) }) } })
 
-function deriveOneOfNode<S, T>(f: (s: S) => T): (x: Z.OneOf<S>) => Z.OneOf<T>
-function deriveOneOfNode<S, T>(f: (s: S) => T) {
-  return (x: Z.OneOf<S>) => ({
-    ...x,
-    _def: { 
-      ...x._def, 
-      discriminator: x._def.discriminator,
-      options: fmap(x._def.options, deriveObjectNode(f)),
-    }
-  })
-}
+interface Ctx { input: unknown, error: z.ZodError }
+const ctx = { input: null, error: new z.ZodError([]) } satisfies Ctx
 
 const Functor_: Functor<Z.lambda, Any> = {
-  map(f) {
+  map(g) {
     return (x) => {
       switch (true) {
         default: return x // fn.exhaustive(x)
@@ -266,30 +248,30 @@ const Functor_: Functor<Z.lambda, Any> = {
         case tagged('date')(x): return x
         case tagged('number')(x): return x
         case tagged('string')(x): return x
+        case tagged('enum')(x): return x
+        case tagged('nativeEnum')(x): return x
+        case tagged('literal')(x): return x
         ///  branches, a.k.a. "unary" types
-        case tagged('object')(x): return deriveObjectNode(f)(x)
-        case tagged('enum')(x): return { ...x, _def: { ...x._def, values: x._def.values } } satisfies Z.Enum
-        case tagged('nativeEnum')(x): return { ...x, _def: { ...x._def, values: x._def.values } } satisfies Z.NativeEnum
-        case tagged('literal')(x): return { ...x, _def: { ...x._def, value: x._def.value } } satisfies Z.Literal
-        case tagged('branded')(x): return { ...x, _def: { ...x._def, type: f(x._def.type) }} satisfies Z.Branded
-        case tagged('set')(x): return { ...x, _def: { ...x._def, valueType: f(x._def.valueType) } } satisfies Z.Set
-        case tagged('promise')(x): return { ...x, _def: { ...x._def, type: f(x._def.type) } } satisfies Z.Promise
-        case tagged('map')(x): return { ...x, _def: { ...x._def, keyType: f(x._def.keyType), valueType: f(x._def.valueType) } } satisfies Z.Map
-        case tagged('readonly')(x): return { ...x, _def: { ...x._def, innerType: f(x._def.innerType) } } satisfies Z.Readonly
-        case tagged('nullable')(x): return { ...x, _def: { ...x._def, innerType: f(x._def.innerType) } } satisfies Z.Nullable
-        case tagged('optional')(x): return { ...x, _def: { ...x._def, innerType: f(x._def.innerType) } } satisfies Z.Optional
-        case tagged('array')(x): return { ...x, _def: { ...x._def }, element: f(x.element) } satisfies Z.Array
-        case tagged('record')(x): return { ...x, _def: { ...x._def, }, element: f(x.element) } satisfies Z.Record
-        case tagged('allOf')(x): return { ...x, _def: { ...x._def, left: f(x._def.left), right: f(x._def.right) } } satisfies Z.AllOf
-        case tagged('anyOf')(x): return { ...x, _def: { ...x._def, options: fmap(x._def.options, f) } } satisfies Z.AnyOf
-        case tagged('lazy')(x): return { ...x, _def: { ...x._def, getter: () => f(x._def.getter()) } } satisfies Z.Lazy
-        case tagged('function')(x): return { ...x, _def: { ...x._def, args: fmap(x._def.args, f), returns: f(x._def.returns) } } satisfies Z.Function
-        case tagged('pipeline')(x): return { ...x, _def: { ...x._def, in: f(x._def.in), out: f(x._def.out) } } satisfies Z.Pipeline
-        case tagged('catch')(x): return { ...x, _def: { ...x._def, catchValue: f(x._def.catchValue) } } satisfies Z.Catch
-        case tagged('default')(x): return { ...x, _def: { ...x._def, defaultValue: f(x._def.defaultValue) } } satisfies Z.Default
-        case tagged('effects')(x): return { ...x, _def: { ...x._def, schema: f(x._def.schema), effect: f(x._def.effect) } } satisfies Z.Effect
-        case tagged('oneOf')(x): return deriveOneOfNode(f)(x) satisfies Z.OneOf
-        case tagged('tuple')(x): return deriveTupleNode(f)(x) satisfies Z.Tuple
+        case tagged('tuple')(x): return mapTuple(g)(x) satisfies Z.Tuple
+        case tagged('object')(x): return mapObject(g)(x) satisfies Z.Object
+        case tagged('array')(x): return { ...x, _def: { ...x._def }, element: g(x.element) } satisfies Z.Array
+        case tagged('record')(x): return { ...x, _def: { ...x._def, }, element: g(x.element) } satisfies Z.Record
+        case tagged('optional')(x): return { ...x, _def: { ...x._def, innerType: g(x._def.innerType) } } satisfies Z.Optional
+        case tagged('union')(x): return { ...x, _def: { ...x._def, options: map(x._def.options, g) } } satisfies Z.AnyOf
+        case tagged('intersection')(x): return { ...x, _def: { ...x._def, left: g(x._def.left), right: g(x._def.right) } } satisfies Z.AllOf
+        case tagged('discriminatedUnion')(x): return { ...x, _def: { ...x._def, options: map(x._def.options, mapObject(g)) } } satisfies Z.OneOf
+        case tagged('branded')(x): return { ...x, _def: { ...x._def, type: g(x._def.type) } } satisfies Z.Branded
+        case tagged('promise')(x): return { ...x, _def: { ...x._def, type: g(x._def.type) } } satisfies Z.Promise
+        case tagged('catch')(x): return { ...x, _def: { ...x._def, innerType: g(x._def.innerType) } } satisfies Z.Catch
+        case tagged('default')(x): return { ...x, _def: { ...x._def, innerType: g(x._def.innerType) } } satisfies Z.Default
+        case tagged('readonly')(x): return { ...x, _def: { ...x._def, innerType: g(x._def.innerType) } } satisfies Z.Readonly
+        case tagged('nullable')(x): return { ...x, _def: { ...x._def, innerType: g(x._def.innerType) } } satisfies Z.Nullable
+        case tagged('lazy')(x): return { ...x, _def: { ...x._def, getter: () => g(x._def.getter()) } } satisfies Z.Lazy
+        case tagged('set')(x): return { ...x, _def: { ...x._def, valueType: g(x._def.valueType) } } satisfies Z.Set
+        case tagged('pipeline')(x): return { ...x, _def: { ...x._def, in: g(x._def.in), out: g(x._def.out) } } satisfies Z.Pipeline
+        case tagged('map')(x): return { ...x, _def: { ...x._def, keyType: g(x._def.keyType), valueType: g(x._def.valueType) } } satisfies Z.Map
+        case tagged('effects')(x): return { ...x, _def: { ...x._def, effect: g(x._def.effect), schema: g(x._def.schema) } } satisfies Z.Effect
+        case tagged('function')(x): return { ...x, _def: { ...x._def, args: map(x._def.args, g), returns: g(x._def.returns) } } satisfies Z.Function
       }
     }
   }
@@ -304,7 +286,7 @@ function compileObjectNode<S>(x: Z.Object<S>) {
 
 const applyNumberConstraints = (x: Z.Number) => ''
   + (!x._def.checks?.length ? '' : '.')
-  + ( x._def.checks?.map((check) => 
+  + ( x._def.checks?.map((check) =>
       ! Number.isFinite(check.value) ? `${check.kind}()`
       : check.kind === 'min' ? `${check.inclusive ? 'min' : 'gt'}(${check.value})`
       : check.kind === 'max' ? `${check.inclusive ? 'max' : 'lt'}(${check.value})`
@@ -317,7 +299,6 @@ const applyArrayConstraints = (x: Z.Array) => ([
   Number.isFinite(x._def.maxLength?.value) && `.max(${x._def.maxLength?.value})`,
   Number.isFinite(x._def.exactLength?.value) && `.length(${x._def.exactLength?.value})`
 ]).filter((_) => typeof _ === 'string').join('')
-
 
 const FormatFunctor: IndexedFunctor<number, Json.lambda> = {
   map: Json.Functor.map,
@@ -356,8 +337,10 @@ namespace Algebra {
       case tagged('date')(x): return 'z.date()'
       case tagged('number')(x): return `z.number()${applyNumberConstraints(x)}`
       case tagged('string')(x): return 'z.string()'
+      case tagged('catch')(x): 
+        return `${x._def.innerType}.catch(${serializeShort(x._def.catchValue(ctx)!)})`
       ///  branches, a.k.a. "unary" types
-      case tagged('branded')(x): return `z.branded(${x._def.type})`
+      case tagged('branded')(x): return `${x._def.type}.brand()`
       case tagged('set')(x): return `z.set(${x._def.valueType})`
       case tagged('promise')(x): return `z.promise(${x._def.type})`
       case tagged('map')(x): return `z.map(${x._def.keyType}, ${x._def.valueType})`
@@ -367,29 +350,26 @@ namespace Algebra {
       case tagged('literal')(x): return `z.literal(${JSON.stringify(x._def.value)})`
       case tagged('array')(x): return `z.array(${x.element})${applyArrayConstraints(x)}`
       case tagged('record')(x): return `z.record(${x.element})`
-      case tagged('allOf')(x): return `z.intersection(${x._def.left}, ${x._def.right})`
-      case tagged('anyOf')(x): return `z.union([${x._def.options.join(', ')}])`
+      case tagged('intersection')(x): return `z.intersection(${x._def.left}, ${x._def.right})`
+      case tagged('union')(x): return `z.union([${x._def.options.join(', ')}])`
       case tagged('lazy')(x): return `z.lazy(() => ${x._def.getter()})`
-      case tagged('pipeline')(x): return `z.pipeline(${x._def.in}, ${x._def.out})`
-      case tagged('catch')(x): return `z.catch(${x._def.catchValue})`
-      case tagged('default')(x): return `z.default(${x._def.defaultValue})`
+      case tagged('pipeline')(x): return `${x._def.in}.pipe(${x._def.out})`
+      case tagged('default')(x): return `${x._def.innerType}.default(${serializeShort(x._def.defaultValue(ctx)!)})`
       case tagged('effects')(x): return `z.effects(${x._def.schema}, ${x._def.effect})`
       case tagged('function')(x): return `z.function(t.tuple([${x._def.args.join(', ')}]), ${x._def.returns})`
-      case tagged('enum')(x): return `z.enum([${
-        x._def.values.map((_) => JSON.stringify(_)).join(', ')
-      }])`
+      case tagged('enum')(x): return `z.enum([${x._def.values.map((_) => JSON.stringify(_)).join(', ')}])`
       case tagged('nativeEnum')(x): return `z.nativeEnum({ ${
-        Object.entries(x._def.values)
-          .map(([k, v]) => object.parseKey(k) + ': ' + JSON.stringify(v))
-          .join(', ')
+        Object.entries(x._def.values).map(([k, v]) => object.parseKey(k) + ': ' + JSON.stringify(v)).join(', ')
       } })`
       case tagged('tuple')(x): return `z.tuple([${x._def.items.join(', ')}])${
         typeof x._def.rest === 'string' ? `.rest(${x._def.rest})` : ''}`
-      case tagged('oneOf')(x): return `z.discriminatedUnion("${String(x._def.discriminator)}", [${x._def.options.map(compileObjectNode).join(', ')}])`
+      case tagged('discriminatedUnion')(x): 
+        return `z.discriminatedUnion("${String(x._def.discriminator)}", [${
+          x._def.options.map(compileObjectNode).join(', ')
+        }])`
       case tagged('object')(x): return compileObjectNode(x)
     }
   }
-
 
   export const fromValueObject: Functor.Algebra<Json.lambda, z.ZodTypeAny> = (x) => {
     switch (true) {
@@ -434,6 +414,24 @@ namespace Algebra {
         }
       }
     }
+
+  export const _serializeShort
+    : Functor.Algebra<Json.lambda, string> 
+    = (x) => {
+      switch (true) {
+        default: return fn.exhaustive(x)
+        case x === null:
+        case x === undefined:
+        case typeof x === 'boolean':
+        case typeof x === 'number':
+        case typeof x === 'string': return globalThis.JSON.stringify(x)
+        case Array_isArray(x): return x.length === 0 ? '[]' : '[' + x.join(', ') + ']'
+        case !!x && typeof x === 'object': {
+           const xs = Object.entries(x)
+           return xs.length === 0 ? '{}' : '{' + xs.map(([k, v]) => object.parseKey(k) + ': ' + v).join(',') + '}]'
+        }
+      }
+    }
 }
 
 /** 
@@ -469,6 +467,10 @@ const toString = fn.cata(Functor_)(Algebra.toString)
  * added in [2020-12](https://json-schema.org/draft/2020-12/schema).
  */
 const fromValueObject = fn.cata(Json.Functor)(Algebra.fromValueObject)
+
+const serializeShort 
+  : (value: {} | null) => string
+  = fn.cata(Json.Functor)(Algebra._serializeShort)
 
 const fromUnknownValue
   : (value: unknown) => Option<z.ZodTypeAny>

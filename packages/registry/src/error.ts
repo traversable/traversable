@@ -1,13 +1,13 @@
-import { default as pkg } from "./__generated__/__manifest__.js"
-import { symbol } from "./symbol.js"
-import type { newtype } from "./types.js"
-import { SCOPE } from "./version.js"
+import { default as pkg } from './__generated__/__manifest__.js'
+import { symbol } from './symbol.js'
+import type { newtype } from './types.js'
+import { SCOPE } from './version.js'
 
 export interface TypeError<Msg extends string, Got> extends newtype<{ [symbol.TypeError]: Msg }> {
   Got: Got
 }
-export type NonFinite<T> = never | TypeError<"Unexpected non-finite type:", T>
-export type NonFiniteIndex<T> = never | TypeError<"Unexpected non-finite index signature:", T>
+export type NonFinite<T> = never | TypeError<'Unexpected non-finite type:', T>
+export type NonFiniteIndex<T> = never | TypeError<'Unexpected non-finite index signature:', T>
 export type NonFiniteBoolean = never | NonFinite<boolean>
 export type NonFiniteNumber = never | NonFinite<number>
 export type NonFiniteString = never | NonFinite<string>
@@ -54,7 +54,7 @@ function throw_<T>(v: T): never {
 }
 /** @internal */
 function show(header: string): <T>(...v: T[]) => string {
-  return (...v) => (v.length === 0 ? "" : v.map((_) => globalThis.JSON.stringify(_, null, 2)).join("\n\t"))
+  return (...v) => (v.length === 0 ? '' : v.map((_) => globalThis.JSON.stringify(_, null, 2)).join('\n\t'))
 }
 
 export { Error as UntaggedError }
@@ -65,14 +65,16 @@ function Error<Msg extends string>(
   return (identifier, ...v) =>
     throw_(
       globalThis.Error(
-        "\n\n[🚫 Source: " +
-          SCOPE +
-          "/" +
-          identifier +
-          "]" +
-          (filepath !== undefined ? "\n at: " + filepath + "\n" : "") +
-          msg +
-          show(", got: ")(...v),
+        '\n\n[🚫 Source: ' 
+        + SCOPE 
+        + '/' 
+        + identifier 
+        + ']:\n\n' 
+        + (filepath !== undefined ? '\n at: ' + filepath + '\n' : '') 
+        + msg 
+        + '\n'
+        + '\n'
+        + show(', got: ')(...v),
       ),
     )
 }
@@ -84,7 +86,7 @@ function withTrace<ID extends string, const T extends readonly unknown[]>(
 ): (msg: string) => withTrace<T> {
   const header = '["' + identifier + '"]: '
   const log = (): void => (void group(header), void values.forEach(trace), void groupEnd())
-  return (msg: string) => [log, header + msg + "\n" + show(", got: ")(...values)] satisfies [any, any]
+  return (msg: string) => [log, header + msg + '\n' + show(', got: ')(...values)] satisfies [any, any]
 }
 
 Error.withTrace = <
@@ -126,18 +128,18 @@ TaggedError.withTrace = <
 
 /////////////////////////////
 ///    general purpose    ///
-const ILLEGAL_STATE = "IllegalState" as const
-const UNEXPECTED_ERROR = "UnexpectedError" as const
-const UNEXPECTED_PREDICATE_FAILURE = "UnexpectedPredicateFailure" as const
-const UNEXPECTED_CIRCULAR_REFERENCE = "UnexpectedCircularReference" as const
-const EXHAUSTIVE_MATCH_FAILURE = "ExhastiveMatchFailure" as const
+const ILLEGAL_STATE = 'IllegalState' as const
+const UNEXPECTED_ERROR = 'UnexpectedError' as const
+const UNEXPECTED_PREDICATE_FAILURE = 'UnexpectedPredicateFailure' as const
+const UNEXPECTED_CIRCULAR_REFERENCE = 'UnexpectedCircularReference' as const
+const EXHAUSTIVE_MATCH_FAILURE = 'ExhastiveMatchFailure' as const
 ///
-const ILLEGAL_STATE_MSG = "Illegal state: this code path should not be possible to execute"
-const UNEXPECTED_ERROR_MSG = "An unexpected error occurred" as const
-const UNEXPECTED_CIRCULAR_REFERENCE_MSG = "Unexpected circular reference" as const
-const EXHAUSTIVE_MATCH_FAILURE_MSG = "Failed to exhaustively handle all code paths" as const
+const ILLEGAL_STATE_MSG = 'Illegal state: this code path should not be possible to execute'
+const UNEXPECTED_ERROR_MSG = 'An unexpected error occurred' as const
+const UNEXPECTED_CIRCULAR_REFERENCE_MSG = 'Unexpected circular reference' as const
+const EXHAUSTIVE_MATCH_FAILURE_MSG = 'Failed to exhaustively handle all code paths' as const
 // TODO: interpolate predicate name, otherwise this error message is useless
-const UNEXPECTED_PREDICATE_FAILURE_MSG = "Received an input that failed to satisfy predicate" as const
+const UNEXPECTED_PREDICATE_FAILURE_MSG = 'Received an input that failed to satisfy predicate' as const
 
 export const CatchAll = TaggedError(UNEXPECTED_ERROR, UNEXPECTED_ERROR_MSG)
 export const PredicateFailed = TaggedError(UNEXPECTED_PREDICATE_FAILURE, UNEXPECTED_PREDICATE_FAILURE_MSG)
@@ -171,29 +173,29 @@ export type ERROR_CODE_BY_NAME<Name extends keyof typeof ERROR_CODE_BY_NAME> =
 
 ///////////////////////////////
 ///     context-specifc     ///
-export const FileNotFound = (filename: string) => Error("FileNotFound")("'" + filename + "'")
+export const FileNotFound = (filename: string) => Error('FileNotFound')("'" + filename + "'")
 export const ParseError = (input: string) =>
-  Error("Received an input that it was unable to parse, got: " + input)
+  Error('Received an input that it was unable to parse, got: ' + input)
 
-export const InputIsNotSerializable = Error("Expected input to be valid JSON, got :")
-export const UnexpectedEmptyString = Error("Expected input string to be non-empty")
+export const InputIsNotSerializable = Error('Expected input to be valid JSON, got :')
+export const UnexpectedEmptyString = Error('Expected input string to be non-empty')
 
 ////////////////////
 ///  task-specific
-export const UnmatchedScalar = Error("Expected a scalar value")
+export const UnmatchedScalar = Error('Expected a scalar value')
 export const PrettyPrintError = (input: string, filepath?: string) =>
   Error(
     [
-      filepath === undefined ? null : "\n\n[📂 in: " + filepath + "]",
-      "\nEncountered an unexpected error while attempting to pretty print input: " + "\n\n" + input,
+      filepath === undefined ? null : '\n\n[📂 in: ' + filepath + ']',
+      '\nEncountered an unexpected error while attempting to pretty print input: ' + '\n\n' + input,
     ]
       .filter((x) => x !== null)
-      .join("\n"),
+      .join('\n'),
   )
 
 /// project-specific
-export const UnexpectedRequiredElement = Error("Required elements cannot follow optional elements")
-export const FailedToResolveDocumentRef = Error("Failed to resolve document reference")
+export const UnexpectedRequiredElement = Error('Required elements cannot follow optional elements')
+export const FailedToResolveDocumentRef = Error('Failed to resolve document reference')
 export const NotYetSupported = (featureName: string, functionName: string) =>
   Error(
     `:\n\n'` +
@@ -202,9 +204,9 @@ export const NotYetSupported = (featureName: string, functionName: string) =>
       functionName +
       `'. ` +
       `\n\nIf you'd like us to add support for that, consider filing an issue:\n\n` +
-      " › " +
+      ' › ' +
       pkg.bugs.url +
-      "\n",
+      '\n',
   )
 
 /// registry
@@ -218,7 +220,7 @@ export const FailedToRegisterSymbol = (uri: string) =>
   )
 
 /// lib-specific
-export const ZodUnionsRequireTwoOrMore = Error("'zod' requires unions to have at least 2 members")
+export const ZodUnionsRequireTwoOrMore = Error(`'zod' requires unions to have at least 2 members`)
 export const UnexpectedIntersectionWithNonObject = Error(
-  "The behavior and semantics of 'allOf' is undefined for non-objects",
+  `The behavior and semantics of 'allOf' is undefined for non-objects`,
 )

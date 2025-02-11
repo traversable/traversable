@@ -82,6 +82,7 @@ export declare namespace Options {
     typeName: string
     document: OpenAPI.doc<Traversable.orJsonSchema>
     header: string | string[]
+    imports: string[]
     template: TargetTemplate
     maxWidth: number
   }
@@ -113,6 +114,7 @@ export const defaults = {
   absolutePath: ["components", "schemas"],
   document:  OpenAPI.from({}),
   header: [],
+  imports: [],
   template: defaultTemplate,
   flags: {
     nominalTypes: true,
@@ -130,53 +132,71 @@ export const defaults = {
   siblingCount: 0,
 } as const satisfies Omit<Options.Config<unknown>, "handlers" | "refs" | "flags"> & { flags: Flags }
 
-export function parseOptions<T>(_: Options<T>) {
+export function parseOptions<T>(_: Options<T>, fallbacks?: Options<unknown>) {
   return {
     handlers: _.handlers,
-    absolutePath: _.absolutePath || defaults.absolutePath,
-    document: _.document || defaults.document,
-    template: _.template || defaults.template,
-    header: _.header || defaults.header,
-    typeName: _.typeName ?? defaults.typeName,
-    maxWidth: _.maxWidth ?? defaults.maxWidth,
-    flags: !_.flags ? defaults.flags : {
-      nominalTypes: _.flags?.nominalTypes ?? defaults.flags.nominalTypes,
-      preferInterfaces: _.flags?.preferInterfaces ?? defaults.flags.preferInterfaces,
-      includeExamples: _.flags?.includeExamples ?? defaults.flags.includeExamples,
-      includeJsdocLinks: _.flags?.includeJsdocLinks ?? defaults.flags.includeJsdocLinks,
-      includeLinkToOpenApiNode: _.flags?.includeLinkToOpenApiNode ?? defaults.flags.includeLinkToOpenApiNode,
+    typeName: _.typeName ?? fallbacks?.typeName ?? defaults.typeName,
+    maxWidth: _.maxWidth ?? fallbacks?.maxWidth ?? defaults.maxWidth,
+    absolutePath: _.absolutePath || fallbacks?.absolutePath || defaults.absolutePath,
+    document: _.document || fallbacks?.document || defaults.document,
+    template: _.template || fallbacks?.template || defaults.template,
+    header: _.header || fallbacks?.header || defaults.header,
+    imports: [
+      ...new globalThis.Set([
+        ...defaults.imports,
+        ...(fallbacks?.imports ? fallbacks.imports : []),
+        ...(_.imports ? _.imports : []),
+      ])
+    ],
+    flags: !_.flags && !fallbacks?.flags ? defaults.flags : {
+      nominalTypes: _.flags?.nominalTypes ?? fallbacks?.flags?.nominalTypes ?? defaults.flags.nominalTypes,
+      preferInterfaces: _.flags?.preferInterfaces ?? fallbacks?.flags?.preferInterfaces ?? defaults.flags.preferInterfaces,
+      includeExamples: _.flags?.includeExamples ?? fallbacks?.flags?.includeExamples ?? defaults.flags.includeExamples,
+      includeJsdocLinks: _.flags?.includeJsdocLinks ?? fallbacks?.flags?.includeJsdocLinks ?? defaults.flags.includeJsdocLinks,
+      includeComment: _.flags?.includeComment ?? fallbacks?.flags?.includeComment ?? defaults.flags.includeComment,
+      includeDescription: _.flags?.includeDescription ?? fallbacks?.flags?.includeDescription ?? defaults.flags.includeDescription,
+      includeLinkToOpenApiNode: _.flags?.includeLinkToOpenApiNode ?? fallbacks?.flags?.includeLinkToOpenApiNode ?? defaults.flags.includeLinkToOpenApiNode, 
     },
   } satisfies Required<Omit<Options<T>, 'handlers'>> & { handlers?: Options<T>['handlers']}
 }
 
-// TODO: implement `optionsFromMatchers` in terms of `parseOptions`
-export function optionsFromMatchers<T>(handlers: Extension.Handlers<T, Index>): (options?: Options<T>) => Options.Config<T> {
+export function optionsFromMatchers<T>(
+  handlers: Extension.Handlers<T, Index>, 
+  fallbacks?: Options<T>
+): (options?: Options<T>) => Options.Config<T> 
+//
+export function optionsFromMatchers<T>(
+  handlers: Extension.Handlers<T, Index>, 
+  fallbacks?: Options<unknown>
+): (options?: Options<T>) => Options.Config<T> {
   return ($?: Options<T>) => {
     const document = $?.document || defaults.document
     const refs = Ref.resolveAll(document, resolveBinding, typeNameFromPath)
     return {
-      handlers,
+      ...parseOptions({ ...$, document }, fallbacks),
       refs,
-      typeName: $?.typeName ?? defaults.typeName,
-      document,
-      header: $?.header || defaults.header,
-      template: $?.template || defaults.template,
-      flags: !$?.flags ? defaults.flags : {
-        nominalTypes: $.flags.nominalTypes ?? defaults.flags.nominalTypes,
-        preferInterfaces: $.flags.preferInterfaces ?? defaults.flags.preferInterfaces,
-        includeExamples: $.flags.includeExamples ?? defaults.flags.includeExamples,
-        includeJsdocLinks: $.flags.includeJsdocLinks ?? defaults.flags.includeJsdocLinks,
-        includeLinkToOpenApiNode: $.flags.includeLinkToOpenApiNode ?? defaults.flags.includeLinkToOpenApiNode,
-      },
-      absolutePath: $?.absolutePath ?? defaults.absolutePath,
+      handlers,
       indent: defaults.indent,
-      maxWidth: $?.maxWidth ?? defaults.maxWidth,
       path: defaults.path,
       depth: defaults.depth,
       siblingCount: defaults.siblingCount,
     }
   }
 }
+
+// typeName: $?.typeName ?? defaults.typeName,
+// header: $?.header || defaults.header,
+// imports: $?.imports || defaults.imports,
+// template: $?.template || defaults.template,
+// flags: !$?.flags ? defaults.flags : {
+//   nominalTypes: $.flags.nominalTypes ?? defaults.flags.nominalTypes,
+//   preferInterfaces: $.flags.preferInterfaces ?? defaults.flags.preferInterfaces,
+//   includeExamples: $.flags.includeExamples ?? defaults.flags.includeExamples,
+//   includeJsdocLinks: $.flags.includeJsdocLinks ?? defaults.flags.includeJsdocLinks,
+//   includeLinkToOpenApiNode: $.flags.includeLinkToOpenApiNode ?? defaults.flags.includeLinkToOpenApiNode,
+// },
+// absolutePath: $?.absolutePath ?? defaults.absolutePath,
+// maxWidth: $?.maxWidth ?? defaults.maxWidth,
 
 
 const ZOD_IDENT_MAP = {

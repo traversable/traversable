@@ -9,12 +9,12 @@ export * as JSDoc from './jsdoc.js'
 export * as Generator from './generator.js'
 
 /// interpreters
-export { ark } from "./arktype/exports.js"
-export { fastcheck } from "./fast-check/exports.js"
-export { typebox } from "./typebox/exports.js"
-export { typescript } from "./typescript/exports.js"
+export { ark } from "./arktype/index.js"
+export { fastcheck } from "./fast-check/index.js"
+export { typebox } from "./typebox/index.js"
+export { typescript } from "./typescript/index.js"
 export { zod } from "./zod/index.js"
-export { trav } from "./traversable/exports.js"
+export { trav } from "./traversable/index.js"
 
 export type { Handlers, Matchers, Options, Index } from "./shared.js"
 export { 

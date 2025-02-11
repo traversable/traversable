@@ -1,1 +1,1 @@
-export * as trav from './traversable.js'
+export * from './traversable.js'

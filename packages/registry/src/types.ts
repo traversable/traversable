@@ -18,9 +18,9 @@ export interface Array<T = unknown, Length extends number = number> extends newt
 }
 export interface Dict<T = unknown, K extends keyof any = string> extends newtype<{ [P in K]: T }> {}
 
-export type Consumes<T> = T extends (_: infer I) => unknown ? I : never
-export type Produces<T> = T extends (_: never) => infer O ? O : never
-export type Returns<T> = T extends (..._: any) => infer O ? O : T
+export type Consumes<T> = T extends (_: infer S) => unknown ? S : never
+export type Produces<S> = S extends (_: never) => infer T ? T : never
+export type Returns<T> = T extends (..._: any) => infer R ? R : T
 export type Partial<T> = never | { [K in keyof T]+?: T[K] }
 
 export type WidenPrimitive<T> = T extends { valueOf(): infer W } ? W : T
@@ -38,41 +38,6 @@ export type WidenObject<T> = { [K in keyof T]: WidenPrimitive<T[K]> }
  * among its properties.
  */
 export type Widen<T> = T extends Primitive ? WidenPrimitive<T> : WidenObject<T>
-
-export type isNonUnion<T, U = T, S = U extends U ? ([T] extends [U] ? true : false) : never> = [S] extends [
-  true,
-]
-  ? true
-  : false
-export type isSingleton<T> = [T] extends [never] ? false : isNonUnion<T>
-export type isUnion<T> = [isNonUnion<T>] extends [true] ? false : true
-
-// export type Partial<T, Depth extends keyof Partial.depth = never>
-//   = Depth extends 1 ? Partial1<T>
-//   : Depth extends 2 ? Partial2<T>
-//
-//   : PartialRec<T, [], Partial.depth[Depth]>
-/** @internal */
-// type PartialRec<T, Depth extends 1[], MaxDepth extends unknown[]>
-//   = [Depth["length"]] extends [MaxDepth["length"]] ? T
-//   : { [K in keyof T]: PartialRec<T[K], [...Depth, 1], MaxDepth> }
-//   ;
-// type Partial1<T> = never | { [K in keyof T]+?: T[K] }
-// type Partial2<T> = { [K in keyof T]+?: Partial1<T[K]> }
-// export declare namespace Partial {
-//   interface depth {
-//     [0]: [],
-//     [1]: [1],
-//     [2]: [1, 1],
-//     [3]: [1, 1, 1],
-//     [4]: [1, 1, 1, 1],
-//     [5]: [1, 1, 1, 1, 1],
-//     [6]: [1, 1, 1, 1, 1, 1],
-//     [7]: [1, 1, 1, 1, 1, 1, 1],
-//     [8]: [1, 1, 1, 1, 1, 1, 1, 1],
-//     [9]: [1, 1, 1, 1, 1, 1, 1, 1, 1],
-//   }
-// }
 
 export type Required<T> = never | { -readonly [K in keyof T]-?: T[K] }
 export type KeepFirst<S, T> = never | KeepLast<T, S>
@@ -275,11 +240,10 @@ export const define: <F extends { [0]: unknown; [-1]: unknown }>(
 
 export declare function apply$<F>(F: F): <T>(t: T) => HKT.apply$<F, T>
 export type bind<F extends HKT, T = unknown> = F & { [0]: T; _applied: true }
-/** @deprecated use {@link Kind `Kind`} instead */
-export type apply<F extends HKT, T extends F[0]> = Kind<F, T>
 export type apply$<F, T> = never | (F & { [0]: T; [-1]: unknown })[-1]
 export type apply_<F extends HKT, T> = never | (F & { [0]: T })[-1]
-// export type forall<F extends HKT> = Kind<F, unknown>
+/** @deprecated use {@link Kind `Kind`} instead */
+export type apply<F extends HKT, T extends F[0]> = Kind<F, T>
 export declare namespace HKT {
   export { apply, apply$, apply_ }
 
@@ -1072,9 +1036,9 @@ export interface Monoid<in out T> extends Semigroup<T> {
 export type Open<
   T extends {},
   Base,
-  _ extends Force<T & Required<globalThis.Omit<Base, keyof T>>> = Force<
-    T & Required<globalThis.Omit<Base, keyof T>>
-  >,
+  _ extends 
+  | Force<T & Required<globalThis.Omit<Base, keyof T>>> 
+  = Force<T & Required<globalThis.Omit<Base, keyof T>>>
 > = never | OpenRecord<_>
 
 export interface OpenRecord<T extends {}> extends newtype<T> {}
@@ -1141,63 +1105,8 @@ export interface Corecursive<T extends HKT, F extends HKT, A, _ = any> extends T
   embed(f: Kind<F, Kind<T, A>>): Kind<T, A>
 }
 
-/**
- * Type-level predicate that asserts that two types are "equal".
- *
- * If you're looking for a type that describes
- * the binary relation between two values, see {@link Equal `Equal`}.
- *
- * The semantics of _equality_ are somewhat ambiguous, since
- * equality is, on some level, "in the eye of the beholder" ❲*❳.
- *
- * ❲*❳ By "in the eye of the beholder", I mean _not portable_:
- * that equality is about our ability to perceive (or, in this case,
- * our inability) to perceive difference.
- *
- * My first draft had "irrevocably bound to some context", but
- * it sounded a bit stiff.
- *
- * > [Edit]: Probably just cut this comment out altogether.
- */
-export type Equals<S, T> = (<F>() => F extends S ? true : false) extends <F>() => F extends T ? true : false
-  ? true
-  : false
-
 export type autocomplete<T> = T | (string & {})
 
-export type Union<T, _ = T> = (_ extends _ ? ([T] extends [_] ? never : unknown) : never) extends infer U
-  ? U
-  : never
-
-export type NonUnion<T, _ = T> = (_ extends _ ? ([T] extends [_] ? unknown : never) : never) extends infer U
-  ? U
-  : never
-
-export declare namespace Union {
-  type toIntersection<
-    T,
-    U = (T extends T ? (_: T) => void : never) extends (_: infer U) => void ? U : never,
-  > = U
-  /**
-   * ## {@link enumerate `Union.enumerate`}
-   *
-   * You'll sometimes see this type called "UnionToTuple".
-   */
-  type enumerate<U, _ = Union.toThunk<U> extends () => infer X ? X : never> = Union.enumerate.loop<[], U, _>
-  type is<T, U = T> = (U extends U ? ([T] extends [U] ? false : true) : never) extends infer S
-    ? boolean extends S
-      ? true
-      : S
-    : never
-  namespace enumerate {
-    type loop<Todo extends readonly unknown[], U, _ = Union.toThunk<U> extends () => infer X ? X : never> = [
-      U,
-    ] extends [never]
-      ? Todo
-      : Union.enumerate.loop<[_, ...Todo], Exclude<U, _>>
-  }
-  type toThunk<U> = (U extends U ? (_: () => U) => void : never) extends (_: infer _) => void ? _ : never
-}
 
 export declare namespace Depth {
   type Max = Exclude<keyof cache, string>

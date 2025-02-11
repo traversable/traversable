@@ -376,12 +376,12 @@ export declare namespace has {
 }
 
 type has_path<KS extends keys.any, T = {}> 
-  = KS extends nonempty.propsLeft<infer Todo, infer K>
+  = KS extends nonempty.keysLeft<infer Todo, infer K>
   ? has.path<Todo, { [P in K]: T }>
   : T extends infer U extends {} ? U : never 
 
 type has_maybe<KS extends keys.any, T = {}>
-  = KS extends nonempty.propsLeft<infer Todo, infer K>
+  = KS extends nonempty.keysLeft<infer Todo, infer K>
   ? has_maybe<Todo, { [P in K]+?: T }>
   : T extends infer U extends {} ? tentatively<U> : never
 

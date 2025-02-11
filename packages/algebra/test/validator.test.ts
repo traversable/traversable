@@ -10,7 +10,7 @@ import type { Widen } from "@traversable/registry"
 
 const strict = { 
   flags: { 
-    jitCompile: true, 
+    aheadOfTime: true, 
     treatArraysLikeObjects: false,
   },
   validationType: 'typeguard',
@@ -18,7 +18,7 @@ const strict = {
 
 const lax = { 
   flags: { 
-    jitCompile: true, 
+    aheadOfTime: true, 
     treatArraysLikeObjects: true 
   },
   validationType: 'typeguard',
@@ -33,7 +33,6 @@ const laxFailSlow = {
   ...lax,
   validationType: validator.Type.failSlow,
 } satisfies Validator.Options
-
 
 vi.describe("〖️⛳️〗‹‹‹ ❲@traversable/algebra/validator❳", () => {
   vi.describe("〖️⛳️〗‹‹ ❲validator.derive❳: shallow object w/ booleans", () => {
@@ -843,6 +842,7 @@ vi.describe("〖️⛳️〗‹‹‹ ❲@traversable/algebra/validator❳", () 
   )
   const IntersectionJsonSchema = IntersectionSchema.toJsonSchema
   //    ^?
+  console.log('intersection json schema', JSON.stringify(IntersectionJsonSchema, null, 2))
 
   const Intersection = {
     strict: () => Validator.derive(IntersectionJsonSchema, strict),
@@ -857,8 +857,8 @@ vi.describe("〖️⛳️〗‹‹‹ ❲@traversable/algebra/validator❳", () 
   } as const
 
   vi.it("〖️⛳️〗› ❲validator.derive❳: Intersection (examples)", () => {
-    vi.expect(Intersection.strict()).toMatchInlineSnapshot(`"(function isValid($0$){if(!$0$||typeof $0$!=="object"||globalThis.Array.isArray($0$))return false;let $0$abc=$0$['abc'];if(typeof $0$abc!=="boolean")return false;if(!$0$||typeof $0$!=="object"||globalThis.Array.isArray($0$))return false;let $0$def=$0$['def'];if($0$def!==undefined&&typeof $0$def!=="boolean")return false;return true;})"`)
-    vi.expect(Intersection.lax()).toMatchInlineSnapshot(`"(function isValid($0$){if(!$0$||typeof $0$!=="object")return false;let $0$abc=$0$['abc'];if(typeof $0$abc!=="boolean")return false;if(!$0$||typeof $0$!=="object")return false;let $0$def=$0$['def'];if($0$def!==undefined&&typeof $0$def!=="boolean")return false;return true;})"`)
+    vi.expect(Intersection.strict()).toMatchInlineSnapshot(`"(function isValid($0$){let v$0$=[(() => {if(!$0$||typeof $0$!=="object"||globalThis.Array.isArray($0$))return false;let $0$abc=$0$['abc'];if(typeof $0$abc!=="boolean")return false;return true;})(),(() => {if(!$0$||typeof $0$!=="object"||globalThis.Array.isArray($0$))return false;let $0$def=$0$['def'];if($0$def!==undefined&&typeof $0$def!=="boolean")return false;return true;})()].every((_) => _ === true);if(v$0$!==true)return false;return true;})"`)
+    vi.expect(Intersection.lax()).toMatchInlineSnapshot(`"(function isValid($0$){let v$0$=[(() => {if(!$0$||typeof $0$!=="object")return false;let $0$abc=$0$['abc'];if(typeof $0$abc!=="boolean")return false;return true;})(),(() => {if(!$0$||typeof $0$!=="object")return false;let $0$def=$0$['def'];if($0$def!==undefined&&typeof $0$def!=="boolean")return false;return true;})()].every((_) => _ === true);if(v$0$!==true)return false;return true;})"`)
   })
 
   test.prop([Intersection.arbitrary()], { 

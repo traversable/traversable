@@ -1,17 +1,5 @@
 import type * as Error from "./error.js"
-import type {
-  Array,
-  Dict,
-  Equals,
-  NonUnion,
-  Omit,
-  Primitive,
-  Union,
-  _,
-  isNonUnion,
-  isSingleton,
-  isUnion,
-} from "./types.js"
+import type { _ } from "./types.js"
 
 /**
  * ## {@link Finite `Finite`}
@@ -79,23 +67,20 @@ import type {
  *   8900000000000000000000000000000000000000000000000000000000000000000000000000000000000000000.e-89,
  * ])
  */
-export type Finite<S> = [S] extends [boolean]
-  ? [boolean] extends [S]
-    ? Error.NonFiniteBoolean
+export type Finite<T> 
+  = [T] extends [boolean] 
+    ? [boolean] extends [T] ? Error.NonFiniteBoolean 
     : boolean
-  : [S] extends [number]
-    ? [number] extends [S]
-      ? Error.NonFiniteNumber
-      : number
-    : [S] extends [string]
-      ? [string] extends [S]
-        ? Error.NonFiniteString
-        : string
-      : [S] extends [{ [x: number]: any }]
-        ? [string] extends [keyof S]
-          ? Error.NonFiniteIndex<S>
-          : { -readonly [K in keyof S]: Finite<S[K]> }
-        : void
+  : [T] extends [number] 
+    ? [number] extends [T] ? Error.NonFiniteNumber 
+    : number
+  : [T] extends [string] 
+    ? [string] extends [T] ? Error.NonFiniteString 
+    : string
+  : [T] extends [{ [x: number]: any }] 
+    ? [string] extends [keyof T] ? Error.NonFiniteIndex<T> 
+    : { -readonly [K in keyof T]: Finite<T[K]> }
+  : void
 
 export type EmptyObject<T> = { [K in keyof T]: never }
 
@@ -111,9 +96,7 @@ export type EmptyObject<T> = { [K in keyof T]: never }
  * For additional docs/usage examples, see {@link Finite `Finite`}.
  */
 export function finite<S extends Finite<S>>(s: S): S
-export function finite<S extends Finite<S>>(s: S) {
-  return s
-}
+export function finite<S extends Finite<S>>(s: S) { return s }
 
 // declare function emptyObject<const T extends EmptyObject<T>>(x: T): T
 // type NonEmpty<T> = [T] extends [readonly [any, ...any]] ? readonly [unknown, ...unknown[]] : never
@@ -122,22 +105,73 @@ export function finite<S extends Finite<S>>(s: S) {
 
 const identity: <T>(x: T) => T = (x) => x
 
-export const nonunion: <T extends NonUnion<T>>(x: T) => T = identity
-export const union: <T extends Union<T>>(x: T) => T = identity
-
 export type Singleton<T> = [isSingleton<T>] extends [true] ? unknown : never
 export const singleton: <T extends Singleton<T>>(x: T) => T = identity
 
 export type Char<T> = [T] extends [`${string}${infer _}`] ? ([_] extends [""] ? string : never) : never
-export type CharOrNonFinite<T> = [T] extends [infer U] ? string extends U ? string : Char<T> : never
-
-export function char<T extends Char<T>>(x: T): T {
-  return x
-}
+export function char<T extends Char<T>>(x: T): T { return x }
 
 export type Equal<S, T> = [Equals<S, T>] extends [true] ? unknown : never
-export function equal<const S>(_: S): <const T extends Equal<S, T>>(t: T) => T {
-  return (t) => t
+export function equal<const S>(_: S): <const T extends Equal<S, T>>(t: T) => T { return (t) => t }
+
+export type Union<T, _ = T> = (_ extends _ ? ([T] extends [_] ? never : unknown) : never) extends infer U ? U : never
+export const union: <T extends Union<T>>(x: T) => T = identity
+
+export declare namespace Union {
+  type is<T, U = T> 
+    = (U extends U ? ([T] extends [U] ? false : true) : never) extends infer S
+    ? boolean extends S ? true 
+    : S 
+    : never
+    ;
+  type toIntersection<
+    T,
+    U = (T extends T ? (contra: T) => void : never) extends (contra: infer U) => void ? U : never,
+  > = U
+  /**
+   * ## {@link enumerate `Union.enumerate`}
+   *
+   * You'll sometimes see this type called "UnionToTuple".
+   */
+  type enumerate<U, _ = Union.toThunk<U> extends () => infer X ? X : never> = Union.enumerate.loop<[], U, _>
+  namespace enumerate {
+    type loop<Todo extends readonly unknown[], U, _ = Union.toThunk<U> extends () => infer X ? X : never> = [
+      U,
+    ] extends [never]
+      ? Todo
+      : Union.enumerate.loop<[_, ...Todo], Exclude<U, _>>
+  }
+  type toThunk<U> = (U extends U ? (_: () => U) => void : never) extends (_: infer _) => void ? _ : never
 }
 
-// declare function assertType<Expected, const Actual = Expected>(term: Actual): void
+export type NonUnion<T, _ = T> = (_ extends _ ? ([T] extends [_] ? unknown : never) : never) extends infer U ? U : never
+export const nonunion: <T extends NonUnion<T>>(x: T) => T = identity
+
+export type isUnion<T> = [isNonUnion<T>] extends [true] ? false : true
+export type isNonUnion<T, U = T, S = U extends U ? ([T] extends [U] ? true : false) : never> = [S] extends [true] ? true : false
+export type isSingleton<T> = [T] extends [never] ? false : isNonUnion<T>
+export type CharOrNonFinite<T> = [T] extends [infer U] ? (string extends U ? string : Char<T>) : never
+
+/**
+ * Type-level predicate that asserts that two types are "equal".
+ *
+ * If you're looking for a type that describes
+ * the binary relation between two values, see {@link Equal `Equal`}.
+ *
+ * The semantics of _equality_ are somewhat ambiguous, since
+ * equality is, on some level, "in the eye of the beholder" ❲*❳.
+ *
+ * ❲*❳ By "in the eye of the beholder", I mean _not portable_:
+ * that equality is about our ability to perceive (or, in this case,
+ * our inability) to perceive difference.
+ *
+ * My first draft had "irrevocably bound to some context", but
+ * it sounded a bit stiff.
+ *
+ * > [Edit]: Probably just cut this comment out altogether.
+ */
+export type Equals<S, T> = 
+  (<F>() => F extends S ? true : false) extends 
+  (<F>() => F extends T ? true : false)
+  ? true
+  : false

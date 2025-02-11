@@ -8,6 +8,11 @@ import type { Matchers, Options, TargetTemplate } from "../shared.js"
 import { defaults as defaults_ } from "../shared.js"
 
 export {
+  imports,
+  headers,
+  template,
+  TypeName,
+  //
   compilers,
   compile,
   compileAll,
@@ -25,6 +30,7 @@ const isKeyOf = <T extends Record<string, string>>(dictionary: T) =>
 type TypeName = typeof TypeName
 const TypeName = 'TypeScript'
 
+const imports = [] as const satisfies string[]
 const headers = [] as const satisfies string[]
 const template = (
   (target, $) => [
@@ -38,6 +44,7 @@ const defaults = {
   ...defaults_,
   typeName: defaults_.typeName + TypeName,
   header: headers,
+  imports,
   template,
 } satisfies Required<Omit<Options<unknown>, 'handlers'>>
 
@@ -124,7 +131,7 @@ const compile
  
 const compileAll
   : (options: Options<string>) => Gen.All<string>
-  = (options) => Gen.compileAll(compile, { ...defaults, ...options })
+  = ($) => Gen.compileAll(defaults)(compile, $)
 
 /** @deprecated */
 const nominalHandlers = {

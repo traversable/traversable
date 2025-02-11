@@ -1206,6 +1206,7 @@ namespace tuple_ {
       items: spec.filter(has("toJsonSchema")).map((_) => _.toJsonSchema) as never,
       minItems: spec.length,
       maxItems: spec.length,
+      additionalItems: false,
     } as tuple_.toJsonSchema<S>
   }
   export const is = <S extends typeof tuple_.spec>(u: _): u is tuple_<S> => hasTag(Tag.tuple, symbol.tuple)(u)

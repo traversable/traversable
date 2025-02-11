@@ -1,5 +1,5 @@
-import * as vi from 'vitest'
 import { Chomp } from '@traversable/core'
+import * as vi from 'vitest'
 
 vi.describe(`〖⛳️〗‹‹‹ ❲@traversable/core/Chomp❳`, () => {
   vi.it(`〖⛳️〗› ❲Chomp.either❳`, () => {
