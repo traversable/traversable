@@ -1,10 +1,8 @@
-# @traversable/core
+# @traversable/registry
 
-## 0.0.3
+## 0.0.1
 
 ### Patch Changes
-
-- [#28](https://github.com/traversable/traversable/pull/28) [`0e12fb7`](https://github.com/traversable/traversable/commit/0e12fb759d2729ccd1a79e5fe1c99a2840350e19) Thanks [@ahrjarrett](https://github.com/ahrjarrett)! - ✨(core): adds ambient namespace `Arbitrary` with fast-check utils like `Arbitrary.any`, `Arbitrary.infer`, etc.
 
 - [#28](https://github.com/traversable/traversable/pull/28) [`18ad718`](https://github.com/traversable/traversable/commit/18ad718682bd2f3d7bf100737605bb7c328a9e6d) Thanks [@ahrjarrett](https://github.com/ahrjarrett)! - ❲🌳❳ ‹‹‹ ❲release v0.1.0❳
 
@@ -65,44 +63,13 @@
     (most of them went over my head, but his talks on Functors, and recursion schemes in particular,
     had a tremendous impact on the abstractions we built)
 
-- [#28](https://github.com/traversable/traversable/pull/28) [`b50e4b9`](https://github.com/traversable/traversable/commit/b50e4b96f754515f72f2a9636f34f1ecf9c3d41f) Thanks [@ahrjarrett](https://github.com/ahrjarrett)! - ✨(core): adds `core.not` guard
+- [#28](https://github.com/traversable/traversable/pull/28) [`8e8c41f`](https://github.com/traversable/traversable/commit/8e8c41f9a922e6451b82fa47be5e8fc6efca1f57) Thanks [@ahrjarrett](https://github.com/ahrjarrett)! - ✨(registry): adds type utilities: `Partial`, `Required`, `Require`, `KeepFirst`, `KeepLast`, `Force`, `Mutable`, `Part`
 
-- Updated dependencies [[`18ad718`](https://github.com/traversable/traversable/commit/18ad718682bd2f3d7bf100737605bb7c328a9e6d), [`8e8c41f`](https://github.com/traversable/traversable/commit/8e8c41f9a922e6451b82fa47be5e8fc6efca1f57), [`7faac8d`](https://github.com/traversable/traversable/commit/7faac8d9f7d2a8f45cbdf58726b702ce4b2c474c), [`1288884`](https://github.com/traversable/traversable/commit/1288884689fbf43bb4c38e3f49064bbf942c5d0f), [`7eb32eb`](https://github.com/traversable/traversable/commit/7eb32eb5574e242ca79ebd19b076fff4a65d2f9f), [`9b70cbc`](https://github.com/traversable/traversable/commit/9b70cbc748f72dd2e3af91184bbcf8437747e75c)]:
-  - @traversable/registry@0.0.1
-  - @traversable/data@0.0.3
+- [#17](https://github.com/traversable/traversable/pull/17) [`7faac8d`](https://github.com/traversable/traversable/commit/7faac8d9f7d2a8f45cbdf58726b702ce4b2c474c) Thanks [@ahrjarrett](https://github.com/ahrjarrett)! - ### new features:
 
-## 0.0.2
+  ✨(registry): implements global known-symbol registry
 
-### Patch Changes
+- [#26](https://github.com/traversable/traversable/pull/26) [`9b70cbc`](https://github.com/traversable/traversable/commit/9b70cbc748f72dd2e3af91184bbcf8437747e75c) Thanks [@ahrjarrett](https://github.com/ahrjarrett)! - ### fixes
 
-- [#11](https://github.com/traversable/traversable/pull/11) [`6a7cdd1`](https://github.com/traversable/traversable/commit/6a7cdd1815eefdb47b6faf27cd27e7c060339d24) Thanks [@ahrjarrett](https://github.com/ahrjarrett)! - ### new features
-
-  Adds a new module called `tree`, which is one that
-  we're pretty excited about.
-
-      With this PR, the following features are available on `tree`:
-
-      - `tree.fromPaths`
-      - `tree.toPaths`
-      - `tree.has`
-      - `tree.get`
-      - `tree.set`
-
-- Updated dependencies [[`6a7cdd1`](https://github.com/traversable/traversable/commit/6a7cdd1815eefdb47b6faf27cd27e7c060339d24)]:
-  - @traversable/data@0.0.2
-
-## 0.0.1
-
-### Patch Changes
-
-- [#1](https://github.com/traversable/traversable/pull/1) [`b2bcc9c`](https://github.com/traversable/traversable/commit/b2bcc9c676d775e4189c5c0fdd7e152e45d18bf8) Thanks [@ahrjarrett](https://github.com/ahrjarrett)! - ### new packages
-
-  :tada: first release for the following packages:
-
-  - bench
-  - core
-  - data
-  - http -openapi
-
-- Updated dependencies [[`b2bcc9c`](https://github.com/traversable/traversable/commit/b2bcc9c676d775e4189c5c0fdd7e152e45d18bf8)]:
-  - @traversable/data@0.0.1
+  - 🐛 fixes an assignability bug with `data.Compare`. Assignability should work in all cases now
+    0f46a5c \* origin/@ahrjarrett/api 🐛(data): fixes `data.Compare` assig… Andrew Jarrett 2 minutes

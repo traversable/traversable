@@ -1,7 +1,7 @@
 export default {
   "name": "@traversable/core",
   "type": "module",
-  "version": "0.0.2",
+  "version": "0.0.3",
   "private": false,
   "description": "a small, focused set of libraries that solve for a particular problem or use case",
   "repository": {
@@ -14,8 +14,12 @@ export default {
     "email": "ahrjarrett@gmail.com"
   },
   "@traversable": {
-    "generateExports": { "include": ["**/*.ts"] },
-    "generateIndex": { "include": ["**/*.ts"] }
+    "generateExports": {
+      "include": ["**/*.ts"]
+    },
+    "generateIndex": {
+      "include": ["**/*.ts"]
+    }
   },
   "publishConfig": {
     "directory": "dist",
@@ -40,9 +44,15 @@ export default {
     "any-ts": "0.48.1"
   },
   "peerDependenciesMeta": {
-    "@traversable/data": { "optional": false },
-    "@traversable/registry": { "optional": false },
-    "any-ts": { "optional": false }
+    "@traversable/data": {
+      "optional": false
+    },
+    "@traversable/registry": {
+      "optional": false
+    },
+    "any-ts": {
+      "optional": false
+    }
   },
   "devDependencies": {
     "@standard-schema/spec": "1.0.0-rc.0",
