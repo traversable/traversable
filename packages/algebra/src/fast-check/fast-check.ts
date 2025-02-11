@@ -39,7 +39,8 @@ const TypeName = 'Arbitrary'
 
 /** @internal */
 const Object_assign = globalThis.Object.assign
-
+/** @internal */
+const Math_fround = globalThis.Math.fround
 /** @internal */
 function intersect<T>(...xs: readonly T[]): Intersect<T> 
 function intersect<T>(xs: readonly T[]) { return xs.reduce(Object_assign, {}) }
@@ -165,6 +166,11 @@ const minmaxString
     ...maxLength !== undefined && { maxLength },
   })
 
+const minmaxRound = fn.flow(minmax, ({ min, max }) => ({ 
+  ...typeof min === 'number' && { min: Math_fround(min) },
+  ...typeof max === 'number' && { max: Math_fround(max) }
+}))
+
 const compiledIntegerConstraints
   : (meta: Meta.Numeric) => string
   = (meta: Meta.Numeric) => {
@@ -212,7 +218,7 @@ const derivatives = {
   null() { return fc.constant(null) },
   boolean() { return fc.boolean() },
   integer({ meta = {} }) { return fc.integer(minmax(meta)).map(modulo(meta)) },
-  number({ meta = {} }) { return fc.float(minmax(meta)).map(Math.fround) },
+  number({ meta = {} }) { return fc.float(minmaxRound(meta)) },
   string({ meta = {} }) { 
     return schema.keyOf$(StringFormat)(meta.format) 
       ? StringFormat[meta.format]() 
