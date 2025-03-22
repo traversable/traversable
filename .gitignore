@@ -16,6 +16,7 @@ packages/registry/src/__generated__/*
 !packages/*/test/*
 packages/algebra/test/__specs__/*
 !packages/algebra/test/__specs__/pet.spec.json
+!packages/algebra/test/__generated__/*
 
 packages/*/build/*
 packages/*/dist/*
